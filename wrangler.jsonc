@@ -1,0 +1,12 @@
+{
+  // Llama Lounge: game page + accounts API + realtime room, all on one Worker
+  "name": "llama-lounge",
+  "main": "src/worker.js",
+  "compatibility_date": "2025-11-01",
+  "assets": { "directory": "./public", "not_found_handling": "single-page-application" },
+  "durable_objects": { "bindings": [ { "name": "LOUNGE", "class_name": "Lounge" } ] },
+  "migrations": [ { "tag": "v1", "new_sqlite_classes": ["Lounge"] } ],
+  "d1_databases": [ { "binding": "DB", "database_name": "llama-lounge", "database_id": "a0730bf5-48cc-4c15-be61-860aff614308" } ],
+  "vars": { "ADMINS": "" },   // owners are marked in the database (users.role = 'admin'), not by name
+  "observability": { "enabled": true }
+}
