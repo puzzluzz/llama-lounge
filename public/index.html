@@ -425,6 +425,7 @@ const spriteCache = new Map();
 function sprite(cid,dir,frame,pose){ const k=cid+'|'+dir+'|'+frame+'|'+pose; let s=spriteCache.get(k); if(!s){ s=buildSprite(cid,dir,frame,pose); spriteCache.set(k,s);} return s; }
 
 // ======================= WORLD =======================
+const ARC_X = 9, JUKE_X = 12;   // arcade cabinet and jukebox spots on the lounge's back wall
 const TW = 40, TH = 20, WH = 96;
 const ROOM_DIMS = { lounge:[13,12], barn:[22,20] };
 let N = 13, NY = 12;   // current room: N = width (gx) and row stride, NY = depth (gy)
@@ -447,13 +448,15 @@ function buildLoungeWorld(){
   for (let x=0;x<=6;x++){ block(x,0); FURN.push({t:'bar',gx:x,gy:1}); block(x,1); }
   for (let x=0;x<=6;x++){ SEATS.push({gx:x,gy:2,dir:'br',lift:9}); FURN.push({t:'stool',gx:x,gy:2}); }
   FURN.push({t:'rope',gx:7,gy:0}); block(7,0);   // rope: tap it to go behind the bar
-  FURN.push({t:'jukebox',gx:11,gy:0}); block(11,0);
-  FURN.push({t:'arcade',gx:8,gy:0}); block(8,0);
-  FURN.push({t:'keg',gx:9,gy:0}); block(9,0);
-  FURN.push({t:'hay',gx:10,gy:0}); block(10,0);
+  FURN.push({t:'arcade',gx:9,gy:0}); block(9,0);
+  FURN.push({t:'keg',gx:10,gy:0}); block(10,0);
+  FURN.push({t:'hay',gx:11,gy:0}); block(11,0);
+  FURN.push({t:'jukebox',gx:12,gy:0}); block(12,0);
   for (let x=8;x<=11;x++) for (let y=2;y<=5;y++) DANCE.add(y*N+x);
-  FURN.push({t:'slots',gx:12,gy:0}); block(12,0);                       // sit-down slot machine
-  SEATS.push({gx:12,gy:1,dir:'br',lift:9}); FURN.push({t:'stool',gx:12,gy:1});
+  // The slot machine is saved but not placed: its art, pop-up and server payouts are all still here.
+  // To bring it back, add these two lines (and give it a free spot on the back wall):
+  //   FURN.push({t:'slots',gx:12,gy:0}); block(12,0);
+  //   SEATS.push({gx:12,gy:1,dir:'br',lift:9}); FURN.push({t:'stool',gx:12,gy:1});
   FURN.push({t:'sidetable',gx:0,gy:6}); block(0,6);
   FURN.push({t:'fern',gx:0,gy:9}); block(0,9);
   FURN.push({t:'fern',gx:0,gy:11,flip:true,ox:-0.15,oy:0.15}); block(0,11);   // tucked into the corner so it doesn't cover the door
@@ -833,6 +836,83 @@ function drawStall(f, sx, sy, t){
     pfDraw(g,name,bx+5,by+2,cider?'#a82830':'#2a6830');
     g.fillStyle=cider?'#d82838':'#f8d030'; g.fillRect(bx+2,by+3,2,2); g.fillRect(bx+w-4,by+3,2,2); }
 }
+// classic bubbler jukebox: walnut body, arched glass dome ringed by colour tubes, spinning record, chrome grille
+function drawJukebox(f, sx, sy, t){
+  const gx=f.gx, x0=gx+0.1, x1=gx+0.9, yB=f.gy+0.36, yF=f.gy+0.8, on=jukeOn(), BASE=30, ARCH=13, r=(x1-x0)/2, cxm=(x0+x1)/2;
+  const vtop=x=>BASE+ARCH*Math.sqrt(Math.max(0,1-((x-cxm)/r)**2));
+  const px=(x,y,v,c)=>{ const [X,Y]=P(x,y,v); g.fillStyle=c; g.fillRect(Math.round(X),Math.round(Y),1,1); };
+  ellPx(sx,sy+1,15,5,'rgba(0,0,0,0.25)');
+  // solid body: arch silhouettes stacked from back to front (top shading), then the side face
+  for (let y=yB; y<yF; y+=0.04) for (let x=x0; x<=x1+0.001; x+=0.05){ const [X,Yt]=P(x,y,vtop(x)), [,Yb]=P(x,y,0); g.fillStyle = y<yB+0.05 ? INK : '#5a2c18'; g.fillRect(Math.round(X),Math.round(Yt),1,Math.round(Yb-Yt)+1); }
+  for (let y=yB; y<=yF; y+=0.02){ const [X,Yt]=P(x1,y,vtop(x1)), [,Yb]=P(x1,y,0); g.fillStyle = y>yF-0.03 ? INK : '#6a3820'; g.fillRect(Math.round(X),Math.round(Yt),1,Math.round(Yb-Yt)+1);
+    if (y>yB+0.06 && y<yF-0.06){ px(x1,y,6,'#e0b048'); px(x1,y,BASE-1,'#e0b048'); } }
+  // top of the arch: a light rim so the dome reads as rounded
+  for (let x=x0; x<=x1+0.001; x+=0.05) px(x,yB+0.04,vtop(x)+1,INK);
+  // front face, column by column
+  const cols=Math.round((x1-x0)/0.05); const sh=on?Math.floor(t*8):0;
+  for (let i=0;i<=cols;i++){ const x=x0+i*0.05, top=Math.round(vtop(x)), edge=i<=1||i>=cols-1, pillar=i<=3||i>=cols-3;
+    for (let v=0; v<=top; v++){ let c;
+      if (edge || v===top) c=INK;
+      else if (v<=2) c = v===2 ? '#e0b048' : '#5a2c18';
+      else if (pillar && v<top-2){ const k=Math.floor((v*0.5+(i<4?0:2)-(on?t*6:0)))%JUKE.length; c = on ? JUKE[(k+JUKE.length)%JUKE.length] : '#8a5a9a'; if (on && (v+Math.floor(t*14)+i*3)%9===0) c='#ffffff'; }
+      else if (v>=top-2) c = on ? JUKE[(Math.floor(i/2)+sh)%JUKE.length] : '#a878c8';
+      else if (v<=13){ c = (i%2) ? '#2a1830' : '#d8a840'; if (v===3||v===13) c='#e0b048'; }
+      else if (v<=15) c = v===14 ? '#f0f0f8' : '#a8a8b8';
+      else if (v<=27){ c='#30204a'; }
+      else c = (v+i)%7===0 ? '#e8d0f8' : (on ? '#c088e8' : '#9068b0');
+      px(x,yF,v,c); } }
+  // record behind the window: black disc, coloured label, a sheen that turns while it plays
+  { const [cx,cy]=P(cxm,yF,21.5); const ang=on?t*5:0; ellPx(cx,cy,5.5,5,INK); ellPx(cx,cy,4.6,4.2,'#282030'); ellPx(cx,cy,1.8,1.6,'#f84848'); g.fillStyle='#f8d030'; g.fillRect(Math.round(cx),Math.round(cy),1,1);
+    g.fillStyle='#8878a0'; g.fillRect(Math.round(cx+Math.cos(ang)*3.4),Math.round(cy+Math.sin(ang)*3),1,1); g.fillRect(Math.round(cx-Math.cos(ang)*3.4),Math.round(cy-Math.sin(ang)*3),1,1); }
+  // song-select buttons under the window
+  for (let k=0;k<4;k++){ const [X,Y]=P(x0+0.22+k*0.12,yF,15); g.fillStyle=(on && Math.floor(t*2)%4===k)?'#f8d030':'#f8f8f8'; g.fillRect(Math.round(X),Math.round(Y)-1,1,1); }
+  // floating music notes while it plays
+  { const ph=(t*0.6)%1; if (on && ph<0.8){ g.fillStyle=INK; const nx=sx+6+Math.round(Math.sin(t*3)*3), ny=Math.round(sy-52-ph*22); g.fillRect(nx,ny,3,2); g.fillRect(nx+2,ny-6,1,7); g.fillRect(nx+3,ny-6,2,1); } }
+}
+// upright arcade cabinet: side profile with an overhanging marquee, slanted screen, control panel with stick and buttons
+function drawArcade3D(f, sx, sy, t){
+  const gx=f.gx, gy=f.gy, x0=gx+0.14, x1=gx+0.86;
+  const PRO=[[0.1,0],[0.86,0],[0.86,17],[0.94,19],[0.66,23],[0.62,24],[0.52,41],[0.8,42],[0.8,51],[0.1,51]];
+  const Q=(pts,c)=>polyPx(pts,c);
+  const at=(x,[y,v])=>P(x,gy+y,v);
+  ellPx(sx,sy+1,14,5,'rgba(0,0,0,0.25)');
+  // front surfaces, back to front
+  Q([at(x0,PRO[9]),at(x1,PRO[9]),at(x1,PRO[8]),at(x0,PRO[8])],'#4868c0');            // top
+  Q([at(x0,PRO[7]),at(x1,PRO[7]),at(x1,PRO[8]),at(x0,PRO[8])],INK);                     // marquee frame
+  Q([at(x0,PRO[5]),at(x1,PRO[5]),at(x1,PRO[6]),at(x0,PRO[6])],INK);                     // screen bezel
+  Q([at(x0,PRO[3]),at(x1,PRO[3]),at(x1,PRO[4]),at(x0,PRO[4])],'#283880');              // control panel
+  Q([at(x0,PRO[1]),at(x1,PRO[1]),at(x1,PRO[2]),at(x0,PRO[2])],'#2848a0');              // lower front
+  Q([at(x0,PRO[2]),at(x1,PRO[2]),at(x1,PRO[3]),at(x0,PRO[3])],'#f8d030');              // panel lip trim
+  // right side panel with the profile shape and side art
+  Q(PRO.map(p=>at(x1,p)),'#3858a8');
+  { const pts=PRO.map(p=>at(x1,p)); for (let i=0;i<pts.length;i++){ const a=pts[i], b=pts[(i+1)%pts.length]; linePx(a[0],a[1],b[0],b[1],INK); } }
+  for (let v=4; v<48; v+=1){ const y=0.2+0.08*Math.sin(v*0.35)+0.18; const [X,Y]=P(x1,gy+y,v); g.fillStyle=v%6<3?'#f878b8':'#f8d030'; g.fillRect(Math.round(X),Math.round(Y),2,1); }
+  // coin door
+  { for (const [u,v,c] of [[0.42,9,INK],[0.42,10,'#f84848'],[0.56,9,INK],[0.56,10,'#f84848']]){ const [X,Y]=P(gx+u,gy+0.86,v); g.fillStyle=c; g.fillRect(Math.round(X),Math.round(Y),2,2); }
+    const [a1,b1]=P(gx+0.34,gy+0.86,13), [a2,b2]=P(gx+0.66,gy+0.86,13), [a3,b3]=P(gx+0.34,gy+0.86,4), [a4,b4]=P(gx+0.66,gy+0.86,4); linePx(a1,b1,a2,b2,INK); linePx(a3,b3,a4,b4,INK); linePx(a1,b1,a3,b3,INK); linePx(a2,b2,a4,b4,INK); }
+  // screen: an attract-mode llama hopping over hay, mapped onto the slanted glass
+  { const W=15, H=17; const scr=(i,j)=>{ const tt=t*1.6, gr=H-3;
+      if (j>=gr) return (i+Math.floor(tt*8))%4<2 ? '#48c048' : '#38a038';
+      const hx=Math.floor((W+4)-((tt*10)%(W+8))); if (j>=gr-2 && (i===hx||i===hx+1)) return '#f8d030';
+      const hop=Math.max(0, Math.round(Math.sin(Math.min(Math.PI, Math.max(0, ((tt*10)%(W+8)-(W-2))/2.2)))*5)); const lx=4, ly=gr-4-hop;
+      if (i>=lx && i<=lx+2 && j>=ly && j<=ly+3) return (i===lx+2&&j===ly) ? '#181020' : '#f0e4c8'; if (i===lx+3 && j===ly) return '#f0e4c8';
+      if (j<=2){ const sc=String(100+Math.floor(t*7)%900); return (i>=1 && i<12 && (i+j)%2===0 && j===1) ? '#f8f8f8' : '#101830'; }
+      return ((i*7+j*13+Math.floor(t*2))%41===0) ? '#a8c8f8' : '#101830'; };
+    const p0=PRO[5], p1=PRO[6];
+    for (let j=0;j<H;j++) for (let i=0;i<W;i++){ const u=(j+0.5)/H, y=p1[0]+(p0[0]-p1[0])*u-0.015, v=p1[1]+(p0[1]-p1[1])*u; const x=x0+0.07+(i+0.5)/W*(x1-x0-0.14);
+      const [X,Y]=P(x,gy+y,v); g.fillStyle=scr(i,j); g.fillRect(Math.round(X),Math.round(Y),1,2); } }
+  // marquee: lit panel with chase lights and PLAY
+  { const p0=PRO[7], p1=PRO[8]; const lit=Math.floor(t*6);
+    for (let v=p0[1]+1; v<p1[1]; v++) for (let x=x0+0.05; x<x1-0.04; x+=0.05){ const [X,Y]=P(x,gy+p0[0]+0.005,v); const k=Math.round((x-x0)/0.05);
+      const border = v===p0[1]+1 || v===p1[1]-1; g.fillStyle = border ? (((k+lit)%3===0)?'#ffffff':'#f84848') : '#f8d030'; g.fillRect(Math.round(X),Math.round(Y),1,1); }
+    // a little llama head in the middle of the marquee
+    { const [mx,my]=P((x0+x1)/2,gy+p0[0]+0.005,(p0[1]+p1[1])/2); const X=Math.round(mx), Y=Math.round(my), c=(Math.floor(t*3)%2)?'#c02838':'#e83848';
+      g.fillStyle=c; for (const [i,j] of [[-2,-3],[2,-3],[-2,-2],[2,-2],[-2,-1],[-1,-1],[0,-1],[1,-1],[2,-1],[-1,0],[0,0],[1,0],[-1,1],[1,1],[-1,2],[0,2],[1,2]]) g.fillRect(X+i,Y+j,1,1);
+      g.fillStyle='#ffffff'; g.fillRect(X-1,Y,1,1); g.fillRect(X+1,Y,1,1); } }
+  // control panel: joystick and two buttons
+  { const [jx,jy]=P(gx+0.36,gy+0.8,21); g.fillStyle=INK; g.fillRect(Math.round(jx),Math.round(jy)-5,1,5); ellPx(jx,jy-6,2,2,INK); ellPx(jx,jy-6.3,1.3,1.3,'#f84848');
+    for (const [u,c] of [[0.56,'#f8d030'],[0.68,'#48c048']]){ const [bx,by]=P(gx+u,gy+0.82,21); ellPx(bx,by,1.8,1.2,INK); g.fillStyle=c; g.fillRect(Math.round(bx)-1,Math.round(by)-1,2,1); } }
+}
 // small potted fern: short glazed teal pot, a mound of arching fronds with leaflets
 function drawFern(f, sx, sy, t){
   const ox=f.ox||0, oy=f.oy||0, fl=f.flip?-1:1; { const [x,y]=P(f.gx+0.5+ox,f.gy+0.5+oy); sx=Math.round(x); sy=Math.round(y); }
@@ -913,20 +993,8 @@ function drawFurn(f,t){
       // fanned cards
       g.fillStyle=INK; g.fillRect(sx+2,ty+1,5,4); g.fillRect(sx+5,ty,5,4); g.fillStyle='#f8f8f8'; g.fillRect(sx+3,ty+2,3,2); g.fillRect(sx+6,ty+1,3,2); g.fillStyle='#f84848'; g.fillRect(sx+4,ty+2,1,1); g.fillStyle=INK; g.fillRect(sx+7,ty+1,1,1);
       drawTableFx(f,sx,sy+1); break; }
-    case 'jukebox': box(f.gx,f.gy,1,1,36,'#b058e0','#8030b0','#582080',0.12);
-      { const [lx,ly]=P(f.gx+0.12,f.gy+0.88,6), [rx,ry]=P(f.gx+0.88,f.gy+0.88,6); const sh=jukeOn()?Math.floor(t*6):0;
-        for(let x=lx+3;x<rx-2;x++){ const yb=Math.round(ly+(x-lx)*(ry-ly)/(rx-lx)); g.fillStyle=JUKE[(Math.floor(x/3)+sh)%JUKE.length]; g.fillRect(x,yb-22,1,16);} }
-      { const ph=(t*0.6)%1; if(jukeOn() && ph<0.8){ g.fillStyle=INK; const nx=sx+6+Math.round(Math.sin(t*3)*3), ny=Math.round(sy-46-ph*22); g.fillRect(nx,ny,3,2); g.fillRect(nx+2,ny-6,1,7); g.fillRect(nx+3,ny-6,2,1); } } break;
-    case 'arcade': box(f.gx,f.gy,1,1,40,'#3858a8','#2848a0','#183070',0.12);
-      { const [lx,ly]=P(f.gx+0.12,f.gy+0.88,0), [rx,ry]=P(f.gx+0.88,f.gy+0.88,0);
-        for(let x=lx+3;x<rx-2;x++){ const yb=Math.round(ly+(x-lx)*(ry-ly)/(rx-lx));
-          g.fillStyle='#f8d030'; g.fillRect(x,yb-37,1,5);
-          g.fillStyle=INK; g.fillRect(x,yb-32,1,1); g.fillRect(x,yb-19,1,1);
-          g.fillStyle=((x+Math.floor(t*8))%9<2)?'#f8f8f8':((Math.floor(x/3)+Math.floor(t*2))%2?'#48c048':'#58b8f8'); g.fillRect(x,yb-31,1,12);
-          g.fillStyle='#183070'; g.fillRect(x,yb-17,1,3); }
-        const mx=Math.round((lx+rx)/2), my=Math.round((ly+ry)/2);
-        g.fillStyle=INK; g.fillRect(mx-5,my-17,8,4); g.fillStyle='#f84848'; g.fillRect(mx-4,my-16,2,2); g.fillStyle='#f8d030'; g.fillRect(mx,my-16,2,2); }
-      break;
+    case 'jukebox': drawJukebox(f, sx, sy, t); break;
+    case 'arcade': drawArcade3D(f, sx, sy, t); break;
     case 'sofa': { const T='#e05888', L='#b83868', R='#902850', gy=f.gy;
       box(0.02,gy,0.24,1,26,T,L,R);
       if (f.arm==='a') sofaArmrest(gy+0.02);
@@ -1359,8 +1427,8 @@ function context(){
   if (me.p==='sit' && me.gx===12 && me.gy===1) return 'spin';
   if (me.p!=='sit' && me.gx===0 && me.gy===10) return 'goBarn';
   if (me.p!=='sit' && onDance()) return 'flip';
-  if (me.p!=='sit' && near(8,0)) return 'arcade';
-  if (me.p!=='sit' && near(11,0)) return 'juke';
+  if (me.p!=='sit' && near(ARC_X,0)) return 'arcade';
+  if (me.p!=='sit' && near(JUKE_X,0)) return 'juke';
   if (near(0,6)) return 'lamp';
   const s = (me.p==='sit') ? seatAt(me.gx,me.gy) : null;
   if (s && s.gy===2 && s.gx<=6) return me.h ? 'sip' : 'grab';
@@ -1413,11 +1481,11 @@ function doAction(a){
   if (a==='spin'){ if (slotEl.style.display==='block') slotSpin(); else openSlots(); return; }
   if (a==='bartend'){ if(me.bar||me.moving||!near(7,0)) return; enterBar(); return; }
   if (a==='unbar'){ if(me.bar) leaveBar(7,1,null); return; }
-  if (a==='arcade'){ if(!near(8,0)) return; face(8,0); sendPresence(true); startArcade(); }
+  if (a==='arcade'){ if(!near(ARC_X,0)) return; face(ARC_X,0); sendPresence(true); startArcade(); }
   else if (a==='tmenu0'||a==='tmenu1'){ openTableMenu(+a.slice(5)); }
   else if (a==='flip'){ if(!onDance()||me.moving||me.p==='sit') return; const now=performance.now(); if(now-(me.flipStart||-9999)<FLIP_T) return; me.flipStart=now; me.flK=(me.flK||0)+1; sendPresence(true); }
   else if (a==='lamp'){ if(!near(0,6)) return; if(me.p!=='sit') face(0,6); toggleLamp(); }
-  else if (a==='juke'){ if(!near(11,0)) return; face(11,0); nextSong(); sendPresence(true); }
+  else if (a==='juke'){ if(!near(JUKE_X,0)) return; face(JUKE_X,0); nextSong(); sendPresence(true); }
   else if (a==='order'){ const id = BAR_IDS[Math.floor(Math.random()*BAR_IDS.length)]; me.h=id; localMsg(`You ordered a ${DRINKS[id].label}!`); sendPresence(true); }
   else if (a==='grab'){ const st=(me.p==='sit')?seatAt(me.gx,me.gy):null; if(!st||st.gy!==2||me.h) return; const gx=me.gx;
     NET.act('drink').then(r=>{ if (!r.ok){ localMsg(r.msg||'Could not buy a drink.'); return; } tkSet(r.tk); me.h=BAR_IDS[gx%BAR_IDS.length]; me.hl=5; localMsg(`You bought a ${DRINKS[me.h].label} for 1 TOKEN!`); sendPresence(true); }); }
@@ -2000,9 +2068,8 @@ cv.addEventListener('pointerdown', e => {
   const [gx,gy] = toGrid(e.clientX, e.clientY);
   if (gx<0||gy<0||gx>=N||gy>=NY) return;
   if (gx===7 && gy===0){ ropeClick(); return; }
-  if (gx===12 && gy===0){ if (me.p==='sit'&&me.gx===12&&me.gy===1) slotSpin(); else walkTo(12,1); return; }
   if (gx===0 && gy===10 && !(me.gx===0&&me.gy===10)){ showSwap('barn'); return; }   // the welcome mat counts as the door
-  if ((gx===8||gx===11) && gy===0){ const act = gx===8?'arcade':'juke'; if(near(gx,0)) doAction(act); else { const t=nearestFree(gx,0); if(t) walkTo(t[0],t[1],act); } return; }
+  if ((gx===ARC_X||gx===JUKE_X) && gy===0){ const act = gx===ARC_X?'arcade':'juke'; if(near(gx,0)) doAction(act); else { const t=nearestFree(gx,0); if(t) walkTo(t[0],t[1],act); } return; }
   if (gx===0 && gy===6){ if(near(0,6)) doAction('lamp'); else { const t=nearestFree(0,6); if(t) walkTo(t[0],t[1],'lamp'); } return; }
   if (walkable(gx,gy)){ walkTo(gx,gy); return; }
   let best=null, bd=1e9; for (const s of SEATS){ const d=Math.abs(s.gx-gx)+Math.abs(s.gy-gy); if(d<=1 && d<bd){ bd=d; best=s; } }
@@ -2864,8 +2931,8 @@ function tipContext(){
   if (me.p==='sit' && nearTable()>=0) return 'table';
   if (s && s.gx===0) return 'sofa';
   if (near(0,6)) return 'lamp';
-  if (me.p!=='sit' && near(8,0)) return 'arcade';
-  if (me.p!=='sit' && near(11,0)) return 'juke';
+  if (me.p!=='sit' && near(ARC_X,0)) return 'arcade';
+  if (me.p!=='sit' && near(JUKE_X,0)) return 'juke';
   if (me.p!=='sit' && me.gx>=10 && me.gy<=2) return 'scores';
   if (onDance()) return 'dance';
   if (me.gx<=1 && me.gy>=1 && me.gy<=9) return 'merch';
