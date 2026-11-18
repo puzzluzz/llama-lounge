@@ -45,6 +45,7 @@ After any change, run `npx wrangler deploy` again from this folder. Accounts and
   - 5 new accounts per connection per hour
 - **Tokens:** only change on the server.
   - The server spins the slots, deals the table games and picks the fish.
+  - Casino tables: roulette (single zero; colours, odd/even, halves pay 1 to 1, dozens 2 to 1, one number 35 to 1) and blackjack (pays 3 to 2, dealer stands on 17, double on two cards). The server spins, deals and pays; blackjack hands are kept in the room's storage between moves.
   - Slots are in the LLAMA CASINO: 13 machines in three kinds (FRUIT FRENZY, LLAMA CLASSIC, GOLDEN JACKPOT). Players bet 1, 2, 5 or 10 tokens; three of a kind pays the machine's paytable times the bet. Odds and paytables live in `SLOTS` in `src/worker.js`.
   - The server checks where you're standing before paying for carrots, fishing, the bar or drinks.
   - The cider and snack stands in LLAMA ACRES charge on the server too (cider 2 to 3 tokens, snacks 2 to 3 tokens).

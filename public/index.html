@@ -142,6 +142,16 @@
   #tbox{bottom:98px}
   @media (max-height:520px){ #tbox{bottom:86px} }
   #swapbox{left:50%;top:50%;transform:translate(-50%,-50%);display:none;text-align:center;z-index:5;min-width:calc(var(--px)*150px)}
+  #tblbox{left:50%;top:46%;transform:translate(-50%,-50%);display:none;text-align:center;z-index:5;width:min(calc(100% - 16px),calc(var(--px)*200px))}
+  #tblbox .slt{color:#c03070;margin-bottom:calc(var(--px)*4px)}
+  #tbcv{display:block;margin:0 auto;width:calc(var(--px)*150px);height:calc(var(--px)*66px);max-width:100%;image-rendering:pixelated;border:calc(var(--px)*2px) solid #c09018;border-radius:calc(var(--px)*3px);background:#1e7a3a}
+  #tb_msg{margin:calc(var(--px)*5px) 0;min-height:calc(var(--px)*16px);font-size:calc(var(--px)*6px);line-height:calc(var(--px)*9px);color:#3858a8}
+  .tbopts{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--px)*3px);margin-bottom:calc(var(--px)*5px)}
+  .tbopts:empty{display:none}
+  .tbopts .gbbtn{font-size:calc(var(--px)*5px);padding:calc(var(--px)*3px) calc(var(--px)*2px)}
+  .tbopts .gbbtn.on{background:#f8d030} .tbopts .gbbtn.r{color:#c02838} .tbopts .gbbtn.k{color:#181020}
+  #tblbox .srow{display:flex;justify-content:center;gap:calc(var(--px)*6px)} #tblbox .gbbtn.y{background:#f8d030} #tblbox .gbbtn:disabled{opacity:.5}
+  #tb_tok{margin-top:calc(var(--px)*4px);font-size:calc(var(--px)*6px);color:#a06808}
   #fwbox{left:50%;top:50%;transform:translate(-50%,-50%);display:none;text-align:center;z-index:5;width:min(calc(100% - 16px),calc(var(--px)*210px))}
   #fw_items .gbbtn{font-size:calc(var(--px)*5px);line-height:calc(var(--px)*8px);padding:calc(var(--px)*4px) calc(var(--px)*4px)}
   #fwbox .fwt{color:#c03070;margin-bottom:calc(var(--px)*4px)}
@@ -223,6 +233,10 @@
     <div class="slbet" id="sl_bet"><span>BET</span><button class="gbbtn" data-bet="1">1</button><button class="gbbtn" data-bet="2">2</button><button class="gbbtn" data-bet="5">5</button><button class="gbbtn" data-bet="10">10</button></div>
     <div class="srow"><button class="gbbtn y" id="sl_spin">SPIN ▶</button><button class="gbbtn" id="sl_close">CLOSE</button></div>
     <canvas id="slpaycv" width="130" height="40"></canvas><div id="sl_tok"></div></div>
+  <div id="tblbox" class="gb"><div class="slt" id="tb_title"></div><canvas id="tbcv" width="150" height="66"></canvas><div id="tb_msg"></div>
+    <div class="tbopts" id="tb_opts"></div>
+    <div class="slbet" id="tb_bet"><span>BET</span><button class="gbbtn" data-bet="1">1</button><button class="gbbtn" data-bet="2">2</button><button class="gbbtn" data-bet="5">5</button><button class="gbbtn" data-bet="10">10</button></div>
+    <div class="srow" id="tb_acts"></div><div id="tb_tok"></div></div>
   <div id="fwbox" class="gb"><div class="fwt" id="fw_t"></div><div class="fwn" id="fw_n"></div>
     <div class="srow" id="fw_items"></div>
     <div id="fw_msg"></div><div class="srow"><button class="gbbtn" id="fw_close">CLOSE</button></div></div>
@@ -451,6 +465,8 @@ const SLOT_KINDS = {
   classic: { name:'LLAMA CLASSIC',  note:'THE ORIGINAL',      pay:[8,15,25,50,120,500],   cab:['#d03040','#d03040','#981c2c','#5a1020'], lite:'#e86070', top:['#f8d030','#e8b820','#b88818'] },
   gold:    { name:'GOLDEN JACKPOT', note:'RARE BUT HUGE',     pay:[4,8,15,30,100,1000],   cab:['#7838c0','#7838c0','#502088','#301060'], lite:'#b080f0', top:['#fff0a0','#f8d030','#c09018'] } };
 const SLOT_BETS = [1,2,5,10];
+const ROUL_SEATS = [[5,5],[5,6],[8,5],[8,6],[6,7],[7,7]], BJ_SEATS = [[10,5],[11,5],[10,9],[11,9]];   // the server checks the same seats
+const seatIn = (list,x,y) => curRoom==='casino' && list.some(([a,b])=>a===x&&b===y);
 const isSlotSeat = (x,y) => curRoom==='casino' && y===1 && CASINO_SLOT_X.includes(x);
 const DANCE = new Set(), CROPS = [], POND = [];
 function clearWorld(){ [N,NY]=ROOM_DIMS[curRoom]; if (BLOCK.length!==N*NY) BLOCK=new Uint8Array(N*NY); FURN.length=0; SEATS.length=0; BLOCK.fill(0); DANCE.clear(); CROPS.length=0; POND.length=0; }
@@ -678,11 +694,26 @@ function buildCasinoBG(){
   for (const [x,sg] of [[-70,-1],[-150,-1],[134,1],[250,1]]){ const b=Math.floor(sg*x/2), y=oy+b-70;
     g.fillStyle='rgba(248,208,96,0.18)'; for (let r=10;r>4;r-=2){ g.fillRect(ox+x-r, y-r, r*2+1, r*2+1); }
     g.fillStyle=INK; g.fillRect(ox+x-3, y-4, 7, 7); g.fillStyle='#f8f0d0'; g.fillRect(ox+x-2, y-3, 5, 4); g.fillStyle='#c09018'; g.fillRect(ox+x-2, y+1, 5, 1); g.fillRect(ox+x, y+2, 1, 4); }
-  // carpet: deep red with a small gold diamond on every tile, no grout lines
+  // carpet: big diamond medallions spanning 2 x 2 tiles (gold heart, teal and gold bands, deep red field, dark lattice where they meet)
   const T=(gx,gy)=>{ const p=proj(gx,gy); return [ox+p[0], oy+p[1]]; };
-  for (let gy=0; gy<NY; gy++) for (let gx=0; gx<N; gx++){ polyPx([T(gx,gy),T(gx+1,gy),T(gx+1,gy+1),T(gx,gy+1)], ((gx+gy)%2)?'#a01a32':'#ac2038');
-    const k=0.16; polyPx([T(gx+0.5,gy+0.5-k),T(gx+0.5+k,gy+0.5),T(gx+0.5,gy+0.5+k),T(gx+0.5-k,gy+0.5)],'#d8a830');
-    const k2=0.07; polyPx([T(gx+0.5,gy+0.5-k2),T(gx+0.5+k2,gy+0.5),T(gx+0.5,gy+0.5+k2),T(gx+0.5-k2,gy+0.5)],'#7a1026'); }
+  { const x0=ox-NY*20, x1=ox+N*20, y0=oy, y1=oy+(N+NY)*10; const img=g.getImageData(x0,y0,x1-x0,y1-y0), D=img.data, W=x1-x0;
+    const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+    const C={gold:hex('#e8b838'),gold2:hex('#b88818'),dark:hex('#3a0818'),teal:hex('#1e6a70'),teal2:hex('#2a8a8a'),red:hex('#961630'),red2:hex('#a81c38'),lat:hex('#5a0c20'),cream:hex('#f0d890')};
+    for (let py=0; py<y1-y0; py++) for (let px=0; px<W; px++){ const wx=px+x0-ox, wy=py+y0-oy; const gx=(wx/20+wy/10)/2, gy=(wy/10-wx/20)/2;
+      if (gx<0||gy<0||gx>=N||gy>=NY) continue;
+      // round medallion in the middle of every 2 x 2 block: gold heart, eight teal petals, gold and dark rings
+      const bx=Math.floor(gx/2)*2+1, by=Math.floor(gy/2)*2+1, dx=gx-bx, dy=gy-by, r=Math.hypot(dx,dy), ang=Math.atan2(dy,dx);
+      // small gold star where four blocks meet
+      const ex=gx-Math.round(gx/2)*2, ey=gy-Math.round(gy/2)*2, er=Math.hypot(ex,ey);
+      let c;
+      if (r<0.13) c=C.gold; else if (r<0.18) c=C.dark;
+      else if (r<0.5){ const k=(r-0.18)/0.32, petal=Math.cos(ang*8) > k*1.7-0.75; c = petal ? (Math.cos(ang*8)>k*1.7-0.35 ? C.teal2 : C.teal) : C.red2; if (petal && Math.abs(Math.cos(ang*8)-(k*1.7-0.75))<0.08) c=C.cream; }
+      else if (r<0.55) c=C.gold; else if (r<0.6) c=C.dark;
+      else if (er<0.1) c=C.gold; else if (er<0.3 && Math.min(Math.abs(ex),Math.abs(ey))<0.035) c=C.gold2;
+      else if (er<0.36 && er>0.31) c=C.gold2;
+      else { const hatch=((Math.floor((gx+gy)*6))%2===0); c = hatch ? C.red : C.red2; if (r>0.6 && r<0.64) c=C.lat; }
+      const i=(py*W+px)*4; D[i]=c[0]; D[i+1]=c[1]; D[i+2]=c[2]; D[i+3]=255; }
+    g.putImageData(img,x0,y0); }
   // gold border round the edge of the carpet
   { const a=T(0.1,0.1), b=T(N-0.1,0.1), c=T(N-0.1,NY-0.1), d=T(0.1,NY-0.1); for (const [p1,p2] of [[a,b],[b,c],[c,d],[d,a]]) linePx(p1[0],p1[1],p2[0],p2[1],'#d8a830'); }
   // black runner from the door
@@ -996,12 +1027,19 @@ function drawRoulette(f, t){
   for (let i=0;i<6;i++) for (let j=0;j<3;j++){ const u0=1.14+i*0.11, v0=0.32+j*0.46; Q(u0,v0,u0+0.1,v0+0.44,(i+j)%2?'#c02838':'#181020'); }
   { const a=P(gx+1.14,gy+1.72,13), b=P(gx+1.8,gy+1.72,13); linePx(a[0],a[1],b[0],b[1],'#f8f0d0'); }
   // wheel on the near half
-  const [wx,wy]=P(gx+0.55,gy+1.0,14); const rot=t*1.6;
+  const [wx,wy]=P(gx+0.55,gy+1.0,14);
+  const ra = (typeof rlAnim!=='undefined' && rlAnim) ? (performance.now()-rlAnim.t0)/1000 : 99, spinning = ra < 2.4;
+  const rot = t*1.6 + (spinning ? (2.4*ra - ra*ra*0.5)*6 : 0);
   ellPx(wx,wy+1,13,7,INK); ellPx(wx,wy,12.5,6.5,'#6a3418'); ellPx(wx,wy-0.5,10.5,5.3,'#c09018');
   for (let k=0;k<18;k++){ const a=rot+k/18*Math.PI*2, col = k===0 ? '#28a048' : k%2 ? '#c02838' : '#181020';
     for (let r=4.5;r<=9.5;r+=0.8){ g.fillStyle=col; g.fillRect(Math.round(wx+Math.cos(a)*r),Math.round(wy+Math.sin(a)*r*0.52),1,1); g.fillRect(Math.round(wx+Math.cos(a+0.17)*r),Math.round(wy+Math.sin(a+0.17)*r*0.52),1,1); } }
   ellPx(wx,wy,4,2.2,'#8a4a20'); ellPx(wx,wy-1,1.6,1.2,'#f8d030'); g.fillStyle='#f8f0a0'; g.fillRect(Math.round(wx),Math.round(wy)-3,1,2);
-  { const ba=-t*3.1; g.fillStyle='#ffffff'; g.fillRect(Math.round(wx+Math.cos(ba)*10.2),Math.round(wy+Math.sin(ba)*5.3)-1,2,2); }
+  { const settle = spinning ? Math.min(1, ra/2.4) : 1; const ba = spinning ? -ra*9*(1-settle*0.7) : rot+((rlAnim?rlAnim.n:0)/37)*Math.PI*2; const rr = spinning ? 10.2-settle*3.5 : 6.6;
+    g.fillStyle='#ffffff'; g.fillRect(Math.round(wx+Math.cos(ba)*rr),Math.round(wy+Math.sin(ba)*rr*0.52)-1,2,2); }
+  // result plate over the table for a few seconds after a spin
+  if (rlAnim && ra>=2.4 && ra<7){ const n=rlAnim.n, txt=String(n)+' '+(n===0?'GREEN':RL_RED.has(n)?'RED':'BLACK'); const [px,py]=P(gx+1,gy+1,40); const w=pfW(txt)+10;
+    g.fillStyle=INK; g.fillRect(Math.round(px-w/2)+1,Math.round(py)-11,w-2,11); g.fillRect(Math.round(px-w/2),Math.round(py)-10,w,9); g.fillStyle='#f8f8f8'; g.fillRect(Math.round(px-w/2)+1,Math.round(py)-10,w-2,9);
+    g.fillStyle=rlCol(n); g.fillRect(Math.round(px-w/2)+2,Math.round(py)-8,2,3); pfDraw(g,txt,Math.round(px-w/2)+6,Math.round(py)-9,INK); }
   // chip stacks on the layout
   for (const [u,v,c] of [[1.3,0.55,'#f84848'],[1.52,1.05,'#3890e0'],[1.66,0.5,'#f8d030']]){ const [x,y]=P(gx+u,gy+v,13); for (let k=0;k<3;k++){ ellPx(x,y-k*1.5,2.4,1.2,INK); ellPx(x,y-k*1.5-0.5,1.8,0.8,c); } }
 }
@@ -1019,11 +1057,14 @@ function drawBlackjack(f, t){
   for (let i=0;i<curve.length-1;i++){ const a=P(gx+curve[i][0],gy+curve[i][1],13), b=P(gx+curve[i+1][0],gy+curve[i+1][1],13); linePx(a[0],a[1],b[0],b[1],'#a86a34'); linePx(a[0],a[1]+1,b[0],b[1]+1,INK); }
   { const a=P(gx+0.04,gy+0.08,13), b=P(gx+1.96,gy+0.08,13); linePx(a[0],a[1],b[0],b[1],'#8a4a20'); }
   { const a=P(gx+0.3,gy+0.38,13), b=P(gx+1.7,gy+0.38,13); for (let i=0;i<=20;i++){ const u=i/20, x=a[0]+(b[0]-a[0])*u, y=a[1]+(b[1]-a[1])*u+Math.sin(u*Math.PI)*4; g.fillStyle='#f8d030'; g.fillRect(Math.round(x),Math.round(y),1,1); } }
+  // each seated player's cards, face up on the felt in front of their stool
+  { const players=[]; if (me.bj && me.p==='sit') players.push([me.gx,me.gy,me.bj]); for (const o of others.values()) if (sameRoom(o) && o.bj && o.p==='sit') players.push([Math.floor(o.x),Math.floor(o.y),o.bj]);
+    for (const [x,y,cards] of players){ if (y!==gy+1 || x<gx || x>gx+1) continue; cards.forEach((cd,i)=>{ const [cx,cy]=P(x+0.3+i*0.12,gy+0.68,13); const X=Math.round(cx), Y=Math.round(cy); g.fillStyle=INK; g.fillRect(X-1,Y-4,5,6); g.fillStyle='#f8f8f8'; g.fillRect(X,Y-3,3,4); g.fillStyle=(Math.floor(cd/13)===1||Math.floor(cd/13)===2)?'#c02838':INK; g.fillRect(X+1,Y-2,1,2); }); } }
   // dealer chip tray and card shoe
   { const [x,y]=P(gx+1,gy+0.2,13); g.fillStyle=INK; g.fillRect(Math.round(x)-8,Math.round(y)-3,17,4); ['#f84848','#3890e0','#48c048','#f8d030','#181020','#f8f8f8','#b058e0','#f84848'].forEach((c,i)=>{ g.fillStyle=c; g.fillRect(Math.round(x)-7+i*2,Math.round(y)-2,2,2); }); }
   { const [x,y]=P(gx+1.7,gy+0.25,13); g.fillStyle=INK; g.fillRect(Math.round(x)-3,Math.round(y)-5,7,6); g.fillStyle='#c02838'; g.fillRect(Math.round(x)-2,Math.round(y)-4,5,4); g.fillStyle='#f8f8f8'; g.fillRect(Math.round(x)-2,Math.round(y)-4,2,1); }
-  // a card face up at each seat
-  for (const u of [0.5,1.5]){ const [x,y]=P(gx+u,gy+0.7,13); g.fillStyle=INK; g.fillRect(Math.round(x)-2,Math.round(y)-3,5,6); g.fillStyle='#f8f8f8'; g.fillRect(Math.round(x)-1,Math.round(y)-2,3,4); g.fillStyle=u<1?'#c02838':'#181020'; g.fillRect(Math.round(x),Math.round(y)-1,1,2); }
+  // a card face up at each empty seat
+  for (const u of [0.5,1.5]){ const seatX=gx+(u<1?0:1); if ((me.bj && me.p==='sit' && me.gx===seatX && me.gy===gy+1) || [...others.values()].some(o=>sameRoom(o)&&o.bj&&Math.floor(o.x)===seatX&&Math.floor(o.y)===gy+1)) continue; const [x,y]=P(gx+u,gy+0.7,13); g.fillStyle=INK; g.fillRect(Math.round(x)-2,Math.round(y)-3,5,6); g.fillStyle='#f8f8f8'; g.fillRect(Math.round(x)-1,Math.round(y)-2,3,4); g.fillStyle=u<1?'#c02838':'#181020'; g.fillRect(Math.round(x),Math.round(y)-1,1,2); }
 }
 // small potted fern: short glazed teal pot, a mound of arching fronds with leaflets
 function drawFern(f, sx, sy, t){
@@ -1487,7 +1528,7 @@ function arrive(){
   if (me.bar){ me.p='bar'; me.d = Math.random()<0.5?'fr':'fl'; me.barT = 2.6+Math.random()*2.8; sendPresence(true); if (!me.barOn){ me.barOn=true; me.shift=0; setTimeout(()=>NET.act('bar_tick'), 400); } return; }
   if (me.after){ const af=me.after; me.after=null; if (af[0]!==me.gx||af[1]!==me.gy){ if (walkTo(af[0],af[1],af[2])) return; } else if (af[2]){ me.p='stand'; sendPresence(true); doAction(af[2]); return; } }
   const s=seatAt(me.gx,me.gy);
-  if (s){ me.p='sit'; me.d=s.dir; if (isSlotSeat(s.gx,s.gy)) setTimeout(openSlots, 150); }
+  if (s){ me.p='sit'; me.d=s.dir; if (isSlotSeat(s.gx,s.gy)) setTimeout(openSlots, 150); else if (seatIn(ROUL_SEATS,s.gx,s.gy)) setTimeout(()=>openTable('roul'),150); else if (seatIn(BJ_SEATS,s.gx,s.gy)) setTimeout(()=>openTable('bj'),150); }
   else { me.p = onDance() ? 'dance' : 'stand'; me.d = 'f'+me.d[1]; }   // turn to face the screen
   const pend=me.pending; me.pending=null;
   sendPresence(true);
@@ -1545,6 +1586,8 @@ function context(){
   }
   if (curRoom==='casino'){
     if (me.p==='sit' && isSlotSeat(me.gx,me.gy)) return 'spin';
+    if (me.p==='sit' && seatIn(ROUL_SEATS,me.gx,me.gy)) return 'roul';
+    if (me.p==='sit' && seatIn(BJ_SEATS,me.gx,me.gy)) return 'bj';
     if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
     return me.p==='sit' ? 'stand' : 'sit';
   }
@@ -1558,7 +1601,7 @@ function context(){
   if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
   return me.p==='sit' ? 'stand' : 'sit';
 }
-const ALABEL = {fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
+const ALABEL = {fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
 const alabel=document.getElementById('alabel'); let lastLabel='';
 function updateALabel(){ const c=context(); const l = arcade.on ? (arcade.mode==='menu'?'SELECT':arcade.over?'RETRY':arcade.mode==='dash'?'JUMP':'---') : (c?ALABEL[c]:'SIT'); if(l!==lastLabel){ alabel.textContent=l; lastLabel=l; } }
 // ---- bartending: slip past the rope, pace behind the bar pouring drinks ----
@@ -1594,6 +1637,7 @@ function doAction(a){
   a = a || context(); if(!a) return;
   if (a==='travel'){ const r=me.travelTo; me.travelTo=null; if (r) switchRoom(r); return; }
   if (a==='goBarn'){ if (!me.moving) showSwap('barn'); return; }
+  if (a==='roul'||a==='bj'){ openTable(a); return; }
   if (a==='goCasino'){ if (!me.moving) showSwap('casino'); return; }
   if (a==='goLoungeC'){ if (!me.moving) showSwap('lounge'); return; }
   if (a==='goLounge'){ if (!me.moving && near(14,0)) showSwap('lounge'); return; }
@@ -1900,6 +1944,7 @@ function presencePayload(){
   o.fs = me.fish ? {k:me.fish.k, st:(me.fish.st==='wait'?'cast':me.fish.st), f:me.fish.f, bx:me.fish.bx, by:me.fish.by} : null;
   o.sl = me.lastSlot || null;
   o.ea = me.lastEat || null;
+  o.bj = (curRoom==='casino' && me.bj) ? me.bj : null;
   if (juke.ts) o.j = { s:juke.s, ts:juke.ts };
   if (lamp.ts) o.l = { on:lamp.on?1:0, ts:lamp.ts };
   return o;
@@ -1924,8 +1969,9 @@ function readPeer(peer){
   const tg = (pr.tg&&typeof pr.tg==='object'&&[0,1].includes(+pr.tg.i)&&['roll','card'].includes(pr.tg.g)&&['join','res'].includes(pr.tg.ph)) ? {k:+pr.tg.k||0, i:+pr.tg.i, g:pr.tg.g, ph:pr.tg.ph, b:Math.max(0,Math.min(10,Math.floor(+pr.tg.b||0))), left:Math.max(0,Math.min(15,+pr.tg.left||0)),
     r: Array.isArray(pr.tg.r) ? pr.tg.r.slice(0,8).map(x=>({p:String((x&&x.p)||'').slice(0,64), n:clean(String((x&&x.n)||''),12).toUpperCase()||'LLAMA', v:Math.max(0,Math.min(51,Math.floor(+(x&&x.v)||0)))})) : [], w:Math.max(0,Math.min(7,Math.floor(+pr.tg.w||0)))} : null;
   const gsc = (pr.g&&typeof pr.g==='object'&&['hay','dash'].includes(pr.g.id)&&isFinite(+pr.g.v)) ? {k:+pr.g.k||0, id:pr.g.id, v:Math.max(0,Math.min(99999,Math.floor(+pr.g.v)))} : null;
+  const bj = Array.isArray(pr.bj) ? pr.bj.slice(0,8).map(v=>Math.max(0,Math.min(51,Math.floor(+v||0)))) : null;
   const ea = (pr.ea&&typeof pr.ea==='object'&&/^a\d{1,2},\d{1,2}$/.test(String(pr.ea.a))) ? {k:+pr.ea.k||0, a:String(pr.ea.a)} : null;
-  return { ea, l, c:pr.c, n:clean(pr.n,12)||'LLAMA', x:Math.min(40,Math.max(0,x)), y:Math.min(40,Math.max(0,y)), d:['fr','fl','br','bl'].includes(pr.d)?pr.d:'fr',
+  return { bj, ea, l, c:pr.c, n:clean(pr.n,12)||'LLAMA', x:Math.min(40,Math.max(0,x)), y:Math.min(40,Math.max(0,y)), d:['fr','fl','br','bl'].includes(pr.d)?pr.d:'fr',
     p:['sit','dance','bar'].includes(pr.p)?pr.p:'stand', s, e, j, h: DRINK_IDS.includes(pr.h)?pr.h:null, hl:Math.max(0,Math.min(5,Math.floor(+pr.hl||5))), sk:+pr.sk||0, a: pr.a==='arcade'?'arcade':null, sp, td, g:gsc, tg, fk:+pr.fk||0, tk:Math.max(0,Math.min(1e6,Math.floor(+pr.tk||0))), rm: ROOMS.includes(pr.rm)?pr.rm:'lounge', fs: (pr.fs&&typeof pr.fs==='object'&&['cast','bite','got'].includes(pr.fs.st)) ? {k:+pr.fs.k||0, st:pr.fs.st, f:Math.max(0,Math.min(2,Math.floor(+pr.fs.f||0))), bx:Math.max(0,Math.min(40,+pr.fs.bx||0)), by:Math.max(0,Math.min(40,+pr.fs.by||0))} : null, sl: (pr.sl&&typeof pr.sl==='object'&&Array.isArray(pr.sl.r)) ? {k:+pr.sl.k||0, r:pr.sl.r.slice(0,3).map(v=>Math.max(0,Math.min(SLOT_SYMS.length-1,Math.floor(+v||0))))} : null };
 }
 function upsertPeer(peer){
@@ -1956,7 +2002,7 @@ function upsertPeer(peer){
   if (st.l && st.l.ts > lamp.ts){ lamp.on=st.l.on; lamp.ts=st.l.ts; }
   if (st.fs && st.fs.st==='got' && (!o.fs || o.fs.st!=='got' || o.fs.k!==st.fs.k)) o.fishShow={f:st.fs.f, until:performance.now()+2200};
   if (o.rm && st.rm && o.rm!==st.rm) sysMsg(`${st.n.toUpperCase()} went to ${ROOM_NAMES[st.rm]}.`);
-  o.tk=st.tk; o.rm=st.rm; o.fs=st.fs; o.c=st.c; o.n=st.n; o.tx=st.x; o.ty=st.y; o.d=st.d; o.p=st.p; o.h=st.h; o.hl=st.hl; o.a=st.a;
+  o.bj=st.bj; o.tk=st.tk; o.rm=st.rm; o.fs=st.fs; o.c=st.c; o.n=st.n; o.tx=st.x; o.ty=st.y; o.d=st.d; o.p=st.p; o.h=st.h; o.hl=st.hl; o.a=st.a;
   if (Math.hypot(o.tx-o.x,o.ty-o.y)>3){ o.x=o.tx; o.y=o.ty; }
 }
 const LEAVE_T=1200;
@@ -2073,12 +2119,12 @@ function openLogo(){ closeAll(); shopImgEl.src=LOGO.src; shopImgEl.style.backgro
 document.getElementById('shopclose').addEventListener('click', ()=>closeAll());
 const menu=document.getElementById('menu'), emenu=document.getElementById('emenu'), logbox=document.getElementById('logbox'), pick=document.getElementById('pick');
 let curMenu=null, menuIdx=0;
-function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
+function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || (typeof tblEl!=='undefined' && tblEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
 function items(m){ return [...m.children]; }
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
   const a=el.dataset.a;
@@ -2544,6 +2590,7 @@ function render(t){
   arcadeText=null; drawArcade(t);
   drawOverlay(t);
   drawSlotPopup(t);
+  drawTablePopup(t);
 }
 function wrapChars(text, max){ const out=[]; let cur='';
   for (let w of text.split(/\s+/).filter(Boolean)){ while (w.length>max){ if(cur){out.push(cur);cur='';} out.push(w.slice(0,max)); w=w.slice(max); } if(!w) continue;
@@ -2865,6 +2912,7 @@ function casinoPointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
   for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
   const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
+  if (me.p==='sit' && (seatIn(ROUL_SEATS,me.gx,me.gy)||seatIn(BJ_SEATS,me.gx,me.gy)) && !walkable(gx,gy) && Math.abs(gx-me.gx)<=2 && Math.abs(gy-me.gy)<=2){ openTable(seatIn(BJ_SEATS,me.gx,me.gy)?'bj':'roul'); return; }
   if (gy===0 && CASINO_SLOT_X.includes(gx)){ if (me.p==='sit' && me.gx===gx && me.gy===1) slotSpin(); else walkTo(gx,1); return; }
   if (walkable(gx,gy)){ walkTo(gx,gy); return; }
   let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } }
@@ -2979,6 +3027,90 @@ function drawSlotPopup(t){
   for (let i=0;i<3;i++){ c.fillRect(1+i,35-2+i,1,5-2*i); c.fillRect(128-i,35-2+i,1,5-2*i); }
   document.getElementById('sl_spin').disabled = slot.spin && now<slot.stopAt[2];
 }
+// ======================= CASINO TABLES: roulette and blackjack (the server spins, deals and pays) =======================
+const tblEl=document.getElementById('tblbox'), tbCv=document.getElementById('tbcv'), tbCx=tbCv.getContext('2d');
+const RL_RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const rlCol = n => n===0 ? '#28a048' : RL_RED.has(n) ? '#c02838' : '#181020';
+const RL_BETS=[['red','RED','r','1 TO 1'],['black','BLACK','k','1 TO 1'],['odd','ODD','','1 TO 1'],['even','EVEN','','1 TO 1'],['low','1-18','','1 TO 1'],['high','19-36','','1 TO 1'],['d1','1ST 12','','2 TO 1'],['d2','2ND 12','','2 TO 1'],['d3','3RD 12','','2 TO 1']];
+let tblKind=null, rlPick=store.rlPick||'red', rlNum=Number.isInteger(store.rlNum)?store.rlNum:17, rlHist=[], rlBusy=false, bjHand=null, bjBusy=false;
+let rlAnim=null;   // {n, t0, by}: wheel animation everyone in the casino sees
+const tbBet = () => SLOT_BETS.includes(store.tbBet) ? store.tbBet : 1;
+function tbMsg(t){ document.getElementById('tb_msg').textContent=t; }
+function tbTok(){ document.getElementById('tb_tok').textContent=`YOU HAVE ${wallet.get()} TOKENS`; }
+function tbBetUI(){ const b=tbBet(); for (const el of document.querySelectorAll('#tb_bet [data-bet]')) el.classList.toggle('on', +el.dataset.bet===b); }
+for (const el of document.querySelectorAll('#tb_bet [data-bet]')) el.addEventListener('click', ()=>{ store.tbBet=+el.dataset.bet; saveStore(); tbBetUI(); renderTableUI(); });
+function openTable(kind){ if (curRoom!=='casino' || me.p!=='sit') return; closeAll(); tblKind=kind; tbBetUI(); tbTok();
+  document.getElementById('tb_title').textContent = kind==='roul' ? '🎡 ROULETTE · SINGLE ZERO' : '🃏 BLACKJACK · PAYS 3 TO 2';
+  if (kind==='bj'){ bjHand=null; tbMsg('PICK YOUR BET AND DEAL.'); NET.act('bj',{c:'state'}).then(r=>{ if (r.ok && !r.idle){ bjHand=r; tbMsg('YOUR HAND IS STILL ON THE TABLE.'); } renderTableUI(); }); }
+  else tbMsg(`PICK A BET, CHOOSE YOUR CHIP, THEN SPIN.`);
+  renderTableUI(); tblEl.style.display='block'; }
+function renderTableUI(){
+  const opts=document.getElementById('tb_opts'), acts=document.getElementById('tb_acts'), betRow=document.getElementById('tb_bet'); opts.innerHTML=''; acts.innerHTML='';
+  const btn=(label,cls,fn,dis)=>{ const b=document.createElement('button'); b.className='gbbtn'+(cls?' '+cls:''); b.innerHTML=label; b.disabled=!!dis; b.addEventListener('click', ()=>{ ensureAudio(); fn(); }); return b; };
+  if (tblKind==='roul'){
+    for (const [k,label,cls] of RL_BETS) opts.appendChild(btn(label, (cls||'')+(rlPick===k?' on':''), ()=>{ rlPick=k; store.rlPick=k; saveStore(); renderTableUI(); }));
+    const numRow=document.createElement('div'); numRow.style.gridColumn='1 / -1'; numRow.style.display='flex'; numRow.style.justifyContent='center'; numRow.style.gap='calc(var(--px)*3px)';
+    numRow.appendChild(btn('−','',()=>{ rlNum=(rlNum+36)%37; rlPick='n'; store.rlNum=rlNum; store.rlPick='n'; saveStore(); renderTableUI(); }));
+    numRow.appendChild(btn(`ONE NUMBER: ${rlNum} · 35 TO 1`, rlPick==='n'?'on':'', ()=>{ rlPick='n'; store.rlPick='n'; saveStore(); renderTableUI(); }));
+    numRow.appendChild(btn('+','',()=>{ rlNum=(rlNum+1)%37; rlPick='n'; store.rlNum=rlNum; store.rlPick='n'; saveStore(); renderTableUI(); }));
+    opts.appendChild(numRow); betRow.style.display='flex';
+    acts.appendChild(btn(`SPIN ${tbBet()} ▶`,'y',rlSpin,rlBusy)); acts.appendChild(btn('CLOSE','',()=>{ tblEl.style.display='none'; }));
+  } else {
+    const playing = bjHand && !bjHand.done;
+    betRow.style.display = playing ? 'none' : 'flex';
+    if (playing){ acts.appendChild(btn('HIT','y',()=>bjAct('hit'),bjBusy)); acts.appendChild(btn('STAND','y',()=>bjAct('stand'),bjBusy)); if (bjHand.canDouble) acts.appendChild(btn('DOUBLE','',()=>bjAct('double'),bjBusy||wallet.get()<bjHand.bet)); }
+    else { acts.appendChild(btn(`DEAL ${tbBet()} ▶`,'y',()=>bjAct('deal'),bjBusy)); acts.appendChild(btn('CLOSE','',()=>{ tblEl.style.display='none'; })); }
+  }
+  tbTok();
+}
+function rlBetLabel(){ return rlPick==='n' ? `NUMBER ${rlNum}` : (RL_BETS.find(b=>b[0]===rlPick)||['','RED'])[1]; }
+function rlSpin(){
+  if (rlBusy) return; const bet=tbBet(); if (wallet.get()<bet){ tbMsg(`YOU NEED ${bet} TOKENS FOR THAT CHIP. TRY A SMALLER ONE!`); return; }
+  rlBusy=true; renderTableUI(); tbMsg(`${bet} ON ${rlBetLabel()}... NO MORE BETS!`);
+  NET.act('roulette',{k:rlPick, n:rlNum, bet}).then(r=>{
+    if (!r.ok){ rlBusy=false; renderTableUI(); tbMsg((r.msg||'TRY AGAIN.').toUpperCase()); return; }
+    store.tk=r.tk-(r.pay||0); tokUI(-1); tbTok(); rlAnim={n:r.n, t0:performance.now(), mine:true};
+    setTimeout(()=>{ rlBusy=false; rlHist.unshift(r.n); rlHist=rlHist.slice(0,8); const col=r.n===0?'GREEN':RL_RED.has(r.n)?'RED':'BLACK';
+      if (r.pay){ store.tk=r.tk; tokUI(1); tbMsg(`${r.n} ${col}! YOU WIN ${r.pay} TOKENS!`); if (r.pay>=50) action(`won ${r.pay} TOKENS at roulette!`); } else tbMsg(`${r.n} ${col}. NO LUCK THIS TIME.`);
+      renderTableUI(); }, 2600);
+  });
+}
+NET.handlers.rl = m => { if (curRoom!=='casino') return; if (!(rlAnim && rlAnim.mine && rlAnim.n===m.n && performance.now()-rlAnim.t0<500)) rlAnim={n:m.n, t0:performance.now(), by:m.by}; };
+function bjAct(c){
+  if (bjBusy) return; const bet=tbBet(); if (c==='deal' && wallet.get()<bet){ tbMsg(`YOU NEED ${bet} TOKENS FOR THAT BET.`); return; }
+  bjBusy=true; renderTableUI();
+  NET.act('bj',{c, bet}).then(r=>{ bjBusy=false;
+    if (!r.ok){ tbMsg((r.msg||'TRY AGAIN.').toUpperCase()); renderTableUI(); return; }
+    const before=wallet.get(); bjHand=r; if (Number.isFinite(r.tk)) tkSet(r.tk);
+    me.bj = r.done ? null : r.p.slice(0,8); me.bjK=(me.bjK||0)+1; sendPresence(true);
+    if (r.done){ const R={bj:`BLACKJACK! YOU WIN ${r.back} TOKENS!`, win:`YOU WIN ${r.back} TOKENS!`, push:'PUSH. YOUR BET COMES BACK.', lose:`DEALER WINS WITH ${r.dt}.`, bust:`BUST WITH ${r.pt}. DEALER WINS.`}[r.res]||'';
+      tbMsg(R + ' DEAL AGAIN?'); if (r.back>=50) action(`won ${r.back} TOKENS at blackjack!`); setTimeout(()=>{ if (bjHand===r){ me.bj=null; sendPresence(true); } }, 4000); }
+    else tbMsg(`YOU HAVE ${r.pt}. DEALER SHOWS ${r.dt}. HIT, STAND${r.canDouble?' OR DOUBLE':''}?`);
+    renderTableUI(); });
+}
+// a playing card on any canvas: white face with rank and suit, or a red back for the dealer's hidden card
+const BJ_R=['A','2','3','4','5','6','7','8','9','10','J','Q','K'], BJ_S=['♠','♥','♦','♣'];
+function drawCard(c, x, y, card){ c.fillStyle=INK; c.fillRect(x+1,y,12,17); c.fillRect(x,y+1,14,15);
+  if (card<0){ c.fillStyle='#c02838'; c.fillRect(x+1,y+1,12,15); c.fillStyle='#e85868'; for (let j=0;j<15;j+=2) for (let i=(j/2)%2;i<12;i+=2) c.fillRect(x+1+i,y+1+j,1,1); c.fillStyle='#f8f0d0'; c.fillRect(x+3,y+3,8,11); c.fillStyle='#c02838'; c.fillRect(x+4,y+4,6,9); return; }
+  c.fillStyle='#f8f8f8'; c.fillRect(x+1,y+1,12,15); const red=(Math.floor(card/13)===1||Math.floor(card/13)===2), col=red?'#c02838':INK, rk=BJ_R[card%13], st=BJ_S[Math.floor(card/13)];
+  pfDraw(c,rk,x+2,y+2,col); pfDraw(c,st,x+(rk.length>1?3:4),y+9,col); }
+function drawTablePopup(t){
+  if (tblEl.style.display!=='block') return; const c=tbCx; c.fillStyle='#1e7a3a'; c.fillRect(0,0,150,66); c.fillStyle='#24903f'; c.fillRect(2,2,146,62);
+  if (tblKind==='roul'){
+    // big result badge (rolling while the wheel spins) and the last few numbers
+    const now=performance.now(); let n=null, rolling=false;
+    if (rlAnim){ const a=(now-rlAnim.t0)/1000; if (a<2.4){ rolling=true; n=Math.floor(a*20+rlAnim.n)%37; } else n=rlAnim.n; } else if (rlHist.length) n=rlHist[0];
+    c.fillStyle=INK; c.fillRect(9,9,48,48); c.fillStyle=n===null?'#2a6a40':rlCol(n); c.fillRect(10,10,46,46); c.fillStyle='#f8d030'; c.fillRect(10,10,46,2); c.fillRect(10,54,46,2);
+    if (n!==null){ const s2=String(n), w=pfW(s2,4); pfDraw(c,s2,33-Math.round(w/2),23,rolling?'#d8d8e8':'#f8f8f8',4); } else pfDraw(c,'?',29,23,'#f8f8f8',4);
+    pfDraw(c,'LAST',66,9,'#f8f0d0'); rlHist.forEach((h,i)=>{ const x=66+(i%4)*20, y=17+Math.floor(i/4)*14; c.fillStyle=INK; c.fillRect(x,y,18,12); c.fillStyle=rlCol(h); c.fillRect(x+1,y+1,16,10); pfDraw(c,String(h),x+9-Math.round(pfW(String(h))/2),y+4,'#f8f8f8'); });
+    pfDraw(c,'BET: '+rlBetLabel(),66,49,'#f8f0d0');
+  } else {
+    pfDraw(c,'DEALER',6,5,'#f8f0d0'); pfDraw(c,'YOU',6,36,'#f8f0d0');
+    if (bjHand){ bjHand.d.forEach((cd,i)=>drawCard(c,38+i*15,3,cd)); bjHand.p.forEach((cd,i)=>drawCard(c,38+i*15,34,cd));
+      pfDraw(c,String(bjHand.dt),6,13,'#f8d030'); pfDraw(c,String(bjHand.pt),6,44,'#f8d030'); pfDraw(c,`BET ${bjHand.bet}`,6,56,'#f8f0d0'); }
+    else { pfDraw(c,'BLACKJACK PAYS 3 TO 2',36,22,'#f8d030'); pfDraw(c,'DEALER STANDS ON 17',38,32,'#f8f0d0'); }
+  }
+}
 // other players' machines spin on their own cabinets
 const remoteSlots = {};
 function slotRemote(r, gx){ if (curRoom!=='casino') return; const now=performance.now(); remoteSlots[gx]={r, spin:true, t0:now, stopAt:[now+700,now+1000,now+1300], win:false, winUntil:0}; }
@@ -3058,7 +3190,9 @@ const TIPS = {
   merch:'<b>MERCH WALL</b> Tap a framed shirt to see it in the shop, or the logo over the door to visit the site.',
   scores:'<b>HIGH SCORES</b> Tap the chalkboard to see the top arcade players.',
   sofa:'<b>LOVESEAT</b> Kick back! Tap the floor to get up.',
-  slots:'<b>SLOTS</b> The machine pops up when you sit. Press SPIN. 1 TOKEN a spin. 3 LLAMAS pay 50, 7s 25, BELLS 10, LEMONS 5, CHERRIES 3, two CHERRIES 2.',
+  slots:'<b>SLOTS</b> The machine pops up when you sit. Pick your bet and press SPIN. Three of a kind wins; the prize list is on the machine.',
+  roulette:'<b>ROULETTE</b> Pick a bet (a colour, odd or even, a half, a dozen or one number), choose your chip and SPIN. One number pays 35 to 1.',
+  blackjack:'<b>BLACKJACK</b> Pick your bet and DEAL. Get closer to 21 than the dealer without going over. Blackjack pays 3 to 2.',
   door:'<b>ROOMS</b> Use the room buttons at the bottom left to go to LLAMA ACRES or the LLAMA CASINO.',
   gate:'<b>ROOMS</b> Use the room buttons at the bottom left to go back to the LLAMA LOUNGE or the LLAMA CASINO.',
   pond:'<b>FISHING POND</b> Press FISH (or tap the pond) to cast a line. Wait for a bite to catch a fish for TOKENS!',
@@ -3081,7 +3215,7 @@ function tipContext(){
     if (me.p!=='sit' && CROPS.some(c=>near(c.gx,c.gy))) return 'crops';
     const sb=(me.p==='sit')?seatAt(me.gx,me.gy):null; if (sb && sb.gy>=10) return 'campfire';
     return null; }
-  if (curRoom==='casino') return (me.p==='sit' && isSlotSeat(me.gx,me.gy)) ? 'slots' : null;
+  if (curRoom==='casino') return me.p!=='sit' ? null : isSlotSeat(me.gx,me.gy) ? 'slots' : seatIn(ROUL_SEATS,me.gx,me.gy) ? 'roulette' : seatIn(BJ_SEATS,me.gx,me.gy) ? 'blackjack' : null;
   if (me.p!=='sit' && me.gx===0 && me.gy===10) return 'door';
   if (me.p!=='sit' && near(7,0)) return 'rope';
   const s = (me.p==='sit') ? seatAt(me.gx,me.gy) : null;

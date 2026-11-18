@@ -22,6 +22,21 @@ const SLOTS = {
 };
 const slotKind = (x) => (x <= 3 ? "fruit" : x <= 8 ? "classic" : "gold");
 const SLOT_BETS = [1, 2, 5, 10];
+// casino tables (seats are where players sit; the server checks them)
+const TABLE_BETS = [1, 2, 5, 10];
+const ROUL_SEATS = [[5, 5], [5, 6], [8, 5], [8, 6], [6, 7], [7, 7]];
+const BJ_SEATS = [[10, 5], [11, 5], [10, 9], [11, 9]];
+const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
+// roulette bets: what wins and what it pays back in total (stake included). Single zero: the house edge is 2.7%.
+const ROUL = {
+  red: { win: (n) => RED.has(n), back: 2 }, black: { win: (n) => n > 0 && !RED.has(n), back: 2 },
+  odd: { win: (n) => n > 0 && n % 2 === 1, back: 2 }, even: { win: (n) => n > 0 && n % 2 === 0, back: 2 },
+  low: { win: (n) => n >= 1 && n <= 18, back: 2 }, high: { win: (n) => n >= 19, back: 2 },
+  d1: { win: (n) => n >= 1 && n <= 12, back: 3 }, d2: { win: (n) => n >= 13 && n <= 24, back: 3 }, d3: { win: (n) => n >= 25, back: 3 },
+};
+// blackjack: cards are 0-51 (rank = c % 13 with 0 = ace, suit = c / 13); two decks shuffled fresh each hand
+const cardVal = (c) => { const r = c % 13; return r === 0 ? 11 : r >= 9 ? 10 : r + 1; };
+function handTotal(cards) { let t = 0, aces = 0; for (const c of cards) { t += cardVal(c); if (c % 13 === 0) aces++; } while (t > 21 && aces) { t -= 10; aces--; } return t; }
 const FISH = [{ n: "BLUEGILL", pay: 1, w: 70 }, { n: "BIG ORANGE CARP", pay: 2, w: 25 }, { n: "GOLDEN FISH", pay: 5, w: 5 }];
 const CROP_KEYS = new Set(); for (const y of [13, 15, 17]) for (let x = 2; x <= 5; x++) CROP_KEYS.add(x + "," + y);
 const POND = { x0: 15, x1: 20, y0: 3, y1: 7 };
@@ -167,7 +182,7 @@ async function api(req, env, url) {
 }
 
 // ---------- realtime room ----------
-const PRES_KEYS = new Set(["c", "n", "x", "y", "d", "p", "m", "s", "h", "hl", "sk", "e", "a", "sp", "td", "g", "fk", "rm", "fs", "sl", "j", "l", "ea"]);
+const PRES_KEYS = new Set(["bj", "c", "n", "x", "y", "d", "p", "m", "s", "h", "hl", "sk", "e", "a", "sp", "td", "g", "fk", "rm", "fs", "sl", "j", "l", "ea"]);
 function cleanPresence(p, name, tk, muted) {
   const o = {};
   if (!p || typeof p !== "object") return o;
@@ -333,8 +348,61 @@ export class Lounge extends DurableObject {
         const tk = await this.debit(uid, cost, "stand " + k); if (tk === null) return { ok: false, msg: `That costs ${cost} TOKENS. Harvest carrots or go fishing to earn some!` };
         return { ok: true, k, tk };
       }
+      case "roulette": {
+        if (!this.near(a, "casino", (x, y, p) => p.p === "sit" && ROUL_SEATS.some(([sx, sy]) => sx === Math.round(x) && sy === Math.round(y)))) return { ok: false, msg: "Sit at the roulette table first." };
+        const kind = String(m.k || ""), num = Math.floor(+m.n), bet = TABLE_BETS.includes(+m.bet) ? +m.bet : 0;
+        const straight = kind === "n" && num >= 0 && num <= 36;
+        if (!bet || (!straight && !ROUL[kind])) return { ok: false, msg: "Pick a bet first." };
+        if (now - (await this.timer(uid, "roul")) < 3200) return { ok: false, msg: "The ball is still rolling." };
+        await this.setTimer(uid, "roul", now);
+        let tk = await this.debit(uid, bet, "roulette bet"); if (tk === null) return { ok: false, msg: `You need ${bet} TOKEN${bet > 1 ? "S" : ""} for that bet.` };
+        const n = rnd(37), won = straight ? n === num : ROUL[kind].win(n), pay = won ? bet * (straight ? 36 : ROUL[kind].back) : 0;
+        if (pay) tk = await this.credit(uid, pay, "roulette win");
+        this.broadcast({ t: "rl", n, by: a.name });   // everyone in the casino sees the wheel spin
+        return { ok: true, n, pay, bet, tk };
+      }
+      case "bj": return this.blackjack(a, m, now);
       case "tg_start": return this.tableStart(ws, a, m);
       case "admin": return this.admin(a, m);
+    }
+    return { ok: false };
+  }
+
+  // ---------- blackjack: one hand per player against the dealer, kept in this room's storage between moves ----------
+  async blackjack(a, m, now) {
+    const uid = a.uid, key = "bj:" + uid, cmd = String(m.c || "");
+    if (!this.near(a, "casino", (x, y, p) => p.p === "sit" && BJ_SEATS.some(([sx, sy]) => sx === Math.round(x) && sy === Math.round(y)))) return { ok: false, msg: "Sit at a blackjack table first." };
+    let h = await this.ctx.storage.get(key);
+    const view = (h, extra = {}) => ({ ok: true, p: h.p, d: h.done ? h.d : [h.d[0], -1], pt: handTotal(h.p), dt: h.done ? handTotal(h.d) : cardVal(h.d[0]), bet: h.bet, done: !!h.done, res: h.res || null, canDouble: !h.done && h.p.length === 2, ...extra });
+    const finish = async (h, res) => {   // settle the hand and pay out
+      h.done = true; h.res = res; await this.ctx.storage.delete(key);
+      const back = res === "bj" ? Math.floor(h.bet * 2.5) : res === "win" ? h.bet * 2 : res === "push" ? h.bet : 0;
+      const tk = back ? await this.credit(uid, back, "blackjack " + res) : (await this.user(uid)).tk;
+      return view(h, { tk, back });
+    };
+    const dealerPlays = async (h) => { while (handTotal(h.d) < 17) h.d.push(h.deck.pop());
+      const pt = handTotal(h.p), dt = handTotal(h.d); return finish(h, dt > 21 || pt > dt ? "win" : pt === dt ? "push" : "lose"); };
+    if (cmd === "state") return h ? view(h) : { ok: true, idle: true };
+    if (cmd === "deal") {
+      if (h) return view(h);   // a hand is already going: pick it back up
+      const bet = TABLE_BETS.includes(+m.bet) ? +m.bet : 0; if (!bet) return { ok: false, msg: "Pick a bet first." };
+      if (now - (await this.timer(uid, "bj")) < 1200) return { ok: false, msg: "Shuffling..." };
+      await this.setTimer(uid, "bj", now);
+      const tk = await this.debit(uid, bet, "blackjack bet"); if (tk === null) return { ok: false, msg: `You need ${bet} TOKEN${bet > 1 ? "S" : ""} for that bet.` };
+      const deck = [...Array(104).keys()].map((i) => i % 52); for (let k = deck.length - 1; k > 0; k--) { const j = rnd(k + 1); [deck[k], deck[j]] = [deck[j], deck[k]]; }
+      h = { bet, deck, p: [deck.pop(), deck.pop()], d: [deck.pop(), deck.pop()] };
+      const pbj = handTotal(h.p) === 21, dbj = handTotal(h.d) === 21;
+      if (pbj || dbj) return finish(h, pbj && dbj ? "push" : pbj ? "bj" : "lose");
+      await this.ctx.storage.put(key, h); return view(h, { tk });
+    }
+    if (!h) return { ok: false, msg: "Place a bet and deal first." };
+    if (cmd === "hit") { h.p.push(h.deck.pop()); const t = handTotal(h.p);
+      if (t > 21) return finish(h, "bust"); if (t === 21) return dealerPlays(h); await this.ctx.storage.put(key, h); return view(h); }
+    if (cmd === "stand") return dealerPlays(h);
+    if (cmd === "double") {
+      if (h.p.length !== 2) return { ok: false, msg: "You can only double on your first two cards." };
+      const tk = await this.debit(uid, h.bet, "blackjack double"); if (tk === null) return { ok: false, msg: "Not enough TOKENS to double." };
+      h.bet *= 2; h.p.push(h.deck.pop()); if (handTotal(h.p) > 21) return finish(h, "bust"); return dealerPlays(h);
     }
     return { ok: false };
   }
