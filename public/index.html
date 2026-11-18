@@ -142,6 +142,13 @@
   #tbox{bottom:98px}
   @media (max-height:520px){ #tbox{bottom:86px} }
   #swapbox{left:50%;top:50%;transform:translate(-50%,-50%);display:none;text-align:center;z-index:5;min-width:calc(var(--px)*150px)}
+  #fwbox{left:50%;top:50%;transform:translate(-50%,-50%);display:none;text-align:center;z-index:5;width:min(calc(100% - 16px),calc(var(--px)*210px))}
+  #fw_items .gbbtn{font-size:calc(var(--px)*5px);line-height:calc(var(--px)*8px);padding:calc(var(--px)*4px) calc(var(--px)*4px)}
+  #fwbox .fwt{color:#c03070;margin-bottom:calc(var(--px)*4px)}
+  #fwbox .fwn,#fw_msg{font-size:calc(var(--px)*5px);line-height:calc(var(--px)*8px);color:#3858a8;margin-bottom:calc(var(--px)*6px)}
+  #fw_msg{min-height:calc(var(--px)*8px);margin:calc(var(--px)*5px) 0}
+  #fwbox .srow{display:flex;justify-content:center;gap:calc(var(--px)*6px)}
+  #fwbox .gbbtn.y{background:#f8d030} #fwbox small{font-size:calc(var(--px)*5px)}
   #swapbox #sw_text{color:#3858a8;margin-bottom:calc(var(--px)*6px)}
   #swapbox .srow{display:flex;justify-content:center;gap:calc(var(--px)*6px)}
   #swapbox .gbbtn.y{background:#f8d030}
@@ -211,6 +218,9 @@
   <div id="slotbox" class="gb"><div class="slt">🎰 LLAMA SLOTS</div><canvas id="slotcv" width="130" height="70"></canvas><div id="sl_msg">1 TOKEN A SPIN. GOOD LUCK!</div>
     <div class="srow"><button class="gbbtn y" id="sl_spin">SPIN ▶</button><button class="gbbtn" id="sl_close">CLOSE</button></div>
     <canvas id="slpaycv" width="130" height="40"></canvas><div id="sl_tok"></div></div>
+  <div id="fwbox" class="gb"><div class="fwt" id="fw_t"></div><div class="fwn" id="fw_n"></div>
+    <div class="srow" id="fw_items"></div>
+    <div id="fw_msg"></div><div class="srow"><button class="gbbtn" id="fw_close">CLOSE</button></div></div>
   <div id="swapbox" class="gb"><div id="sw_text">SWAP TO LLAMA ACRES?</div><div class="srow"><button class="gbbtn y" id="sw_go">GO ▶</button><button class="gbbtn" id="sw_stay">STAY</button></div></div>
   <div id="loading" class="gb">LOADING YOUR LLAMA...</div>
   <div id="rules" class="gb">
@@ -465,19 +475,23 @@ function buildBarnWorld(){
   for (const x of [5,6]){ SEATS.push({gx:x,gy:0,dir:'fr',lift:10}); FURN.push({t:'hayseat',gx:x,gy:0}); }
   for (const y of [5,6]){ SEATS.push({gx:0,gy:y,dir:'fr',lift:10}); FURN.push({t:'hayseat',gx:0,gy:y}); }
   FURN.push({t:'gate',gx:14,gy:0}); block(14,0);
-  // campfire ring: eight logs around the fire
+  // campfire: four logs set a step back from the fire, with room to walk between them
   const FX=10, FY=11;
   FURN.push({t:'campfire',gx:FX,gy:FY}); block(FX,FY);
-  for (const [dx,dy,d,ax] of [[-1,0,'fr','y'],[1,0,'bl','y'],[0,-1,'fl','x'],[0,1,'br','x'],[-1,-1,'fr','x'],[1,-1,'fl','y'],[-1,1,'br','y'],[1,1,'bl','x']]){ SEATS.push({gx:FX+dx,gy:FY+dy,dir:d,lift:6}); FURN.push({t:'log',gx:FX+dx,gy:FY+dy,ax}); }
+  for (const [dx,dy,d,ax] of [[-2,0,'fr','y'],[2,0,'bl','y'],[0,-2,'fl','x'],[0,2,'br','x']]){ SEATS.push({gx:FX+dx,gy:FY+dy,dir:d,lift:6}); FURN.push({t:'log',gx:FX+dx,gy:FY+dy,ax}); }
   // big pond (6 x 5) with open bank all round (the server checks the same bounds for fishing)
-  FURN.push({t:'pond',gx:15,gy:3,w:6,h:5}); for (let x=15;x<=20;x++) for (let y=3;y<=7;y++){ block(x,y); POND.push([x,y]); }
+  FURN.push({t:'pond',gx:15,gy:3,w:6,h:5,dz:-40}); for (let x=15;x<=20;x++) for (let y=3;y<=7;y++){ block(x,y); POND.push([x,y]); }
+  // dirt footpath the whole way round the pond
+  for (let x=14;x<=21;x++) for (let y=2;y<=8;y++) if (x===14||x===21||y===2||y===8) BARN_PATH.add(y*N+x);
   // farm: three rows of four plots with stone walkways between the rows and all round
   for (const y of [13,15,17]) for (let x=2;x<=5;x++){ const k=x+','+y; CROPS.push({gx:x,gy:y,k}); FURN.push({t:'crop',gx:x,gy:y,k}); block(x,y); }
   FARM_PATH = new Set(); for (let x=1;x<=6;x++) for (let y=12;y<=18;y++) if (x===1||x===6||y%2===0) FARM_PATH.add(y*N+x);
-  // benches: two beside the farm, two above it, two looking out over the pond
-  for (const [x,y,d,ax] of [[0,13,'fr','y'],[0,17,'fr','y'],[3,11,'fl','x'],[4,11,'fl','x'],[17,1,'fl','x'],[18,1,'fl','x']]){ SEATS.push({gx:x,gy:y,dir:d,lift:8}); FURN.push({t:'bench',gx:x,gy:y,ax}); }
+  // single benches spread around the field: by the farm, behind and beside the pond, out on the grass
+  for (const [x,y,d,ax] of [[0,13,'fr','y'],[4,11,'fl','x'],[17,1,'fl','x'],[13,6,'fr','y'],[17,13,'fl','x']]){ SEATS.push({gx:x,gy:y,dir:d,lift:8}); FURN.push({t:'bench',gx:x,gy:y,ax}); }
   FURN.push({t:'scarecrow',gx:0,gy:15}); block(0,15);
-  for (const [x,y] of [[0,9],[21,19],[20,12],[1,19],[15,17],[21,2],[9,19]]){ FURN.push({t:'tree',gx:x,gy:y}); block(x,y); }
+  FURN.push({t:'cider',gx:8,gy:4}); block(8,4);   // market stands (the server checks the same spots)
+  FURN.push({t:'snack',gx:10,gy:4}); block(10,4);
+  for (const [x,y] of [[0,9],[21,19],[20,12],[1,19],[15,17],[11,2],[9,19]]){ FURN.push({t:'tree',gx:x,gy:y}); block(x,y); }
   // apples on the grass: tap to eat (they grow back)
   for (const [x,y] of [[8,15],[9,18],[14,14],[18,15],[20,10],[13,8]]){ FURN.push({t:'apple',gx:x,gy:y,k:'a'+x+','+y}); block(x,y); }
   FURN.push({t:'hay',gx:21,gy:0}); block(21,0);
@@ -773,6 +787,52 @@ function drawApple(x,y,big){ const r=big?4:3.4; ellPx(x,y,r+1,r+0.6,INK); ellPx(
   g.fillStyle='#ffd0d0'; g.fillRect(Math.round(x-2),Math.round(y-2),1,1); g.fillStyle=INK; g.fillRect(Math.round(x),Math.round(y-r-1),1,2); g.fillStyle='#6a4020'; g.fillRect(Math.round(x),Math.round(y-r),1,1);
   g.fillStyle=INK; g.fillRect(Math.round(x)+1,Math.round(y-r-2),3,2); g.fillStyle='#58b040'; g.fillRect(Math.round(x)+1,Math.round(y-r-1),2,1); g.fillStyle='#88d860'; g.fillRect(Math.round(x)+2,Math.round(y-r-2),1,1); }
 function drawAppleCore(x,y){ g.fillStyle=INK; g.fillRect(x-2,y-6,4,7); g.fillStyle='#f8f0c8'; g.fillRect(x-1,y-5,2,5); g.fillStyle='#d82838'; g.fillRect(x-2,y-6,4,1); g.fillRect(x-2,y,4,1); g.fillStyle='#6a4020'; g.fillRect(x,y-8,1,2); }
+// market stall: plank counter on four posts under a striped, scalloped awning with a name board on top
+function drawStall(f, sx, sy, t){
+  const gx=f.gx, gy=f.gy, cider=f.t==='cider';
+  const A1=cider?'#d83838':'#3a9a48', A2='#f8f0e0', A1d=cider?'#a82830':'#2a7838', A2d='#d8ccb0';
+  const post=(u,v,h)=>{ const [x,y]=P(gx+u,gy+v); const X=Math.round(x), Y=Math.round(y); g.fillStyle=INK; g.fillRect(X-2,Y-h,4,h+1); g.fillStyle='#a87040'; g.fillRect(X-1,Y-h,2,h); g.fillStyle='#c89060'; g.fillRect(X-1,Y-h,1,h); };
+  ellPx(sx,sy+1,16,6,'rgba(40,80,20,0.3)');
+  post(0.12,0.3,40); post(0.88,0.3,40);
+  // counter with planks
+  box(gx+0.1,gy+0.4,0.8,0.5,12,'#c88a50','#a86a34','#7e4c24');
+  for (const v of [4,8]){ linePx(...P(gx+0.1,gy+0.9,v),...P(gx+0.9,gy+0.9,v),'#7e4c24'); linePx(...P(gx+0.9,gy+0.4,v),...P(gx+0.9,gy+0.9,v),'#5e3418'); }
+  box(gx+0.06,gy+0.36,0.88,0.58,2,'#e0a868','#c88a50','#9a6434',0,12);
+  if (cider){
+    // cider barrel with a brass tap, steaming cups, a basket of apples
+    { const [x,y]=P(gx+0.3,gy+0.52,14); const X=Math.round(x), Y=Math.round(y);
+      g.fillStyle=INK; g.fillRect(X-6,Y-14,13,15); g.fillStyle='#a8682c'; g.fillRect(X-5,Y-13,11,13); g.fillStyle='#c8884c'; g.fillRect(X-3,Y-13,3,13);
+      g.fillStyle='#585868'; g.fillRect(X-5,Y-11,11,1); g.fillRect(X-5,Y-3,11,1); ellPx(X,Y-14,5.5,2,'#7e4c24'); ellPx(X,Y-14,4,1.2,'#a8682c');
+      g.fillStyle=INK; g.fillRect(X+5,Y-7,4,3); g.fillStyle='#f8d030'; g.fillRect(X+6,Y-6,2,1); }
+    for (const [u,v] of [[0.58,0.68],[0.72,0.58]]){ const [x,y]=P(gx+u,gy+v,14); const X=Math.round(x), Y=Math.round(y);
+      g.fillStyle=INK; g.fillRect(X-2,Y-6,6,7); g.fillRect(X+4,Y-4,2,3); g.fillStyle='#f0e8d8'; g.fillRect(X-1,Y-5,4,5); g.fillStyle='#c87028'; g.fillRect(X-1,Y-5,4,1);
+      const st=Math.floor(t*3+u*10)%3; g.fillStyle='rgba(255,255,255,0.75)'; g.fillRect(X+(st===1?1:0),Y-9-st,1,2); g.fillRect(X+2-(st===2?1:0),Y-11+st%2,1,2); }
+    { const [x,y]=P(gx+0.62,gy+0.98); const X=Math.round(x), Y=Math.round(y); g.fillStyle=INK; g.fillRect(X-6,Y-6,13,7); g.fillStyle='#c89858'; g.fillRect(X-5,Y-5,11,5); g.fillStyle='#a07038'; g.fillRect(X-5,Y-3,11,1);
+      for (const [dx,dy] of [[-3,-7],[1,-7],[-1,-9],[4,-7]]){ ellPx(X+dx,Y+dy,2.2,2,INK); ellPx(X+dx,Y+dy,1.6,1.4,'#d82838'); g.fillStyle='#f87070'; g.fillRect(X+dx-1,Y+dy-1,1,1); } }
+  } else {
+    // caramel apples on sticks, a stack of corn, a pie on a cake stand
+    for (const [u,v] of [[0.26,0.5],[0.36,0.6],[0.46,0.5]]){ const [x,y]=P(gx+u,gy+v,14); const X=Math.round(x), Y=Math.round(y);
+      g.fillStyle=INK; g.fillRect(X,Y-10,1,3); ellPx(X,Y-4,3,3,INK); ellPx(X,Y-4,2.2,2.2,'#d82838'); g.fillStyle='#d89838'; g.fillRect(X-2,Y-7,5,2); g.fillStyle='#f8a0a0'; g.fillRect(X+1,Y-4,1,1); g.fillStyle='#e8d0a0'; g.fillRect(X,Y-9,1,2); }
+    { const [x,y]=P(gx+0.72,gy+0.48,14); const X=Math.round(x), Y=Math.round(y);
+      g.fillStyle=INK; g.fillRect(X-4,Y-1,9,2); g.fillRect(X-1,Y-4,3,4); g.fillStyle='#d8d8e8'; g.fillRect(X-3,Y-1,7,1);
+      g.fillStyle=INK; g.fillRect(X-5,Y-9,11,5); g.fillStyle='#c88a50'; g.fillRect(X-4,Y-8,9,3); g.fillStyle='#e8c070'; g.fillRect(X-4,Y-8,9,1); g.fillStyle='#a86a34'; g.fillRect(X-2,Y-7,1,1); g.fillRect(X+2,Y-7,1,1); }
+    for (const [u,v,k] of [[0.56,0.8,0],[0.66,0.76,1],[0.61,0.74,2]]){ const [x,y]=P(gx+u,gy+v,14+k*2); const X=Math.round(x), Y=Math.round(y);
+      g.fillStyle=INK; g.fillRect(X-4,Y-2,9,4); g.fillStyle='#f8d030'; g.fillRect(X-3,Y-1,6,2); g.fillStyle='#d8a818'; g.fillRect(X-2,Y,1,1); g.fillRect(X,Y-1,1,1); g.fillStyle='#58a840'; g.fillRect(X+3,Y-1,2,2); }
+  }
+  post(0.12,0.92,34); post(0.88,0.92,34);
+  // awning: slopes from the back posts down to the front, stripes run front to back, scalloped front edge
+  const n=8, H0=42, H1=34, u0=0.02, u1=0.98, vb=0.24, vf=1.02;
+  for (let k=0;k<n;k++){ const a=u0+(u1-u0)*k/n, b=u0+(u1-u0)*(k+1)/n, c=k%2?A2:A1;
+    polyPx([P(gx+a,gy+vb,H0),P(gx+b,gy+vb,H0),P(gx+b,gy+vf,H1),P(gx+a,gy+vf,H1)],c);
+    const m=(a+b)/2, [x,y]=P(gx+m,gy+vf,H1); ellPx(x,y+1,2.6,2.2,INK); ellPx(x,y+0.5,1.9,1.6,k%2?A2d:A1d); }
+  { const L=(p1,p2)=>linePx(p1[0],p1[1],p2[0],p2[1],INK); L(P(gx+u0,gy+vb,H0),P(gx+u1,gy+vb,H0)); L(P(gx+u1,gy+vb,H0),P(gx+u1,gy+vf,H1)); L(P(gx+u0,gy+vb,H0),P(gx+u0,gy+vf,H1)); L(P(gx+u0,gy+vf,H1),P(gx+u1,gy+vf,H1)); }
+  // name board standing on the awning
+  { const name=cider?'APPLE CIDER':'FARM SNACKS', tw=pfW(name), w=tw+10, h=11; const [x,y]=P(gx+0.5,gy+0.45,H0-2); const bx=Math.round(x-w/2), by=Math.round(y-h);
+    g.fillStyle=INK; g.fillRect(bx+3,by+h,1,3); g.fillRect(bx+w-4,by+h,1,3);
+    g.fillStyle=INK; g.fillRect(bx+1,by,w-2,h); g.fillRect(bx,by+1,w,h-2); g.fillStyle=A2; g.fillRect(bx+1,by+1,w-2,h-2); g.fillStyle=A1; g.fillRect(bx+1,by+h-3,w-2,2);
+    pfDraw(g,name,bx+5,by+2,cider?'#a82830':'#2a6830');
+    g.fillStyle=cider?'#d82838':'#f8d030'; g.fillRect(bx+2,by+3,2,2); g.fillRect(bx+w-4,by+3,2,2); }
+}
 // small potted fern: short glazed teal pot, a mound of arching fronds with leaflets
 function drawFern(f, sx, sy, t){
   const ox=f.ox||0, oy=f.oy||0, fl=f.flip?-1:1; { const [x,y]=P(f.gx+0.5+ox,f.gy+0.5+oy); sx=Math.round(x); sy=Math.round(y); }
@@ -812,6 +872,7 @@ function drawPalm(f, sx, sy, t){
   // coconuts under the crown
   for (const [dx,dy] of [[-2,3],[2,4],[0,5]]){ ellPx(Tx+dx*fl,Ty+dy,2.2,2.2,INK); ellPx(Tx+dx*fl,Ty+dy,1.5,1.5,'#7a4a20'); g.fillStyle='#a87040'; g.fillRect(Math.round(Tx+dx*fl-1),Math.round(Ty+dy-1),1,1); }
 }
+const pondCache = {};
 function drawFurn(f,t){
   const cx=f.gx+0.5, cy=f.gy+0.5; const [sx,sy]=P(cx,cy);
   switch(f.t){
@@ -1024,16 +1085,28 @@ function drawFurn(f,t){
       drawCloudSign(cx, cy-56+Math.round(Math.sin(t*2)*1.5), 'LOUNGE', 'down', t);
       break; }
     case 'pond': {
-      // pond across a w x h patch: muddy bank, deep and shallow water, rocks, reeds and lily pads (all scaled to its size)
-      const w=f.w||3, h=f.h||3, k=(w+h)/6; const [cx,cy]=P(f.gx+w/2,f.gy+h/2);
-      const blob=(rx,ry,col,dx=0,dy=0)=>{ rx*=k; ry*=k; dx*=k; dy*=k; g.fillStyle=col; for (let y=-Math.round(ry); y<=Math.round(ry); y++){ const q=1-(y/ry)*(y/ry); const ww=Math.round(rx*Math.sqrt(Math.max(0,q))*(1+0.05*Math.sin(y*1.3/k))); g.fillRect(Math.round(cx+dx-ww),Math.round(cy+dy+y),ww*2,1); } };
-      blob(54,26,INK); blob(53,25,'#b89058'); blob(49,22,'#9a7444'); blob(47,21,INK); blob(46,20,'#2858a8'); blob(36,14,'#3870c8',3,-2); blob(20,7,'#4890e0',6,-4);
-      { const ph=t*1.4; g.fillStyle='#b8e0f8'; for (let i=0;i<Math.round(7*k);i++){ const x=cx-30*k+i*10+Math.round(Math.sin(ph+i)*2), y=cy-10*k+((i*7)%Math.round(18*k)); g.fillRect(Math.round(x),Math.round(y),3+(i%2),1); } }
-      for (const [dx,dy] of [[-22,6],[18,-9],[26,6],[-8,13],[4,-4],[-30,-2]]){ const X=cx+dx*k, Y=cy+dy*k; ellPx(X,Y,5,2.5,'#2a7030'); ellPx(X,Y-0.5,4.4,2,'#48a040'); g.fillStyle='#2858a8'; g.fillRect(Math.round(X),Math.round(Y)-1,2,1); }
-      g.fillStyle='#f878b8'; g.fillRect(Math.round(cx+18*k),Math.round(cy-11*k),2,2); g.fillStyle='#f8d030'; g.fillRect(Math.round(cx+18*k),Math.round(cy-11*k),1,1);
-      g.fillStyle='#f8f0f8'; g.fillRect(Math.round(cx-26*k),Math.round(cy+5*k),2,2); g.fillStyle='#f8d030'; g.fillRect(Math.round(cx-26*k),Math.round(cy+5*k),1,1);
-      for (const [dx,dy,r] of [[-48,3,3.5],[-43,12,3],[46,-8,3.5],[50,2,3],[12,23,3],[-12,-22,3],[30,18,2.5],[-30,-16,2.5],[-24,20,2.5],[36,-18,2.5]]){ const X=cx+dx*k, Y=cy+dy*k; ellPx(X,Y,r+1,r*0.7+1,INK); ellPx(X,Y,r,r*0.7,'#9898a8'); g.fillStyle='#c8c8d8'; g.fillRect(Math.round(X-1),Math.round(Y-1),1,1); }
-      { const sway=Math.round(Math.sin(t*1.5)*1); for (const [dx,dy,hh] of [[-36,-13,15],[-32,-16,19],[-28,-15,13],[34,-16,16],[38,-13,12],[-40,-9,11],[-4,-24,14],[0,-25,17]]){ const X=Math.round(cx+dx*k), Y=Math.round(cy+dy*k);
+      // pond fitted to its w x h tiles (a rounded iso shape, so the footpath round it stays clear):
+      // muddy bank, deep and shallow water, lily pads and rocks are cached; ripples and reeds animate
+      const w=f.w||3, h=f.h||3, cxg=f.gx+w/2, cyg=f.gy+h/2, ex=w/2, ey=h/2, pw=2.6;
+      const [pcx,pcy]=P(cxg,cyg); const cx=Math.round(pcx), cy=Math.round(pcy), HW=(w+h)*10+4, HH=(w+h)*5+4;
+      const sup=(a,r)=>{ const c=Math.cos(a), sn=Math.sin(a); return [r*ex*Math.sign(c)*Math.pow(Math.abs(c),2/pw), r*ey*Math.sign(sn)*Math.pow(Math.abs(sn),2/pw)]; };
+      const key='pond'+w+'x'+h; let pc=pondCache[key];
+      if (!pc){ pc=document.createElement('canvas'); pc.width=HW*2; pc.height=HH*2; const q=pc.getContext('2d'); pondCache[key]=pc;
+        const norm=(gx,gy)=>{ const a=Math.atan2(gy/ey,gx/ex); return Math.pow(Math.pow(Math.abs(gx)/ex,pw)+Math.pow(Math.abs(gy)/ey,pw),1/pw)/(1+0.035*Math.sin(a*5+1)+0.02*Math.sin(a*9)); };
+        const layer=(r,col,ox=0,oy=0)=>{ q.fillStyle=col; for (let y=-HH;y<HH;y++){ let run=null; for (let x=-HW;x<=HW;x++){ const dx=x-ox, dy=y-oy; const inside = x<HW && norm((dx/20+dy/10)/2,(dy/10-dx/20)/2)<=r;
+            if (inside && run===null) run=x; else if (!inside && run!==null){ q.fillRect(HW+run,HH+y,x-run,1); run=null; } } } };
+        layer(1.0,INK); layer(0.975,'#b89058'); layer(0.91,'#9a7444'); layer(0.875,INK); layer(0.86,'#2858a8'); layer(0.62,'#3870c8',4,-3); layer(0.34,'#4890e0',8,-5);
+        const at=(gx,gy)=>[HW+(gx-gy)*10, HH+(gx+gy)*5];
+        const ell=(x,y,rx,ry,col)=>{ q.fillStyle=col; for (let j=-Math.round(ry);j<=Math.round(ry);j++){ const ww=Math.round(rx*Math.sqrt(Math.max(0,1-(j/ry)*(j/ry)))); q.fillRect(Math.round(x-ww),Math.round(y+j),ww*2,1); } };
+        for (const [fx,fy] of [[-0.55,0.25],[0.5,-0.4],[0.6,0.35],[-0.15,0.55],[0.1,-0.1],[-0.6,-0.3]]){ const [X,Y]=at(fx*ex,fy*ey); ell(X,Y,5,2.5,'#2a7030'); ell(X,Y-0.5,4.4,2,'#48a040'); q.fillStyle='#2858a8'; q.fillRect(Math.round(X),Math.round(Y)-1,2,1); }
+        { let [X,Y]=at(0.5*ex,-0.4*ey); q.fillStyle='#f878b8'; q.fillRect(Math.round(X)-1,Math.round(Y)-3,2,2); q.fillStyle='#f8d030'; q.fillRect(Math.round(X)-1,Math.round(Y)-3,1,1);
+          [X,Y]=at(-0.55*ex,0.25*ey); q.fillStyle='#f8f0f8'; q.fillRect(Math.round(X)-1,Math.round(Y)-3,2,2); q.fillStyle='#f8d030'; q.fillRect(Math.round(X)-1,Math.round(Y)-3,1,1); }
+        for (let i=0;i<12;i++){ const a=i/12*Math.PI*2+0.3, r=3-(i%3)*0.4; const [gx,gy]=sup(a,0.93); const [X,Y]=at(gx,gy); ell(X,Y,r+1,r*0.7+1,INK); ell(X,Y,r,r*0.7,'#9898a8'); q.fillStyle='#c8c8d8'; q.fillRect(Math.round(X-1),Math.round(Y-1),1,1); }
+      }
+      g.drawImage(pc, cx-HW, cy-HH);
+      { const ph=t*1.4; g.fillStyle='#b8e0f8'; for (let i=0;i<9;i++){ const [gx,gy]=sup(i*0.7+0.4, 0.25+((i*37)%50)/100); const [X,Y]=P(cxg+gx,cyg+gy); g.fillRect(Math.round(X+Math.sin(ph+i)*2),Math.round(Y),3+(i%2),1); } }
+      // cattails along the back bank, swaying
+      { const sway=Math.round(Math.sin(t*1.5)); for (const [a,hh] of [[3.3,15],[3.5,19],[3.7,13],[4.55,16],[4.75,12],[5.6,14],[5.8,18],[2.9,11]]){ const [gx,gy]=sup(a,0.9); const [x,y]=P(cxg+gx,cyg+gy); const X=Math.round(x), Y=Math.round(y);
           g.fillStyle='#3a8030'; g.fillRect(X,Y-hh,1,hh); g.fillStyle='#58a840'; g.fillRect(X+1,Y-hh+3,1,hh-3);
           if (hh>=14){ g.fillStyle=INK; g.fillRect(X-1+sway,Y-hh-5,3,6); g.fillStyle='#7a4a28'; g.fillRect(X+sway,Y-hh-4,1,4); } } }
       break; }
@@ -1115,6 +1188,7 @@ function drawFurn(f,t){
       for (const [dx,dy,r] of [[0,-44,14],[-9,-34,11],[9,-34,11],[0,-30,12]]) ellPx(sx+dx,sy+dy,r+1,r*0.85+1,INK);
       for (const [dx,dy,r,c] of [[0,-44,14,M],[-9,-34,11,M],[9,-34,11,D],[0,-30,12,M],[-4,-46,7,L],[-10,-36,5,L]]) ellPx(sx+dx,sy+dy,r,r*0.85,c);
       g.fillStyle='#e04848'; for (const [dx,dy] of [[-6,-40],[5,-48],[8,-32],[-2,-30]]) g.fillRect(sx+dx,sy+dy,2,2); break; }
+    case 'cider': case 'snack': drawStall(f, sx, sy, t); break;
     case 'palm': drawPalm(f, sx, sy, t); break;
     case 'fern': drawFern(f, sx, sy, t); break;
     case 'apple': { const ready = (typeof appleReady==='function') ? appleReady(f.k) : true;
@@ -1197,8 +1271,14 @@ function tkSet(v, why){ if (!Number.isFinite(v)) return; const d=v-wallet.get();
 function tokUI(dir){ const el=document.getElementById('tokn'), row=document.getElementById('tokrow'); if(!el) return; el.textContent=wallet.get();
   if (dir){ row.classList.remove('up','down'); void row.offsetWidth; row.classList.add(dir>0?'up':'down'); }
   if (typeof sendPresence==='function' && joined) sendPresence(); }
-const DRINKS = { soda:{label:'HAY SODA', c:'#f84848'}, juice:{label:'GRASS JUICE', c:'#48c048'}, shake:{label:'BERRY SHAKE', c:'#f878b8'} };
-const DRINK_IDS = Object.keys(DRINKS);
+const DRINKS = { soda:{label:'HAY SODA', c:'#f84848'}, juice:{label:'GRASS JUICE', c:'#48c048'}, shake:{label:'BERRY SHAKE', c:'#f878b8'}, cider:{label:'HOT APPLE CIDER', c:'#c87028'}, caramel:{label:'CARAMEL APPLE CIDER', c:'#e8a038'},
+  capple:{label:'CARAMEL APPLE', c:'#d83838', food:true}, corn:{label:'CORN ON THE COB', c:'#f8d030', food:true}, pie:{label:'SLICE OF APPLE PIE', c:'#e8c070', food:true} };
+const DRINK_IDS = Object.keys(DRINKS), BAR_IDS = ['soda','juice','shake'];   // the bar pours these; cider and snacks come from the stands in LLAMA ACRES
+const FOOD_PX = {   // held snacks, bottom row sits in the hoof; bites come off the top
+  capple:['...K...','...T...','.KKTKK.','KCCCCCK','KCRCCRK','KRRRRWK','KRRRRRK','.KRRRK.','..KKK..'],
+  corn:['.KKK.','KYyYK','KyYyK','KYyYK','KyYyK','KYyYK','GKYKG','GGKGG','.GGG.'],
+  pie:['K.......','KFK.....','KFFKK...','KFFFFKK.','KFFFFFFK','KBBBBBBK','.KKKKKK.'] };
+const FOOD_PAL = {K:'#181020',T:'#e8d0a0',C:'#d89838',R:'#d82838',W:'#f8a0a0',Y:'#f8d030',y:'#d8a818',G:'#58a840',F:'#e8c070',B:'#c88a50'};
 const EMOTES = ['heart','bang','huh','note','lol','zzz','wave','flex','palm'];
 const SONGS = ['LOUNGE GROOVE','HAY DAY','FUNKY HOOVES'];
 
@@ -1272,7 +1352,8 @@ function context(){
     if (me.p!=='sit' && near(14,0)) return 'goLounge';
     if (me.p!=='sit' && pondNear()) return 'fish';
     if (me.p!=='sit' && readyCropNear()) return 'harvest';
-    if (me.h) return 'sip';
+    { const k=standNear(); if (k) return k==='cider'?'fw':'snack'; }
+    if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
     return me.p==='sit' ? 'stand' : 'sit';
   }
   if (me.p==='sit' && me.gx===12 && me.gy===1) return 'spin';
@@ -1284,10 +1365,10 @@ function context(){
   const s = (me.p==='sit') ? seatAt(me.gx,me.gy) : null;
   if (s && s.gy===2 && s.gx<=6) return me.h ? 'sip' : 'grab';
   if (me.p==='sit' && nearTable()>=0) return 'tmenu'+nearTable();
-  if (me.h) return 'sip';
+  if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
   return me.p==='sit' ? 'stand' : 'sit';
 }
-const ALABEL = {fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', goBarn:'OUTSIDE', goLounge:'INSIDE', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
+const ALABEL = {fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
 const alabel=document.getElementById('alabel'); let lastLabel='';
 function updateALabel(){ const c=context(); const l = arcade.on ? (arcade.mode==='menu'?'SELECT':arcade.over?'RETRY':arcade.mode==='dash'?'JUMP':'---') : (c?ALABEL[c]:'SIT'); if(l!==lastLabel){ alabel.textContent=l; lastLabel=l; } }
 // ---- bartending: slip past the rope, pace behind the bar pouring drinks ----
@@ -1325,6 +1406,7 @@ function doAction(a){
   if (a==='goBarn'){ if (!me.moving) showSwap('barn'); return; }
   if (a==='goLounge'){ if (!me.moving && near(14,0)) showSwap('lounge'); return; }
   if (a==='harvest'){ harvest(); return; }
+  if (a==='fw'||a==='snack'){ const k=a==='fw'?'cider':'snack'; if (near(STANDS[k].gx,STANDS[k].gy)) openFw(k); return; }
   if (a==='eat'){ if (me.appleK) eatApple(me.appleK); return; }
   if (a==='fish'){ startFish(); return; }
   if (a==='reel'){ stopFish(); return; }
@@ -1336,11 +1418,11 @@ function doAction(a){
   else if (a==='flip'){ if(!onDance()||me.moving||me.p==='sit') return; const now=performance.now(); if(now-(me.flipStart||-9999)<FLIP_T) return; me.flipStart=now; me.flK=(me.flK||0)+1; sendPresence(true); }
   else if (a==='lamp'){ if(!near(0,6)) return; if(me.p!=='sit') face(0,6); toggleLamp(); }
   else if (a==='juke'){ if(!near(11,0)) return; face(11,0); nextSong(); sendPresence(true); }
-  else if (a==='order'){ const id = DRINK_IDS[Math.floor(Math.random()*DRINK_IDS.length)]; me.h=id; localMsg(`You ordered a ${DRINKS[id].label}!`); sendPresence(true); }
+  else if (a==='order'){ const id = BAR_IDS[Math.floor(Math.random()*BAR_IDS.length)]; me.h=id; localMsg(`You ordered a ${DRINKS[id].label}!`); sendPresence(true); }
   else if (a==='grab'){ const st=(me.p==='sit')?seatAt(me.gx,me.gy):null; if(!st||st.gy!==2||me.h) return; const gx=me.gx;
-    NET.act('drink').then(r=>{ if (!r.ok){ localMsg(r.msg||'Could not buy a drink.'); return; } tkSet(r.tk); me.h=DRINK_IDS[gx%DRINK_IDS.length]; me.hl=5; localMsg(`You bought a ${DRINKS[me.h].label} for 1 TOKEN!`); sendPresence(true); }); }
-  else if (a==='sip'){ if(!me.h) return; const now=performance.now(); if (now-me.sipStart<SIP_T) return; me.sipStart=now; me.sipK=(me.sipK+1)%10000;
-    setTimeout(()=>{ if(!me.h) return; me.hl=Math.max(0,(me.hl||5)-1); if(me.hl===0){ localMsg(`You finished your ${DRINKS[me.h].label}!`); me.h=null; } sendPresence(true); }, SIP_T);
+    NET.act('drink').then(r=>{ if (!r.ok){ localMsg(r.msg||'Could not buy a drink.'); return; } tkSet(r.tk); me.h=BAR_IDS[gx%BAR_IDS.length]; me.hl=5; localMsg(`You bought a ${DRINKS[me.h].label} for 1 TOKEN!`); sendPresence(true); }); }
+  else if (a==='sip'||a==='bite'){ if(!me.h) return; const now=performance.now(); if (now-me.sipStart<SIP_T) return; me.sipStart=now; me.sipK=(me.sipK+1)%10000;
+    setTimeout(()=>{ if(!me.h) return; me.hl=Math.max(0,(me.hl||5)-1); if(me.hl===0){ localMsg(DRINKS[me.h].food ? `Yum! You ate the whole ${DRINKS[me.h].label}.` : `You finished your ${DRINKS[me.h].label}!`); me.h=null; } sendPresence(true); }, SIP_T);
     sendPresence(true); }
   else if (a==='sit'||a==='stand') toggleSit();
 }
@@ -1798,12 +1880,12 @@ function openLogo(){ closeAll(); shopImgEl.src=LOGO.src; shopImgEl.style.backgro
 document.getElementById('shopclose').addEventListener('click', ()=>closeAll());
 const menu=document.getElementById('menu'), emenu=document.getElementById('emenu'), logbox=document.getElementById('logbox'), pick=document.getElementById('pick');
 let curMenu=null, menuIdx=0;
-function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
+function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
 function items(m){ return [...m.children]; }
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
   const a=el.dataset.a;
@@ -2059,6 +2141,11 @@ function drawLlama(o, t, isMe){
     const hx = Math.round(hand[0]+(mouth[0]-hand[0])*p), hy = Math.round(hand[1]+(mouth[1]-hand[1])*p);
     const tilt = (sipping && u>=0.25 && u<=0.8) ? ((front&&!flip)||(!front&&!flip) ? -1 : 1) : 0;
     const X=x0+hx, Y=y0+hy, col=DRINKS[h].c; const lvl = Math.max(1, isMe ? (me.hl||5) : (o.hl||5));
+    if (FOOD_PX[h]){ const rows=FOOD_PX[h], H=rows.length, keep=Math.max(2,Math.round(H*lvl/5)), bx=X+(flip?-2:0), by=Y+6-H;
+      rows.forEach((row,j)=>{ if (j<H-keep) return; for (let i=0;i<row.length;i++){ const ch=row[i]; if (ch==='.') continue; g.fillStyle=FOOD_PAL[ch]; g.fillRect(bx+i,by+j,1,1); } });
+      if (keep<H){ g.fillStyle=INK; g.fillRect(bx+1,by+H-keep,rows[0].length-2,1); }
+      if (sipping && u>=0.3 && u<=0.8 && Math.floor(u*20)%2){ g.fillStyle='#f8f0d8'; g.fillRect(X+(flip?-3:6),Y-2,1,1); g.fillRect(X+(flip?-4:7),Y,1,1); }
+    } else {
     // cup body drawn column by column so it can lean while drinking
     for (let c2=-1;c2<=4;c2++){ const lean = tilt ? Math.round((c2-1.5)*tilt*0.5) : 0;
       g.fillStyle=INK; g.fillRect(X+c2, Y-1+lean, 1, 7);
@@ -2066,6 +2153,7 @@ function drawLlama(o, t, isMe){
     g.fillStyle=INK; g.fillRect(X+(flip?-3:5), Y+1, 2, 3); g.fillStyle='#e8f0f8'; g.fillRect(X+(flip?-2:5), Y+2, 1, 1);
     if (!sipping){ g.fillStyle=INK; g.fillRect(X+2,Y-4,1,4); g.fillStyle='#f8f8f8'; g.fillRect(X+3,Y-4,1,1); }
     if (sipping && u>=0.3 && u<=0.8){ const k=Math.floor((u-0.3)*16); g.fillStyle='#f8f8f8'; for(let b=0;b<2;b++){ const by=Y-3-((k+b*3)%6); g.fillRect(X+(front?(flip?-2:6):(flip?6:-2))+b, by, 1, 1); } }
+    }
   }
   // balloon: emote beats chat dots
   const em = isMe ? me.emote : o.emote, playing = isMe ? arcade.on : o.a==='arcade';
@@ -2570,6 +2658,8 @@ function barnPointer(e){
   const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
   if (gx===14 && gy===0){ showSwap('lounge'); return; }
   if (POND.some(([x,y])=>x===gx&&y===gy)){ if (me.fish) return; if (pondNear() && me.p!=='sit') startFish(); else { let best=null,bd=1e9; for (const [x,y] of POND) for (const [dx,dy] of DIRS8){ const ax=x+dx, ay=y+dy; if(!walkable(ax,ay)) continue; const d=Math.hypot(ax-me.gx,ay-me.gy); if(d<bd){bd=d;best=[ax,ay];} } if (best) walkTo(best[0],best[1],'fish'); } return; }
+  for (const k in STANDS){ const ST=STANDS[k]; const [px,py]=P(ST.gx+0.5,ST.gy+0.5);
+    if ((gx===ST.gx && gy===ST.gy) || (Math.abs(lx-px)<=22 && ly>=py-62 && ly<=py+8)){ if (near(ST.gx,ST.gy) && me.p!=='sit') openFw(k); else { const t=nearestFree(ST.gx,ST.gy); if (t) walkTo(t[0],t[1],k==='cider'?'fw':'snack'); } return; } }
   const ap=FURN.find(f=>f.t==='apple'&&f.gx===gx&&f.gy===gy);
   if (ap){ if (!appleReady(ap.k)){ localMsg('Just a core left. That apple will grow back soon!'); return; }
     me.appleK=ap.k; if (near(gx,gy)&&me.p!=='sit') eatApple(ap.k); else { const t=nearestFree(gx,gy); if (t) walkTo(t[0],t[1],'eat'); } return; }
@@ -2592,6 +2682,22 @@ function eatApple(k){
   face(ap.gx,ap.gy); me.eaK=(me.eaK||0)+1; me.lastEat={k:me.eaK, a:k}; sendPresence(true);
   localMsg(['CRUNCH! A juicy red apple.','Mmm, sweet and crisp!','Apple a day keeps the vet away!'][me.eaK%3]); try { if (actx && actx.state==='running'){ const t0=actx.currentTime; noise(t0,0.07,0.25,1800); noise(t0+0.09,0.06,0.18,2200); } } catch(_){}
 }
+// ---- market stands in LLAMA ACRES: spend tokens on cider or a snack you carry around (the server charges for it) ----
+const fwEl=document.getElementById('fwbox');
+const STANDS={ cider:{gx:8,gy:4, title:'🍎 APPLE CIDER', note:'FRESH PRESSED FROM THE ORCHARD. SIP IT ANYWHERE!', items:[['cider','HOT CIDER',2],['caramel','CARAMEL CIDER',3]]},
+  snack:{gx:10,gy:4, title:'🌽 FARM SNACKS', note:'HOMEMADE TREATS FROM LLAMA ACRES. EAT IT ANYWHERE!', items:[['capple','CARAMEL APPLE',2],['corn','CORN ON THE COB',2],['pie','APPLE PIE',3]]} };
+let standOpen=null;
+function standNear(){ if (curRoom!=='barn' || me.p==='sit') return null; for (const k in STANDS) if (near(STANDS[k].gx,STANDS[k].gy)) return k; return null; }
+function openFw(k){ k = k || standNear(); const S=STANDS[k]; if (curRoom!=='barn' || !S) return; closeAll(); standOpen=k;
+  document.getElementById('fw_t').textContent=S.title; document.getElementById('fw_n').textContent=S.note;
+  const row=document.getElementById('fw_items'); row.innerHTML='';
+  for (const [id,label,cost] of S.items){ const b=document.createElement('button'); b.className='gbbtn y'; b.innerHTML=`${label}<br><small>${cost} TOKENS</small>`; b.addEventListener('click', ()=>buyAt(k,id)); row.appendChild(b); }
+  document.getElementById('fw_msg').textContent = me.h ? `YOU'RE HOLDING ${DRINKS[me.h].label}. A NEW ONE REPLACES IT.` : `YOU HAVE ${wallet.get()} TOKENS`; fwEl.style.display='block'; }
+document.getElementById('fw_close').addEventListener('click', ()=>{ fwEl.style.display='none'; });
+function buyAt(k,id){ ensureAudio(); document.getElementById('fw_msg').textContent = k==='cider' ? 'POURING...' : 'WRAPPING IT UP...';
+  NET.act('buy',{s:k, k:id}).then(r=>{ if (!r.ok){ document.getElementById('fw_msg').textContent=(r.msg||'TRY AGAIN.').toUpperCase(); return; }
+    me.h = DRINKS[r.k] ? r.k : id; me.hl=5; face(STANDS[k].gx,STANDS[k].gy);
+    tkSet(r.tk, `You bought ${DRINKS[me.h].food?'a':'a cup of'} ${DRINKS[me.h].label}! Tap yourself to ${DRINKS[me.h].food?'take a bite':'sip'}.`); sendPresence(true); fwEl.style.display='none'; }); }
 // ---- carrot patch: harvest ripe plots for tokens (timers kept per player) ----
 const REGROW_MS = 90000;
 const cropState = (store.crops && typeof store.crops==='object') ? store.crops : {};

@@ -20,6 +20,11 @@ const CROP_KEYS = new Set(); for (const y of [13, 15, 17]) for (let x = 2; x <= 
 const POND = { x0: 15, x1: 20, y0: 3, y1: 7 };
 const TABLES = [{ gx: 8, gy: 8 }, { gx: 3, gy: 8 }];
 const CROP_MS = 90000, BAR_MS = 30000;
+// market stands in LLAMA ACRES: where each one is and what it sells (token prices)
+const STANDS = {
+  cider: { x: 8, y: 4, items: { cider: 2, caramel: 3 } },
+  snack: { x: 10, y: 4, items: { capple: 2, corn: 2, pie: 3 } },
+};
 
 // ---------- helpers ----------
 const enc = new TextEncoder();
@@ -308,6 +313,13 @@ export class Lounge extends DurableObject {
         const tk = await this.credit(uid, earn, "arcade " + id);
         if (isBest) this.broadcast({ t: "board", board: await this.board() });
         return { ok: true, earned: earn, best: isBest, tk };
+      }
+      case "buy": {
+        const S = STANDS[m.s === "snack" ? "snack" : "cider"], k = String(m.k || ""), cost = Object.hasOwn(S.items, k) ? S.items[k] : 0;
+        if (!cost) return { ok: false, msg: "They don't sell that here." };
+        if (!this.near(a, "barn", (x, y) => Math.abs(x - S.x) <= 1.6 && Math.abs(y - S.y) <= 1.6)) return { ok: false, msg: "Walk up to the stand first." };
+        const tk = await this.debit(uid, cost, "stand " + k); if (tk === null) return { ok: false, msg: `That costs ${cost} TOKENS. Harvest carrots or go fishing to earn some!` };
+        return { ok: true, k, tk };
       }
       case "tg_start": return this.tableStart(ws, a, m);
       case "admin": return this.admin(a, m);
