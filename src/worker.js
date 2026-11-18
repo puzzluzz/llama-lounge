@@ -22,8 +22,8 @@ const TABLES = [{ gx: 8, gy: 8 }, { gx: 3, gy: 8 }];
 const CROP_MS = 90000, BAR_MS = 30000;
 // market stands in LLAMA ACRES: where each one is and what it sells (token prices)
 const STANDS = {
-  cider: { x: 8, y: 4, items: { cider: 2, caramel: 3 } },
-  snack: { x: 10, y: 4, items: { capple: 2, corn: 2, pie: 3 } },
+  cider: { x: 7.5, y: 4, items: { cider: 2, caramel: 3 } },     // two tiles wide: x is the middle of the stall
+  snack: { x: 10.5, y: 4, items: { capple: 2, corn: 2, pie: 3 } },
 };
 
 // ---------- helpers ----------
@@ -317,7 +317,7 @@ export class Lounge extends DurableObject {
       case "buy": {
         const S = STANDS[m.s === "snack" ? "snack" : "cider"], k = String(m.k || ""), cost = Object.hasOwn(S.items, k) ? S.items[k] : 0;
         if (!cost) return { ok: false, msg: "They don't sell that here." };
-        if (!this.near(a, "barn", (x, y) => Math.abs(x - S.x) <= 1.6 && Math.abs(y - S.y) <= 1.6)) return { ok: false, msg: "Walk up to the stand first." };
+        if (!this.near(a, "barn", (x, y) => Math.abs(x - S.x) <= 2.1 && Math.abs(y - S.y) <= 1.6)) return { ok: false, msg: "Walk up to the stand first." };
         const tk = await this.debit(uid, cost, "stand " + k); if (tk === null) return { ok: false, msg: `That costs ${cost} TOKENS. Harvest carrots or go fishing to earn some!` };
         return { ok: true, k, tk };
       }

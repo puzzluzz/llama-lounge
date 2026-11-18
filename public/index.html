@@ -492,8 +492,9 @@ function buildBarnWorld(){
   // single benches spread around the field: by the farm, behind and beside the pond, out on the grass
   for (const [x,y,d,ax] of [[0,13,'fr','y'],[4,11,'fl','x'],[17,1,'fl','x'],[13,6,'fr','y'],[17,13,'fl','x']]){ SEATS.push({gx:x,gy:y,dir:d,lift:8}); FURN.push({t:'bench',gx:x,gy:y,ax}); }
   FURN.push({t:'scarecrow',gx:0,gy:15}); block(0,15);
-  FURN.push({t:'cider',gx:8,gy:4}); block(8,4);   // market stands (the server checks the same spots)
-  FURN.push({t:'snack',gx:10,gy:4}); block(10,4);
+  // market stalls, two tiles wide (the server checks the same spots)
+  FURN.push({t:'cider',gx:7,gy:4,w:2,dz:0.5}); block(7,4); block(8,4);
+  FURN.push({t:'snack',gx:10,gy:4,w:2,dz:0.5}); block(10,4); block(11,4);
   for (const [x,y] of [[0,9],[21,19],[20,12],[1,19],[15,17],[11,2],[9,19]]){ FURN.push({t:'tree',gx:x,gy:y}); block(x,y); }
   // apples on the grass: tap to eat (they grow back)
   for (const [x,y] of [[8,15],[9,18],[14,14],[18,15],[20,10],[13,8]]){ FURN.push({t:'apple',gx:x,gy:y,k:'a'+x+','+y}); block(x,y); }
@@ -688,9 +689,9 @@ function buildBarnBG(){
   // wooden fence along the two back edges
   const post=(x,y)=>{ g.fillStyle=INK; g.fillRect(x-2,y-21,5,22); g.fillStyle='#a87040'; g.fillRect(x-1,y-20,3,20); g.fillStyle='#c89060'; g.fillRect(x-1,y-20,1,20); g.fillStyle=INK; g.fillRect(x-1,y-22,3,1); };
   const rail=(a,b,h)=>{ linePx(a[0],a[1]-h-1,b[0],b[1]-h-1,INK); linePx(a[0],a[1]-h,b[0],b[1]-h,'#c08850'); linePx(a[0],a[1]-h+1,b[0],b[1]-h+1,'#986030'); linePx(a[0],a[1]-h+2,b[0],b[1]-h+2,INK); };
-  rail(T(4,0),T(N,0),15); rail(T(4,0),T(N,0),8);
+  for (const [x0,x1] of [[4,14],[15,N]]){ rail(T(x0,0),T(x1,0),15); rail(T(x0,0),T(x1,0),8); }   // gap for the gate
   rail(T(0,4),T(0,NY),15); rail(T(0,4),T(0,NY),8);
-  for (let x=4;x<=N;x++){ const p=T(x,0); post(Math.round(p[0]),Math.round(p[1])); }
+  for (let x=4;x<=N;x++){ if (x===14||x===15) continue; const p=T(x,0); post(Math.round(p[0]),Math.round(p[1])); }   // the gate draws its own posts
   for (let y=4;y<=NY;y++){ const p=T(0,y); post(Math.round(p[0]),Math.round(p[1])); }
   g = null;
 }
@@ -792,45 +793,46 @@ function drawApple(x,y,big){ const r=big?4:3.4; ellPx(x,y,r+1,r+0.6,INK); ellPx(
 function drawAppleCore(x,y){ g.fillStyle=INK; g.fillRect(x-2,y-6,4,7); g.fillStyle='#f8f0c8'; g.fillRect(x-1,y-5,2,5); g.fillStyle='#d82838'; g.fillRect(x-2,y-6,4,1); g.fillRect(x-2,y,4,1); g.fillStyle='#6a4020'; g.fillRect(x,y-8,1,2); }
 // market stall: plank counter on four posts under a striped, scalloped awning with a name board on top
 function drawStall(f, sx, sy, t){
-  const gx=f.gx, gy=f.gy, cider=f.t==='cider';
+  const gx=f.gx, gy=f.gy, cider=f.t==='cider', W=f.w||1; const PP=(u,v,h=0)=>P(gx+u*W,gy+v,h);
+  { const [cx,cy]=PP(0.5,0.5); sx=Math.round(cx); sy=Math.round(cy); }
   const A1=cider?'#d83838':'#3a9a48', A2='#f8f0e0', A1d=cider?'#a82830':'#2a7838', A2d='#d8ccb0';
-  const post=(u,v,h)=>{ const [x,y]=P(gx+u,gy+v); const X=Math.round(x), Y=Math.round(y); g.fillStyle=INK; g.fillRect(X-2,Y-h,4,h+1); g.fillStyle='#a87040'; g.fillRect(X-1,Y-h,2,h); g.fillStyle='#c89060'; g.fillRect(X-1,Y-h,1,h); };
-  ellPx(sx,sy+1,16,6,'rgba(40,80,20,0.3)');
+  const post=(u,v,h)=>{ const [x,y]=PP(u,v); const X=Math.round(x), Y=Math.round(y); g.fillStyle=INK; g.fillRect(X-2,Y-h,4,h+1); g.fillStyle='#a87040'; g.fillRect(X-1,Y-h,2,h); g.fillStyle='#c89060'; g.fillRect(X-1,Y-h,1,h); };
+  ellPx(sx,sy+1,16*W,6*W,'rgba(40,80,20,0.3)');
   post(0.12,0.3,40); post(0.88,0.3,40);
   // counter with planks
-  box(gx+0.1,gy+0.4,0.8,0.5,12,'#c88a50','#a86a34','#7e4c24');
-  for (const v of [4,8]){ linePx(...P(gx+0.1,gy+0.9,v),...P(gx+0.9,gy+0.9,v),'#7e4c24'); linePx(...P(gx+0.9,gy+0.4,v),...P(gx+0.9,gy+0.9,v),'#5e3418'); }
-  box(gx+0.06,gy+0.36,0.88,0.58,2,'#e0a868','#c88a50','#9a6434',0,12);
+  box(gx+0.1,gy+0.4,W-0.2,0.5,12,'#c88a50','#a86a34','#7e4c24');
+  for (const v of [4,8]){ linePx(...PP(0.1,0.9,v),...PP(0.9,0.9,v),'#7e4c24'); linePx(...PP(0.9,0.4,v),...PP(0.9,0.9,v),'#5e3418'); }
+  box(gx+0.06,gy+0.36,W-0.12,0.58,2,'#e0a868','#c88a50','#9a6434',0,12);
   if (cider){
     // cider barrel with a brass tap, steaming cups, a basket of apples
-    { const [x,y]=P(gx+0.3,gy+0.52,14); const X=Math.round(x), Y=Math.round(y);
+    { const [x,y]=PP(0.3,0.52,14); const X=Math.round(x), Y=Math.round(y);
       g.fillStyle=INK; g.fillRect(X-6,Y-14,13,15); g.fillStyle='#a8682c'; g.fillRect(X-5,Y-13,11,13); g.fillStyle='#c8884c'; g.fillRect(X-3,Y-13,3,13);
       g.fillStyle='#585868'; g.fillRect(X-5,Y-11,11,1); g.fillRect(X-5,Y-3,11,1); ellPx(X,Y-14,5.5,2,'#7e4c24'); ellPx(X,Y-14,4,1.2,'#a8682c');
       g.fillStyle=INK; g.fillRect(X+5,Y-7,4,3); g.fillStyle='#f8d030'; g.fillRect(X+6,Y-6,2,1); }
-    for (const [u,v] of [[0.58,0.68],[0.72,0.58]]){ const [x,y]=P(gx+u,gy+v,14); const X=Math.round(x), Y=Math.round(y);
+    for (const [u,v] of [[0.5,0.68],[0.6,0.58],[0.7,0.68]]){ const [x,y]=PP(u,v,14); const X=Math.round(x), Y=Math.round(y);
       g.fillStyle=INK; g.fillRect(X-2,Y-6,6,7); g.fillRect(X+4,Y-4,2,3); g.fillStyle='#f0e8d8'; g.fillRect(X-1,Y-5,4,5); g.fillStyle='#c87028'; g.fillRect(X-1,Y-5,4,1);
       const st=Math.floor(t*3+u*10)%3; g.fillStyle='rgba(255,255,255,0.75)'; g.fillRect(X+(st===1?1:0),Y-9-st,1,2); g.fillRect(X+2-(st===2?1:0),Y-11+st%2,1,2); }
-    { const [x,y]=P(gx+0.62,gy+0.98); const X=Math.round(x), Y=Math.round(y); g.fillStyle=INK; g.fillRect(X-6,Y-6,13,7); g.fillStyle='#c89858'; g.fillRect(X-5,Y-5,11,5); g.fillStyle='#a07038'; g.fillRect(X-5,Y-3,11,1);
+    { const [x,y]=PP(0.62,0.98); const X=Math.round(x), Y=Math.round(y); g.fillStyle=INK; g.fillRect(X-6,Y-6,13,7); g.fillStyle='#c89858'; g.fillRect(X-5,Y-5,11,5); g.fillStyle='#a07038'; g.fillRect(X-5,Y-3,11,1);
       for (const [dx,dy] of [[-3,-7],[1,-7],[-1,-9],[4,-7]]){ ellPx(X+dx,Y+dy,2.2,2,INK); ellPx(X+dx,Y+dy,1.6,1.4,'#d82838'); g.fillStyle='#f87070'; g.fillRect(X+dx-1,Y+dy-1,1,1); } }
   } else {
     // caramel apples on sticks, a stack of corn, a pie on a cake stand
-    for (const [u,v] of [[0.26,0.5],[0.36,0.6],[0.46,0.5]]){ const [x,y]=P(gx+u,gy+v,14); const X=Math.round(x), Y=Math.round(y);
+    for (const [u,v] of [[0.16,0.5],[0.22,0.62],[0.28,0.5],[0.34,0.62],[0.4,0.5]]){ const [x,y]=PP(u,v,14); const X=Math.round(x), Y=Math.round(y);
       g.fillStyle=INK; g.fillRect(X,Y-10,1,3); ellPx(X,Y-4,3,3,INK); ellPx(X,Y-4,2.2,2.2,'#d82838'); g.fillStyle='#d89838'; g.fillRect(X-2,Y-7,5,2); g.fillStyle='#f8a0a0'; g.fillRect(X+1,Y-4,1,1); g.fillStyle='#e8d0a0'; g.fillRect(X,Y-9,1,2); }
-    { const [x,y]=P(gx+0.72,gy+0.48,14); const X=Math.round(x), Y=Math.round(y);
+    { const [x,y]=PP(0.72,0.48,14); const X=Math.round(x), Y=Math.round(y);
       g.fillStyle=INK; g.fillRect(X-4,Y-1,9,2); g.fillRect(X-1,Y-4,3,4); g.fillStyle='#d8d8e8'; g.fillRect(X-3,Y-1,7,1);
       g.fillStyle=INK; g.fillRect(X-5,Y-9,11,5); g.fillStyle='#c88a50'; g.fillRect(X-4,Y-8,9,3); g.fillStyle='#e8c070'; g.fillRect(X-4,Y-8,9,1); g.fillStyle='#a86a34'; g.fillRect(X-2,Y-7,1,1); g.fillRect(X+2,Y-7,1,1); }
-    for (const [u,v,k] of [[0.56,0.8,0],[0.66,0.76,1],[0.61,0.74,2]]){ const [x,y]=P(gx+u,gy+v,14+k*2); const X=Math.round(x), Y=Math.round(y);
+    for (const [u,v,k] of [[0.56,0.8,0],[0.66,0.76,1],[0.61,0.74,2]]){ const [x,y]=PP(u,v,14+k*2); const X=Math.round(x), Y=Math.round(y);
       g.fillStyle=INK; g.fillRect(X-4,Y-2,9,4); g.fillStyle='#f8d030'; g.fillRect(X-3,Y-1,6,2); g.fillStyle='#d8a818'; g.fillRect(X-2,Y,1,1); g.fillRect(X,Y-1,1,1); g.fillStyle='#58a840'; g.fillRect(X+3,Y-1,2,2); }
   }
   post(0.12,0.92,34); post(0.88,0.92,34);
   // awning: slopes from the back posts down to the front, stripes run front to back, scalloped front edge
-  const n=8, H0=42, H1=34, u0=0.02, u1=0.98, vb=0.24, vf=1.02;
+  const n=8*W, H0=42, H1=34, u0=0.02, u1=0.98, vb=0.24, vf=1.02;
   for (let k=0;k<n;k++){ const a=u0+(u1-u0)*k/n, b=u0+(u1-u0)*(k+1)/n, c=k%2?A2:A1;
-    polyPx([P(gx+a,gy+vb,H0),P(gx+b,gy+vb,H0),P(gx+b,gy+vf,H1),P(gx+a,gy+vf,H1)],c);
-    const m=(a+b)/2, [x,y]=P(gx+m,gy+vf,H1); ellPx(x,y+1,2.6,2.2,INK); ellPx(x,y+0.5,1.9,1.6,k%2?A2d:A1d); }
-  { const L=(p1,p2)=>linePx(p1[0],p1[1],p2[0],p2[1],INK); L(P(gx+u0,gy+vb,H0),P(gx+u1,gy+vb,H0)); L(P(gx+u1,gy+vb,H0),P(gx+u1,gy+vf,H1)); L(P(gx+u0,gy+vb,H0),P(gx+u0,gy+vf,H1)); L(P(gx+u0,gy+vf,H1),P(gx+u1,gy+vf,H1)); }
+    polyPx([PP(a,vb,H0),PP(b,vb,H0),PP(b,vf,H1),PP(a,vf,H1)],c);
+    const m=(a+b)/2, [x,y]=PP(m,vf,H1); ellPx(x,y+1,2.6,2.2,INK); ellPx(x,y+0.5,1.9,1.6,k%2?A2d:A1d); }
+  { const L=(p1,p2)=>linePx(p1[0],p1[1],p2[0],p2[1],INK); L(PP(u0,vb,H0),PP(u1,vb,H0)); L(PP(u1,vb,H0),PP(u1,vf,H1)); L(PP(u0,vb,H0),PP(u0,vf,H1)); L(PP(u0,vf,H1),PP(u1,vf,H1)); }
   // name board standing on the awning
-  { const name=cider?'APPLE CIDER':'FARM SNACKS', tw=pfW(name), w=tw+10, h=11; const [x,y]=P(gx+0.5,gy+0.45,H0-2); const bx=Math.round(x-w/2), by=Math.round(y-h);
+  { const name=cider?'APPLE CIDER':'FARM SNACKS', tw=pfW(name), w=tw+10, h=11; const [x,y]=PP(0.5,0.45,H0-2); const bx=Math.round(x-w/2), by=Math.round(y-h);
     g.fillStyle=INK; g.fillRect(bx+3,by+h,1,3); g.fillRect(bx+w-4,by+h,1,3);
     g.fillStyle=INK; g.fillRect(bx+1,by,w-2,h); g.fillRect(bx,by+1,w,h-2); g.fillStyle=A2; g.fillRect(bx+1,by+1,w-2,h-2); g.fillStyle=A1; g.fillRect(bx+1,by+h-3,w-2,2);
     pfDraw(g,name,bx+5,by+2,cider?'#a82830':'#2a6830');
@@ -867,7 +869,12 @@ function drawJukebox(f, sx, sy, t){
   // song-select buttons under the window
   for (let k=0;k<4;k++){ const [X,Y]=P(x0+0.22+k*0.12,yF,15); g.fillStyle=(on && Math.floor(t*2)%4===k)?'#f8d030':'#f8f8f8'; g.fillRect(Math.round(X),Math.round(Y)-1,1,1); }
   // floating music notes while it plays
-  { const ph=(t*0.6)%1; if (on && ph<0.8){ g.fillStyle=INK; const nx=sx+6+Math.round(Math.sin(t*3)*3), ny=Math.round(sy-52-ph*22); g.fillRect(nx,ny,3,2); g.fillRect(nx+2,ny-6,1,7); g.fillRect(nx+3,ny-6,2,1); } }
+  // a stream of music notes drifting up while it plays: single and double notes in the tube colours, swaying and fading out
+  if (on){ for (let k=0;k<5;k++){ const ph=(t*0.35+k/5)%1; const nx=Math.round(sx-14+((k*11)%26)+Math.sin(t*2.2+k*1.7)*5+ph*8), ny=Math.round(sy-48-ph*54);
+      g.globalAlpha = ph>0.75 ? (1-ph)/0.25 : Math.min(1,ph*6); const col=JUKE[k%JUKE.length], dbl=k%3===1;
+      const note=(x,y)=>{ g.fillStyle=INK; g.fillRect(x-1,y-1,4,4); g.fillRect(x+2,y-7,2,8); g.fillStyle=col; g.fillRect(x,y,2,2); g.fillRect(x+2,y-6,1,7); };
+      note(nx,ny); if (dbl){ note(nx+5,ny-1); g.fillStyle=INK; g.fillRect(nx+2,ny-8,6,2); g.fillStyle=col; g.fillRect(nx+3,ny-7,4,1); } else { g.fillStyle=INK; g.fillRect(nx+3,ny-7,3,2); g.fillStyle=col; g.fillRect(nx+4,ny-6,1,1); }
+      g.globalAlpha=1; } }
 }
 // upright arcade cabinet: side profile with an overhanging marquee, slanted screen, control panel with stick and buttons
 function drawArcade3D(f, sx, sy, t){
@@ -1136,19 +1143,19 @@ function drawFurn(f,t){
       { g.fillStyle='#c09018'; for (let k=0;k<6;k++) g.fillRect(sx-10+k*4,sy-6-((k*3)%3),1,2); g.fillStyle='#f8e888'; g.fillRect(sx-6,sy-12,5,1); g.fillStyle='#884020'; g.fillRect(sx-1,sy-10,1,9); } break;
     case 'gate': {
       // farm archway: two tall capped posts, a crossbeam, and a white swing gate with a diagonal brace
-      const a=P(f.gx+0.02,0.06), b=P(f.gx+0.98,0.06);
+      const a=P(f.gx,0), b=P(f.gx+1,0);
       const post=(p)=>{ const X=Math.round(p[0]), Y=Math.round(p[1]); g.fillStyle=INK; g.fillRect(X-3,Y-40,7,41); g.fillStyle='#8a5a30'; g.fillRect(X-2,Y-39,5,39); g.fillStyle='#a87040'; g.fillRect(X-2,Y-39,2,39); g.fillStyle=INK; g.fillRect(X-4,Y-43,9,4); g.fillStyle='#c89060'; g.fillRect(X-3,Y-42,7,2); };
       post(a); post(b);
       linePx(a[0]-4,a[1]-37,b[0]+4,b[1]-37,INK); linePx(a[0]-4,a[1]-36,b[0]+4,b[1]-36,'#a87040'); linePx(a[0]-4,a[1]-35,b[0]+4,b[1]-35,'#8a5a30'); linePx(a[0]-4,a[1]-34,b[0]+4,b[1]-34,INK);
+      // white five-bar farm gate hung between the posts: open rails you can see through, end stiles, a diagonal brace, hinges and a latch
       const A=[a[0]+3,a[1]], B=[b[0]-3,b[1]];
-      // solid white farm gate: panel, darker rails, diagonal brace, ink outline
-      const q=[[A[0],A[1]-3],[B[0],B[1]-3],[B[0],B[1]-24],[A[0],A[1]-24]];
-      polyPx(q,'#f0ece0');
-      for (const h of [9,15]) linePx(A[0],A[1]-h,B[0],B[1]-h,'#b8b4a8');
-      linePx(A[0]+1,A[1]-5,B[0]-1,B[1]-22,'#b8b4a8'); linePx(A[0]+2,A[1]-5,B[0],B[1]-22,'#b8b4a8');
-      linePx(q[0][0],q[0][1],q[1][0],q[1][1],INK); linePx(q[1][0],q[1][1],q[2][0],q[2][1],INK); linePx(q[2][0],q[2][1],q[3][0],q[3][1],INK); linePx(q[3][0],q[3][1],q[0][0],q[0][1],INK);
-      linePx(q[3][0]+1,q[3][1]+1,q[2][0]-1,q[2][1]+1,'#ffffff');
-      { const lx=Math.round(B[0])-3, ly=Math.round(B[1])-15; g.fillStyle=INK; g.fillRect(lx,ly,3,3); g.fillStyle='#a8a8b8'; g.fillRect(lx+1,ly+1,1,1); }
+      const at=(u,h)=>[A[0]+(B[0]-A[0])*u, A[1]+(B[1]-A[1])*u-h];
+      const bar=(p1,p2,thick)=>{ for (let k=-1;k<=thick;k++) linePx(p1[0],p1[1]+k,p2[0],p2[1]+k, (k===-1||k===thick)?INK:(k===0?'#ffffff':'#e0dccf')); };
+      for (const h of [5,14,23]) bar(at(0,h),at(1,h),2);
+      bar(at(0.05,6),at(0.95,22),1);                                                // brace, hinge side low to latch side high
+      for (const u of [0,1]){ const [x,y]=at(u,0); const X=Math.round(x)+(u?-2:0); g.fillStyle=INK; g.fillRect(X-1,Math.round(y)-26,4,24); g.fillStyle='#f4f0e4'; g.fillRect(X,Math.round(y)-25,2,22); g.fillStyle='#c8c4b8'; g.fillRect(X+1,Math.round(y)-25,1,22); }
+      for (const h of [7,21]){ const [x,y]=at(0,h); g.fillStyle=INK; g.fillRect(Math.round(x)-5,Math.round(y)-1,5,3); g.fillStyle='#585868'; g.fillRect(Math.round(x)-4,Math.round(y),3,1); }   // hinges
+      { const [x,y]=at(1,15); const X=Math.round(x), Y=Math.round(y); g.fillStyle=INK; g.fillRect(X-1,Y-2,6,4); g.fillStyle='#a8a8b8'; g.fillRect(X,Y-1,4,2); g.fillStyle='#d8d8e8'; g.fillRect(X,Y-1,1,1); }   // latch
       const cx=Math.round((a[0]+b[0])/2), cy=Math.round((a[1]+b[1])/2);
       drawCloudSign(cx, cy-56+Math.round(Math.sin(t*2)*1.5), 'LOUNGE', 'down', t);
       break; }
@@ -1474,7 +1481,7 @@ function doAction(a){
   if (a==='goBarn'){ if (!me.moving) showSwap('barn'); return; }
   if (a==='goLounge'){ if (!me.moving && near(14,0)) showSwap('lounge'); return; }
   if (a==='harvest'){ harvest(); return; }
-  if (a==='fw'||a==='snack'){ const k=a==='fw'?'cider':'snack'; if (near(STANDS[k].gx,STANDS[k].gy)) openFw(k); return; }
+  if (a==='fw'||a==='snack'){ const k=a==='fw'?'cider':'snack'; if (nearStand(STANDS[k])) openFw(k); return; }
   if (a==='eat'){ if (me.appleK) eatApple(me.appleK); return; }
   if (a==='fish'){ startFish(); return; }
   if (a==='reel'){ stopFish(); return; }
@@ -2725,8 +2732,8 @@ function barnPointer(e){
   const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
   if (gx===14 && gy===0){ showSwap('lounge'); return; }
   if (POND.some(([x,y])=>x===gx&&y===gy)){ if (me.fish) return; if (pondNear() && me.p!=='sit') startFish(); else { let best=null,bd=1e9; for (const [x,y] of POND) for (const [dx,dy] of DIRS8){ const ax=x+dx, ay=y+dy; if(!walkable(ax,ay)) continue; const d=Math.hypot(ax-me.gx,ay-me.gy); if(d<bd){bd=d;best=[ax,ay];} } if (best) walkTo(best[0],best[1],'fish'); } return; }
-  for (const k in STANDS){ const ST=STANDS[k]; const [px,py]=P(ST.gx+0.5,ST.gy+0.5);
-    if ((gx===ST.gx && gy===ST.gy) || (Math.abs(lx-px)<=22 && ly>=py-62 && ly<=py+8)){ if (near(ST.gx,ST.gy) && me.p!=='sit') openFw(k); else { const t=nearestFree(ST.gx,ST.gy); if (t) walkTo(t[0],t[1],k==='cider'?'fw':'snack'); } return; } }
+  for (const k in STANDS){ const ST=STANDS[k]; const [px,py]=P(ST.gx+1,ST.gy+0.5);
+    if ((gy===ST.gy && (gx===ST.gx||gx===ST.gx+1)) || (Math.abs(lx-px)<=34 && ly>=py-62 && ly<=py+10)){ if (nearStand(ST) && me.p!=='sit') openFw(k); else { const a=nearestFree(ST.gx,ST.gy), b=nearestFree(ST.gx+1,ST.gy); const d=q=>q?Math.hypot(q[0]-me.gx,q[1]-me.gy):1e9; const t=d(a)<=d(b)?a:b; if (t) walkTo(t[0],t[1],k==='cider'?'fw':'snack'); } return; } }
   const ap=FURN.find(f=>f.t==='apple'&&f.gx===gx&&f.gy===gy);
   if (ap){ if (!appleReady(ap.k)){ localMsg('Just a core left. That apple will grow back soon!'); return; }
     me.appleK=ap.k; if (near(gx,gy)&&me.p!=='sit') eatApple(ap.k); else { const t=nearestFree(gx,gy); if (t) walkTo(t[0],t[1],'eat'); } return; }
@@ -2751,10 +2758,11 @@ function eatApple(k){
 }
 // ---- market stands in LLAMA ACRES: spend tokens on cider or a snack you carry around (the server charges for it) ----
 const fwEl=document.getElementById('fwbox');
-const STANDS={ cider:{gx:8,gy:4, title:'🍎 APPLE CIDER', note:'FRESH PRESSED FROM THE ORCHARD. SIP IT ANYWHERE!', items:[['cider','HOT CIDER',2],['caramel','CARAMEL CIDER',3]]},
+const STANDS={ cider:{gx:7,gy:4, title:'🍎 APPLE CIDER', note:'FRESH PRESSED FROM THE ORCHARD. SIP IT ANYWHERE!', items:[['cider','HOT CIDER',2],['caramel','CARAMEL CIDER',3]]},
   snack:{gx:10,gy:4, title:'🌽 FARM SNACKS', note:'HOMEMADE TREATS FROM LLAMA ACRES. EAT IT ANYWHERE!', items:[['capple','CARAMEL APPLE',2],['corn','CORN ON THE COB',2],['pie','APPLE PIE',3]]} };
 let standOpen=null;
-function standNear(){ if (curRoom!=='barn' || me.p==='sit') return null; for (const k in STANDS) if (near(STANDS[k].gx,STANDS[k].gy)) return k; return null; }
+const nearStand = ST => near(ST.gx,ST.gy) || near(ST.gx+1,ST.gy);   // stalls are two tiles wide
+function standNear(){ if (curRoom!=='barn' || me.p==='sit') return null; for (const k in STANDS) if (nearStand(STANDS[k])) return k; return null; }
 function openFw(k){ k = k || standNear(); const S=STANDS[k]; if (curRoom!=='barn' || !S) return; closeAll(); standOpen=k;
   document.getElementById('fw_t').textContent=S.title; document.getElementById('fw_n').textContent=S.note;
   const row=document.getElementById('fw_items'); row.innerHTML='';
@@ -2763,7 +2771,7 @@ function openFw(k){ k = k || standNear(); const S=STANDS[k]; if (curRoom!=='barn
 document.getElementById('fw_close').addEventListener('click', ()=>{ fwEl.style.display='none'; });
 function buyAt(k,id){ ensureAudio(); document.getElementById('fw_msg').textContent = k==='cider' ? 'POURING...' : 'WRAPPING IT UP...';
   NET.act('buy',{s:k, k:id}).then(r=>{ if (!r.ok){ document.getElementById('fw_msg').textContent=(r.msg||'TRY AGAIN.').toUpperCase(); return; }
-    me.h = DRINKS[r.k] ? r.k : id; me.hl=5; face(STANDS[k].gx,STANDS[k].gy);
+    me.h = DRINKS[r.k] ? r.k : id; me.hl=5; face(STANDS[k].gx+(me.gx>STANDS[k].gx?1:0),STANDS[k].gy);
     tkSet(r.tk, `You bought ${DRINKS[me.h].food?'a':'a cup of'} ${DRINKS[me.h].label}! Tap yourself to ${DRINKS[me.h].food?'take a bite':'sip'}.`); sendPresence(true); fwEl.style.display='none'; }); }
 // ---- carrot patch: harvest ripe plots for tokens (timers kept per player) ----
 const REGROW_MS = 90000;
