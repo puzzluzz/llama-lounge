@@ -1271,7 +1271,6 @@ function drawFurn(f,t){
       for (const h of [7,21]){ const [x,y]=at(0,h); g.fillStyle=INK; g.fillRect(Math.round(x)-5,Math.round(y)-1,5,3); g.fillStyle='#585868'; g.fillRect(Math.round(x)-4,Math.round(y),3,1); }   // hinges
       { const [x,y]=at(1,15); const X=Math.round(x), Y=Math.round(y); g.fillStyle=INK; g.fillRect(X-1,Y-2,6,4); g.fillStyle='#a8a8b8'; g.fillRect(X,Y-1,4,2); g.fillStyle='#d8d8e8'; g.fillRect(X,Y-1,1,1); }   // latch
       const cx=Math.round((a[0]+b[0])/2), cy=Math.round((a[1]+b[1])/2);
-      drawCloudSign(cx, cy-56+Math.round(Math.sin(t*2)*1.5), 'LOUNGE', 'down', t);
       break; }
     case 'pond': {
       // pond fitted to its w x h tiles (a rounded iso shape, so the footpath round it stays clear):
@@ -2541,7 +2540,6 @@ function render(t){
   }
   drawSpits(t);
   drawFishing(t);
-  if (curRoom==='lounge') drawCloudSign(OX-210, OY-30+Math.round(Math.sin(t*1.6)*2), 'ACRES', 'none', t, 2);   // big cloud over the door side of the room
   drawNight(t);
   arcadeText=null; drawArcade(t);
   drawOverlay(t);
