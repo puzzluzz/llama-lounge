@@ -1900,7 +1900,7 @@ const bars=[];
 function addBar(name, text, cid, gx, gy, mine, yell){
   const head=(name.toUpperCase()+':');
   let body=yell?text.toUpperCase()+'!':text; const maxW=Math.max(80, LW-14);
-  const wOf=t=>pfW(head)+2+pfW(t)+10;
+  const wOf=t=>pfW(head)+2+pfW(t,1,!yell)+10;
   if (wOf(body)>maxW){ while (body.length>1 && wOf(body+'...')>maxW) body=body.slice(0,-1); body=body.trimEnd()+'...'; }
   const [wx,wy]=proj(gx,gy);
   bars.push({head, body, yell:!!yell, cid, mine, x:wx, y:wy-66-9, w:wOf(body), h:9, born:performance.now(), dur:Math.min(18000, 4500+text.length*110)});
@@ -2438,13 +2438,15 @@ const PF = {
  '/':['..#','..#','.#.','#..','#..'], '(':['.#','#.','#.','#.','.#'], ')':['#.','.#','.#','.#','#.'], '[':['##','#.','#.','#.','##'], ']':['##','.#','.#','.#','##'],
  '#':['#.#','###','#.#','###','#.#'], '$':['.##','##.','.#.','.##','##.'], '%':['#.#','..#','.#.','#..','#.#'], '*':['...','#.#','.#.','#.#','...'], '&':['.#.','#.#','.#.','#.#','.##'],
  '@':['###','#.#','#.#','#..','.##'], '_':['...','...','...','...','###'], '<':['..#','.#.','#..','.#.','..#'], '>':['#..','.#.','..#','.#.','#..'], '^':['.#.','#.#','...','...','...'],
+ // lowercase (used for chat text, so messages show the way they were typed)
+a:["...", ".##", "#.#", "#.#", ".##"], b:["#..", "##.", "#.#", "#.#", "##."], c:["...", ".##", "#..", "#..", ".##"], d:["..#", ".##", "#.#", "#.#", ".##"], e:["...", ".#.", "###", "#..", ".##"], f:[".##", "#..", "##.", "#..", "#.."], g:["...", ".##", "#.#", ".##", "##."], h:["#..", "##.", "#.#", "#.#", "#.#"], i:["#", ".", "#", "#", "#"], j:[".#", "..", ".#", ".#", "#."], k:["#..", "#.#", "##.", "#.#", "#.#"], l:["#.", "#.", "#.", "#.", ".#"], m:[".....", "##.#.", "#.#.#", "#.#.#", "#.#.#"], n:["...", "##.", "#.#", "#.#", "#.#"], o:["...", ".#.", "#.#", "#.#", ".#."], p:["...", "##.", "#.#", "##.", "#.."], q:["...", ".##", "#.#", ".##", "..#"], r:["...", "#.#", "##.", "#..", "#.."], s:["...", ".##", "#..", "..#", "##."], t:[".#.", "###", ".#.", ".#.", "..#"], u:["...", "#.#", "#.#", "#.#", ".##"], v:["...", "#.#", "#.#", "#.#", ".#."], w:[".....", "#...#", "#.#.#", "#.#.#", ".#.#."], x:["...", "#.#", ".#.", ".#.", "#.#"], y:["...", "#.#", "#.#", ".##", "##."], z:["...", "###", ".#.", "#..", "###"],
  '~':['...','.#.','#.#','...','...'], '♦':['..#..','.###.','#####','.###.','..#..'], '♠':['..#..','.###.','#####','..#..','.###.'], '♣':['.###.','#.#.#','#####','..#..','.###.'], '♥':['#.#','###','###','.#.','...'], '♪':['.##','.#.','.#.','##.','##.'], '▶':['#..','##.','###','##.','#..'], '▲':['...','.#.','###','...','...'], '▼':['...','###','.#.','...','...'],
 };
 const pfFallback = ch => { const c=document.createElement('canvas').getContext('2d'); c.font='6px monospace'; return Math.ceil(c.measureText(ch).width); };
-function pfW(str, sc=1){ let w=0; for (const ch0 of String(str)){ const ch=ch0.toUpperCase(); if (ch===' ') { w+=3; continue; } const gl=PF[ch]; w += (gl ? gl[0].length : pfFallback(ch0)) + 1; } return Math.max(0,w-1)*sc; }
-function pfDraw(c, str, x, y, col, sc=1){
+function pfW(str, sc=1, lc=false){ let w=0; for (const ch0 of String(str)){ const ch=(lc && /[a-z]/.test(ch0)) ? ch0 : ch0.toUpperCase(); if (ch===' ') { w+=3; continue; } const gl=PF[ch]; w += (gl ? gl[0].length : pfFallback(ch0)) + 1; } return Math.max(0,w-1)*sc; }
+function pfDraw(c, str, x, y, col, sc=1, lc=false){
   x=Math.round(x); y=Math.round(y); c.fillStyle=col;
-  for (const ch0 of String(str)){ const ch=ch0.toUpperCase(); if (ch===' '){ x+=3*sc; continue; }
+  for (const ch0 of String(str)){ const ch=(lc && /[a-z]/.test(ch0)) ? ch0 : ch0.toUpperCase(); if (ch===' '){ x+=3*sc; continue; }
     const gl=PF[ch];
     if (!gl){ const f=c.font, b=c.textBaseline; c.font=(6*sc)+'px monospace'; c.textBaseline='top'; c.fillText(ch0, x, y-1); const w=Math.ceil(c.measureText(ch0).width); c.font=f; c.textBaseline=b; x+=w+sc; continue; }
     for (let j=0;j<5;j++){ const r=gl[j]; for (let i=0;i<r.length;i++) if (r[i]==='#') c.fillRect(x+i*sc, y+j*sc, sc, sc); }
@@ -2497,7 +2499,7 @@ function drawOverlay(t){
       c.globalAlpha=b.yell?0.92:0.8; c.fillStyle=b.yell?'#e02838':b.mine?'#fff4c0':'#f8f8f8'; c.fillRect(bx+1,by+1,b.w-2,b.h-2);
       c.globalAlpha=1; const tag=(CHARS[b.cid]||{}).tag||'#f8d030'; c.fillStyle=tag; c.fillRect(bx+2,by+2,2,b.h-4);
       const x1 = pfDraw(c, b.head, bx+6, by+2, b.yell?'#f8e070':'#8a2a6a');
-      pfDraw(c, b.body, x1+2, by+2, b.yell?'#f8f8f8':INK);
+      pfDraw(c, b.body, x1+2, by+2, b.yell?'#f8f8f8':INK, 1, !b.yell);
     }
   } else if (arcadeText){ drawArcadeText(c, t); }
 }
