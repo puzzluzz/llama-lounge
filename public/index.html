@@ -142,6 +142,19 @@
   #tbox{bottom:98px}
   @media (max-height:520px){ #tbox{bottom:86px} }
   #swapbox{left:50%;top:50%;transform:translate(-50%,-50%);display:none;text-align:center;z-index:5;min-width:calc(var(--px)*150px)}
+  #dashbox{left:50%;top:50%;transform:translate(-50%,-50%);display:none;z-index:6;width:min(calc(100% - 16px),calc(var(--px)*250px));max-height:84vh;overflow:auto;text-align:left}
+  #dashbox .slt{color:#c03070;text-align:center;margin-bottom:calc(var(--px)*4px)}
+  #dashbox h4{margin:calc(var(--px)*6px) 0 calc(var(--px)*3px);font-size:calc(var(--px)*6px);color:#3858a8;font-weight:normal}
+  #dashbox .dr{display:flex;align-items:center;gap:calc(var(--px)*3px);padding:calc(var(--px)*2px) 0;border-bottom:1px dashed #c8c0d8;font-size:calc(var(--px)*6px)}
+  #dashbox .dr .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #dashbox .dr small{color:#8a7aa8;font-size:calc(var(--px)*5px)}
+  #dashbox .gbbtn.s{font-size:calc(var(--px)*5px);padding:calc(var(--px)*2px) calc(var(--px)*3px)}
+  #dashbox .gbbtn.bad{background:#f8a8a8} #dashbox .gbbtn.gd{background:#a8d8f8}
+  #dashbox .srow{display:flex;justify-content:center;gap:calc(var(--px)*6px);margin-top:calc(var(--px)*6px)}
+  #dashbox .dl{font-size:calc(var(--px)*5px);color:#4a4070;padding:calc(var(--px)*1px) 0}
+  #dashbox .addrow{display:flex;gap:calc(var(--px)*3px);align-items:center}
+  #dashbox .addrow input{flex:1;min-width:0;font-family:'Press Start 2P',monospace;font-size:calc(var(--px)*6px);padding:calc(var(--px)*2px);border:1px solid var(--ink)}
+  .badge{display:inline-block;width:1.1em;text-align:center}
   #tblbox{left:50%;top:46%;transform:translate(-50%,-50%);display:none;text-align:center;z-index:5;width:min(calc(100% - 16px),calc(var(--px)*200px))}
   #tblbox .slt{color:#c03070;margin-bottom:calc(var(--px)*4px)}
   #tbcv{display:block;margin:0 auto;width:calc(var(--px)*150px);height:calc(var(--px)*66px);max-width:100%;image-rendering:pixelated;border:calc(var(--px)*2px) solid #c09018;border-radius:calc(var(--px)*3px);background:#1e7a3a}
@@ -199,7 +212,7 @@
   <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button class="pbtn" id="zout" title="Zoom out">−</button><button class="pbtn" id="zin" title="Zoom in">+</button><button class="pbtn" id="musicbtn">♪ ON</button><button class="pbtn y" id="menubtn">MENU</button></div>
   <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
   <div id="keys">ARROWS/WASD WALK · SPACE ACTION<br>ENTER TALK · M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
-  <div id="menu" class="gb menu"><div data-a="emote">EMOTE</div><div data-a="spit">SPIT</div><div data-a="scores">HIGH SCORES</div><div data-a="sit">SIT/STAND</div><div data-a="drop">DROP DRINK</div><div data-a="log">CHAT LOG</div><div data-a="tips" id="mtips">TIPS: ON</div><div data-a="rules">RULES</div><div data-a="room">CHANGE ROOM</div><div data-a="logout">LOG OUT</div><div data-a="llama">CHANGE LLAMA</div><div data-a="close">EXIT</div></div>
+  <div id="menu" class="gb menu"><div data-a="emote">EMOTE</div><div data-a="spit">SPIT</div><div data-a="scores">HIGH SCORES</div><div data-a="sit">SIT/STAND</div><div data-a="drop">DROP DRINK</div><div data-a="log">CHAT LOG</div><div data-a="tips" id="mtips">TIPS: ON</div><div data-a="rules">RULES</div><div data-a="room">CHANGE ROOM</div><div data-a="dash" id="mdash" style="display:none">DASHBOARD</div><div data-a="logout">LOG OUT</div><div data-a="llama">CHANGE LLAMA</div><div data-a="close">EXIT</div></div>
   <div id="emenu" class="gb menu"><div data-e="heart">♥ HEART</div><div data-e="bang">! WOW</div><div data-e="huh">? HUH</div><div data-e="note">♪ SING</div><div data-e="lol">^^ LOL</div><div data-e="zzz">Z SLEEP</div><div data-e="wave">✋ WAVE</div><div data-e="flex">💪 FLEX</div><div data-e="palm">-_- FACEPALM</div></div>
   <div id="pmenu" class="gb"><div id="pm_name" class="pmn"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_close">✕</button></div></div>
   <div id="tmenu" class="gb"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
@@ -233,6 +246,7 @@
     <div class="slbet" id="sl_bet"><span>BET</span><button class="gbbtn" data-bet="1">1</button><button class="gbbtn" data-bet="2">2</button><button class="gbbtn" data-bet="5">5</button><button class="gbbtn" data-bet="10">10</button></div>
     <div class="srow"><button class="gbbtn y" id="sl_spin">SPIN ▶</button><button class="gbbtn" id="sl_close">CLOSE</button></div>
     <canvas id="slpaycv" width="130" height="40"></canvas><div id="sl_tok"></div></div>
+  <div id="dashbox" class="gb"><div class="slt" id="ds_title">STAFF DASHBOARD</div><div id="ds_body"></div><div class="srow"><button class="gbbtn" id="ds_refresh">REFRESH</button><button class="gbbtn" id="ds_close">CLOSE</button></div></div>
   <div id="tblbox" class="gb"><div class="slt" id="tb_title"></div><canvas id="tbcv" width="150" height="66"></canvas><div id="tb_msg"></div>
     <div class="tbopts" id="tb_opts"></div>
     <div class="slbet" id="tb_bet"><span>BET</span><button class="gbbtn" data-bet="1">1</button><button class="gbbtn" data-bet="2">2</button><button class="gbbtn" data-bet="5">5</button><button class="gbbtn" data-bet="10">10</button></div>
@@ -281,7 +295,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-18d";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-18e";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1972,7 +1986,7 @@ function readPeer(peer){
   const gsc = (pr.g&&typeof pr.g==='object'&&['hay','dash'].includes(pr.g.id)&&isFinite(+pr.g.v)) ? {k:+pr.g.k||0, id:pr.g.id, v:Math.max(0,Math.min(99999,Math.floor(+pr.g.v)))} : null;
   const bj = Array.isArray(pr.bj) ? pr.bj.slice(0,8).map(v=>Math.max(0,Math.min(51,Math.floor(+v||0)))) : null;
   const ea = (pr.ea&&typeof pr.ea==='object'&&/^a\d{1,2},\d{1,2}$/.test(String(pr.ea.a))) ? {k:+pr.ea.k||0, a:String(pr.ea.a)} : null;
-  return { bj, ea, l, c:pr.c, n:clean(pr.n,12)||'LLAMA', x:Math.min(40,Math.max(0,x)), y:Math.min(40,Math.max(0,y)), d:['fr','fl','br','bl'].includes(pr.d)?pr.d:'fr',
+  return { st: ['owner','mod'].includes(pr.st) ? pr.st : '', bj, ea, l, c:pr.c, n:clean(pr.n,12)||'LLAMA', x:Math.min(40,Math.max(0,x)), y:Math.min(40,Math.max(0,y)), d:['fr','fl','br','bl'].includes(pr.d)?pr.d:'fr',
     p:['sit','dance','bar'].includes(pr.p)?pr.p:'stand', s, e, j, h: DRINK_IDS.includes(pr.h)?pr.h:null, hl:Math.max(0,Math.min(5,Math.floor(+pr.hl||5))), sk:+pr.sk||0, a: pr.a==='arcade'?'arcade':null, sp, td, g:gsc, tg, fk:+pr.fk||0, tk:Math.max(0,Math.min(1e6,Math.floor(+pr.tk||0))), rm: ROOMS.includes(pr.rm)?pr.rm:'lounge', fs: (pr.fs&&typeof pr.fs==='object'&&['cast','bite','got'].includes(pr.fs.st)) ? {k:+pr.fs.k||0, st:pr.fs.st, f:Math.max(0,Math.min(2,Math.floor(+pr.fs.f||0))), bx:Math.max(0,Math.min(40,+pr.fs.bx||0)), by:Math.max(0,Math.min(40,+pr.fs.by||0))} : null, sl: (pr.sl&&typeof pr.sl==='object'&&Array.isArray(pr.sl.r)) ? {k:+pr.sl.k||0, r:pr.sl.r.slice(0,3).map(v=>Math.max(0,Math.min(SLOT_SYMS.length-1,Math.floor(+v||0))))} : null };
 }
 function upsertPeer(peer){
@@ -2003,7 +2017,7 @@ function upsertPeer(peer){
   if (st.l && st.l.ts > lamp.ts){ lamp.on=st.l.on; lamp.ts=st.l.ts; }
   if (st.fs && st.fs.st==='got' && (!o.fs || o.fs.st!=='got' || o.fs.k!==st.fs.k)) o.fishShow={f:st.fs.f, until:performance.now()+2200};
   if (o.rm && st.rm && o.rm!==st.rm) sysMsg(`${st.n.toUpperCase()} went to ${ROOM_NAMES[st.rm]}.`);
-  o.bj=st.bj; o.tk=st.tk; o.rm=st.rm; o.fs=st.fs; o.c=st.c; o.n=st.n; o.tx=st.x; o.ty=st.y; o.d=st.d; o.p=st.p; o.h=st.h; o.hl=st.hl; o.a=st.a;
+  o.st=st.st; o.bj=st.bj; o.tk=st.tk; o.rm=st.rm; o.fs=st.fs; o.c=st.c; o.n=st.n; o.tx=st.x; o.ty=st.y; o.d=st.d; o.p=st.p; o.h=st.h; o.hl=st.hl; o.a=st.a;
   if (Math.hypot(o.tx-o.x,o.ty-o.y)>3){ o.x=o.tx; o.y=o.ty; }
 }
 const LEAVE_T=1200;
@@ -2066,7 +2080,8 @@ function addBar(name, text, cid, gx, gy, mine, yell){
   const wOf=t=>pfW(head)+2+pfW(t,1,!yell)+10;
   if (wOf(body)>maxW){ while (body.length>1 && wOf(body+'...')>maxW) body=body.slice(0,-1); body=body.trimEnd()+'...'; }
   const [wx,wy]=proj(gx,gy);
-  bars.push({head, body, yell:!!yell, cid, mine, x:wx, y:wy-66-9, w:wOf(body), h:9, born:performance.now(), dur:Math.min(18000, 4500+text.length*110)});
+  const st = mine ? (me.st||'') : (([...others.values()].find(o=>o.n && o.n.toUpperCase()===name.toUpperCase())||{}).st||'');
+  bars.push({st, head, body, yell:!!yell, cid, mine, x:wx, y:wy-66-9, w:wOf(body)+(st?BADGE_W:0), h:9, born:performance.now(), dur:Math.min(18000, 4500+text.length*110)});
   if (bars.length>14) bars.shift();
 }
 function updateBars(dt){
@@ -2102,7 +2117,7 @@ document.getElementById('chatrow').addEventListener('submit', e => {
   const cmd = raw.toLowerCase();
   if (cmd==='/roll'){ const v=1+Math.floor(Math.random()*6); const ti=nearTable(); if(ti>=0){ me.tdK=(me.tdK||0)+1; me.lastTable={k:me.tdK,i:ti,v,coin:false}; tableShow(ti,v,false); } action(`rolled a ${v}!`); return; }
   if (cmd==='/flip'){ const h=Math.random()<0.5; const ti=nearTable(); if(ti>=0){ me.tdK=(me.tdK||0)+1; me.lastTable={k:me.tdK,i:ti,v:h?1:2,coin:true}; tableShow(ti,h?1:2,true); } action(`flipped a coin: ${h?'HEADS':'TAILS'}!`); return; }
-  { const mm=/^\/(mute|unmute|ban|unban|kick)\s+(\S+)/.exec(cmd); if (mm){ NET.act('admin',{cmd:mm[1], target:mm[2]}).then(r=>localMsg(r.msg||'Done.')); return; } }
+  { const mm=/^\/(mute|unmute|ban|unban|kick|mod|unmod)\s+(\S+)/.exec(cmd); if (mm){ NET.act('admin',{cmd:mm[1], target:mm[2]}).then(r=>localMsg(r.msg||'Done.')); return; } }
   if (cmd.startsWith('/yell ')){ const t2=raw.slice(6).trim(); if(!t2) return; me.sayK=(me.sayK+1)%100000; me.lastSay={k:me.sayK, t:t2, y:1}; chatMsg(me.n||'YOU', t2, true); addBar(me.n||'YOU', t2, me.c, me.x, me.y, true, true); sendPresence(true); return; }
   me.sayK = (me.sayK+1) % 100000; me.lastSay = {k:me.sayK, t:raw};
   me.bubble = mkBubble(raw); chatMsg(me.n||'YOU', raw); addBar(me.n||'YOU', raw, me.c, me.x, me.y, true);
@@ -2120,12 +2135,12 @@ function openLogo(){ closeAll(); shopImgEl.src=LOGO.src; shopImgEl.style.backgro
 document.getElementById('shopclose').addEventListener('click', ()=>closeAll());
 const menu=document.getElementById('menu'), emenu=document.getElementById('emenu'), logbox=document.getElementById('logbox'), pick=document.getElementById('pick');
 let curMenu=null, menuIdx=0;
-function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || (typeof tblEl!=='undefined' && tblEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
+function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || (typeof tblEl!=='undefined' && tblEl.style.display==='block') || (typeof dashEl!=='undefined' && dashEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
 function items(m){ return [...m.children]; }
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
   const a=el.dataset.a;
@@ -2133,6 +2148,7 @@ function menuAct(el){
   closeAll();
   if (a==='llama') openPicker();
   else if (a==='room') showRoomPick(false);
+  else if (a==='dash') openDash();
   else if (a==='logout'){ apiPost('/api/logout').then(()=>{ NET.closedForGood=true; location.reload(); }); }
   else if (a==='sit') toggleSit();
   else if (a==='tips'){ tipsOff=!tipsOff; if(!tipsOff){ tipHidden={}; store.tipHidden={}; } store.tipsOff=tipsOff; saveStore(); mtips.textContent=tipsOff?'TIPS: OFF':'TIPS: ON'; localMsg(tipsOff?'Tips are off.':'Tips are back on!'); }
@@ -2643,6 +2659,14 @@ function pfDraw(c, str, x, y, col, sc=1, lc=false){
     pfDraw(this, t, x, y, this.fillStyle, sc); };
 })();
 
+// staff badges: a gold crown for the owner, a blue shield for mods (set by the server, so nobody can fake one)
+const BADGE = { owner:{rows:['#.#.#','#####','#####','#####'], c:'#f0b818', d:'#a87808'}, mod:{rows:['#####','#####','#####','.###.','..#..'], c:'#3878e8', d:'#1c4aa8'} };
+const BADGE_W = 7;
+function drawBadge(c, st, x, y){ const B=BADGE[st]; if (!B) return; const H=B.rows.length, y0=y+Math.floor((5-H)/2);
+  c.fillStyle=INK; B.rows.forEach((r,j)=>{ for (let i=0;i<5;i++) if (r[i]==='#'){ c.fillRect(x+i-1,y0+j,1,1); c.fillRect(x+i+1,y0+j,1,1); c.fillRect(x+i,y0+j-1,1,1); c.fillRect(x+i,y0+j+1,1,1); } });
+  B.rows.forEach((r,j)=>{ for (let i=0;i<5;i++) if (r[i]==='#'){ c.fillStyle = j===H-1 || (st==='mod' && i===4) ? B.d : B.c; c.fillRect(x+i,y0+j,1,1); } });
+  c.fillStyle='#ffffff'; if (st==='owner') c.fillRect(x+2,y0+2,1,1); else c.fillRect(x+2,y0+1,1,2); }
+const staffOf = (isMe, l) => isMe ? (me.st||'') : ((l && l.st) || '');
 function drawOverlay(t){
   const c = uctx; c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,ui.width,ui.height);
   const k = S*DPR; c.setTransform(k,0,0,k,0,0);
@@ -2656,14 +2680,16 @@ function drawOverlay(t){
       // name tag: ink-outlined plate, 2px padding, colour pip for the llama, little pointer down to the head
       const name = (it.me ? (me.n||'YOU') : it.l.n).toUpperCase(); const fa = it.fa==null?1:it.fa;
       const cid = it.me ? me.c : (it.l && it.l.c); const tag = (CHARS[cid]||{}).tag || '#f8d030';
-      const tw = pfW(name), w = tw + 9, h = 9;
+      const st = staffOf(it.me, it.l), bw = st ? BADGE_W : 0;
+      const tw = pfW(name), w = tw + 9 + bw, h = 9;
       const nx = Math.round(it.x - w/2), ny = Math.round(it.y - 10);
       c.globalAlpha = fa;
       c.fillStyle = INK; c.fillRect(nx+1, ny, w-2, h); c.fillRect(nx, ny+1, w, h-2);
       c.fillRect(Math.round(it.x)-1, ny+h, 3, 1); c.fillRect(Math.round(it.x), ny+h+1, 1, 1);
       c.globalAlpha = fa*0.88; c.fillStyle = it.me ? '#fff4c0' : '#f8f8f8'; c.fillRect(nx+1, ny+1, w-2, h-2);
       c.globalAlpha = fa; c.fillStyle = tag; c.fillRect(nx+2, ny+3, 2, 3);
-      pfDraw(c, name, nx+6, ny+2, INK);
+      if (st) drawBadge(c, st, nx+6, ny+2);
+      pfDraw(c, name, nx+6+bw, ny+2, INK);
       c.globalAlpha = 1;
     }
     drawTableGames(c, t);
@@ -2675,7 +2701,8 @@ function drawOverlay(t){
       c.globalAlpha=0.9; c.fillStyle=INK; c.fillRect(bx+1,by,b.w-2,b.h); c.fillRect(bx,by+1,b.w,b.h-2);
       c.globalAlpha=b.yell?0.92:0.8; c.fillStyle=b.yell?'#e02838':b.mine?'#fff4c0':'#f8f8f8'; c.fillRect(bx+1,by+1,b.w-2,b.h-2);
       c.globalAlpha=1; const tag=(CHARS[b.cid]||{}).tag||'#f8d030'; c.fillStyle=tag; c.fillRect(bx+2,by+2,2,b.h-4);
-      const x1 = pfDraw(c, b.head, bx+6, by+2, b.yell?'#f8e070':'#8a2a6a');
+      if (b.st) drawBadge(c, b.st, bx+6, by+2);
+      const x1 = pfDraw(c, b.head, bx+6+(b.st?BADGE_W:0), by+2, b.yell?'#f8e070':'#8a2a6a');
       pfDraw(c, b.body, x1+2, by+2, b.yell?'#f8f8f8':INK, 1, !b.yell);
     }
   } else if (arcadeText){ drawArcadeText(c, t); }
@@ -3327,7 +3354,7 @@ async function startGate(){
   else showAuth();
 }
 function applyProfile(p){
-  acct = Object.assign({}, p); isAdminUser = !!p.admin;
+  acct = Object.assign({}, p); isAdminUser = !!p.admin; me.st = ['owner','mod'].includes(p.staff) ? p.staff : ''; dashMenu();
   me.n = p.name; store.n = p.name; pname.value = p.name; pname.readOnly = true;
   if (CHAR_IDS.includes(p.c)){ me.c=p.c; store.c=p.c; setSel(p.c); }
   store.agreed = p.agreed||0; store.bet = Number.isInteger(p.bet)?p.bet:2; store.tk = p.tk;
@@ -3356,10 +3383,51 @@ document.getElementById('au_signup').addEventListener('click', ()=>doAuth('signu
 for (const el of [document.getElementById('au_u'), document.getElementById('au_p')]) el.addEventListener('keydown', e=>e.stopPropagation());
 function showKicked(msg){ const k=document.getElementById('kicked'); k.textContent=msg; k.style.display='flex'; NET.closedForGood=true; try{ NET.ws&&NET.ws.close(); }catch(e){} }
 NET.handlers.tk = m => tkSet(m.tk, m.msg);
+// ======================= STAFF DASHBOARD (owner and mods; the server checks every action) =======================
+const dashEl=document.getElementById('dashbox'), dsBody=document.getElementById('ds_body');
+function dashMenu(){ const el=document.getElementById('mdash'); if (el) el.style.display = me.st ? '' : 'none'; }
+const ROOM_SHORT={lounge:'LOUNGE', barn:'ACRES', casino:'CASINO'};
+const esc = s => String(s).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const badgeHtml = st => st==='owner' ? '<span class="badge" title="Owner">👑</span>' : st==='mod' ? '<span class="badge" title="Mod">🛡</span>' : '<span class="badge"></span>';
+function openDash(){ if (!me.st) return; closeAll(); dsBody.innerHTML='<div class="dl">LOADING...</div>'; dashEl.style.display='block'; loadDash(); }
+function dashDo(cmd, target){
+  if ((cmd==='ban'||cmd==='mod'||cmd==='unmod') && !confirm(`${{ban:'Ban',mod:'Make',unmod:'Remove'}[cmd]} ${target}${cmd==='mod'?' a mod':cmd==='unmod'?' as a mod':''}?`)) return;
+  NET.act('admin',{cmd, target}).then(r=>{ localMsg(r.msg||(r.ok?'Done.':'That did not work.')); loadDash(); }); }
+function loadDash(){
+  NET.act('dash').then(r=>{
+    if (!r.ok){ dsBody.innerHTML=`<div class="dl">${esc(r.msg||'Could not load the dashboard.')}</div>`; return; }
+    const owner = r.me==='owner'; document.getElementById('ds_title').innerHTML = `${badgeHtml(r.me)} ${owner?'OWNER':'MOD'} DASHBOARD`;
+    const myName=(me.n||'').toUpperCase(); let h='';
+    const btn=(label,cmd,name,cls)=>`<button class="gbbtn s ${cls||''}" data-cmd="${cmd}" data-name="${esc(name)}">${label}</button>`;
+    const canAct = (n, st) => n!==myName && st!=='owner' && (owner || st!=='mod');
+    h+=`<h4>ONLINE NOW (${r.online.length})</h4>`;
+    for (const p of r.online){ const acts = !canAct(p.n,p.st) ? '' : (p.muted?btn('UNMUTE','unmute',p.n):btn('MUTE','mute',p.n)) + btn('KICK','kick',p.n,'bad') + (owner ? btn('BAN','ban',p.n,'bad') + (p.st==='mod'?btn('UNMOD','unmod',p.n):btn('MOD','mod',p.n,'gd')) : '');
+      h+=`<div class="dr">${badgeHtml(p.st)}<span class="nm">${esc(p.n)} <small>${ROOM_SHORT[p.rm]||''}${p.muted?' · MUTED':''}</small></span>${acts}</div>`; }
+    if (!r.online.length) h+='<div class="dl">NOBODY ONLINE.</div>';
+    h+='<h4>STAFF</h4>';
+    for (const p of r.staff){ const st=p.role==='admin'?'owner':'mod'; h+=`<div class="dr">${badgeHtml(st)}<span class="nm">${esc(p.n)} <small>${st==='owner'?'OWNER':'MOD'}</small></span>${owner&&st==='mod'?btn('UNMOD','unmod',p.n):''}</div>`; }
+    if (owner) h+=`<div class="addrow" style="margin-top:4px"><input id="ds_new" maxlength="12" placeholder="PLAYER NAME" spellcheck="false" autocapitalize="off"><button class="gbbtn s gd" id="ds_addmod">MAKE MOD</button></div>`;
+    h+=`<h4>MUTED (${r.muted.length})</h4>`;
+    for (const p of r.muted) h+=`<div class="dr">${badgeHtml('')}<span class="nm">${esc(p.n)}</span>${canAct(p.n, p.role==='mod'?'mod':'')?btn('UNMUTE','unmute',p.n):''}</div>`;
+    if (!r.muted.length) h+='<div class="dl">NOBODY IS MUTED.</div>';
+    h+=`<h4>BANNED (${r.banned.length})</h4>`;
+    for (const p of r.banned) h+=`<div class="dr">${badgeHtml('')}<span class="nm">${esc(p.n)}</span>${owner?btn('UNBAN','unban',p.n):''}</div>`;
+    if (!r.banned.length) h+='<div class="dl">NOBODY IS BANNED.</div>';
+    h+='<h4>STAFF LOG</h4>';
+    const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:'};
+    for (const e of r.log.slice(0,20)){ const d=new Date(e.t); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(e.by)} ${WORD[e.cmd]||esc(e.cmd)} ${esc(e.target)}</div>`; }
+    if (!r.log.length) h+='<div class="dl">NO STAFF ACTIONS YET.</div>';
+    dsBody.innerHTML=h;
+    for (const b of dsBody.querySelectorAll('[data-cmd]')) b.addEventListener('click', ()=>dashDo(b.dataset.cmd, b.dataset.name));
+    const add=document.getElementById('ds_addmod'); if (add) add.addEventListener('click', ()=>{ const n=document.getElementById('ds_new').value.trim(); if (n) dashDo('mod', n); });
+  }); }
+document.getElementById('ds_refresh').addEventListener('click', loadDash);
+document.getElementById('ds_close').addEventListener('click', ()=>{ dashEl.style.display='none'; });
 NET.handlers.tg = m => tgServer(m);
 NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; renderBoard(); };
 NET.handlers.hello = m => { if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true); };
 NET.handlers.kick = m => showKicked(m.msg);
+NET.handlers.staff = m => { me.st = ['owner','mod'].includes(m.st) ? m.st : ''; dashMenu(); if (m.msg) localMsg(m.msg); };
 startGate();
 let last = performance.now();
 function loop(now){

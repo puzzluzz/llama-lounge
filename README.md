@@ -31,11 +31,20 @@ Each release bumps `VERSION` in `src/worker.js` and `GAME_VERSION` in `public/in
 
 After any change, run `npx wrangler deploy` again from this folder. Accounts and tokens stay in the database.
 
-## Owner commands (type in chat)
+## Owner and mods
 
-- `/mute NAME` / `/unmute NAME`: their chat messages stop showing.
-- `/kick NAME`: removes them from the lounge. They can come back.
-- `/ban NAME` / `/unban NAME`: logs them out everywhere and blocks the account.
+The owner is the account with `role = 'admin'` in the `users` table (PUZZ). Nothing else can make someone the owner. The owner shows a gold crown by their name, mods show a blue shield. The server stamps these badges, so nobody can fake one.
+
+Open **MENU > DASHBOARD** (only staff see it) to see who is online, who is muted or banned, the staff list and the staff log. You can also type commands in chat:
+
+| Command | Owner | Mods |
+|---|---|---|
+| `/mute NAME`, `/unmute NAME` | yes | yes |
+| `/kick NAME` (they can come back) | yes | yes |
+| `/ban NAME`, `/unban NAME` (logs them out and blocks the account) | yes | no |
+| `/mod NAME`, `/unmod NAME` | yes | no |
+
+Rules the server enforces on every action: staff role is re-read from the database each time (a removed mod loses access instantly), nobody can act on the owner or on themselves, mods can't act on other mods, the owner row can never be changed by a command, staff actions are limited to 20 a minute, and every action is written to the staff log.
 
 ## Security
 

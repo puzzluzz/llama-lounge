@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-18d";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-18e";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -90,8 +90,11 @@ async function bump(env, k) {
   await env.DB.prepare("INSERT INTO login_attempts (k, n, since) VALUES (?, 1, ?) ON CONFLICT(k) DO UPDATE SET n = CASE WHEN ? - since > ? THEN 1 ELSE n + 1 END, since = CASE WHEN ? - since > ? THEN ? ELSE since END")
     .bind(k, now, now, WINDOW_MS, now, WINDOW_MS, now).run();
 }
-const isAdmin = (env, u) => u.role === "admin" || (env.ADMINS || "").split(",").map((s) => s.trim().toUpperCase()).includes(String(u.name).toUpperCase());
-const profileOf = (env, u, timers = []) => ({ name: u.name.toUpperCase(), c: u.c, agreed: u.agreed, bet: u.bet, tk: u.tk, bestHay: u.best_hay, bestDash: u.best_dash, admin: isAdmin(env, u), timers });
+// staff: the owner is users.role = 'admin' (set in the database); mods are users.role = 'mod' and only the owner can make or remove them
+// The owner is ONLY the account with users.role = 'admin' in the database. Never by name, setting or anything the browser sends.
+const isAdmin = (env, u) => !!u && u.role === "admin";
+const staffRole = (env, u) => (isAdmin(env, u) ? "owner" : u.role === "mod" ? "mod" : "");
+const profileOf = (env, u, timers = []) => ({ name: u.name.toUpperCase(), c: u.c, agreed: u.agreed, bet: u.bet, tk: u.tk, bestHay: u.best_hay, bestDash: u.best_dash, admin: isAdmin(env, u), staff: staffRole(env, u), timers });
 
 // same-origin check for anything that changes state
 function originOk(req, url) { const o = req.headers.get("origin"); return !o || o === url.origin; }
@@ -107,7 +110,7 @@ export default {
       if (!u) return new Response("not logged in", { status: 401 });
       if (u.banned) return new Response("banned", { status: 403 });
       // hand the verified identity to the room; the Durable Object is not reachable from the internet directly
-      const fwd = new Request("https://room/ws", { headers: { upgrade: "websocket", "x-uid": String(u.id), "x-name": u.name.toUpperCase(), "x-admin": isAdmin(env, u) ? "1" : "0" } });
+      const fwd = new Request("https://room/ws", { headers: { upgrade: "websocket", "x-uid": String(u.id), "x-name": u.name.toUpperCase(), "x-staff": staffRole(env, u) } });
       return env.LOUNGE.get(env.LOUNGE.idFromName("main")).fetch(fwd);
     }
     if (url.pathname.startsWith("/api/")) {
@@ -184,13 +187,13 @@ async function api(req, env, url) {
 
 // ---------- realtime room ----------
 const PRES_KEYS = new Set(["bj", "c", "n", "x", "y", "d", "p", "m", "s", "h", "hl", "sk", "e", "a", "sp", "td", "g", "fk", "rm", "fs", "sl", "j", "l", "ea"]);
-function cleanPresence(p, name, tk, muted) {
+function cleanPresence(p, name, tk, muted, staff) {
   const o = {};
   if (!p || typeof p !== "object") return o;
   for (const k of Object.keys(p)) if (PRES_KEYS.has(k)) o[k] = p[k];
-  o.n = name; o.tk = tk;                                     // the server decides who you are and what you hold
+  o.n = name; o.tk = tk; if (staff) o.st = staff; else delete o.st;   // the server decides who you are, what you hold and your staff badge
   if (o.s && typeof o.s === "object") { o.s = { k: +o.s.k || 0, t: String(o.s.t || "").slice(0, 120), y: o.s.y ? 1 : 0, f: o.s.f ? 1 : 0 }; if (muted && !o.s.f) delete o.s; }
-  if (JSON.stringify(o).length > 3000) return { c: o.c, n: name, x: o.x, y: o.y, d: o.d, p: o.p, m: o.m, rm: o.rm, tk };
+  if (JSON.stringify(o).length > 3000) return { c: o.c, n: name, x: o.x, y: o.y, d: o.d, p: o.p, m: o.m, rm: o.rm, tk, ...(staff ? { st: staff } : {}) };
   return o;
 }
 
@@ -201,7 +204,7 @@ export class Lounge extends DurableObject {
   }
 
   async fetch(req) {
-    const uid = +req.headers.get("x-uid"), name = req.headers.get("x-name"), admin = req.headers.get("x-admin") === "1";
+    const uid = +req.headers.get("x-uid"), name = req.headers.get("x-name"), staff = ["owner", "mod"].includes(req.headers.get("x-staff")) ? req.headers.get("x-staff") : "";
     // one llama per account: an older connection for this account (another tab, or one left over from a reload) is closed and removed for everyone
     for (const w of this.sockets()) { const old = w.deserializeAttachment(); if (!old || old.uid !== uid) continue;
       if (old.pres) this.broadcast({ t: "peers", left: [{ peer: old.peer }] }, w);
@@ -209,7 +212,7 @@ export class Lounge extends DurableObject {
     const pair = new WebSocketPair(); const [client, server] = Object.values(pair);
     const peer = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
     this.ctx.acceptWebSocket(server);
-    server.serializeAttachment({ uid, name, admin, peer, pres: null, rate: [Date.now(), 0] });
+    server.serializeAttachment({ uid, name, staff, peer, pres: null, rate: [Date.now(), 0] });
     // greet with everyone already here, the leaderboard and table states
     const peers = this.sockets().filter((w) => w !== server && w.readyState === 1).map((w) => w.deserializeAttachment()).filter((a) => a && a.pres && a.uid !== uid).map((a) => ({ peer: a.peer, presence: a.pres }));
     server.send(JSON.stringify({ t: "hello", v: VERSION, peer, peers, board: await this.board() }));
@@ -229,9 +232,9 @@ export class Lounge extends DurableObject {
 
     if (m.t === "p") {
       // balance / mute / ban are cached for a few seconds so moving around doesn't hit the database every step
-      if (!a.uc || now - a.uc.t > 5000){ const u = await this.user(a.uid); if (!u || u.banned) { ws.close(4003, "banned"); return; } a.uc = { t: now, tk: u.tk, muted: u.muted }; }
+      if (!a.uc || now - a.uc.t > 5000){ const u = await this.user(a.uid); if (!u || u.banned) { ws.close(4003, "banned"); return; } a.uc = { t: now, tk: u.tk, muted: u.muted }; a.staff = staffRole(this.env, u); }
       const first = !a.pres;
-      a.pres = cleanPresence(m.p, a.name, a.uc.tk, !!a.uc.muted); ws.serializeAttachment(a);
+      a.pres = cleanPresence(m.p, a.name, a.uc.tk, !!a.uc.muted, a.staff); ws.serializeAttachment(a);
       this.broadcast({ t: "peers", [first ? "joined" : "updated"]: [{ peer: a.peer, presence: a.pres }] }, ws);
       return;
     }
@@ -365,6 +368,7 @@ export class Lounge extends DurableObject {
       case "bj": return this.blackjack(a, m, now);
       case "tg_start": return this.tableStart(ws, a, m);
       case "admin": return this.admin(a, m);
+      case "dash": return this.dashboard(a);
     }
     return { ok: false, msg: "The game was just updated. Refresh the page to get the newest version." };
   }
@@ -450,17 +454,50 @@ export class Lounge extends DurableObject {
     setTimeout(() => { this.tables[i] = null; }, 4000);
   }
 
-  // ---------- moderation (owner/admins only) ----------
+  // ---------- staff tools: mods mute, unmute and kick; the owner can also ban, unban and make or remove mods ----------
+  async logStaff(by, cmd, target) {
+    const log = (await this.ctx.storage.get("modlog")) || [];
+    log.unshift({ t: Date.now(), by, cmd, target }); await this.ctx.storage.put("modlog", log.slice(0, 40));
+  }
+  // Re-reads the caller's role from the database on every staff request, so a removed mod loses access instantly.
+  async staffNow(a) { const me = await this.user(a.uid); const st = me && !me.banned ? staffRole(this.env, me) : ""; a.staff = st; return st; }
+  async dashboard(a) {
+    if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can open the dashboard." };
+    const online = []; const seen = new Set();
+    for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (!x || !x.pres || seen.has(x.uid)) continue; seen.add(x.uid);
+      online.push({ n: x.name, rm: x.pres.rm || "lounge", st: x.staff || "", muted: !!(x.uc && x.uc.muted) }); }
+    const rows = async (sql) => ((await this.env.DB.prepare(sql).all()).results || []).map((r) => ({ n: r.name.toUpperCase(), role: r.role }));
+    const staff = await rows("SELECT name, role FROM users WHERE role IN ('admin','mod') ORDER BY role, name");
+    const muted = await rows("SELECT name, role FROM users WHERE muted = 1 ORDER BY name LIMIT 50");
+    const banned = await rows("SELECT name, role FROM users WHERE banned = 1 ORDER BY name LIMIT 50");
+    return { ok: true, me: a.staff, online, staff, muted, banned, log: (await this.ctx.storage.get("modlog")) || [] };
+  }
   async admin(a, m) {
-    if (!a.admin) return { ok: false, msg: "Only the owner can do that." };
+    if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can do that." };
+    const now = Date.now(); this.staffRate = this.staffRate || new Map();   // at most 20 staff actions a minute per account
+    const sr = (this.staffRate.get(a.uid) || []).filter((t) => now - t < 60000);
+    if (sr.length >= 20) return { ok: false, msg: "Slow down. Too many staff actions in a minute." }; sr.push(now); this.staffRate.set(a.uid, sr);
     const cmd = String(m.cmd || ""), target = String(m.target || "").trim();
-    if (!["mute", "unmute", "ban", "unban", "kick"].includes(cmd) || !/^[A-Za-z0-9_]{3,12}$/.test(target)) return { ok: false, msg: "Use /mute, /unmute, /kick, /ban or /unban NAME" };
-    const u = await this.env.DB.prepare("SELECT id, name FROM users WHERE name = ?").bind(target).first();
+    const ownerOnly = ["ban", "unban", "mod", "unmod"];
+    if (![...ownerOnly, "mute", "unmute", "kick"].includes(cmd) || !/^[A-Za-z0-9_]{3,12}$/.test(target)) return { ok: false, msg: a.staff === "owner" ? "Use /mute, /unmute, /kick, /ban, /unban, /mod or /unmod NAME" : "Use /mute, /unmute or /kick NAME" };
+    if (ownerOnly.includes(cmd) && a.staff !== "owner") return { ok: false, msg: "Only the owner can do that." };
+    const u = await this.env.DB.prepare("SELECT id, name, role FROM users WHERE name = ?").bind(target).first();
     if (!u) return { ok: false, msg: "No player named " + target.toUpperCase() };
+    const theirs = staffRole(this.env, u);
+    if (u.id === a.uid) return { ok: false, msg: "You can't do that to yourself." };
+    if (theirs === "owner") return { ok: false, msg: "Nobody can moderate the owner." };
+    if (theirs === "mod" && a.staff !== "owner") return { ok: false, msg: "Mods can't moderate other mods." };
     if (cmd === "mute" || cmd === "unmute") await this.env.DB.prepare("UPDATE users SET muted = ? WHERE id = ?").bind(cmd === "mute" ? 1 : 0, u.id).run();
     if (cmd === "ban" || cmd === "unban") await this.env.DB.prepare("UPDATE users SET banned = ? WHERE id = ?").bind(cmd === "ban" ? 1 : 0, u.id).run();
     if (cmd === "ban") await this.env.DB.prepare("DELETE FROM sessions WHERE uid = ?").bind(u.id).run();
-    if (cmd === "ban" || cmd === "kick") for (const w of this.sockets()) { const a2 = w.deserializeAttachment(); if (a2 && a2.uid === u.id) { this.send(w, { t: "kick", msg: cmd === "ban" ? "You have been banned from the lounge." : "You were removed from the lounge." }); try { w.close(4003, cmd); } catch (e) {} } }
-    return { ok: true, msg: `${u.name.toUpperCase()}: ${cmd} done.` };
+    if (cmd === "mod" || cmd === "unmod") await this.env.DB.prepare("UPDATE users SET role = ? WHERE id = ? AND role != 'admin'").bind(cmd === "mod" ? "mod" : "player", u.id).run();
+    for (const w of this.sockets()) { const a2 = w.deserializeAttachment(); if (!a2 || a2.uid !== u.id) continue;
+      if (cmd === "ban" || cmd === "kick") { this.send(w, { t: "kick", msg: cmd === "ban" ? "You have been banned from the lounge." : "You were removed from the lounge." }); try { w.close(4003, cmd); } catch (e) {} }
+      else { // their badge and mute show up straight away
+        a2.uc = null; if (cmd === "mod" || cmd === "unmod") a2.staff = cmd === "mod" ? "mod" : ""; w.serializeAttachment(a2);
+        if (cmd === "mod" || cmd === "unmod") this.send(w, { t: "staff", st: cmd === "mod" ? "mod" : "", msg: cmd === "mod" ? "You are now a MOD! Open MENU > DASHBOARD." : "You are no longer a mod." }); } }
+    await this.logStaff(a.name, cmd, u.name.toUpperCase());
+    const done = { mute: "muted", unmute: "unmuted", kick: "kicked", ban: "banned", unban: "unbanned", mod: "is now a MOD", unmod: "is no longer a mod" }[cmd];
+    return { ok: true, msg: `${u.name.toUpperCase()} ${done}.` };
   }
 }
