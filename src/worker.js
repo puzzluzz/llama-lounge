@@ -13,11 +13,11 @@ const IP_MAX_FAILS = 30;                  // per IP per 15 minutes
 const SIGNUPS_PER_IP_HOUR = 5;
 const WINDOW_MS = 15 * 60 * 1000;
 
-const SLOT_W = [34, 28, 20, 12, 6];                 // cherry, lemon, bell, seven, llama
-const SLOT_PAY = { 0: 7, 1: 12, 2: 25, 3: 60, 4: 150 }; // three of a kind only (about a 7% win rate)
+const SLOT_W = [28, 24, 19, 14, 9, 6];               // cherry, lemon, carrot, bell, seven, llama
+const SLOT_PAY = [8, 15, 25, 50, 120, 500];          // three of a kind only: about a 4.6% win rate, pays back about 89%
 const FISH = [{ n: "BLUEGILL", pay: 1, w: 70 }, { n: "BIG ORANGE CARP", pay: 2, w: 25 }, { n: "GOLDEN FISH", pay: 5, w: 5 }];
 const CROP_KEYS = new Set(); for (const y of [13, 15, 17]) for (let x = 2; x <= 5; x++) CROP_KEYS.add(x + "," + y);
-const POND = { x0: 15, x1: 19, y0: 4, y1: 7 };
+const POND = { x0: 15, x1: 20, y0: 3, y1: 7 };
 const TABLES = [{ gx: 8, gy: 8 }, { gx: 3, gy: 8 }];
 const CROP_MS = 90000, BAR_MS = 30000;
 

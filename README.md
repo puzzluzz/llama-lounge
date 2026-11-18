@@ -45,6 +45,7 @@ After any change, run `npx wrangler deploy` again from this folder. Accounts and
   - 5 new accounts per connection per hour
 - **Tokens:** only change on the server.
   - The server spins the slots, deals the table games and picks the fish.
+  - Slots pay on three of a kind only: cherries 8, lemons 15, carrots 25, bells 50, sevens 120, llamas 500 (about 1 spin in 22 wins).
   - The server checks where you're standing before paying for carrots, fishing, the bar or drinks.
   - Arcade scores faster than the game allows are rejected.
 - **Audit log:** every token change is recorded in the `ledger` table.
