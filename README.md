@@ -27,6 +27,8 @@ The game runs on your Cloudflare account, on the free plan:
 
 ## Updating later
 
+Each release bumps `VERSION` in `src/worker.js` and `GAME_VERSION` in `public/index.html` (they must match). If a player's open page is older than the server, the game tells them to refresh.
+
 After any change, run `npx wrangler deploy` again from this folder. Accounts and tokens stay in the database.
 
 ## Owner commands (type in chat)

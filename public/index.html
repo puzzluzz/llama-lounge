@@ -281,6 +281,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
+const GAME_VERSION = "2026-11-18d";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -3357,7 +3358,7 @@ function showKicked(msg){ const k=document.getElementById('kicked'); k.textConte
 NET.handlers.tk = m => tkSet(m.tk, m.msg);
 NET.handlers.tg = m => tgServer(m);
 NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; renderBoard(); };
-NET.handlers.hello = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true); };
+NET.handlers.hello = m => { if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true); };
 NET.handlers.kick = m => showKicked(m.msg);
 startGate();
 let last = performance.now();

@@ -5,6 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
+const VERSION = "2026-11-18d";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -211,7 +212,7 @@ export class Lounge extends DurableObject {
     server.serializeAttachment({ uid, name, admin, peer, pres: null, rate: [Date.now(), 0] });
     // greet with everyone already here, the leaderboard and table states
     const peers = this.sockets().filter((w) => w !== server && w.readyState === 1).map((w) => w.deserializeAttachment()).filter((a) => a && a.pres && a.uid !== uid).map((a) => ({ peer: a.peer, presence: a.pres }));
-    server.send(JSON.stringify({ t: "hello", peer, peers, board: await this.board() }));
+    server.send(JSON.stringify({ t: "hello", v: VERSION, peer, peers, board: await this.board() }));
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -365,7 +366,7 @@ export class Lounge extends DurableObject {
       case "tg_start": return this.tableStart(ws, a, m);
       case "admin": return this.admin(a, m);
     }
-    return { ok: false };
+    return { ok: false, msg: "The game was just updated. Refresh the page to get the newest version." };
   }
 
   // ---------- blackjack: one hand per player against the dealer, kept in this room's storage between moves ----------
