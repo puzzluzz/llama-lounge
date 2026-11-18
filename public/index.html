@@ -270,6 +270,7 @@ const NET = {
     const ws = new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws'); this.ws=ws;
     ws.onmessage = e => { let m; try { m=JSON.parse(e.data); } catch(_){ return; } this.onmsg(m); };
     ws.onclose = ev => { this.ready=false; for (const [id,res] of this.wait) res({ok:false,msg:'Connection lost, reconnecting...'}); this.wait.clear();
+      if (ev.code===4001 && !this.closedForGood && this.handlers.kick){ this.handlers.kick({msg:'You opened the LLAMA LOUNGE in another tab or window, so this one left the room. Reload to play here instead.'}); return; }
       if (ev.code===4003 || this.closedForGood) return; setTimeout(()=>this.connect(), 2000); };
   },
   send(o){ if (this.ws && this.ws.readyState===1) this.ws.send(JSON.stringify(o)); },
@@ -1816,6 +1817,7 @@ function upsertPeer(peer){
   if (peer.kind !== 'viewer') return;
   const st = readPeer(peer); const id = peer.peer;
   if (!st) return;
+  if (joined && me.n && st.n.toUpperCase()===String(me.n).toUpperCase()){ const o=others.get(id); if (o) others.delete(id); return; }   // never draw yourself twice
   let o = others.get(id); const now=performance.now();
   if (o && o.leaving){ others.delete(id); o=null; }
   if (!o){ o = { id, x:st.x, y:st.y, anim:0, lastK: st.s?st.s.k:0, lastE: st.e?st.e.k:0, lastSk: st.sk, lastSp: st.sp?st.sp.k:0, lastTd: st.td?st.td.k:0, lastG: st.g?st.g.k:0, lastTG: st.tg?st.tg.k:0, lastFk: st.fk||0, lastEa: st.ea?st.ea.k:0, flipStart:-9999, bubble:null, emote:null, sipStart:-9999, flinch:0 }; others.set(id,o); sysMsg(`${st.n.toUpperCase()} is online in ${ROOM_NAMES[st.rm]||'the lounge'}!`); }

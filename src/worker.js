@@ -179,12 +179,16 @@ export class Lounge extends DurableObject {
 
   async fetch(req) {
     const uid = +req.headers.get("x-uid"), name = req.headers.get("x-name"), admin = req.headers.get("x-admin") === "1";
+    // one llama per account: an older connection for this account (another tab, or one left over from a reload) is closed and removed for everyone
+    for (const w of this.sockets()) { const old = w.deserializeAttachment(); if (!old || old.uid !== uid) continue;
+      if (old.pres) this.broadcast({ t: "peers", left: [{ peer: old.peer }] }, w);
+      try { w.serializeAttachment({ ...old, pres: null }); w.close(4001, "replaced"); } catch (e) {} }
     const pair = new WebSocketPair(); const [client, server] = Object.values(pair);
     const peer = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({ uid, name, admin, peer, pres: null, rate: [Date.now(), 0] });
     // greet with everyone already here, the leaderboard and table states
-    const peers = this.sockets().filter((w) => w !== server).map((w) => w.deserializeAttachment()).filter((a) => a && a.pres).map((a) => ({ peer: a.peer, presence: a.pres }));
+    const peers = this.sockets().filter((w) => w !== server && w.readyState === 1).map((w) => w.deserializeAttachment()).filter((a) => a && a.pres && a.uid !== uid).map((a) => ({ peer: a.peer, presence: a.pres }));
     server.send(JSON.stringify({ t: "hello", peer, peers, board: await this.board() }));
     return new Response(null, { status: 101, webSocket: client });
   }
