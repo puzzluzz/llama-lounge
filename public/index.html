@@ -160,6 +160,9 @@
   #slotbox .srow{display:flex;justify-content:center;gap:calc(var(--px)*6px)}
   #slotbox .gbbtn.y{background:#f8d030}
   #slotbox .gbbtn:disabled{opacity:.5}
+  .slbet{display:flex;justify-content:center;align-items:center;gap:calc(var(--px)*4px);margin-bottom:calc(var(--px)*5px);font-size:calc(var(--px)*6px);color:#3858a8}
+  .slbet .gbbtn{min-width:calc(var(--px)*20px);padding:calc(var(--px)*3px) calc(var(--px)*4px)}
+  .slbet .gbbtn.on{background:#f8d030}
   #slpaycv{display:block;margin:calc(var(--px)*6px) auto 0;width:calc(var(--px)*130px);height:calc(var(--px)*40px);max-width:100%;image-rendering:pixelated}
   #sl_tok{margin-top:calc(var(--px)*4px);font-size:calc(var(--px)*6px);color:#a06808}
   #auth{left:50%;top:50%;transform:translate(-50%,-50%);display:none;z-index:6;width:min(calc(100% - 16px),calc(var(--px)*230px));text-align:center}
@@ -211,11 +214,13 @@
   </div>
   <div id="kicked"></div>
   <div id="roompick" class="gb"><div class="rpt" id="rp_title">WHERE TO?</div>
-    <button class="rpb" data-r="lounge"><span class="rpi">🍸</span><span class="rpx"><b>LLAMA LOUNGE</b><small>BAR · ARCADE · SLOTS · DANCE FLOOR · TABLE GAMES</small><i id="rp_n_lounge"></i></span></button>
+    <button class="rpb" data-r="lounge"><span class="rpi">🍸</span><span class="rpx"><b>LLAMA LOUNGE</b><small>BAR · ARCADE · JUKEBOX · DANCE FLOOR · TABLE GAMES</small><i id="rp_n_lounge"></i></span></button>
+    <button class="rpb" data-r="casino"><span class="rpi">🎰</span><span class="rpx"><b>LLAMA CASINO</b><small>SLOTS · ROULETTE · BLACKJACK TABLES</small><i id="rp_n_casino"></i></span></button>
     <button class="rpb" data-r="barn"><span class="rpi">🌾</span><span class="rpx"><b>LLAMA ACRES</b><small>BARN · CAMPFIRE · CARROT PATCH (EARN TOKENS)</small><i id="rp_n_barn"></i></span></button>
     <div class="srow"><button class="gbbtn" id="rp_llama">CHANGE LLAMA</button><button class="gbbtn" id="rp_close">CLOSE</button></div></div>
-  <div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button></div>
-  <div id="slotbox" class="gb"><div class="slt">🎰 LLAMA SLOTS</div><canvas id="slotcv" width="130" height="70"></canvas><div id="sl_msg">1 TOKEN A SPIN. GOOD LUCK!</div>
+  <div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button></div>
+  <div id="slotbox" class="gb"><div class="slt" id="sl_title">🎰 LLAMA SLOTS</div><canvas id="slotcv" width="130" height="70"></canvas><div id="sl_msg">1 TOKEN A SPIN. GOOD LUCK!</div>
+    <div class="slbet" id="sl_bet"><span>BET</span><button class="gbbtn" data-bet="1">1</button><button class="gbbtn" data-bet="2">2</button><button class="gbbtn" data-bet="5">5</button><button class="gbbtn" data-bet="10">10</button></div>
     <div class="srow"><button class="gbbtn y" id="sl_spin">SPIN ▶</button><button class="gbbtn" id="sl_close">CLOSE</button></div>
     <canvas id="slpaycv" width="130" height="40"></canvas><div id="sl_tok"></div></div>
   <div id="fwbox" class="gb"><div class="fwt" id="fw_t"></div><div class="fwn" id="fw_n"></div>
@@ -428,7 +433,7 @@ function sprite(cid,dir,frame,pose){ const k=cid+'|'+dir+'|'+frame+'|'+pose; let
 // ======================= WORLD =======================
 const ARC_X = 9, JUKE_X = 12;   // arcade cabinet and jukebox spots on the lounge's back wall
 const TW = 40, TH = 20, WH = 96;
-const ROOM_DIMS = { lounge:[13,12], barn:[22,20] };
+const ROOM_DIMS = { lounge:[13,12], barn:[22,20], casino:[13,12] };
 let N = 13, NY = 12;   // current room: N = width (gx) and row stride, NY = depth (gy)
 const proj = (gx,gy) => [(gx-gy)*TW/2, (gx+gy)*TH/2];
 let BLOCK = new Uint8Array(N*NY);
@@ -436,7 +441,17 @@ const FURN = [], SEATS = [];
 const block = (x,y) => { BLOCK[y*N+x] = 1; };
 // two rooms share one grid; each build function lays out its own furniture
 let curRoom = 'lounge';
-const ROOM_NAMES = { lounge:'LLAMA LOUNGE', barn:'LLAMA ACRES' };
+const ROOM_NAMES = { lounge:'LLAMA LOUNGE', barn:'LLAMA ACRES', casino:'LLAMA CASINO' };
+const ROOMS = ['lounge','barn','casino'];
+const CASINO_SLOT_X = [0,1,2,3,4,5,6,7,8,9,10,11,12];   // a full row of slot machines on the casino's back wall; stools one tile in front (the server checks the same spots)
+const slotKind = x => x<=3 ? 'fruit' : x<=8 ? 'classic' : 'gold';
+// what each kind looks like and pays (three of a kind, times the bet); the server holds the same table and decides every spin
+const SLOT_KINDS = {
+  fruit:   { name:'FRUIT FRENZY',   note:'WINS OFTEN',        pay:[6,13,30,60,150,500],   cab:['#38a048','#38a048','#207030','#185828'], lite:'#78e078', top:['#f8d030','#e8b820','#b88818'] },
+  classic: { name:'LLAMA CLASSIC',  note:'THE ORIGINAL',      pay:[8,15,25,50,120,500],   cab:['#d03040','#d03040','#981c2c','#5a1020'], lite:'#e86070', top:['#f8d030','#e8b820','#b88818'] },
+  gold:    { name:'GOLDEN JACKPOT', note:'RARE BUT HUGE',     pay:[4,8,15,30,100,1000],   cab:['#7838c0','#7838c0','#502088','#301060'], lite:'#b080f0', top:['#fff0a0','#f8d030','#c09018'] } };
+const SLOT_BETS = [1,2,5,10];
+const isSlotSeat = (x,y) => curRoom==='casino' && y===1 && CASINO_SLOT_X.includes(x);
 const DANCE = new Set(), CROPS = [], POND = [];
 function clearWorld(){ [N,NY]=ROOM_DIMS[curRoom]; if (BLOCK.length!==N*NY) BLOCK=new Uint8Array(N*NY); FURN.length=0; SEATS.length=0; BLOCK.fill(0); DANCE.clear(); CROPS.length=0; POND.length=0; }
 function lounge(tx,ty,col){
@@ -501,7 +516,21 @@ function buildBarnWorld(){
   for (const [x,y] of [[8,15],[9,18],[14,14],[18,15],[20,10],[13,8]]){ FURN.push({t:'apple',gx:x,gy:y,k:'a'+x+','+y}); block(x,y); }
   FURN.push({t:'hay',gx:21,gy:0}); block(21,0);
 }
-function buildWorld(){ if (curRoom==='barn') buildBarnWorld(); else buildLoungeWorld(); }
+// LLAMA CASINO: red carpet, slot row on the back wall, a roulette table, two blackjack tables
+function buildCasinoWorld(){
+  clearWorld();
+  for (const x of CASINO_SLOT_X){ FURN.push({t:'slots',gx:x,gy:0}); block(x,0); SEATS.push({gx:x,gy:1,dir:'br',lift:9}); FURN.push({t:'stool',gx:x,gy:1}); }
+  FURN.push({t:'fern',gx:12,gy:11,flip:true}); block(12,11);
+  // roulette in the middle (2 x 2) with stools on three sides
+  FURN.push({t:'roulette',gx:6,gy:5,dz:1}); for (const [x,y] of [[6,5],[7,5],[6,6],[7,6]]) block(x,y);
+  for (const [x,y,d] of [[5,5,'fr'],[5,6,'fr'],[8,5,'bl'],[8,6,'bl'],[6,7,'br'],[7,7,'br']]){ SEATS.push({gx:x,gy:y,dir:d,lift:9}); FURN.push({t:'stool',gx:x,gy:y,c:'casino'}); }
+  // two blackjack tables on the right (2 x 1), players sit on the front side facing the dealer
+  for (const ty of [4,8]){ FURN.push({t:'blackjack',gx:10,gy:ty,dz:0.5}); block(10,ty); block(11,ty);
+    for (const x of [10,11]){ SEATS.push({gx:x,gy:ty+1,dir:'br',lift:9}); FURN.push({t:'stool',gx:x,gy:ty+1,c:'casino'}); } }
+  // velvet ropes marking the way in from the door
+  for (const [x,y] of [[2,9],[2,11]]){ FURN.push({t:'stanchion',gx:x,gy:y}); block(x,y); }
+}
+function buildWorld(){ if (curRoom==='barn') buildBarnWorld(); else if (curRoom==='casino') buildCasinoWorld(); else buildLoungeWorld(); }
 buildLoungeWorld();
 const seatAt = (x,y) => SEATS.find(s=>s.gx===x&&s.gy===y);
 const walkable = (x,y) => x>=0&&y>=0&&x<N&&y<NY&&!BLOCK[y*N+x];
@@ -544,6 +573,30 @@ let BGX = 270, BGY = 130;
 const bg = document.createElement('canvas'); bg.width = 540; bg.height = 400;
 function sizeBG(){ BGX = NY*20+12; BGY = 130; const w=(N+NY)*20+24, h=(N+NY)*10+160; if (bg.width!==w) bg.width=w; if (bg.height!==h) bg.height=h; }
 function rnd(seed){ let s=seed>>>0; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
+// panelled wooden door with a sky window and brass knob, on the left wall (sg -1) or the back wall (sg 1); xa..xb are wall pixels
+function drawDoor(ox, oy, xa, xb, sg, kx){ const H=46;
+
+    for (let x=xa; x<xb; x++){ const b=Math.floor(sg*x/2), top=b-H, i=x-xa, w=xb-xa;
+      g.fillStyle=INK; g.fillRect(ox+x, oy+top-1, 1, H+1);
+      if (i===0||i===w-1) continue;
+      const trim = i<=2 || i>=w-3;
+      if (trim){ g.fillStyle = i<=1||i>=w-2 ? '#c8a068' : '#e8c890'; g.fillRect(ox+x, oy+top, 1, H); continue; }
+      g.fillStyle='#e8c890'; g.fillRect(ox+x, oy+top, 1, 2); g.fillStyle=INK; g.fillRect(ox+x, oy+top+2, 1, 1);
+      g.fillStyle='#b06a30'; g.fillRect(ox+x, oy+top+3, 1, H-3);
+      const inner = i>=5 && i<=w-6;
+      if (inner){
+        // window showing the sky outside
+        g.fillStyle=INK; g.fillRect(ox+x, oy+top+6, 1, 1); g.fillRect(ox+x, oy+top+17, 1, 1);
+        const per=(typeof period==='string')?period:'night'; g.fillStyle = per==='day' ? '#98d0f8' : per==='dusk' ? '#f8a878' : '#384890'; g.fillRect(ox+x, oy+top+7, 1, 10);
+        if (i===Math.floor(w/2)) { g.fillStyle='#e8c890'; g.fillRect(ox+x, oy+top+7, 1, 10); }
+        if (per==='day' && i===6){ g.fillStyle='#f8f8f8'; g.fillRect(ox+x, oy+top+9, 1, 2); }
+        // two inset panels
+        for (const [p0,p1] of [[20,30],[33,H-4]]){ g.fillStyle='#8a4a20'; g.fillRect(ox+x, oy+top+p0, 1, 1); g.fillRect(ox+x, oy+top+p1, 1, 1); g.fillStyle='#c87838'; g.fillRect(ox+x, oy+top+p0+1, 1, p1-p0-1); }
+      } else if (i===4 || i===w-5){ for (const [p0,p1] of [[20,30],[33,H-4]]){ g.fillStyle='#8a4a20'; g.fillRect(ox+x, oy+top+p0, 1, p1-p0+1); } g.fillStyle=INK; g.fillRect(ox+x, oy+top+6, 1, 12); }
+    }
+    // brass knob + plate
+    const kb=Math.floor(sg*kx/2)-H; g.fillStyle=INK; g.fillRect(ox+kx-1, oy+kb+27, 4, 6); g.fillStyle='#f8d030'; g.fillRect(ox+kx, oy+kb+28, 2, 2); g.fillStyle='#c09018'; g.fillRect(ox+kx, oy+kb+30, 2, 2); g.fillStyle='#f8f0a0'; g.fillRect(ox+kx, oy+kb+28, 1, 1);
+  }
 function buildBG(){
   g = bg.getContext('2d'); g.clearRect(0,0,bg.width,bg.height);
   const ox=BGX, oy=BGY;
@@ -581,29 +634,7 @@ function buildBG(){
       g.fillStyle=INK; g.fillRect(ox+x-1, oy+b-h-bh-1, 5, bh+1); g.fillRect(ox+x, oy+b-h-bh-3, 3, 3);
       g.fillStyle=c; g.fillRect(ox+x, oy+b-h-bh, 3, bh); g.fillRect(ox+x+1, oy+b-h-bh-2, 1, 2); g.fillStyle='#f8f8f8'; g.fillRect(ox+x, oy+b-h-bh+1, 1, 2); }
   }
-  // door on left wall at gy 10: trimmed frame, sky window, two inset panels, brass knob
-  { const xa=-220, xb=-200, H=46;
-    for (let x=xa; x<xb; x++){ const b=Math.floor(-x/2), top=b-H, i=x-xa, w=xb-xa;
-      g.fillStyle=INK; g.fillRect(ox+x, oy+top-1, 1, H+1);
-      if (i===0||i===w-1) continue;
-      const trim = i<=2 || i>=w-3;
-      if (trim){ g.fillStyle = i<=1||i>=w-2 ? '#c8a068' : '#e8c890'; g.fillRect(ox+x, oy+top, 1, H); continue; }
-      g.fillStyle='#e8c890'; g.fillRect(ox+x, oy+top, 1, 2); g.fillStyle=INK; g.fillRect(ox+x, oy+top+2, 1, 1);
-      g.fillStyle='#b06a30'; g.fillRect(ox+x, oy+top+3, 1, H-3);
-      const inner = i>=5 && i<=w-6;
-      if (inner){
-        // window showing the sky outside
-        g.fillStyle=INK; g.fillRect(ox+x, oy+top+6, 1, 1); g.fillRect(ox+x, oy+top+17, 1, 1);
-        const per=(typeof period==='string')?period:'night'; g.fillStyle = per==='day' ? '#98d0f8' : per==='dusk' ? '#f8a878' : '#384890'; g.fillRect(ox+x, oy+top+7, 1, 10);
-        if (i===Math.floor(w/2)) { g.fillStyle='#e8c890'; g.fillRect(ox+x, oy+top+7, 1, 10); }
-        if (per==='day' && i===6){ g.fillStyle='#f8f8f8'; g.fillRect(ox+x, oy+top+9, 1, 2); }
-        // two inset panels
-        for (const [p0,p1] of [[20,30],[33,H-4]]){ g.fillStyle='#8a4a20'; g.fillRect(ox+x, oy+top+p0, 1, 1); g.fillRect(ox+x, oy+top+p1, 1, 1); g.fillStyle='#c87838'; g.fillRect(ox+x, oy+top+p0+1, 1, p1-p0-1); }
-      } else if (i===4 || i===w-5){ for (const [p0,p1] of [[20,30],[33,H-4]]){ g.fillStyle='#8a4a20'; g.fillRect(ox+x, oy+top+p0, 1, p1-p0+1); } g.fillStyle=INK; g.fillRect(ox+x, oy+top+6, 1, 12); }
-    }
-    // brass knob + plate
-    const kx=-205, kb=Math.floor(-kx/2)-H; g.fillStyle=INK; g.fillRect(ox+kx-1, oy+kb+27, 4, 6); g.fillStyle='#f8d030'; g.fillRect(ox+kx, oy+kb+28, 2, 2); g.fillStyle='#c09018'; g.fillRect(ox+kx, oy+kb+30, 2, 2); g.fillStyle='#f8f0a0'; g.fillRect(ox+kx, oy+kb+28, 1, 1);
-  }
+  drawDoor(ox, oy, -220, -200, -1, -205);   // the lounge's door, on the left wall at gy 10
   // floor
   // floor: each tile filled and edged with the same pixel steps, so no colour pokes past the grout lines
   const T=(gx,gy)=>{ const p=proj(gx,gy); return [ox+p[0], oy+p[1]]; };
@@ -625,6 +656,37 @@ function buildBG(){
   };
   rug(7,7,10,10,'#f05888','#f8d030');
   rug(2,7,5,10,'#3890e0','#f8d030');
+}
+
+// ======================= LLAMA CASINO BACKGROUND =======================
+function buildCasinoBG(){
+  g = bg.getContext('2d'); g.clearRect(0,0,bg.width,bg.height);
+  const ox=BGX, oy=BGY;
+  for (let x=-NY*20; x<N*20; x++){
+    const left=x<0, ax=left?-x:x, base=Math.floor(ax/2), top=base-WH;
+    g.fillStyle = left ? '#5e1834' : '#6e2040'; g.fillRect(ox+x, oy+top, 1, WH+2);                       // wallpaper
+    if (ax%12===0){ g.fillStyle = left ? '#74264a' : '#843058'; g.fillRect(ox+x, oy+top+6, 1, WH-36); }   // pinstripes
+    for (const v of [44,60,76]) if ((ax+v)%12===6){ g.fillStyle='#c09018'; g.fillRect(ox+x, oy+base-v, 1, 1); g.fillRect(ox+x, oy+base-v-2, 1, 1); }
+    g.fillStyle = left ? '#30081a' : '#3a0c22'; g.fillRect(ox+x, oy+base-28, 1, 28);                      // wainscot
+    if (ax%20===10){ g.fillStyle='#22040f'; g.fillRect(ox+x, oy+base-24, 1, 20); }
+    g.fillStyle='#f8d030'; g.fillRect(ox+x, oy+base-30, 1, 2); g.fillStyle=INK; g.fillRect(ox+x, oy+base-31, 1, 1);   // gold rail
+    g.fillStyle='#c09018'; g.fillRect(ox+x, oy+top-4, 1, 5); g.fillStyle=INK; g.fillRect(ox+x, oy+top-5, 1, 1); g.fillRect(ox+x, oy+base, 1, 1);
+  }
+  g.fillStyle=INK; g.fillRect(ox-1, oy-WH-5, 2, WH+6); g.fillRect(ox-NY*20-1, oy+NY*10-WH-5, 1, WH+6); g.fillRect(ox+N*20, oy+N*10-WH-5, 1, WH+6);
+  drawDoor(ox, oy, -220, -200, -1, -205);   // door on the left wall at gy 10 (to the LLAMA LOUNGE)
+  // brass wall sconces with a warm glow
+  for (const [x,sg] of [[-70,-1],[-150,-1],[134,1],[250,1]]){ const b=Math.floor(sg*x/2), y=oy+b-70;
+    g.fillStyle='rgba(248,208,96,0.18)'; for (let r=10;r>4;r-=2){ g.fillRect(ox+x-r, y-r, r*2+1, r*2+1); }
+    g.fillStyle=INK; g.fillRect(ox+x-3, y-4, 7, 7); g.fillStyle='#f8f0d0'; g.fillRect(ox+x-2, y-3, 5, 4); g.fillStyle='#c09018'; g.fillRect(ox+x-2, y+1, 5, 1); g.fillRect(ox+x, y+2, 1, 4); }
+  // carpet: deep red with a small gold diamond on every tile, no grout lines
+  const T=(gx,gy)=>{ const p=proj(gx,gy); return [ox+p[0], oy+p[1]]; };
+  for (let gy=0; gy<NY; gy++) for (let gx=0; gx<N; gx++){ polyPx([T(gx,gy),T(gx+1,gy),T(gx+1,gy+1),T(gx,gy+1)], ((gx+gy)%2)?'#a01a32':'#ac2038');
+    const k=0.16; polyPx([T(gx+0.5,gy+0.5-k),T(gx+0.5+k,gy+0.5),T(gx+0.5,gy+0.5+k),T(gx+0.5-k,gy+0.5)],'#d8a830');
+    const k2=0.07; polyPx([T(gx+0.5,gy+0.5-k2),T(gx+0.5+k2,gy+0.5),T(gx+0.5,gy+0.5+k2),T(gx+0.5-k2,gy+0.5)],'#7a1026'); }
+  // gold border round the edge of the carpet
+  { const a=T(0.1,0.1), b=T(N-0.1,0.1), c=T(N-0.1,NY-0.1), d=T(0.1,NY-0.1); for (const [p1,p2] of [[a,b],[b,c],[c,d],[d,a]]) linePx(p1[0],p1[1],p2[0],p2[1],'#d8a830'); }
+  // black runner from the door
+  { const R=(x0,y0,x1,y1,c)=>polyPx([T(x0,y0),T(x1,y0),T(x1,y1),T(x0,y1)],c); R(0,9.85,3.1,11.15,'#d8a830'); R(0,9.95,3,11.05,'#1a0810'); R(0,10.15,3,10.85,'#2a1018'); }
 }
 
 // ======================= FURNITURE DRAW =======================
@@ -697,7 +759,7 @@ function buildBarnBG(){
   g = null;
 }
 function barnSky(){ const per=(typeof period==='string')?period:'day'; return per==='day' ? ['#78b8f0','#98ccf8','#b8e0f8'] : per==='dusk' ? ['#d86858','#f09868','#f8c890'] : ['#181c50','#222a68','#2c3a80']; }
-function rebuildBG(){ sizeBG(); if (curRoom==='barn') buildBarnBG(); else buildBG(); }
+function rebuildBG(){ sizeBG(); if (curRoom==='barn') buildBarnBG(); else if (curRoom==='casino') buildCasinoBG(); else buildBG(); }
 
 function P(gx,gy,h=0){ const [x,y]=proj(gx,gy); return [OX+x, OY+y-h]; }
 function box(gx,gy,w,d,h,top,lf,rf,inset=0,lift=0){
@@ -921,6 +983,48 @@ function drawArcade3D(f, sx, sy, t){
   { const [jx,jy]=P(gx+0.36,gy+0.8,21); g.fillStyle=INK; g.fillRect(Math.round(jx),Math.round(jy)-5,1,5); ellPx(jx,jy-6,2,2,INK); ellPx(jx,jy-6.3,1.3,1.3,'#f84848');
     for (const [u,c] of [[0.56,'#f8d030'],[0.68,'#48c048']]){ const [bx,by]=P(gx+u,gy+0.82,21); ellPx(bx,by,1.8,1.2,INK); g.fillStyle=c; g.fillRect(Math.round(bx)-1,Math.round(by)-1,2,1); } }
 }
+// roulette table (2 x 2): wood rail, green felt with the number layout, a spinning wheel with an orbiting ball
+function drawRoulette(f, t){
+  const gx=f.gx, gy=f.gy, W=2, D=2;
+  { const [cx,cy]=P(gx+1,gy+1); ellPx(cx,cy+2,30,12,'rgba(0,0,0,0.25)'); }
+  for (const [u,v] of [[0.25,0.25],[1.75,0.25],[0.25,1.75],[1.75,1.75]]) box(gx+u-0.06,gy+v-0.06,0.12,0.12,10,'#5a2c18','#4a2010','#3a1808');
+  box(gx+0.05,gy+0.05,W-0.1,D-0.1,3,'#8a4a20','#6a3418','#4a2210',0,10);
+  const Q=(u0,v0,u1,v1,c)=>polyPx([P(gx+u0,gy+v0,13),P(gx+u1,gy+v0,13),P(gx+u1,gy+v1,13),P(gx+u0,gy+v1,13)],c);
+  Q(0.15,0.15,1.85,1.85,'#1e7a3a'); Q(0.2,0.2,1.8,1.8,'#24903f');
+  // number layout on the far half: three rows of red/black boxes with a green zero
+  Q(1.0,0.3,1.12,1.7,'#28a048');
+  for (let i=0;i<6;i++) for (let j=0;j<3;j++){ const u0=1.14+i*0.11, v0=0.32+j*0.46; Q(u0,v0,u0+0.1,v0+0.44,(i+j)%2?'#c02838':'#181020'); }
+  { const a=P(gx+1.14,gy+1.72,13), b=P(gx+1.8,gy+1.72,13); linePx(a[0],a[1],b[0],b[1],'#f8f0d0'); }
+  // wheel on the near half
+  const [wx,wy]=P(gx+0.55,gy+1.0,14); const rot=t*1.6;
+  ellPx(wx,wy+1,13,7,INK); ellPx(wx,wy,12.5,6.5,'#6a3418'); ellPx(wx,wy-0.5,10.5,5.3,'#c09018');
+  for (let k=0;k<18;k++){ const a=rot+k/18*Math.PI*2, col = k===0 ? '#28a048' : k%2 ? '#c02838' : '#181020';
+    for (let r=4.5;r<=9.5;r+=0.8){ g.fillStyle=col; g.fillRect(Math.round(wx+Math.cos(a)*r),Math.round(wy+Math.sin(a)*r*0.52),1,1); g.fillRect(Math.round(wx+Math.cos(a+0.17)*r),Math.round(wy+Math.sin(a+0.17)*r*0.52),1,1); } }
+  ellPx(wx,wy,4,2.2,'#8a4a20'); ellPx(wx,wy-1,1.6,1.2,'#f8d030'); g.fillStyle='#f8f0a0'; g.fillRect(Math.round(wx),Math.round(wy)-3,1,2);
+  { const ba=-t*3.1; g.fillStyle='#ffffff'; g.fillRect(Math.round(wx+Math.cos(ba)*10.2),Math.round(wy+Math.sin(ba)*5.3)-1,2,2); }
+  // chip stacks on the layout
+  for (const [u,v,c] of [[1.3,0.55,'#f84848'],[1.52,1.05,'#3890e0'],[1.66,0.5,'#f8d030']]){ const [x,y]=P(gx+u,gy+v,13); for (let k=0;k<3;k++){ ellPx(x,y-k*1.5,2.4,1.2,INK); ellPx(x,y-k*1.5-0.5,1.8,0.8,c); } }
+}
+// blackjack table (2 x 1): curved green felt facing the players, dealer's chip tray and shoe at the back, a card at each seat
+function drawBlackjack(f, t){
+  const gx=f.gx, gy=f.gy;
+  { const [cx,cy]=P(gx+1,gy+0.5); ellPx(cx,cy+2,26,9,'rgba(0,0,0,0.25)'); }
+  for (const u of [0.3,1.7]) box(gx+u-0.07,gy+0.43,0.14,0.14,10,'#5a2c18','#4a2010','#3a1808');
+  // half-moon felt: straight dealer edge at the back, curved player edge at the front, padded rail and wooden apron
+  const depth=u=>0.5+0.38*Math.sqrt(Math.max(0,1-((u-1)/0.96)**2));
+  const curve=[]; for (let u=0.04;u<=1.961;u+=0.06) curve.push([u,0.08+depth(u)]);
+  for (let i=0;i<curve.length-1;i++){ const [u0,v0]=curve[i], [u1,v1]=curve[i+1]; polyPx([P(gx+u0,gy+v0,13),P(gx+u1,gy+v1,13),P(gx+u1,gy+v1,9),P(gx+u0,gy+v0,9)],'#6a3418'); }
+  const felt=[P(gx+0.04,gy+0.08,13),P(gx+1.96,gy+0.08,13),...curve.slice().reverse().map(([u,v])=>P(gx+u,gy+v,13))];
+  polyPx(felt,INK); polyPx(felt.map(([x,y],i)=>[x+(i===0?1:i===1?-1:0), y+(i<2?1:-1)]),'#1e8a3c');
+  for (let i=0;i<curve.length-1;i++){ const a=P(gx+curve[i][0],gy+curve[i][1],13), b=P(gx+curve[i+1][0],gy+curve[i+1][1],13); linePx(a[0],a[1],b[0],b[1],'#a86a34'); linePx(a[0],a[1]+1,b[0],b[1]+1,INK); }
+  { const a=P(gx+0.04,gy+0.08,13), b=P(gx+1.96,gy+0.08,13); linePx(a[0],a[1],b[0],b[1],'#8a4a20'); }
+  { const a=P(gx+0.3,gy+0.38,13), b=P(gx+1.7,gy+0.38,13); for (let i=0;i<=20;i++){ const u=i/20, x=a[0]+(b[0]-a[0])*u, y=a[1]+(b[1]-a[1])*u+Math.sin(u*Math.PI)*4; g.fillStyle='#f8d030'; g.fillRect(Math.round(x),Math.round(y),1,1); } }
+  // dealer chip tray and card shoe
+  { const [x,y]=P(gx+1,gy+0.2,13); g.fillStyle=INK; g.fillRect(Math.round(x)-8,Math.round(y)-3,17,4); ['#f84848','#3890e0','#48c048','#f8d030','#181020','#f8f8f8','#b058e0','#f84848'].forEach((c,i)=>{ g.fillStyle=c; g.fillRect(Math.round(x)-7+i*2,Math.round(y)-2,2,2); }); }
+  { const [x,y]=P(gx+1.7,gy+0.25,13); g.fillStyle=INK; g.fillRect(Math.round(x)-3,Math.round(y)-5,7,6); g.fillStyle='#c02838'; g.fillRect(Math.round(x)-2,Math.round(y)-4,5,4); g.fillStyle='#f8f8f8'; g.fillRect(Math.round(x)-2,Math.round(y)-4,2,1); }
+  // a card face up at each seat
+  for (const u of [0.5,1.5]){ const [x,y]=P(gx+u,gy+0.7,13); g.fillStyle=INK; g.fillRect(Math.round(x)-2,Math.round(y)-3,5,6); g.fillStyle='#f8f8f8'; g.fillRect(Math.round(x)-1,Math.round(y)-2,3,4); g.fillStyle=u<1?'#c02838':'#181020'; g.fillRect(Math.round(x),Math.round(y)-1,1,2); }
+}
 // small potted fern: short glazed teal pot, a mound of arching fronds with leaflets
 function drawFern(f, sx, sy, t){
   const ox=f.ox||0, oy=f.oy||0, fl=f.flip?-1:1; { const [x,y]=P(f.gx+0.5+ox,f.gy+0.5+oy); sx=Math.round(x); sy=Math.round(y); }
@@ -977,7 +1081,15 @@ function drawFurn(f,t){
         // front cup, in front of the stool, gets picked up when someone sits there
         if (!(typeof stoolTaken==='function' && stoolTaken(f.gx))){ const [fx,fy]=P(f.gx+0.55,1.78,24); cup(Math.round(fx)-2,Math.round(fy),CUPC[f.gx%7],false); if (typeof cupHits!=='undefined') cupHits.push({gx:f.gx, x0:Math.round(fx)-3, x1:Math.round(fx)+5, y0:Math.round(fy)-6, y1:Math.round(fy)+1}); } }
       break;
-    case 'stool': g.fillStyle=INK; g.fillRect(sx-2,sy-10,4,10); g.fillStyle='#585870'; g.fillRect(sx-1,sy-10,2,10); ellO(sx,sy,4,2,'#383848'); ellO(sx,sy-11,6,3,'#f84848'); g.fillStyle='#f8a8a8'; g.fillRect(sx-3,sy-13,3,1); break;
+    case 'stool': { const gold=f.c==='casino'; g.fillStyle=INK; g.fillRect(sx-2,sy-10,4,10); g.fillStyle=gold?'#c09018':'#585870'; g.fillRect(sx-1,sy-10,2,10); ellO(sx,sy,4,2,gold?'#8a6810':'#383848'); ellO(sx,sy-11,6,3,gold?'#282030':'#f84848'); g.fillStyle=gold?'#f8d030':'#f8a8a8'; g.fillRect(sx-3,sy-13,3,1); break; }
+    case 'stanchion': { // brass post with a red velvet rope looping back to the wall
+      const [hx,hy]=P(0.02,f.gy+0.5,22); const top=[sx,sy-22];
+      for (let i=0;i<=16;i++){ const u=i/16, x=top[0]+(hx-top[0])*u, y=top[1]+(hy-top[1])*u+Math.sin(u*Math.PI)*7; ellPx(x,y,1.4,1.4,INK); }
+      for (let i=0;i<=16;i++){ const u=i/16, x=top[0]+(hx-top[0])*u, y=top[1]+(hy-top[1])*u+Math.sin(u*Math.PI)*7; g.fillStyle=i%3?'#c02838':'#e04858'; g.fillRect(Math.round(x),Math.round(y),1,1); }
+      ellPx(sx,sy,5,2,INK); ellPx(sx,sy-0.5,4,1.5,'#c09018'); g.fillStyle=INK; g.fillRect(sx-2,sy-22,4,22); g.fillStyle='#f8d030'; g.fillRect(sx-1,sy-22,2,22); g.fillStyle='#fff0a0'; g.fillRect(sx-1,sy-22,1,22);
+      ellPx(sx,sy-24,3,3,INK); ellPx(sx,sy-24,2,2,'#f8d030'); break; }
+    case 'roulette': drawRoulette(f, t); break;
+    case 'blackjack': drawBlackjack(f, t); break;
     case 'cushion': { const [c0,c1,c2]=f.col; const sh=shadeHex(c0,0.62);
       box(f.gx+0.17,f.gy+0.17,0.66,0.66,6,c0,c1,sh);
       // puffy top: lighter inset + piping + tuft button
@@ -1045,17 +1157,18 @@ function drawFurn(f,t){
     case 'slots': {
       // isometric slot cabinet filling its tile; the reel window is laid on the face toward the stool
       const x0=f.gx+0.03, x1=f.gx+0.97, y0=f.gy+0.34, y1=f.gy+0.88, H=38;
-      const sv = (typeof slotView==='function') ? slotView() : {r:[0,1,2], spin:false, win:false, stopAt:[0,0,0], t0:0};
+      const mine = me.p==='sit' && me.gx===f.gx && isSlotSeat(me.gx,me.gy); const sv = mine ? slotView() : slotIdle(f.gx);
       const now=performance.now(), win=sv.win, flash=Math.floor(t*(win?10:3));
-      box(x0,y0,x1-x0,y1-y0,6,'#5a1020','#701828','#4a0c18');                 // pedestal
-      box(x0+0.02,y0+0.02,x1-x0-0.04,y1-y0-0.04,H-6,'#d03040','#d03040','#981c2c',0,6);   // cabinet
-      box(x0-0.02,y0-0.02,x1-x0+0.04,y1-y0+0.04,7,'#f8d030','#e8b820','#b88818',0,H);    // gold topper
+      const K=SLOT_KINDS[slotKind(f.gx)];
+      box(x0,y0,x1-x0,y1-y0,6,K.cab[3],K.cab[3],K.cab[3]);                 // pedestal
+      box(x0+0.02,y0+0.02,x1-x0-0.04,y1-y0-0.04,H-6,K.cab[0],K.cab[1],K.cab[2],0,6);   // cabinet
+      box(x0-0.02,y0-0.02,x1-x0+0.04,y1-y0+0.04,7,K.top[0],K.top[1],K.top[2],0,H);    // gold topper
       // face coordinates: u runs along the front face (left to right), v is height
       const [Lx,Ly]=P(x0+0.02,y1-0.02,0); const F=(u,v)=>[Math.round(Lx+u), Math.round(Ly+u*0.5)-v];
       const px=(u,v,c)=>{ const [X,Y]=F(u,v); g.fillStyle=c; g.fillRect(X,Y,1,1); };
       const W=Math.round((x1-x0-0.04)*20);   // face width in pixels
       // highlight strip down the left edge of the face
-      for (let v=7; v<H-1; v++) px(1,v,'#e86070');
+      for (let v=7; v<H-1; v++) px(1,v,K.lite);
       // chase lights on the topper face
       for (let u=2; u<W-1; u+=2) px(u, H+3, ((u/2)+flash)%2 ? '#f8f8f8' : '#f84848');
       // reel window: thin ink frame left/right, chrome top/bottom, three 5-pixel reels with dividers
@@ -1375,7 +1488,7 @@ function arrive(){
   if (me.bar){ me.p='bar'; me.d = Math.random()<0.5?'fr':'fl'; me.barT = 2.6+Math.random()*2.8; sendPresence(true); if (!me.barOn){ me.barOn=true; me.shift=0; setTimeout(()=>NET.act('bar_tick'), 400); } return; }
   if (me.after){ const af=me.after; me.after=null; if (af[0]!==me.gx||af[1]!==me.gy){ if (walkTo(af[0],af[1],af[2])) return; } else if (af[2]){ me.p='stand'; sendPresence(true); doAction(af[2]); return; } }
   const s=seatAt(me.gx,me.gy);
-  if (s){ me.p='sit'; me.d=s.dir; if (curRoom==='lounge' && s.gx===12 && s.gy===1) setTimeout(openSlots, 150); }
+  if (s){ me.p='sit'; me.d=s.dir; if (isSlotSeat(s.gx,s.gy)) setTimeout(openSlots, 150); }
   else { me.p = onDance() ? 'dance' : 'stand'; me.d = 'f'+me.d[1]; }   // turn to face the screen
   const pend=me.pending; me.pending=null;
   sendPresence(true);
@@ -1425,15 +1538,17 @@ function context(){
   if (me.bar) return 'unbar';
   if (curRoom==='barn'){
     if (me.fish) return 'reel';
-    if (me.p!=='sit' && near(14,0)) return 'goLounge';
     if (me.p!=='sit' && pondNear()) return 'fish';
     if (me.p!=='sit' && readyCropNear()) return 'harvest';
     { const k=standNear(); if (k) return k==='cider'?'fw':'snack'; }
     if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
     return me.p==='sit' ? 'stand' : 'sit';
   }
-  if (me.p==='sit' && me.gx===12 && me.gy===1) return 'spin';
-  if (me.p!=='sit' && me.gx===0 && me.gy===10) return 'goBarn';
+  if (curRoom==='casino'){
+    if (me.p==='sit' && isSlotSeat(me.gx,me.gy)) return 'spin';
+    if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
+    return me.p==='sit' ? 'stand' : 'sit';
+  }
   if (me.p!=='sit' && onDance()) return 'flip';
   if (me.p!=='sit' && near(ARC_X,0)) return 'arcade';
   if (me.p!=='sit' && near(JUKE_X,0)) return 'juke';
@@ -1444,7 +1559,7 @@ function context(){
   if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
   return me.p==='sit' ? 'stand' : 'sit';
 }
-const ALABEL = {fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
+const ALABEL = {fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
 const alabel=document.getElementById('alabel'); let lastLabel='';
 function updateALabel(){ const c=context(); const l = arcade.on ? (arcade.mode==='menu'?'SELECT':arcade.over?'RETRY':arcade.mode==='dash'?'JUMP':'---') : (c?ALABEL[c]:'SIT'); if(l!==lastLabel){ alabel.textContent=l; lastLabel=l; } }
 // ---- bartending: slip past the rope, pace behind the bar pouring drinks ----
@@ -1480,6 +1595,8 @@ function doAction(a){
   a = a || context(); if(!a) return;
   if (a==='travel'){ const r=me.travelTo; me.travelTo=null; if (r) switchRoom(r); return; }
   if (a==='goBarn'){ if (!me.moving) showSwap('barn'); return; }
+  if (a==='goCasino'){ if (!me.moving) showSwap('casino'); return; }
+  if (a==='goLoungeC'){ if (!me.moving) showSwap('lounge'); return; }
   if (a==='goLounge'){ if (!me.moving && near(14,0)) showSwap('lounge'); return; }
   if (a==='harvest'){ harvest(); return; }
   if (a==='fw'||a==='snack'){ const k=a==='fw'?'cider':'snack'; if (nearStand(STANDS[k])) openFw(k); return; }
@@ -1810,7 +1927,7 @@ function readPeer(peer){
   const gsc = (pr.g&&typeof pr.g==='object'&&['hay','dash'].includes(pr.g.id)&&isFinite(+pr.g.v)) ? {k:+pr.g.k||0, id:pr.g.id, v:Math.max(0,Math.min(99999,Math.floor(+pr.g.v)))} : null;
   const ea = (pr.ea&&typeof pr.ea==='object'&&/^a\d{1,2},\d{1,2}$/.test(String(pr.ea.a))) ? {k:+pr.ea.k||0, a:String(pr.ea.a)} : null;
   return { ea, l, c:pr.c, n:clean(pr.n,12)||'LLAMA', x:Math.min(40,Math.max(0,x)), y:Math.min(40,Math.max(0,y)), d:['fr','fl','br','bl'].includes(pr.d)?pr.d:'fr',
-    p:['sit','dance','bar'].includes(pr.p)?pr.p:'stand', s, e, j, h: DRINK_IDS.includes(pr.h)?pr.h:null, hl:Math.max(0,Math.min(5,Math.floor(+pr.hl||5))), sk:+pr.sk||0, a: pr.a==='arcade'?'arcade':null, sp, td, g:gsc, tg, fk:+pr.fk||0, tk:Math.max(0,Math.min(1e6,Math.floor(+pr.tk||0))), rm: pr.rm==='barn'?'barn':'lounge', fs: (pr.fs&&typeof pr.fs==='object'&&['cast','bite','got'].includes(pr.fs.st)) ? {k:+pr.fs.k||0, st:pr.fs.st, f:Math.max(0,Math.min(2,Math.floor(+pr.fs.f||0))), bx:Math.max(0,Math.min(40,+pr.fs.bx||0)), by:Math.max(0,Math.min(40,+pr.fs.by||0))} : null, sl: (pr.sl&&typeof pr.sl==='object'&&Array.isArray(pr.sl.r)) ? {k:+pr.sl.k||0, r:pr.sl.r.slice(0,3).map(v=>Math.max(0,Math.min(SLOT_SYMS.length-1,Math.floor(+v||0))))} : null };
+    p:['sit','dance','bar'].includes(pr.p)?pr.p:'stand', s, e, j, h: DRINK_IDS.includes(pr.h)?pr.h:null, hl:Math.max(0,Math.min(5,Math.floor(+pr.hl||5))), sk:+pr.sk||0, a: pr.a==='arcade'?'arcade':null, sp, td, g:gsc, tg, fk:+pr.fk||0, tk:Math.max(0,Math.min(1e6,Math.floor(+pr.tk||0))), rm: ROOMS.includes(pr.rm)?pr.rm:'lounge', fs: (pr.fs&&typeof pr.fs==='object'&&['cast','bite','got'].includes(pr.fs.st)) ? {k:+pr.fs.k||0, st:pr.fs.st, f:Math.max(0,Math.min(2,Math.floor(+pr.fs.f||0))), bx:Math.max(0,Math.min(40,+pr.fs.bx||0)), by:Math.max(0,Math.min(40,+pr.fs.by||0))} : null, sl: (pr.sl&&typeof pr.sl==='object'&&Array.isArray(pr.sl.r)) ? {k:+pr.sl.k||0, r:pr.sl.r.slice(0,3).map(v=>Math.max(0,Math.min(SLOT_SYMS.length-1,Math.floor(+v||0))))} : null };
 }
 function upsertPeer(peer){
   if (peer.isMe && peer.sameTab) return;
@@ -1823,7 +1940,7 @@ function upsertPeer(peer){
   if (!o){ o = { id, x:st.x, y:st.y, anim:0, lastK: st.s?st.s.k:0, lastE: st.e?st.e.k:0, lastSk: st.sk, lastSp: st.sp?st.sp.k:0, lastTd: st.td?st.td.k:0, lastG: st.g?st.g.k:0, lastTG: st.tg?st.tg.k:0, lastFk: st.fk||0, lastEa: st.ea?st.ea.k:0, flipStart:-9999, bubble:null, emote:null, sipStart:-9999, flinch:0 }; others.set(id,o); sysMsg(`${st.n.toUpperCase()} is online in ${ROOM_NAMES[st.rm]||'the lounge'}!`); }
   else {
     const here = st.rm===curRoom;
-    if (st.sl && st.sl.k !== o.lastSl){ o.lastSl = st.sl.k; if (here) slotRemote(st.sl.r); }
+    if (st.sl && st.sl.k !== o.lastSl){ o.lastSl = st.sl.k; if (here) slotRemote(st.sl.r, Math.floor(st.x)); }
     if (st.s && st.s.k !== o.lastK){ o.lastK = st.s.k; if (st.s.t){ if(st.s.f){ if (here) sysMsg(`${st.n.toUpperCase()} ${st.s.t}`); } else if (!here) chatMsg(st.n, st.s.t, st.s.y); else { o.bubble=mkBubble(st.s.t); chatMsg(st.n, st.s.t, st.s.y); addBar(st.n, st.s.t, st.c, o.x, o.y, false, st.s.y); } } }
     if (st.e && st.e.k !== o.lastE){ o.lastE = st.e.k; o.emote={t:st.e.t, until:now+3000}; }
     if (st.sk !== o.lastSk){ o.lastSk = st.sk; o.sipStart = now; }
@@ -1859,7 +1976,7 @@ const stxt = document.getElementById('stxt'), dot = document.getElementById('dot
 function updateStatus(){
   if (!room){ dot.className=''; stxt.textContent = 'SOLO MODE'; return; }
   if (!room.connected()){ dot.className=''; stxt.textContent='RECONNECTING'; return; }
-  let n=1, all=1; for (const o of others.values()) if(!o.leaving){ all++; if (sameRoom(o)) n++; } dot.className='on'; const away=all-n, other=curRoom==='barn'?'LOUNGE':'ACRES';
+  let n=1, all=1; for (const o of others.values()) if(!o.leaving){ all++; if (sameRoom(o)) n++; } dot.className='on'; const away=all-n, other='OTHER ROOMS';
   stxt.textContent = (n===1 ? 'JUST YOU HERE' : `${n} LLAMAS HERE`) + (away ? ` · ${away} IN ${other}` : ''); if (typeof updateRoombar==='function') updateRoombar();
 }
 async function initRoom(){
@@ -2062,6 +2179,7 @@ cv.addEventListener('pointerdown', e => {
   if (uiOpen()){ closeAll(); return; }
   chatin.blur(); ensureAudio();
   if (curRoom==='barn'){ barnPointer(e); return; }
+  if (curRoom==='casino'){ casinoPointer(e); return; }
   { const lx=e.clientX/S, ly=e.clientY/S; for (const h of shopHit){ if(lx>=h.x0&&lx<h.x1&&ly>=h.y0&&ly<=h.y1){ openShop(h.i); return; } }
     const lcx=OX-210, lcy=OY+105-75.5; if (Math.abs(lx-lcx)<=13 && Math.abs(ly-lcy)<=13){ openLogo(); return; } }
   { const lx=e.clientX/S, ly=e.clientY/S;
@@ -2073,11 +2191,9 @@ cv.addEventListener('pointerdown', e => {
     if (Math.abs(lx-tx)<=10 && ly>=ty-34 && ly<=ty+4){ if(near(0,6)) doAction('lamp'); else { const t=nearestFree(0,6); if(t) walkTo(t[0],t[1],'lamp'); } return; } }
   { const lx=e.clientX/S, ly=e.clientY/S; const [rx,ry]=P(7.04,0.5); if (Math.abs(lx-rx)<=11 && ly>=ry-26 && ly<=ry+6){ ropeClick(); return; } }
   // the door sits on the wall, outside the floor grid, so check it before the grid bounds
-  { const lx=e.clientX/S, ly=e.clientY/S; if (lx>=OX-220 && lx<=OX-200 && ly>=OY+46 && ly<=OY+110){ showSwap('barn'); return; } }
   const [gx,gy] = toGrid(e.clientX, e.clientY);
   if (gx<0||gy<0||gx>=N||gy>=NY) return;
   if (gx===7 && gy===0){ ropeClick(); return; }
-  if (gx===0 && gy===10 && !(me.gx===0&&me.gy===10)){ showSwap('barn'); return; }   // the welcome mat counts as the door
   if ((gx===ARC_X||gx===JUKE_X) && gy===0){ const act = gx===ARC_X?'arcade':'juke'; if(near(gx,0)) doAction(act); else { const t=nearestFree(gx,0); if(t) walkTo(t[0],t[1],act); } return; }
   if (gx===0 && gy===6){ if(near(0,6)) doAction('lamp'); else { const t=nearestFree(0,6); if(t) walkTo(t[0],t[1],'lamp'); } return; }
   if (walkable(gx,gy)){ walkTo(gx,gy); return; }
@@ -2273,6 +2389,21 @@ function buildSigns(){
   SIGNS.dance=[signImg('DANCE','#f85888',INK), signImg('DANCE','#a890e0',INK)];
 }
 function wallText(img, wx, wy, slope){ for (let x=0;x<img.width;x++){ const dy=Math.round(x*slope); g.drawImage(img, x,0,1,img.height, OX+wx+x, OY+wy+dy-img.height, 1, img.height); } }
+// small plate with pixel text, laid flat on a wall (slope 0.5 back wall, -0.5 left wall); h is the plate's bottom height above the floor
+const plateCache={};
+function plateImg(text, fg, bgc, rim){ const k=text+fg+bgc+rim; if (plateCache[k]) return plateCache[k]; const w=pfW(text)+10, h=11; const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d');
+  x.fillStyle=INK; x.fillRect(1,0,w-2,h); x.fillRect(0,1,w,h-2); x.fillStyle=rim; x.fillRect(1,1,w-2,h-2); x.fillStyle=bgc; x.fillRect(2,2,w-4,h-4); pfDraw(x,text,5,3,fg); return plateCache[k]=c; }
+function wallPlate(img, cx, h, sg){ const wx=Math.round(cx-img.width/2); const wy = sg>0 ? Math.round(wx/2-h) : Math.round(-wx/2-h); wallText(img, wx, wy, sg*0.5); }
+const marquee = document.createElement('canvas');
+function drawCasinoSigns(t){
+  // CASINO marquee on the back wall: dark board, gold letters, a ring of chasing bulbs
+  const sc=3, tw=pfW('CASINO',sc), W=tw+20, H=5*sc+14; if (marquee.width!==W){ marquee.width=W; marquee.height=H; }
+  const m=marquee.getContext('2d'); m.clearRect(0,0,W,H); m.fillStyle=INK; m.fillRect(0,0,W,H); m.fillStyle='#c09018'; m.fillRect(1,1,W-2,H-2); m.fillStyle='#2a0818'; m.fillRect(3,3,W-6,H-6);
+  pfDraw(m,'CASINO',11,8,'#7a5008',sc); pfDraw(m,'CASINO',10,7,(Math.floor(t*2)%6===0)?'#fff0a0':'#f8d030',sc);
+  const lit=Math.floor(t*8); let k=0; const bulb=(x,y)=>{ const on=(k++ + lit)%3===0; m.fillStyle=on?'#ffffff':'#f8a830'; m.fillRect(x,y,1,1); };
+  for (let x=4;x<W-4;x+=3) bulb(x,4); for (let y=7;y<H-4;y+=3) bulb(W-5,y); for (let x=W-5;x>=4;x-=3) bulb(x,H-5); for (let y=H-8;y>=7;y-=3) bulb(4,y);
+  wallPlate(marquee, 182, 52, 1);
+}
 function drawSigns(t){
   if (!SIGNS.bar) return;
   const flick = (Math.sin(t*13)+Math.sin(t*7.3)) > -1.7;
@@ -2397,7 +2528,7 @@ function render(t){
   if (curRoom==='barn'){ const sk=barnSky(); const top=OY-BGY; ctx.fillStyle=sk[2]; ctx.fillRect(0,0,LW,LH); ctx.fillStyle=sk[1]; ctx.fillRect(0,0,LW,top+140); ctx.fillStyle=sk[0]; ctx.fillRect(0,0,LW,top+70); }
   else { ctx.fillStyle='#100c1c'; ctx.fillRect(0,0,LW,LH); }
   ctx.drawImage(bg, OX-BGX, OY-BGY);
-  if (curRoom==='lounge'){ drawSkySign(t); drawSigns(t); drawBoardWall(t); drawDanceFloor(t); } else { shopHit=[]; boardHit=null; }
+  if (curRoom==='lounge'){ drawSkySign(t); drawSigns(t); drawBoardWall(t); drawDanceFloor(t); } else { shopHit=[]; boardHit=null; if (curRoom==='casino') drawCasinoSigns(t); }
   const items = [];
   for (const f of FURN) items.push({d: f.gx+f.gy+1+(f.dz||0), f});
   if (joined) items.push({d: me.x+me.y+0.02, l: me, me:true});
@@ -2685,16 +2816,19 @@ function drawTableGames(c, t){
 
 // ======================= ROOMS: LLAMA LOUNGE <-> LLAMA ACRES =======================
 const roomPickEl=document.getElementById('roompick'), loadingEl=document.getElementById('loading');
-const SPAWN = { lounge:{at:[1,10], to:[3,10]}, barn:{at:[14,1], to:[13,3]} };
+// where you appear in a room, by the room you came from
+const ENTRY = { lounge:{ any:{at:[1,10], to:[3,10]} }, barn:{ any:{at:[14,1], to:[13,3]} }, casino:{ any:{at:[1,10], to:[3,10]} } };
+let entryFrom = null;
+const entryFor = r => { const E=ENTRY[r]; return (entryFrom && E[entryFrom]) || E.any || E[Object.keys(E)[0]]; };
 // pick a free tile near the room's entrance so new arrivals don't stand on top of each other
-function spawnSpot(r){ const [cx,cy]=SPAWN[r].to; const taken=new Set(); for (const o of others.values()) if (!o.leaving && sameRoom(o)) taken.add(Math.floor(o.tx??o.x)+','+Math.floor(o.ty??o.y));
+function spawnSpot(r){ const [cx,cy]=entryFor(r).to; const taken=new Set(); for (const o of others.values()) if (!o.leaving && sameRoom(o)) taken.add(Math.floor(o.tx??o.x)+','+Math.floor(o.ty??o.y));
   const opts=[]; for (let dy=-2;dy<=2;dy++) for (let dx=-2;dx<=2;dx++){ const x=cx+dx, y=cy+dy; if (!walkable(x,y) || seatAt(x,y) || taken.has(x+','+y)) continue; if (curRoom==='lounge' && DANCE.has(y*N+x)) continue; opts.push([x,y]); }
   return opts.length ? opts[Math.floor(Math.random()*opts.length)] : [cx,cy]; }
 function roomCount(r){ let n=(joined&&curRoom===r)?1:0; for (const o of others.values()) if(!o.leaving && (o.rm||'lounge')===r) n++; return n; }
 function showRoomPick(first){
   closeAll(); loadingEl.style.display='none';
   document.getElementById('rp_title').textContent = first ? `WELCOME${acctHasLlama()||store.n?' BACK':''}, ${(me.n||'LLAMA').toUpperCase()}! WHERE TO?` : 'CHANGE ROOM';
-  for (const r of ['lounge','barn']){ const n=roomCount(r); document.getElementById('rp_n_'+r).textContent = (joined&&curRoom===r) ? `YOU ARE HERE${n>1?' · '+n+' LLAMAS':''}` : (n ? `${n} LLAMA${n>1?'S':''} HERE` : 'NOBODY HERE YET'); }
+  for (const r of ROOMS){ const n=roomCount(r); document.getElementById('rp_n_'+r).textContent = (joined&&curRoom===r) ? `YOU ARE HERE${n>1?' · '+n+' LLAMAS':''}` : (n ? `${n} LLAMA${n>1?'S':''} HERE` : 'NOBODY HERE YET'); }
   document.getElementById('rp_close').style.display = joined ? '' : 'none';
   roomPickEl.dataset.first = first ? '1' : ''; roomPickEl.style.display='flex';
 }
@@ -2704,37 +2838,44 @@ for (const b of document.querySelectorAll('#roompick [data-r]')) b.addEventListe
 document.getElementById('rp_close').addEventListener('click', ()=>{ roomPickEl.style.display='none'; });
 document.getElementById('rp_llama').addEventListener('click', ()=>{ roomPickEl.style.display='none'; pick.style.display='flex'; });
 function setRoom(r){ if (me.fish) stopFish(true);
-  curRoom = r==='barn' ? 'barn' : 'lounge'; store.room=curRoom; saveStore();
+  curRoom = ROOMS.includes(r) ? r : 'lounge'; store.room=curRoom; saveStore();
   buildWorld(); rebuildBG();
   me.bar=false; me.path=[]; me.moving=false; me.p='stand'; me.pending=null; me.after=null; me.prog=0;
-  const [sx,sy]=SPAWN[curRoom].at; me.gx=sx; me.gy=sy; me.x=sx+0.5; me.y=sy+0.5; me.d='fr';
+  const [sx,sy]=entryFor(curRoom).at; me.gx=sx; me.gy=sy; me.x=sx+0.5; me.y=sy+0.5; me.d='fr';
   tgState[0]=tgState[1]=null; tableFx[0]=tableFx[1]=null; camInit=false;
   document.getElementById('stitle').textContent = ROOM_NAMES[curRoom]; updateStatus(); updateRoombar();
 }
 // ---- bottom-left room selector: walk to the doorway, then confirm the swap ----
 const swapEl=document.getElementById('swapbox'), roombarEl=document.getElementById('roombar'); let swapTo=null;
-const DOORWAY = { lounge:[0,10], barn:[14,1] };          // where you stand to leave each room
-function showSwap(r){ if (!joined || r===curRoom) return; closeAll(); swapTo=r; document.getElementById('sw_text').textContent=`SWAP TO ${ROOM_NAMES[r]}?`; swapEl.style.display='block'; }
-document.getElementById('sw_go').addEventListener('click', ()=>{ swapEl.style.display='none'; const r=swapTo; swapTo=null; if (!r) return; goThroughDoor(r); });
+const DOORWAY = { lounge:[0,10], barn:[14,1], casino:[0,10] };   // each room has one door; you walk to it whichever room you're going to
+function showSwap(r){ if (!joined || r===curRoom || !ROOMS.includes(r)) return; closeAll(); swapTo=r; document.getElementById('sw_text').textContent=`GO TO ${ROOM_NAMES[r]}?`; swapEl.style.display='block'; }
+document.getElementById('sw_go').addEventListener('click', ()=>{ swapEl.style.display='none'; const r=swapTo; swapTo=null; if (!r) return; if (arcade.on) exitArcade(); localMsg(`Heading to ${ROOM_NAMES[r]}...`); goThroughDoor(r); });
 function goThroughDoor(r){ const [dx,dy]=DOORWAY[curRoom]; if (me.gx===dx && me.gy===dy && !me.moving && !me.bar){ switchRoom(r); return; } me.travelTo=r; if (!walkTo(dx,dy,'travel')){ me.travelTo=null; switchRoom(r); } }
 document.getElementById('sw_stay').addEventListener('click', ()=>{ swapEl.style.display='none'; swapTo=null; });
-function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n=roomCount(r); b.textContent = (r==='lounge'?'🍸 LOUNGE':'🌾 ACRES') + (n ? ` (${n})` : ''); } }
+function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n=roomCount(r); b.textContent = ({lounge:'🍸 LOUNGE', barn:'🌾 ACRES', casino:'🎰 CASINO'})[r] + (n ? ` (${n})` : ''); } }
 for (const b of roombarEl.querySelectorAll('[data-go]')) b.addEventListener('click', ()=>{ ensureAudio(); const r=b.dataset.go;
   if (!joined) return; if (r===curRoom){ localMsg(`You're already in ${ROOM_NAMES[r]}.`); return; }
-  if (arcade.on) exitArcade(); showSwap(r); });
+  showSwap(r); });
 function switchRoom(r){
   if (r===curRoom){ localMsg(`You're already in ${ROOM_NAMES[r]}.`); return; }
   if (arcade.on) exitArcade();
-  setRoom(r); flash(); sendPresence(true);
-  localMsg(r==='barn' ? 'You stepped outside to LLAMA ACRES!' : 'You headed back inside the LLAMA LOUNGE!');
+  entryFrom = curRoom; setRoom(r); flash(); sendPresence(true);
+  localMsg(r==='barn' ? 'You stepped outside to LLAMA ACRES!' : r==='casino' ? 'Welcome to the LLAMA CASINO! Feeling lucky?' : 'You headed back into the LLAMA LOUNGE!');
   setTimeout(()=>walkTo(...spawnSpot(r)), 400);
+}
+function casinoPointer(e){
+  const lx=e.clientX/S, ly=e.clientY/S;
+  for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
+  const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
+  if (gy===0 && CASINO_SLOT_X.includes(gx)){ if (me.p==='sit' && me.gx===gx && me.gy===1) slotSpin(); else walkTo(gx,1); return; }
+  if (walkable(gx,gy)){ walkTo(gx,gy); return; }
+  let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } }
+  if (best) walkTo(best.gx,best.gy);
 }
 function barnPointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
   for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
-  { const [gx2,gy2]=P(14.5,0.06); if (Math.abs(lx-gx2)<=20 && ly>=gy2-70 && ly<=gy2+6){ showSwap('lounge'); return; } }
   const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
-  if (gx===14 && gy===0){ showSwap('lounge'); return; }
   if (POND.some(([x,y])=>x===gx&&y===gy)){ if (me.fish) return; if (pondNear() && me.p!=='sit') startFish(); else { let best=null,bd=1e9; for (const [x,y] of POND) for (const [dx,dy] of DIRS8){ const ax=x+dx, ay=y+dy; if(!walkable(ax,ay)) continue; const d=Math.hypot(ax-me.gx,ay-me.gy); if(d<bd){bd=d;best=[ax,ay];} } if (best) walkTo(best[0],best[1],'fish'); } return; }
   for (const k in STANDS){ const ST=STANDS[k]; const [px,py]=P(ST.gx+1,ST.gy+0.5);
     if ((gy===ST.gy && (gx===ST.gx||gx===ST.gx+1)) || (Math.abs(lx-px)<=34 && ly>=py-62 && ly<=py+10)){ if (nearStand(ST) && me.p!=='sit') openFw(k); else { const a=nearestFree(ST.gx,ST.gy), b=nearestFree(ST.gx+1,ST.gy); const d=q=>q?Math.hypot(q[0]-me.gx,q[1]-me.gy):1e9; const t=d(a)<=d(b)?a:b; if (t) walkTo(t[0],t[1],k==='cider'?'fw':'snack'); } return; } }
@@ -2792,7 +2933,8 @@ function harvest(k){
     if (!r.ok){ if (r.msg) localMsg(r.msg); return; } tkSet(r.tk, '+1 TOKEN! Fresh carrots!'); });
 }
 // ---- slot machine ----
-const SLOT_PAY=[8,15,25,50,120,500];   // three of a kind: cherry, lemon, carrot, bell, seven, llama (decided on the server; shown for reference)
+const slotBet = () => SLOT_BETS.includes(store.slotBet) ? store.slotBet : 1;
+const myKind = () => SLOT_KINDS[slotKind(me.gx)];
 let slot={r:[4,3,2], spin:false, t0:0, stopAt:[0,0,0], win:false, winUntil:0};
 function slotView(){ if (slot.spin && performance.now()>slot.stopAt[2]) slot.spin=false; slot.win = performance.now()<slot.winUntil; return slot; }
 function slotAnimate(r){ const now=performance.now(); slot={r, spin:true, t0:now, stopAt:[now+700,now+1000,now+1300], win:false, winUntil:0}; }
@@ -2800,20 +2942,24 @@ function slotAnimate(r){ const now=performance.now(); slot={r, spin:true, t0:now
 const slotEl=document.getElementById('slotbox'), slotCv=document.getElementById('slotcv'), slotCx=slotCv.getContext('2d');
 function slotMsg(t){ document.getElementById('sl_msg').textContent=t; }
 function slotTok(){ document.getElementById('sl_tok').textContent=`YOU HAVE ${wallet.get()} TOKENS`; }
-function openSlots(){ if (!(curRoom==='lounge' && me.p==='sit' && me.gx===12 && me.gy===1)) return; closeAll(); slotEl.classList.remove('win'); slotTok(); if (!slot.spin) slotMsg('1 TOKEN A SPIN. GOOD LUCK!'); slotEl.style.display='block'; }
+function slotBetUI(){ const b=slotBet(); for (const el of document.querySelectorAll('#sl_bet [data-bet]')) el.classList.toggle('on', +el.dataset.bet===b);
+  document.getElementById('sl_spin').textContent=`SPIN ${b} ▶`; drawSlotPay(); }
+for (const el of document.querySelectorAll('#sl_bet [data-bet]')) el.addEventListener('click', ()=>{ store.slotBet=+el.dataset.bet; saveStore(); slotBetUI(); if (!slot.spin) slotMsg(`${slotBet()} TOKEN${slotBet()>1?'S':''} A SPIN. PRIZES ARE x${slotBet()}.`); });
+function openSlots(){ if (!(me.p==='sit' && isSlotSeat(me.gx,me.gy))) return; closeAll(); slotEl.classList.remove('win'); slotTok(); const K=myKind();
+  document.getElementById('sl_title').textContent=`🎰 ${K.name} · ${K.note}`; slotBetUI();
+  if (!slot.spin) slotMsg(`PICK YOUR BET, THEN SPIN. ${slotBet()} TOKEN${slotBet()>1?'S':''} A SPIN.`); slotEl.style.display='block'; }
 document.getElementById('sl_spin').addEventListener('click', ()=>{ ensureAudio(); slotSpin(); });
 document.getElementById('sl_close').addEventListener('click', ()=>{ slotEl.style.display='none'; });
 const slotPayCv=document.getElementById('slpaycv'), slotPayCx=slotPayCv.getContext('2d');
 function drawSlotPay(){
-  // paytable: each symbol x3 and what it pays, drawn with the same pixel art and pixel font
-  const c=slotPayCx; c.clearRect(0,0,130,40);
+  // paytable for this machine at the current bet: each symbol x3 and what it pays, in the game's pixel art and font
+  const c=slotPayCx; c.clearRect(0,0,130,40); const K=myKind(), bet=slotBet();
   SLOT_BIG.forEach((S,i)=>{ const col=i%3, row=Math.floor(i/3), x=4+col*43, y=2+row*19;
     c.fillStyle='#f8f4e8'; c.fillRect(x,y,40,18); c.fillStyle='#d8ccb0'; c.fillRect(x,y+17,40,1);
-    c.drawImage(S.img, x+1, y+1); pfDraw(c,'X3',x+18,y+2,'#8a7aa8'); pfDraw(c,String(SLOT_PAY[i]),x+18,y+10,i===5?'#c03070':INK); });
+    c.drawImage(S.img, x+1, y+1); pfDraw(c,'X3',x+18,y+2,'#8a7aa8'); pfDraw(c,String(K.pay[i]*bet),x+18,y+10,i===5?'#c03070':INK); });
 }
 function drawSlotPopup(t){
   if (slotEl.style.display!=='block') return;
-  if (!slotPayCv.dataset.done){ drawSlotPay(); slotPayCv.dataset.done='1'; }
   const c=slotCx, now=performance.now(), n=SLOT_BIG.length; c.imageSmoothingEnabled=false;
   c.fillStyle='#181020'; c.fillRect(0,0,130,70);
   const win = now<slot.winUntil, blink = win && Math.floor(t*8)%2;
@@ -2835,18 +2981,21 @@ function drawSlotPopup(t){
   for (let i=0;i<3;i++){ c.fillRect(1+i,35-2+i,1,5-2*i); c.fillRect(128-i,35-2+i,1,5-2*i); }
   document.getElementById('sl_spin').disabled = slot.spin && now<slot.stopAt[2];
 }
-function slotRemote(r){ if (curRoom==='lounge') slotAnimate(r); }
+// other players' machines spin on their own cabinets
+const remoteSlots = {};
+function slotRemote(r, gx){ if (curRoom!=='casino') return; const now=performance.now(); remoteSlots[gx]={r, spin:true, t0:now, stopAt:[now+700,now+1000,now+1300], win:false, winUntil:0}; }
+function slotIdle(gx){ const rs=remoteSlots[gx]; if (rs){ if (rs.spin && performance.now()>rs.stopAt[2]) rs.spin=false; return rs; } return {r:[gx%6,(gx*2+1)%6,(gx*5+3)%6], spin:false, win:false, stopAt:[0,0,0], t0:0}; }
 function slotSpin(){
-  if (curRoom!=='lounge' || !(me.p==='sit'&&me.gx===12&&me.gy===1)) return;
+  if (!(me.p==='sit' && isSlotSeat(me.gx,me.gy))) return;
   if (slot.spin && performance.now()<slot.stopAt[2]+80) return;
-  if (wallet.get()<1){ slotMsg('YOU NEED 1 TOKEN TO SPIN. EARN SOME AT THE ARCADE, THE BAR OR LLAMA ACRES!'); return; }
+  const bet=slotBet(); if (wallet.get()<bet){ slotMsg(bet>1 ? `YOU NEED ${bet} TOKENS FOR THAT BET. TRY A SMALLER ONE!` : 'YOU NEED 1 TOKEN TO SPIN. EARN SOME AT THE ARCADE, THE BAR OR LLAMA ACRES!'); return; }
   slotMsg('SPINNING...'); slotEl.classList.remove('win');
-  NET.act('slot').then(r=>{
+  NET.act('slot',{bet}).then(r=>{
     if (!r.ok){ slotMsg((r.msg||'TRY AGAIN.').toUpperCase()); return; }
-    store.tk = r.tk + 0; tokUI(-1); slotTok();
+    store.tk = r.tk + 0 - (r.pay||0); tokUI(-1); slotTok();
     slotAnimate(r.r); me.slK=(me.slK||0)+1; me.lastSlot={k:me.slK, r:r.r}; sendPresence(true);
     setTimeout(()=>{ const nm=r.r.map(v=>SLOT_SYMS[v].n).join(' · ');
-      if (r.pay){ slot.winUntil=performance.now()+1800; tokUI(1); slotMsg(`${nm}! YOU WIN ${r.pay} TOKENS!`); slotEl.classList.add('win'); if (r.pay>=50) action(`hit ${r.pay} TOKENS on the slots!`); }
+      if (r.pay){ store.tk = r.tk; slot.winUntil=performance.now()+1800; tokUI(1); slotMsg(`${nm}! YOU WIN ${r.pay} TOKENS!`); slotEl.classList.add('win'); if (r.pay>=50) action(`hit ${r.pay} TOKENS on ${myKind().name}!`); }
       else slotMsg(`${nm}. NO LUCK THIS TIME.`); slotTok(); }, 1350);
   });
 }
@@ -2912,8 +3061,8 @@ const TIPS = {
   scores:'<b>HIGH SCORES</b> Tap the chalkboard to see the top arcade players.',
   sofa:'<b>LOVESEAT</b> Kick back! Tap the floor to get up.',
   slots:'<b>SLOTS</b> The machine pops up when you sit. Press SPIN. 1 TOKEN a spin. 3 LLAMAS pay 50, 7s 25, BELLS 10, LEMONS 5, CHERRIES 3, two CHERRIES 2.',
-  door:'<b>DOOR</b> Step outside to LLAMA ACRES! Tap the door or press OUTSIDE.',
-  gate:'<b>GATE</b> Head back inside to the LLAMA LOUNGE. Tap the gate or press INSIDE.',
+  door:'<b>ROOMS</b> Use the room buttons at the bottom left to go to LLAMA ACRES or the LLAMA CASINO.',
+  gate:'<b>ROOMS</b> Use the room buttons at the bottom left to go back to the LLAMA LOUNGE or the LLAMA CASINO.',
   pond:'<b>FISHING POND</b> Press FISH (or tap the pond) to cast a line. Wait for a bite to catch a fish for TOKENS!',
   fishing:'<b>FISHING</b> Watch the bobber... Fish bite every 10 to 20 seconds. Common fish pay 1, big orange ones 2, rare GOLDEN fish 5. Press STOP or walk away to reel in.',
   crops:'<b>CARROT PATCH</b> Tap a ripe plot (or press HARVEST) for 1 TOKEN. Plots regrow in 90 seconds.',
@@ -2934,7 +3083,7 @@ function tipContext(){
     if (me.p!=='sit' && CROPS.some(c=>near(c.gx,c.gy))) return 'crops';
     const sb=(me.p==='sit')?seatAt(me.gx,me.gy):null; if (sb && sb.gy>=10) return 'campfire';
     return null; }
-  if (me.p==='sit' && me.gx===12 && me.gy===1) return 'slots';
+  if (curRoom==='casino') return (me.p==='sit' && isSlotSeat(me.gx,me.gy)) ? 'slots' : null;
   if (me.p!=='sit' && me.gx===0 && me.gy===10) return 'door';
   if (me.p!=='sit' && near(7,0)) return 'rope';
   const s = (me.p==='sit') ? seatAt(me.gx,me.gy) : null;

@@ -45,7 +45,7 @@ After any change, run `npx wrangler deploy` again from this folder. Accounts and
   - 5 new accounts per connection per hour
 - **Tokens:** only change on the server.
   - The server spins the slots, deals the table games and picks the fish.
-  - Slots pay on three of a kind only: cherries 8, lemons 15, carrots 25, bells 50, sevens 120, llamas 500 (about 1 spin in 22 wins).
+  - Slots are in the LLAMA CASINO: 13 machines in three kinds (FRUIT FRENZY, LLAMA CLASSIC, GOLDEN JACKPOT). Players bet 1, 2, 5 or 10 tokens; three of a kind pays the machine's paytable times the bet. Odds and paytables live in `SLOTS` in `src/worker.js`.
   - The server checks where you're standing before paying for carrots, fishing, the bar or drinks.
   - The cider and snack stands in LLAMA ACRES charge on the server too (cider 2 to 3 tokens, snacks 2 to 3 tokens).
   - Arcade scores faster than the game allows are rejected.

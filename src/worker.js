@@ -13,8 +13,15 @@ const IP_MAX_FAILS = 30;                  // per IP per 15 minutes
 const SIGNUPS_PER_IP_HOUR = 5;
 const WINDOW_MS = 15 * 60 * 1000;
 
-const SLOT_W = [28, 24, 19, 14, 9, 6];               // cherry, lemon, carrot, bell, seven, llama
-const SLOT_PAY = [8, 15, 25, 50, 120, 500];          // three of a kind only: about a 4.6% win rate, pays back about 89%
+// three kinds of slot machine along the casino's back wall (x 0-3 FRUIT, 4-8 CLASSIC, 9-12 GOLD); stools are at y 1
+// symbols: cherry, lemon, carrot, bell, seven, llama. Three of a kind pays SLOT_PAY x the bet.
+const SLOTS = {
+  fruit:   { w: [40, 30, 15, 8, 5, 2],   pay: [6, 13, 30, 60, 150, 500] },     // wins about 1 spin in 10, pays back about 89%
+  classic: { w: [28, 24, 19, 14, 9, 6],  pay: [8, 15, 25, 50, 120, 500] },     // about 1 in 22, about 89%
+  gold:    { w: [24, 22, 20, 16, 11, 7], pay: [4, 8, 15, 30, 100, 1000] },     // about 1 in 26, about 86%, llama jackpot 1 in ~2,900
+};
+const slotKind = (x) => (x <= 3 ? "fruit" : x <= 8 ? "classic" : "gold");
+const SLOT_BETS = [1, 2, 5, 10];
 const FISH = [{ n: "BLUEGILL", pay: 1, w: 70 }, { n: "BIG ORANGE CARP", pay: 2, w: 25 }, { n: "GOLDEN FISH", pay: 5, w: 5 }];
 const CROP_KEYS = new Set(); for (const y of [13, 15, 17]) for (let x = 2; x <= 5; x++) CROP_KEYS.add(x + "," + y);
 const POND = { x0: 15, x1: 20, y0: 3, y1: 7 };
@@ -264,14 +271,15 @@ export class Lounge extends DurableObject {
         return { ok: true, tk };
       }
       case "slot": {
-        if (!this.near(a, "lounge", (x, y, p) => p.p === "sit" && Math.round(x) === 12 && Math.round(y) === 1)) return { ok: false, msg: "Sit at the slot machine first." };
+        let sx = -1; if (!this.near(a, "casino", (x, y, p) => { sx = Math.round(x); return p.p === "sit" && Math.round(y) === 1 && sx >= 0 && sx <= 12; })) return { ok: false, msg: "Sit at a slot machine first." };
+        const bet = SLOT_BETS.includes(+m.bet) ? +m.bet : 1, M = SLOTS[slotKind(sx)];
         if (now - (await this.timer(uid, "slot")) < 1300) return { ok: false, msg: "The reels are still spinning." };
         await this.setTimer(uid, "slot", now);
-        let tk = await this.debit(uid, 1, "slot spin"); if (tk === null) return { ok: false, msg: "YOU NEED 1 TOKEN TO SPIN." };
-        const r = [pickW(SLOT_W), pickW(SLOT_W), pickW(SLOT_W)];
-        const pay = r[0] === r[1] && r[1] === r[2] ? SLOT_PAY[r[0]] : 0;
+        let tk = await this.debit(uid, bet, "slot spin"); if (tk === null) return { ok: false, msg: `YOU NEED ${bet} TOKEN${bet > 1 ? "S" : ""} TO SPIN.` };
+        const r = [pickW(M.w), pickW(M.w), pickW(M.w)];
+        const pay = r[0] === r[1] && r[1] === r[2] ? M.pay[r[0]] * bet : 0;
         if (pay) tk = await this.credit(uid, pay, "slot win");
-        return { ok: true, r, pay, tk };
+        return { ok: true, r, pay, bet, tk };
       }
       case "harvest": {
         const k = String(m.k || ""); if (!CROP_KEYS.has(k)) return { ok: false };
