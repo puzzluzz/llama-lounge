@@ -568,6 +568,15 @@
   .jb-nail{position:absolute;top:5px;width:4px;height:4px;border-radius:50%;background:#2a1606;box-shadow:inset 1px 1px 0 #8a6a4a} .jb-nail.l{left:5px} .jb-nail.r{right:5px}
   .jb-coin{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0 0 18%,#ffd23f 20% 62%,#d79a12 64%);box-shadow:0 0 0 2px #2a1606;flex:none}
   @media (max-width:640px){ #jobsbtn{font-size:11px;padding:10px 12px 9px 10px;min-height:42px;box-sizing:border-box} .jb-coin{width:13px;height:13px} #signs{gap:8px} .isign{padding:7px 10px 6px!important;min-height:42px} .sico{width:28px;height:23px} }
+  /* phones: the five signs share the width evenly so they always fit, and the little count pills ride on the corner instead of widening the sign */
+  @media (max-width:640px){
+    #signs{left:calc(8px + env(safe-area-inset-left,0px));right:calc(8px + env(safe-area-inset-right,0px));gap:6px}
+    #signs > button{flex:1 1 0;min-width:0;justify-content:center;padding-left:4px!important;padding-right:4px!important}
+    #jobsbtn{font-size:10px;gap:4px} #jobsbtn .jb-nail,.isign .jb-nail{display:none}
+    #frbtn .fr-on,#dmbtn .fr-on,#roomsbtn .fr-on{position:absolute;bottom:-8px;right:-4px;margin:0;padding:1px 5px;font-size:9px;border:2px solid #2a1606;background:#3a2410}
+    #frbtn .fr-on::before{width:5px;height:5px}
+  }
+  @media (max-width:340px){ #jobsbtn{font-size:0;gap:0} .sico{width:24px;height:20px} }
   @media (max-width:640px){ body.joined:not(.arena-on) #tbox{bottom:calc(var(--dockh) + 66px + var(--sab))!important} }   /* messages sit above the JOBS and FRIENDS signs on phones */
   #jobsbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:min(480px,calc(100% - 24px));max-height:86vh;animation:popIn .18s ease-out}
   #jobsbox .slt{text-align:center;color:#a06808} .jsub{font-size:13px;color:var(--sub);text-align:center;margin:4px 0 10px;line-height:1.4}
@@ -758,7 +767,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22e";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22f";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -5072,12 +5081,12 @@ function wdDraw(){
   const shop=WD.tab==='shop';
   for (const b of $id('wd_tabs').children) b.classList.toggle('on', b.dataset.t===WD.tab);
   $id('wd_tabs').style.display = shop ? 'none' : ''; $id('wardbox').querySelector('.wdtop').style.display = (WD.tab==='storage' || (shop && WD.kind==='furn')) ? 'none' : '';
-  $id('wd_title').textContent = shop ? '🛍️ LLAMA STORE CLOTHES' : '🎒 INVENTORY';
+  $id('wd_title').textContent = shop ? (WD.kind==='furn' ? '🛋️ LLAMA STORE FURNITURE' : '🛍️ LLAMA STORE CLOTHES') : '🎒 INVENTORY';
   let h='';
   if (shop) h+=`<div class="autabs" id="wd_kind"><button type="button" data-k="clothes" class="${WD.kind==='clothes'?'on':''}">👕 CLOTHES</button><button type="button" data-k="furn" class="${WD.kind==='furn'?'on':''}">🛋️ FURNITURE</button></div>`;
   if (shop && WD.kind==='furn'){ const own=k=>{ const r=WD.furn.find(x=>x.item===k); return r?r.n:0; };
     h+='<div class="fre">Furniture goes into 🎒 INVENTORY > ITEMS. Take it out of there to place it in your own room.</div>';
-    for (const [cat,label] of FURN_CATS){ if (cat==='staff' && !me.st) continue; const ORD=Object.keys(FURN_DEF), ks=ORD.filter(k=>FURN_DEF[k].cat===cat).sort((p,q)=>ORD.indexOf(furnBase(p))-ORD.indexOf(furnBase(q))); if (!ks.length) continue;   // colours sit right after their base piece h+=`<div class="wdh">${label}</div><div class="wdg">`;
+    for (const [cat,label] of FURN_CATS){ if (cat==='staff' && !me.st) continue; const ORD=Object.keys(FURN_DEF), ks=ORD.filter(k=>FURN_DEF[k].cat===cat).sort((p,q)=>ORD.indexOf(furnBase(p))-ORD.indexOf(furnBase(q))); if (!ks.length) continue;   /* colours sit right after their base piece */ h+=`<div class="wdh">${label}</div><div class="wdg">`;
     h+=ks.map(k=>`<div class="wi fi" data-f="${k}"><canvas width="48" height="48" data-fk="${k}"></canvas><b>${esc(FURN_DEF[k].n)}</b><small>${FURN_DEF[k].p} 🪙${own(k)?` · <span class="own">YOU HAVE ${own(k)}</span>`:''}</small><button class="gbbtn y" data-buyf="${k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button></div>`).join('')+'</div>'; } }
   else if (WD.tab==='shop'){ for (const s2 of WEAR_SLOTS){ h+=`<div class="wdh">${SLOT_NAMES[s2]}</div><div class="wdg">`+Object.keys(ITEMS).filter(k=>ITEMS[k].s===s2).map(wdCard).join('')+'</div>'; }
     if (curRoom!=='store') h='<div class="fre">Browse and try things on here. To buy, visit the 🛍️ LLAMA STORE.</div>'+h;
