@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-21y";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-22a";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -554,7 +554,12 @@ export class Lounge extends DurableObject {
       if (rs && typeof rs === "object" && rs.t && +rs.k !== a.ck) { const was = a.ck; a.ck = +rs.k; if (!first && was !== undefined) await this.chatLog(a, m.p.rm, (rs.f ? "* " : "") + String(rs.t).slice(0, 120), !!a.uc.muted); }
       else if (first && rs && typeof rs === "object") a.ck = +rs.k;
       if (first && a.ck === undefined) a.ck = 0;
+      const prevSit = a.pres && a.pres.p === "sit" ? a.pres.rm + ":" + Math.floor(a.pres.x) + "," + Math.floor(a.pres.y) : null;
       a.pres = cleanPresence(m.p, a.name, a.uc.tk, !!a.uc.muted, a.staff); if (a.uc.c) a.pres.c = a.uc.c;   // everyone sees the llama the account picked
+      // one llama per seat: whoever sat down first keeps it
+      if (a.pres.p === "sit" && Number.isFinite(a.pres.x) && Number.isFinite(a.pres.y)) { const key = a.pres.rm + ":" + Math.floor(a.pres.x) + "," + Math.floor(a.pres.y);
+        if (key !== prevSit) for (const w2 of this.sockets()) { if (w2 === ws) continue; const x = w2.deserializeAttachment(); const q = x && x.pres;
+          if (q && q.p === "sit" && q.rm === a.pres.rm && Math.floor(q.x) === Math.floor(a.pres.x) && Math.floor(q.y) === Math.floor(a.pres.y)) { a.pres.p = "stand"; this.send(ws, { t: "seattaken" }); break; } } }
       if (a.wear && Object.keys(a.wear).length) a.pres.w = a.wear;   // and the clothes it owns and has on
       ws.serializeAttachment(a);
       { const pid = prId(a.pres.rm); if (pid && !(this.prPriv && this.prPriv.has(pid))) await this.prRoom(pid); }   // know if it's private before sending anything
@@ -1102,6 +1107,7 @@ export class Lounge extends DurableObject {
       case "bowl_start": return this.bowlStart(a, now);
       case "bowl_roll": return this.bowlRoll(a, m, now);
       case "dash_chat": return this.dashChat(a, m);
+      case "gift_undo": return this.giftUndo(a, m);
       case "pr_list": return this.prList(a);
       case "pr_create": return this.prCreate(a, m);
       case "pr_search": return this.prSearch(a, m);
@@ -1432,6 +1438,23 @@ export class Lounge extends DurableObject {
 
   // ---------- staff tools: mods mute, unmute and kick; the owner can also ban, unban and make or remove mods ----------
   // staff can add tokens to a player. Mods: not to themselves, and at most STAFF_GIVE_DAY a day in total. The owner has no limit.
+  // take back a token gift: the owner can undo any gift, a mod only their own. Takes back what the player still has (never below 0), once.
+  async giftUndo(a, m) {
+    const st = await this.staffNow(a); if (!st) return { ok: false, msg: "Only staff can do that." };
+    const g = await this.env.DB.prepare("SELECT id, uid, delta, reason FROM ledger WHERE id = ? AND reason LIKE 'staff gift by %'").bind(Math.floor(+m.gid || 0)).first();
+    if (!g) return { ok: false, msg: "That gift isn't in the records." };
+    const by = g.reason.slice(14);
+    if (st !== "owner" && by.toUpperCase() !== String(a.name).toUpperCase()) return { ok: false, msg: "Mods can only undo their own gifts." };
+    if (await this.env.DB.prepare("SELECT id FROM ledger WHERE reason LIKE ?").bind("gift undone #" + g.id + " %").first()) return { ok: false, msg: "That gift was already undone." };
+    const u = await this.user(g.uid); if (!u) return { ok: false, msg: "That player is gone." };
+    const take = Math.max(0, Math.min(g.delta, u.tk));
+    const r = await this.env.DB.prepare("UPDATE users SET tk = tk - ? WHERE id = ? AND tk >= ? RETURNING tk").bind(take, u.id, take).first();
+    if (!r) return { ok: false, msg: "Their balance changed. Try again." };
+    await this.env.DB.prepare("INSERT INTO ledger (uid, delta, reason, t) VALUES (?, ?, ?, ?)").bind(u.id, -take, "gift undone #" + g.id + " by " + a.name, Date.now()).run();
+    for (const w2 of this.sockets()) { const x = w2.deserializeAttachment(); if (x && x.uid === u.id) { if (x.uc) { x.uc.tk = r.tk; w2.serializeAttachment(x); } this.send(w2, { t: "tk", tk: r.tk, msg: take ? `A staff token gift of ${take} was taken back.` : "" }); } }
+    await this.logStaff(a.name, "undogift", `${u.name.toUpperCase()} ${take}`);
+    return { ok: true, msg: take < g.delta ? `Took back ${take} of ${g.delta} TOKENS (that's all ${u.name.toUpperCase()} had left).` : `Took back ${take} TOKENS from ${u.name.toUpperCase()}.` };
+  }
   async staffGive(a, target, amount) {
     const n = Math.floor(+amount); if (!(n >= 1 && n <= 1000)) return { ok: false, msg: "Give between 1 and 1000 tokens." };
     if (!/^[A-Za-z0-9_]{3,12}$/.test(target)) return { ok: false, msg: "No player with that name." };
@@ -1465,8 +1488,9 @@ export class Lounge extends DurableObject {
     const muted = await rows("SELECT name, role FROM users WHERE muted = 1 ORDER BY name LIMIT 50");
     const banned = await rows("SELECT name, role FROM users WHERE banned = 1 ORDER BY name LIMIT 50");
     // every token gift by staff, from the permanent ledger (newest first), plus what each mod has given today
-    const gifts = ((await this.env.DB.prepare("SELECT l.delta, l.t, l.reason, u.name FROM ledger l JOIN users u ON u.id = l.uid WHERE l.reason LIKE 'staff gift by %' ORDER BY l.id DESC LIMIT 100").all()).results || [])
-      .map((r) => ({ by: r.reason.slice(14).toUpperCase(), to: r.name.toUpperCase(), n: r.delta, t: r.t }));
+    const undone = new Map(); for (const r of ((await this.env.DB.prepare("SELECT reason, delta FROM ledger WHERE reason LIKE 'gift undone #%' ORDER BY id DESC LIMIT 300").all()).results || [])) { const mm = /^gift undone #(\d+) by (\w+)/.exec(r.reason); if (mm) undone.set(+mm[1], { by: mm[2].toUpperCase(), n: -r.delta }); }
+    const gifts = ((await this.env.DB.prepare("SELECT l.id, l.delta, l.t, l.reason, u.name FROM ledger l JOIN users u ON u.id = l.uid WHERE l.reason LIKE 'staff gift by %' ORDER BY l.id DESC LIMIT 100").all()).results || [])
+      .map((r) => ({ id: r.id, by: r.reason.slice(14).toUpperCase(), to: r.name.toUpperCase(), n: r.delta, t: r.t, undo: undone.get(r.id) || null }));
     const today = {}; for (const g2 of gifts) if (etDay(g2.t) === etDay(Date.now())) today[g2.by] = (today[g2.by] || 0) + g2.n;
     return { ok: true, me: a.staff, online, staff, muted, banned, gifts, giftsToday: today, giftCap: STAFF_GIVE_DAY, log: (await this.ctx.storage.get("modlog")) || [] };
   }

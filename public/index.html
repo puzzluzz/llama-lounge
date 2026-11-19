@@ -758,7 +758,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-21y";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22a";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -2689,14 +2689,15 @@ function arrive(){
   if (me.act && !arcade.on) me.act=null;
   if (me.bar){ me.p='bar'; me.d = Math.random()<0.5?'fr':'fl'; me.barT = 2.6+Math.random()*2.8; sendPresence(true); if (!me.barOn){ me.barOn=true; me.shift=0; setTimeout(()=>NET.act('bar_tick'), 400); } return; }
   if (me.after){ const af=me.after; me.after=null; if (af[0]!==me.gx||af[1]!==me.gy){ if (walkTo(af[0],af[1],af[2])) return; } else if (af[2]){ me.p='stand'; sendPresence(true); doAction(af[2]); return; } }
-  const s=seatAt(me.gx,me.gy);
+  let s=seatAt(me.gx,me.gy); if (s && seatTaken(s.gx,s.gy)){ s=null; localMsg("Someone's already sitting there."); }
   if (s){ me.p='sit'; me.d=s.dir; if (isSlotSeat(s.gx,s.gy)) setTimeout(openSlots, 150); else if (seatIn(ROUL_SEATS,s.gx,s.gy)) setTimeout(()=>openTable('roul'),150); else if (seatIn(BJ_SEATS,s.gx,s.gy)) setTimeout(()=>openTable('bj'),150); }
   else { me.p = onDance() ? 'dance' : 'stand'; me.d = 'f'+me.d[1]; }   // turn to face the screen
   const pend=me.pending; me.pending=null;
   sendPresence(true);
   if (pend) doAction(pend);
 }
-function toggleSit(){ if(me.moving||!joined) return; const s=seatAt(me.gx,me.gy); if(me.p==='sit'){ me.p=onDance()?'dance':'stand'; if(!s) me.d='f'+me.d[1]; } else { me.p='sit'; if(s) me.d=s.dir; else me.d='f'+me.d[1]; } sendPresence(true); }
+const seatTaken=(x,y)=>[...others.values()].some(o=>!o.leaving && sameRoom(o) && o.p==='sit' && Math.floor(o.x)===x && Math.floor(o.y)===y);
+function toggleSit(){ if(me.moving||!joined) return; const s=seatAt(me.gx,me.gy); if (s && me.p!=='sit' && seatTaken(s.gx,s.gy)){ localMsg("Someone's already sitting there."); return; } if(me.p==='sit'){ me.p=onDance()?'dance':'stand'; if(!s) me.d='f'+me.d[1]; } else { me.p='sit'; if(s) me.d=s.dir; else me.d='f'+me.d[1]; } sendPresence(true); }
 const keys = new Set();
 function keyStep(){
   let dx=0, dy=0;
@@ -3623,12 +3624,18 @@ function drawLlama(o, t, isMe){
   if (h){
     const ss = isMe ? me.sipStart : o.sipStart; const u = (performance.now()-ss)/SIP_T;
     const sipping = u>=0 && u<1;
-    const hand = front ? [flip?1:22, 31+oy] : [flip?22:1, 31+oy];
+    const hand = [flip?1:22, 31+oy];
     const mouth = front ? [flip?5:19, 15+oy] : [flip?3:21, 11+oy];
-    let p = 0; if (sipping){ p = u<0.25 ? u/0.25 : u>0.8 ? (1-u)/0.2 : 1; p = p*p*(3-2*p); }
+    // two moves: up to the mouth, then back down (no slide in between)
+    const p = (sipping && u>=0.12 && u<0.82) ? 1 : 0;
     const hx = Math.round(hand[0]+(mouth[0]-hand[0])*p), hy = Math.round(hand[1]+(mouth[1]-hand[1])*p);
-    const tilt = (sipping && u>=0.25 && u<=0.8) ? ((front&&!flip)||(!front&&!flip) ? -1 : 1) : 0;
+    const tilt = p ? ((front&&!flip)||(!front&&!flip) ? -1 : 1) : 0;
     const X=x0+hx, Y=y0+hy, col=DRINKS[h].c; const lvl = Math.max(1, isMe ? (me.hl||5) : (o.hl||5));
+    // the front leg holding it: from the shoulder to the hoof, so it lifts with the food or drink
+    { const C2=CHARS[o.c]||CHARS[isMe?me.c:o.c]||{}, fur=(C2.fur&&C2.fur.a)||['#efe1c8','#c6b08d'], sh = [hand[0]<12 ? 6 : 17, (front?25:24)+oy];   // shoulder on the same side as the hoof
+      const ax=x0+sh[0], ay=y0+sh[1], bx=X+(FOOD_PX[h] ? (flip?1:2) : (flip?3:0)), by=Y+(FOOD_PX[h]?2:3);
+      for (const [dx,dy] of [[-1,0],[2,0],[0,-1],[1,-1],[0,1],[1,1]]) linePx(ax+dx,ay+dy,bx+dx,by+dy,INK);
+      linePx(ax,ay,bx,by,fur[0]); linePx(ax+1,ay,bx+1,by,fur[1]||fur[0]); g.fillStyle='#3a2a1a'; g.fillRect(bx,by+1,2,1); }
     if (FOOD_PX[h]){ const rows=FOOD_PX[h], H=rows.length, keep=Math.max(2,Math.round(H*lvl/5)), bx=X+(flip?-2:0), by=Y+6-H;
       rows.forEach((row,j)=>{ if (j<H-keep) return; for (let i=0;i<row.length;i++){ const ch=row[i]; if (ch==='.') continue; g.fillStyle=FOOD_PAL[ch]; g.fillRect(bx+i,by+j,1,1); } });
       if (keep<H){ g.fillStyle=INK; g.fillRect(bx+1,by+H-keep,rows[0].length-2,1); }
@@ -5232,7 +5239,7 @@ const FURN_SWITCH=new Set(['tv','bigtv','lamp']);
 function prTapPiece(hit){ if ((FURN_DEF[hit.f.item]||{}).wall) return;
   if (FURN_SWITCH.has(hit.f.item)){ const f=hit.f; f.off=!f.off; try{ ensureAudio(); if (actx){ const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.value=f.off?320:640; gn.gain.value=0.05*(svol/100); o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime+0.05); } }catch(_){}
     NET.act('pr_toggle',{fid:f.fid}).then(r=>{ if (!r.ok){ f.off=!f.off; localMsg(r.msg||'That switch is stuck.'); } }); return; } const f=hit.f, tl=furnTiles(f.item,f.gx,f.gy,f.rot);
-  const seats=SEATS.filter(q=>tl.some(([x,y])=>x===q.gx&&y===q.gy)); if (seats.length){ const q=seats.find(q=>q.gx===hit.tx&&q.gy===hit.ty) || seats[0]; walkTo(q.gx,q.gy); return; }
+  const seats=SEATS.filter(q=>tl.some(([x,y])=>x===q.gx&&y===q.gy)); if (seats.length){ const free=seats.filter(q=>!seatTaken(q.gx,q.gy)); if (!free.length){ localMsg("Someone's already sitting there."); return; } const q=free.find(q=>q.gx===hit.tx&&q.gy===hit.ty) || free[0]; walkTo(q.gx,q.gy); return; }
   const near=[]; for (const [x,y] of tl) for (const [dx,dy] of [[0,1],[1,0],[-1,0],[0,-1]]){ const a=x+dx, b=y+dy; if (a>=0&&b>=0&&a<N&&b<NY&&walkable(a,b)&&!seatAt(a,b)) near.push([a,b]); }
   near.sort((p,q)=>Math.hypot(p[0]-me.gx,p[1]-me.gy)-Math.hypot(q[0]-me.gx,q[1]-me.gy)); if (near.length) walkTo(near[0][0],near[0][1]); }
 function prTapWalk(gx,gy){
@@ -5263,6 +5270,7 @@ NET.handlers.rinv = m => { const rm=String(m.rm||''), by=String(m.by||'').toUppe
   try{ ensureAudio(); if (actx){ const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.value=660; gn.gain.value=0.06*(svol/100); o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime+0.12); } }catch(_){}
   if (isP(rm)){ closeAll(); swapTo=rm; } else { showSwap(rm); }
   document.getElementById('sw_text').textContent=`📨 ${by} invited you to ${nm}. GO?`; swapEl.style.display='block'; };
+NET.handlers.seattaken = m => { if (me.p==='sit'){ me.p='stand'; me.d='f'+me.d[1]; sendPresence(true); } localMsg("Someone's already sitting there."); };
 NET.handlers.prinvited = m => localMsg(`🏠 ${String(m.by).toUpperCase()} invited you to ${m.name}! Find it in 🏠 ROOMS.`);
 const KNQ=[];   // knocks waiting for the owner to answer
 NET.handlers.knock = m => { KNQ.push(m); knShow(); try{ ensureAudio(); if (actx){ const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.value=520; gn.gain.value=0.06*(svol/100); o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime+0.12); } }catch(_){} };
@@ -5439,14 +5447,16 @@ function loadDash(){
     if (!r.banned.length) h+='<div class="dl">NOBODY IS BANNED.</div>';
     h+='<h4>🪙 TOKEN GIFTS</h4>';
     { const td=Object.entries(r.giftsToday||{}); h+=`<div class="dl">TODAY: ${td.length ? td.map(([by,n])=>`${esc(by)} gave ${n}`).join(' · ') : 'no gifts yet'}. Mods can give up to ${r.giftCap||500} a day.</div>`; }
-    for (const gf of (r.gifts||[]).slice(0,30)){ const d=new Date(gf.t); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(gf.by)} gave ${esc(gf.to)} <b>${gf.n}</b> 🪙</div>`; }
+    for (const gf of (r.gifts||[]).slice(0,30)){ const d=new Date(gf.t), mine=gf.by===(me.n||'').toUpperCase(); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(gf.by)} gave ${esc(gf.to)} <b>${gf.n}</b> 🪙 ${gf.undo ? `<s>UNDONE</s> <small>by ${esc(gf.undo.by)} (${gf.undo.n} taken back)</small>` : ((owner||mine) && gf.id ? `<button class="gbbtn s" data-undo="${gf.id}" data-to="${esc(gf.to)}" data-n="${gf.n}">↩ UNDO</button>` : '')}</div>`; }
     if (!(r.gifts||[]).length) h+='<div class="dl">NO TOKEN GIFTS YET.</div>';
     h+='<h4>STAFF LOG</h4>';
-    const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:',give:'gave tokens to',roomreset:'reset the room name of'};
+    const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:',give:'gave tokens to',undogift:'took back a gift from',roomreset:'reset the room name of'};
     for (const e of r.log.slice(0,20)){ const d=new Date(e.t); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(e.by)} ${WORD[e.cmd]||esc(e.cmd)} ${esc(e.target)}</div>`; }
     if (!r.log.length) h+='<div class="dl">NO STAFF ACTIONS YET.</div>';
     dsBody.innerHTML=h;
     for (const b of dsBody.querySelectorAll('[data-cmd]')) b.addEventListener('click', ()=>dashDo(b.dataset.cmd, b.dataset.name));
+    for (const b of dsBody.querySelectorAll('[data-undo]')) b.addEventListener('click', ()=>{ if (!confirm(`Take back ${b.dataset.n} TOKENS from ${b.dataset.to}?`)) return; b.disabled=true;
+      NET.act('gift_undo',{gid:+b.dataset.undo}).then(r2=>{ localMsg(r2.msg||(r2.ok?'Gift undone.':'Could not undo that.')); loadDash(); }); });
     const add=document.getElementById('ds_addmod'); if (add) add.addEventListener('click', ()=>{ const n=document.getElementById('ds_new').value.trim(); if (n) dashDo('mod', n); });
   }); }
 document.getElementById('ds_refresh').addEventListener('click', loadDash);
