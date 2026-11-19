@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-22c";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-22d";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -94,8 +94,13 @@ const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6
 const PV_ITEMS = { vending: { soda: 1, juice: 1, shake: 2 }, snackvend: { chips: 1, candy: 1, cookie: 2 } };
 const FURN_SWITCH = new Set(["tv", "bigtv", "lamp"]);   // things you can tap to switch on or off
 const FURN_SIZE = { bed: 2, loveseat: 2, sofa: 3, bigtv: 2 };   // pieces bigger than one tile
-const FURN_SIDEWAYS = new Set(["loveseat", "sofa"]);   // couches run along their back, so they turn the other way
+const FURN_SIDEWAYS = new Set(["loveseat", "sofa"]);
+// colour variants: same piece and price as their base, their own item so they're bought, stored and placed separately
+const FURN_VARIANTS = { sofa_gray: "sofa", sofa_green: "sofa", sofa_red: "sofa", loveseat_mustard: "loveseat", loveseat_teal: "loveseat", loveseat_purple: "loveseat",
+  armchair_mustard: "armchair", armchair_red: "armchair", armchair_gray: "armchair", bed_blue: "bed", bed_green: "bed", bed_purple: "bed", chair_walnut: "chair", chair_white: "chair", chair_red: "chair" };
+const furnBase = (item) => FURN_VARIANTS[item] || item;   // couches run along their back, so they turn the other way
 const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend"]);
+for (const [k, b] of Object.entries(FURN_VARIANTS)) { FURN_ITEMS[k] = FURN_ITEMS[b]; FURN_SALE.add(k); }   // variants cost the same as their base
 const FURN_STAFF = new Set(["adminsign"]);   // only mods and the owner can buy these
 const FURN_WALL = new Set(["adminsign"]);    // hang on a wall: placed on a tile along a wall, don't take up floor space
 const prId = (rm) => { const m = /^p:(\d{1,9})$/.exec(String(rm || "")); return m ? +m[1] : 0; };
@@ -712,7 +717,7 @@ export class Lounge extends DurableObject {
   async prOwnRoomHere(a) {   // editing: only the owner, standing in their own room
     const r = await this.prMine(a); if (!r) return null; if (!a.pres || a.pres.rm !== "p:" + r.id) return null; return r; }
   // tiles a piece covers: the bed is two long (along x for rot 0/2, along y for rot 1/3); everything else is one tile
-  furnTiles(item, gx, gy, rot) { const n = FURN_SIZE[item] || 1, alongY = FURN_SIDEWAYS.has(item) ? (rot === 0 || rot === 3) : rot % 2 === 1, out = []; for (let k = 0; k < n; k++) out.push(alongY ? [gx, gy + k] : [gx + k, gy]); return out; }
+  furnTiles(item, gx, gy, rot) { const bi = furnBase(item), n = FURN_SIZE[bi] || 1, alongY = FURN_SIDEWAYS.has(bi) ? (rot === 0 || rot === 3) : rot % 2 === 1, out = []; for (let k = 0; k < n; k++) out.push(alongY ? [gx, gy + k] : [gx + k, gy]); return out; }
   furnFits(item, gx, gy, rot, furn, skipId) {   // null if it fits, otherwise the reason
     const wall = FURN_WALL.has(item), tiles = this.furnTiles(item, gx, gy, rot);
     for (const [x, y] of tiles) {
