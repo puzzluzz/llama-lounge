@@ -31,6 +31,20 @@ Each release bumps `VERSION` in `src/worker.js` and `GAME_VERSION` in `public/in
 
 After any change, run `npx wrangler deploy` again from this folder. Accounts and tokens stay in the database.
 
+## Hunger and thirst
+
+Every llama has a 🍔 hunger and 💧 thirst meter (0 to 100) in the top bar. They only go down while you're online: thirst empties in about an hour, hunger in about 75 minutes. The server keeps the real numbers (the `needs` table is created automatically) and fills them when you buy something.
+
+| Where | Item | Cost | Fills |
+|---|---|---|---|
+| Bar (sit on a stool, press ORDER) | Hay Soda / Grass Juice / Berry Shake | 1 / 1 / 2 | thirst 30 / 35 (+5 hunger) / 25 (+20 hunger) |
+| Bar | Hay Nachos / Alfalfa Fries / Clover Burger | 2 / 2 / 3 | hunger 35 / 35 / 55 (salty snacks cost 5 thirst) |
+| Llama Acres cider stand | Hot Cider / Caramel Cider | 2 / 3 | thirst 40 / 40 (+8 hunger) |
+| Llama Acres snack stand | Caramel Apple / Corn / Apple Pie | 2 / 2 / 3 | hunger 30 / 35 / 45 |
+| Llama Acres apple trees | apple | free | hunger 8 (once every 45 seconds) |
+
+When either meter is empty, your llama walks slower and the arcade, arena, bowling and fishing pay half until it eats or drinks. Casino winnings are not affected.
+
 ## Spit Arena
 
 A fourth room with a quick mini-game. Press PLAY (or tap the ring) for a 60-second spit-ball round.

@@ -167,6 +167,7 @@
   #tblbox .srow{display:flex;justify-content:center;gap:calc(var(--px)*6px)} #tblbox .gbbtn.y{background:#f8d030} #tblbox .gbbtn:disabled{opacity:.5}
   #tb_tok{margin-top:calc(var(--px)*4px);font-size:calc(var(--px)*6px);color:#a06808}
   #fwbox{left:50%;top:50%;transform:translate(-50%,-50%);display:none;text-align:center;z-index:5;width:min(calc(100% - 16px),calc(var(--px)*210px))}
+  #fw_items{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px!important}
   #fw_items .gbbtn{font-size:calc(var(--px)*5px);line-height:calc(var(--px)*8px);padding:calc(var(--px)*4px) calc(var(--px)*4px)}
   #fwbox .fwt{color:#c03070;margin-bottom:calc(var(--px)*4px)}
   #fwbox .fwn,#fw_msg{font-size:calc(var(--px)*5px);line-height:calc(var(--px)*8px);color:#3858a8;margin-bottom:calc(var(--px)*6px)}
@@ -235,6 +236,12 @@
   #dot{width:8px;height:8px;border-radius:50%;margin-right:6px;flex:none;box-shadow:0 0 0 3px rgba(224,64,64,.25)} #dot.on{box-shadow:0 0 0 3px rgba(48,184,80,.28)}
   #tokrow{margin:0;padding:6px 10px 6px 7px;border-radius:999px;background:rgba(255,210,63,.16);color:#ffe28a;font-weight:800;font-size:14px;gap:6px}
   #tokrow .coin{width:16px;height:16px;border:0;background:radial-gradient(circle at 35% 35%,#fff3b0 0 18%,#ffd23f 20% 62%,#d79a12 64%);box-shadow:inset 0 0 0 1.5px #a86f05}
+  #needs{display:flex;flex-direction:column;gap:3px}
+  #needs .nd{display:flex;align-items:center;gap:4px;font-size:11px;line-height:1}
+  #needs .nd i{display:block;width:44px;height:6px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden}
+  #needs .nd b{display:block;height:100%;border-radius:999px;background:#7ce07c;transition:width .6s}
+  #needs .nd.mid b{background:#ffd23f} #needs .nd.low b{background:#ff5c8a} #needs .nd.empty{animation:pulse .5s ease-in-out infinite alternate} #needs .nd.empty i{box-shadow:0 0 0 1px #ff5c8a}
+  @media (max-width:640px){ #needs .nd i{width:30px} }
   #tokn{color:#ffe28a} #tokrow .tkl{font-size:10px;font-weight:700;opacity:.75;letter-spacing:.06em}
   #topbtns{right:calc(10px + env(safe-area-inset-right,0px));top:calc(10px + var(--sat));gap:8px;align-items:center}
   .pbtn{font-family:var(--ui);font-weight:800;font-size:13px;letter-spacing:.03em;background:var(--glass);color:#fff;border:1px solid var(--gline);border-radius:14px;
@@ -326,7 +333,7 @@
   #pick .row{gap:8px;margin-top:12px}
   #kicked{font-family:var(--ui);font-size:16px;font-weight:600}
   /* tap-outside scrim behind open pop-ups */
-  body:not(.joined) #tokrow,body:not(.joined) #menubtn,body:not(.joined) #zin,body:not(.joined) #zout{display:none}
+  body:not(.joined) #needs,body:not(.joined) #tokrow,body:not(.joined) #menubtn,body:not(.joined) #zin,body:not(.joined) #zout{display:none}
   #scrim{position:absolute;inset:0;background:rgba(10,6,22,.45);display:none;z-index:3;animation:fadeIn .18s ease-out}
   #screen:has(> .sheet[style*="display: block"], > .sheet[style*="display: flex"]) #scrim{display:block}
   .sheet{z-index:5!important}
@@ -439,7 +446,7 @@
 <div id="screen">
   <canvas id="game"></canvas>
   <canvas id="ui"></canvas>
-  <div id="status" class="hb"><div class="st1"><b id="stitle">LLAMA LOUNGE</b><span class="st2"><span id="dot"></span><span id="stxt">CONNECTING</span></span></div><div id="tokrow" title="Your tokens"><span class="coin"></span><span id="tokn">0</span><span class="tkl">TOKENS</span></div></div>
+  <div id="status" class="hb"><div class="st1"><b id="stitle">LLAMA LOUNGE</b><span class="st2"><span id="dot"></span><span id="stxt">CONNECTING</span></span></div><div id="needs"><span class="nd" id="nd_hu" title="Hunger: eat food at the bar or in LLAMA ACRES">🍔<i><b></b></i></span><span class="nd" id="nd_th" title="Thirst: drinks at the bar or cider in LLAMA ACRES">💧<i><b></b></i></span></div><div id="tokrow" title="Your tokens"><span class="coin"></span><span id="tokn">0</span><span class="tkl">TOKENS</span></div></div>
   <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button class="pbtn ic" id="zout" title="Zoom out" aria-label="Zoom out">−</button><button class="pbtn ic" id="zin" title="Zoom in" aria-label="Zoom in">+</button><button class="pbtn ic" id="musicbtn" title="Music" aria-label="Music">♪</button><button class="pbtn y" id="menubtn" aria-label="Menu"><span class="hamb"><i></i><i></i><i></i></span><span class="mtx">MENU</span></button></div>
   <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
   <div id="keys">ARROWS/WASD WALK · SPACE ACTION<br>ENTER TALK · M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
@@ -506,6 +513,7 @@
       <li>Tap things to use them: the arcade, jukebox, lamp, bar cups, tables and shirt frames. Tap the rope to work the bar.</li>
       <li>Tap another llama to wave or spit. Use MENU for emotes and more.</li>
       <li>The pink button does the action for wherever you are. On the dance floor it does a FLIP (or press F).</li>
+      <li>Keep your llama fed and watered! The 🍔 and 💧 meters at the top go down while you play. Order food and drinks at the bar (sit on a bar stool and press ORDER), buy cider and snacks in LLAMA ACRES, or nibble an apple off the trees. If a meter runs empty your llama walks slower and games pay half.</li>
       <li>Earn LLAMA TOKENS by hitting arcade milestones and working the bar. Spend them on drinks (1 token), or bet up to 10 against THE HOUSE at the table games. Table games can also be played for free.</li>
       <li>Five rooms: the LLAMA LOUNGE, LLAMA ACRES outside, the LLAMA CASINO, the SPIT ARENA and LLAMA LANES. Tap a room in the bar at the bottom to walk there. Harvest the carrot patch in LLAMA ACRES for tokens.</li>
       <li>In the SPIT ARENA, press PLAY for a 60-second spit-ball round. Play solo against rival llamas, or with everyone who joins. Earn tokens, level up to unlock spit colors, and keep a daily streak.</li>
@@ -552,7 +560,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19e";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19f";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1874,20 +1882,24 @@ function tokUI(dir){ const el=document.getElementById('tokn'), row=document.getE
   if (dir){ row.classList.remove('up','down'); void row.offsetWidth; row.classList.add(dir>0?'up':'down'); }
   if (typeof sendPresence==='function' && joined) sendPresence(); }
 const DRINKS = { soda:{label:'HAY SODA', c:'#f84848'}, juice:{label:'GRASS JUICE', c:'#48c048'}, shake:{label:'BERRY SHAKE', c:'#f878b8'}, cider:{label:'HOT APPLE CIDER', c:'#c87028'}, caramel:{label:'CARAMEL APPLE CIDER', c:'#e8a038'},
-  capple:{label:'CARAMEL APPLE', c:'#d83838', food:true}, corn:{label:'CORN ON THE COB', c:'#f8d030', food:true}, pie:{label:'SLICE OF APPLE PIE', c:'#e8c070', food:true} };
+  capple:{label:'CARAMEL APPLE', c:'#d83838', food:true}, corn:{label:'CORN ON THE COB', c:'#f8d030', food:true}, pie:{label:'SLICE OF APPLE PIE', c:'#e8c070', food:true},
+  nachos:{label:'HAY NACHOS', c:'#f8c040', food:true}, fries:{label:'ALFALFA FRIES', c:'#f8d860', food:true}, burger:{label:'CLOVER BURGER', c:'#c87838', food:true} };
 const DRINK_IDS = Object.keys(DRINKS), BAR_IDS = ['soda','juice','shake'];   // the bar pours these; cider and snacks come from the stands in LLAMA ACRES
 const FOOD_PX = {   // held snacks, bottom row sits in the hoof; bites come off the top
   capple:['...K...','...T...','.KKTKK.','KCCCCCK','KCRCCRK','KRRRRWK','KRRRRRK','.KRRRK.','..KKK..'],
   corn:['.KKK.','KYyYK','KyYyK','KYyYK','KyYyK','KYyYK','GKYKG','GGKGG','.GGG.'],
-  pie:['K.......','KFK.....','KFFKK...','KFFFFKK.','KFFFFFFK','KBBBBBBK','.KKKKKK.'] };
-const FOOD_PAL = {K:'#181020',T:'#e8d0a0',C:'#d89838',R:'#d82838',W:'#f8a0a0',Y:'#f8d030',y:'#d8a818',G:'#58a840',F:'#e8c070',B:'#c88a50'};
+  pie:['K.......','KFK.....','KFFKK...','KFFFFKK.','KFFFFFFK','KBBBBBBK','.KKKKKK.'],
+  nachos:['..K.K...','.KYKYK..','KYyYKYK.','KYYyYYyK','KCCCCCCK','.KRRRRK.','..KKKK..'],
+  fries:['.K.K.K.','KYKYKYK','KYKYKYK','KRRRRRK','KRWRRWK','KRRRRRK','.KKKKK.'],
+  burger:['.KKKKK.','KBBTBBK','KGGGGGK','KMMMMMK','KYYYYYK','KBBBBBK','.KKKKK.'] };
+const FOOD_PAL = {K:'#181020',T:'#e8d0a0',C:'#d89838',R:'#d82838',W:'#f8a0a0',Y:'#f8d030',y:'#d8a818',G:'#58a840',F:'#e8c070',B:'#c88a50',M:'#7a3a18'};
 const EMOTES = ['heart','bang','huh','note','lol','zzz','wave','flex','palm'];
 const SONGS = ['LOUNGE GROOVE','HAYLOFT HOP','FUNKY HOOVES'];
 
 function dirFrom(dx,dy,prev){ const sx=dx-dy, sy=dx+dy; const v = sy>0?'f':sy<0?'b':prev[0]; const s = sx>0?'r':sx<0?'l':prev[1]; return v+s; }
 const WALK_PX = 46; // screen pixels per second: one steady pace in every direction
 const stepLen = (dx,dy) => Math.hypot((dx-dy)*TW/2, (dx+dy)*TH/2);
-function startStep(){ if (me.fish) stopFish(true); me.from=[me.gx,me.gy]; me.to=me.path[0]; me.stepT = Math.max(0.2, stepLen(me.to[0]-me.gx, me.to[1]-me.gy)/WALK_PX); me.d=dirFrom(me.to[0]-me.gx, me.to[1]-me.gy, me.d); me.moving=true; me.p=me.bar?'bar':'stand'; sendPresence(); }
+function startStep(){ if (me.fish) stopFish(true); me.from=[me.gx,me.gy]; me.to=me.path[0]; me.stepT = Math.max(0.2, stepLen(me.to[0]-me.gx, me.to[1]-me.gy)/(WALK_PX*(ndEmpty()?0.6:1))); me.d=dirFrom(me.to[0]-me.gx, me.to[1]-me.gy, me.d); me.moving=true; me.p=me.bar?'bar':'stand'; sendPresence(); }
 function walkTo(tx,ty,pending){
   if (me.bar){ leaveBar(tx,ty,pending); return true; }
   me.pending = pending||null;
@@ -1971,12 +1983,12 @@ function context(){
   if (me.p!=='sit' && near(JUKE_X,0)) return 'juke';
   if (near(0,6)) return 'lamp';
   const s = (me.p==='sit') ? seatAt(me.gx,me.gy) : null;
-  if (s && s.gy===2 && s.gx<=6) return me.h ? 'sip' : 'grab';
+  if (s && s.gy===2 && s.gx<=6) return 'grab';
   if (me.p==='sit' && nearTable()>=0) return 'tmenu'+nearTable();
   if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
   return me.p==='sit' ? 'stand' : 'sit';
 }
-const ALABEL = {arena:'PLAY', bowl:'BOWL', fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
+const ALABEL = {grab:'ORDER', arena:'PLAY', bowl:'BOWL', fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
 const alabel=document.getElementById('alabel'); let lastLabel='';
 function updateALabel(){ const c=context(); const l = arcade.on ? (arcade.mode==='menu'?'SELECT':arcade.over?'RETRY':arcade.mode==='dash'?'JUMP':'---') : (c?ALABEL[c]:'SIT'); if(l!==lastLabel){ alabel.textContent=l; lastLabel=l; } }
 // ---- bartending: slip past the rope, pace behind the bar pouring drinks ----
@@ -2032,7 +2044,7 @@ function doAction(a){
   else if (a==='lamp'){ if(!near(0,6)) return; if(me.p!=='sit') face(0,6); toggleLamp(); }
   else if (a==='juke'){ if(!near(JUKE_X,0)) return; face(JUKE_X,0); nextSong(); sendPresence(true); }
   else if (a==='order'){ const id = BAR_IDS[Math.floor(Math.random()*BAR_IDS.length)]; me.h=id; localMsg(`You ordered a ${DRINKS[id].label}!`); sendPresence(true); }
-  else if (a==='grab'){ const st=(me.p==='sit')?seatAt(me.gx,me.gy):null; if(!st||st.gy!==2||me.h) return; const gx=me.gx;
+  else if (a==='grab'){ const st=(me.p==='sit')?seatAt(me.gx,me.gy):null; if(!st||st.gy!==2) return; openFw('bar'); return; const gx=me.gx;
     NET.act('drink').then(r=>{ if (!r.ok){ localMsg(r.msg||'Could not buy a drink.'); return; } tkSet(r.tk); me.h=BAR_IDS[gx%BAR_IDS.length]; me.hl=5; localMsg(`You bought a ${DRINKS[me.h].label} for 1 TOKEN!`); sendPresence(true); }); }
   else if (a==='sip'||a==='bite'){ if(!me.h) return; const now=performance.now(); if (now-me.sipStart<SIP_T) return; me.sipStart=now; me.sipK=(me.sipK+1)%10000;
     setTimeout(()=>{ if(!me.h) return; me.hl=Math.max(0,(me.hl||5)-1); if(me.hl===0){ localMsg(DRINKS[me.h].food ? `Yum! You ate the whole ${DRINKS[me.h].label}.` : `You finished your ${DRINKS[me.h].label}!`); me.h=null; } sendPresence(true); }, SIP_T);
@@ -3441,26 +3453,28 @@ function eatApple(k){
   if (curRoom!=='barn' || me.p==='sit' || me.moving) return;
   const ap = FURN.find(f=>f.t==='apple' && f.k===k); if (!ap || !near(ap.gx,ap.gy)) return;
   if (!appleReady(k)){ localMsg('Someone already ate that one. It will grow back soon!'); return; }
-  appleState[k]={back:Date.now()+APPLE_MS, at:Date.now()};
+  appleState[k]={back:Date.now()+APPLE_MS, at:Date.now()}; NET.act('apple').then(r=>{ if (r && r.nd) ndSet(r.nd); });
   face(ap.gx,ap.gy); me.eaK=(me.eaK||0)+1; me.lastEat={k:me.eaK, a:k}; sendPresence(true);
   localMsg(['CRUNCH! A juicy red apple.','Mmm, sweet and crisp!','Apple a day keeps the vet away!'][me.eaK%3]); try { if (actx && actx.state==='running'){ const t0=actx.currentTime; noise(t0,0.07,0.6,1800,sfxBus); noise(t0+0.09,0.06,0.45,2200,sfxBus); } } catch(_){}
 }
 // ---- market stands in LLAMA ACRES: spend tokens on cider or a snack you carry around (the server charges for it) ----
 const fwEl=document.getElementById('fwbox');
-const STANDS={ cider:{gx:7,gy:4, title:'🍎 APPLE CIDER', note:'FRESH PRESSED FROM THE ORCHARD. SIP IT ANYWHERE!', items:[['cider','HOT CIDER',2],['caramel','CARAMEL CIDER',3]]},
+const STANDS={ bar:{gx:0,gy:2, title:'🍸 THE BAR', note:'DRINKS FILL 💧 THIRST, FOOD FILLS 🍔 HUNGER. ENJOY IT ANYWHERE!', items:[['soda','HAY SODA',1],['juice','GRASS JUICE',1],['shake','BERRY SHAKE',2],['nachos','HAY NACHOS',2],['fries','ALFALFA FRIES',2],['burger','CLOVER BURGER',3]]},
+  cider:{gx:7,gy:4, title:'🍎 APPLE CIDER', note:'FRESH PRESSED FROM THE ORCHARD. SIP IT ANYWHERE!', items:[['cider','HOT CIDER',2],['caramel','CARAMEL CIDER',3]]},
   snack:{gx:10,gy:4, title:'🌽 FARM SNACKS', note:'HOMEMADE TREATS FROM LLAMA ACRES. EAT IT ANYWHERE!', items:[['capple','CARAMEL APPLE',2],['corn','CORN ON THE COB',2],['pie','APPLE PIE',3]]} };
 let standOpen=null;
 const nearStand = ST => near(ST.gx,ST.gy) || near(ST.gx+1,ST.gy);   // stalls are two tiles wide
 function standNear(){ if (curRoom!=='barn' || me.p==='sit') return null; for (const k in STANDS) if (nearStand(STANDS[k])) return k; return null; }
-function openFw(k){ k = k || standNear(); const S=STANDS[k]; if (curRoom!=='barn' || !S) return; closeAll(); standOpen=k;
+function openFw(k){ k = k || standNear(); const S=STANDS[k]; if (!S || (k==='bar' ? curRoom!=='lounge' : curRoom!=='barn')) return; closeAll(); standOpen=k;
   document.getElementById('fw_t').textContent=S.title; document.getElementById('fw_n').textContent=S.note;
   const row=document.getElementById('fw_items'); row.innerHTML='';
-  for (const [id,label,cost] of S.items){ const b=document.createElement('button'); b.className='gbbtn y'; b.innerHTML=`${label}<br><small>${cost} TOKENS</small>`; b.addEventListener('click', ()=>buyAt(k,id)); row.appendChild(b); }
+  for (const [id,label,cost] of S.items){ const b=document.createElement('button'); b.className='gbbtn y'; const F=FOOD_FILL[id]||{}; b.innerHTML=`${label}<br><small>${cost} TOKEN${cost>1?'S':''} · ${F.hu?'🍔+'+F.hu:''}${F.hu&&F.th>0?' ':''}${F.th>0?'💧+'+F.th:''}</small>`; b.addEventListener('click', ()=>buyAt(k,id)); row.appendChild(b); }
   document.getElementById('fw_msg').textContent = me.h ? `YOU'RE HOLDING ${DRINKS[me.h].label}. A NEW ONE REPLACES IT.` : `YOU HAVE ${wallet.get()} TOKENS`; fwEl.style.display='block'; }
 document.getElementById('fw_close').addEventListener('click', ()=>{ fwEl.style.display='none'; });
-function buyAt(k,id){ ensureAudio(); document.getElementById('fw_msg').textContent = k==='cider' ? 'POURING...' : 'WRAPPING IT UP...';
+const FOOD_FILL = { soda:{th:30}, juice:{th:35,hu:5}, shake:{th:25,hu:20}, cider:{th:40}, caramel:{th:40,hu:8}, capple:{hu:30}, corn:{hu:35}, pie:{hu:45}, nachos:{hu:35,th:-5}, fries:{hu:35,th:-5}, burger:{hu:55} };   // same as the server
+function buyAt(k,id){ ensureAudio(); document.getElementById('fw_msg').textContent = DRINKS[id] && !DRINKS[id].food ? 'POURING...' : 'WRAPPING IT UP...';
   NET.act('buy',{s:k, k:id}).then(r=>{ if (!r.ok){ document.getElementById('fw_msg').textContent=(r.msg||'TRY AGAIN.').toUpperCase(); return; }
-    me.h = DRINKS[r.k] ? r.k : id; me.hl=5; face(STANDS[k].gx+(me.gx>STANDS[k].gx?1:0),STANDS[k].gy);
+    me.h = DRINKS[r.k] ? r.k : id; me.hl=5; if (r.nd) ndSet(r.nd); if (k!=='bar') face(STANDS[k].gx+(me.gx>STANDS[k].gx?1:0),STANDS[k].gy);
     tkSet(r.tk, `You bought ${DRINKS[me.h].food?'a':'a cup of'} ${DRINKS[me.h].label}! Tap yourself to ${DRINKS[me.h].food?'take a bite':'sip'}.`); sendPresence(true); fwEl.style.display='none'; }); }
 // ---- carrot patch: harvest ripe plots for tokens (timers kept per player) ----
 const REGROW_MS = 90000;
@@ -3895,8 +3909,20 @@ document.getElementById('ds_refresh').addEventListener('click', loadDash);
 document.getElementById('ds_close').addEventListener('click', ()=>{ dashEl.style.display='none'; });
 NET.handlers.tg = m => tgServer(m);
 NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; renderBoard(); };
-NET.handlers.hello = m => { if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true); };
+NET.handlers.hello = m => { if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true); };
 NET.handlers.kick = m => showKicked(m.msg);
+// ---- hunger and thirst: the server keeps the real numbers; the page counts them down smoothly in between ----
+const ND = { hu:100, th:100, at:performance.now(), rate:{hu:100/(75*60000), th:100/(60*60000)}, warned:{} };
+const ndNow = k => Math.max(0, ND[k] - (joined ? (performance.now()-ND.at)*ND.rate[k] : 0));
+const ndEmpty = () => joined && (ndNow('hu')<=0 || ndNow('th')<=0);
+function ndSet(v){ const before={hu:ndNow('hu'), th:ndNow('th')}; ND.hu=+v.hu; ND.th=+v.th; ND.at=performance.now(); for (const k of ['hu','th']) if (ND[k]>before[k]+5) ND.warned[k]={}; ndUI(); }
+function ndUI(){ for (const k of ['hu','th']){ const v=ndNow(k), el=document.getElementById('nd_'+k); if (!el) continue; el.querySelector('b').style.width=Math.max(0,Math.min(100,v))+'%';
+    el.className='nd'+(v<=0?' empty low':v<25?' low':v<50?' mid':''); el.title=(k==='hu'?'Hunger ':'Thirst ')+Math.round(v)+'%';
+    const W=ND.warned[k]||(ND.warned[k]={}), what=k==='hu'?'hungry':'thirsty', fix=k==='hu'?'Grab food at the bar or a snack in LLAMA ACRES.':'Grab a drink at the bar or cider in LLAMA ACRES.';
+    if (joined && v<25 && v>0 && !W.low){ W.low=1; localMsg(`Your llama is getting ${what}! ${fix}`); }
+    if (joined && v<=0 && !W.empty){ W.empty=1; localMsg(`Your llama is ${k==='hu'?'starving':'parched'}! It walks slower and games pay half until it ${k==='hu'?'eats':'drinks'}. ${fix}`); } } }
+NET.handlers.nd = m => ndSet(m);
+setInterval(ndUI, 2000);
 NET.handlers.staff = m => { me.st = ['owner','mod'].includes(m.st) ? m.st : ''; dashMenu(); if (m.msg) localMsg(m.msg); };
 // BOWL-PHYSICS-START (generated from tools/bowl_physics.js by tools/sync_bowl.py; edit that file, not this copy)
 // ---- BOWLING PHYSICS (shared: the server runs this exact code to decide which pins fall) ----

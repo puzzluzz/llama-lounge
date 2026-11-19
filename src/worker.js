@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-19e";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-19f";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -45,9 +45,17 @@ const TABLES = [{ gx: 8, gy: 8 }, { gx: 3, gy: 8 }];
 const CROP_MS = 90000, BAR_MS = 30000;
 // market stands in LLAMA ACRES: where each one is and what it sells (token prices)
 const STANDS = {
-  cider: { x: 7.5, y: 4, items: { cider: 2, caramel: 3 } },     // two tiles wide: x is the middle of the stall
-  snack: { x: 10.5, y: 4, items: { capple: 2, corn: 2, pie: 3 } },
+  cider: { rm: "barn", x: 7.5, y: 4, items: { cider: 2, caramel: 3 } },     // two tiles wide: x is the middle of the stall
+  snack: { rm: "barn", x: 10.5, y: 4, items: { capple: 2, corn: 2, pie: 3 } },
+  bar:   { rm: "lounge", items: { soda: 1, juice: 1, shake: 2, nachos: 2, fries: 2, burger: 3 } },   // sit at the bar to order
 };
+// ---------- hunger and thirst ----------
+// Meters go from 100 (full) to 0. They only drain while you're online: thirst empties in about an hour, hunger in 75 minutes.
+// Everything you buy fills them right away. When either is empty, the mini-games pay half.
+const NEEDS = { thirstMs: 60 * 60000, hungerMs: 75 * 60000, maxStep: 10 * 60000, saveMs: 60000, apple: 8, appleGap: 45000 };
+const FOOD = { soda: { th: 30 }, juice: { th: 35, hu: 5 }, shake: { th: 25, hu: 20 }, cider: { th: 40 }, caramel: { th: 40, hu: 8 },
+  capple: { hu: 30 }, corn: { hu: 35 }, pie: { hu: 45 }, nachos: { hu: 35, th: -5 }, fries: { hu: 35, th: -5 }, burger: { hu: 55 } };
+const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
 
 // ---------- helpers ----------
 const enc = new TextEncoder();
@@ -338,10 +346,11 @@ export class Lounge extends DurableObject {
     const pair = new WebSocketPair(); const [client, server] = Object.values(pair);
     const peer = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
     this.ctx.acceptWebSocket(server);
-    server.serializeAttachment({ uid, name, staff, peer, pres: null, rate: [Date.now(), 0] });
+    const nd = await this.needsLoad(uid);
+    server.serializeAttachment({ uid, name, staff, peer, pres: null, rate: [Date.now(), 0], nd });
     // greet with everyone already here, the leaderboard and table states
     const peers = this.sockets().filter((w) => w !== server && w.readyState === 1).map((w) => w.deserializeAttachment()).filter((a) => a && a.pres && a.uid !== uid).map((a) => ({ peer: a.peer, presence: a.pres }));
-    server.send(JSON.stringify({ t: "hello", v: VERSION, peer, peers, board: await this.board() }));
+    server.send(JSON.stringify({ t: "hello", v: VERSION, peer, peers, board: await this.board(), nd: { hu: nd.hu, th: nd.th, rate: { hu: 100 / NEEDS.hungerMs, th: 100 / NEEDS.thirstMs } } }));
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -356,6 +365,7 @@ export class Lounge extends DurableObject {
     let m; try { m = JSON.parse(typeof raw === "string" ? raw : new TextDecoder().decode(raw)); } catch (e) { return; }
     if (!m || typeof m !== "object") return;
 
+    if (a.nd) await this.needsTick(ws, a, now);
     if (m.t === "p") {
       // balance / mute / ban are cached for a few seconds so moving around doesn't hit the database every step
       if (!a.uc || now - a.uc.t > 5000){ const u = await this.user(a.uid); if (!u || u.banned) { ws.close(4003, "banned"); return; } a.uc = { t: now, tk: u.tk, muted: u.muted }; a.staff = staffRole(this.env, u); }
@@ -373,7 +383,7 @@ export class Lounge extends DurableObject {
     }
   }
 
-  async webSocketClose(ws) { this.left(ws); }
+  async webSocketClose(ws) { this.left(ws); try { const a = ws.deserializeAttachment(); if (a && a.nd) { this.needsDrain(a, Date.now()); await this.needsSave(a); } } catch (e) {} }
   async webSocketError(ws) { this.left(ws); }
   left(ws) { const a = ws.deserializeAttachment(); if (a && a.pres) this.broadcast({ t: "peers", left: [{ peer: a.peer }] }, ws); }
 
@@ -414,7 +424,8 @@ export class Lounge extends DurableObject {
       case "drink": {
         if (!this.near(a, "lounge", (x, y, p) => p.p === "sit" && Math.round(y) === 2)) return { ok: false, msg: "Sit at the bar first." };
         const tk = await this.debit(uid, 1, "drink"); if (tk === null) return { ok: false, msg: "Drinks cost 1 TOKEN. Earn some at the arcade, the bar or LLAMA ACRES!" };
-        return { ok: true, tk };
+        await this.needsEat(ws, a, { th: 30 }, now);
+        return { ok: true, tk, nd: this.needsOut(a) };
       }
       case "slot": {
         let sx = -1; if (!this.near(a, "casino", (x, y, p) => { sx = Math.round(x); return p.p === "sit" && Math.round(y) === 1 && sx >= 0 && sx <= 12; })) return { ok: false, msg: "Sit at a slot machine first." };
@@ -447,7 +458,7 @@ export class Lounge extends DurableObject {
         if (!t || now < t - 300 || now > t + 20000) return { ok: false, msg: "Nothing on the line." };
         await this.clearTimer(uid, "fish");
         const f = pickW(FISH.map((x) => x.w));
-        return { ok: true, f, pay: FISH[f].pay, name: FISH[f].n, tk: await this.credit(uid, FISH[f].pay, "fish") };
+        return { ok: true, f, pay: FISH[f].pay, name: FISH[f].n, tk: await this.credit(uid, Math.max(1, halfIfEmpty(a, FISH[f].pay)), "fish") };
       }
       case "bar_tick": {
         if (!this.near(a, "lounge", (x, y, p) => p.p === "bar" && y < 1.2)) { await this.clearTimer(uid, "bar"); return { ok: false }; }
@@ -467,17 +478,25 @@ export class Lounge extends DurableObject {
         const col = id === "hay" ? "best_hay" : "best_dash";
         const u = await this.user(uid); const isBest = score > u[col];
         if (isBest) await this.env.DB.prepare(`UPDATE users SET ${col} = ? WHERE id = ?`).bind(score, uid).run();
-        let earn = Math.min(10, Math.floor(score / (id === "hay" ? 10 : 50))); if (isBest && score > 0) earn += 3;
+        let earn = Math.min(10, Math.floor(score / (id === "hay" ? 10 : 50))); if (isBest && score > 0) earn += 3; earn = halfIfEmpty(a, earn);
         const tk = await this.credit(uid, earn, "arcade " + id);
         if (isBest) this.broadcast({ t: "board", board: await this.board() });
         return { ok: true, earned: earn, best: isBest, tk };
       }
+      case "apple": {
+        if (!this.near(a, "barn", () => true)) return { ok: false };
+        if (now - (a.nd && a.nd.apple || 0) < NEEDS.appleGap) return { ok: true, nd: this.needsOut(a) };
+        a.nd.apple = now; await this.needsEat(ws, a, { hu: NEEDS.apple }, now);
+        return { ok: true, nd: this.needsOut(a) };
+      }
       case "buy": {
-        const S = STANDS[m.s === "snack" ? "snack" : "cider"], k = String(m.k || ""), cost = Object.hasOwn(S.items, k) ? S.items[k] : 0;
+        const S = Object.hasOwn(STANDS, m.s) ? STANDS[m.s] : null, k = String(m.k || ""), cost = S && Object.hasOwn(S.items, k) ? S.items[k] : 0;
         if (!cost) return { ok: false, msg: "They don't sell that here." };
-        if (!this.near(a, "barn", (x, y) => Math.abs(x - S.x) <= 2.1 && Math.abs(y - S.y) <= 1.6)) return { ok: false, msg: "Walk up to the stand first." };
-        const tk = await this.debit(uid, cost, "stand " + k); if (tk === null) return { ok: false, msg: `That costs ${cost} TOKENS. Harvest carrots or go fishing to earn some!` };
-        return { ok: true, k, tk };
+        if (m.s === "bar") { if (!this.near(a, "lounge", (x, y, p) => p.p === "sit" && Math.round(y) === 2)) return { ok: false, msg: "Sit at the bar first." }; }
+        else if (!this.near(a, S.rm, (x, y) => Math.abs(x - S.x) <= 2.1 && Math.abs(y - S.y) <= 1.6)) return { ok: false, msg: "Walk up to the stand first." };
+        const tk = await this.debit(uid, cost, "stand " + k); if (tk === null) return { ok: false, msg: `That costs ${cost} TOKENS. Play a game or harvest carrots to earn some!` };
+        await this.needsEat(ws, a, FOOD[k] || {}, now);
+        return { ok: true, k, tk, nd: this.needsOut(a) };
       }
       case "roulette": {
         if (!this.near(a, "casino", (x, y, p) => p.p === "sit" && ROUL_SEATS.some(([sx, sy]) => sx === Math.round(x) && sy === Math.round(y)))) return { ok: false, msg: "Sit at the roulette table first." };
@@ -588,6 +607,23 @@ export class Lounge extends DurableObject {
     setTimeout(() => { this.tables[i] = null; }, 4000);
   }
 
+  // ---------- hunger and thirst ----------
+  async needsTable() { if (this.needsReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS needs (uid INTEGER PRIMARY KEY, hu REAL NOT NULL DEFAULT 100, th REAL NOT NULL DEFAULT 100)").run(); this.needsReady = true; }
+  async needsLoad(uid) { await this.needsTable(); const r = await this.env.DB.prepare("SELECT hu, th FROM needs WHERE uid = ?").bind(uid).first();
+    const now = Date.now(); return { hu: r ? r.hu : 100, th: r ? r.th : 100, t: now, saved: now, sent: now, apple: 0 }; }   // time away doesn't count
+  needsDrain(a, now) { const N = a.nd, dt = Math.max(0, Math.min(NEEDS.maxStep, now - N.t)); N.hu = Math.max(0, N.hu - dt * 100 / NEEDS.hungerMs); N.th = Math.max(0, N.th - dt * 100 / NEEDS.thirstMs); N.t = now; }
+  async needsSave(a) { await this.needsTable(); await this.env.DB.prepare("INSERT INTO needs (uid, hu, th) VALUES (?, ?, ?) ON CONFLICT(uid) DO UPDATE SET hu = excluded.hu, th = excluded.th").bind(a.uid, Math.round(a.nd.hu * 10) / 10, Math.round(a.nd.th * 10) / 10).run(); a.nd.saved = Date.now(); }
+  needsOut(a) { return { hu: Math.round(a.nd.hu * 10) / 10, th: Math.round(a.nd.th * 10) / 10 }; }
+  async needsTick(ws, a, now) {
+    const was = a.nd.hu > 0 && a.nd.th > 0; this.needsDrain(a, now);
+    if (now - a.nd.saved > NEEDS.saveMs) await this.needsSave(a);
+    if (now - a.nd.sent > 30000 || was !== (a.nd.hu > 0 && a.nd.th > 0)) { a.nd.sent = now; this.send(ws, { t: "nd", ...this.needsOut(a) }); }
+    ws.serializeAttachment(a);
+  }
+  async needsEat(ws, a, f, now) { if (!a.nd) return; this.needsDrain(a, now);
+    a.nd.hu = Math.max(0, Math.min(100, a.nd.hu + (f.hu || 0))); a.nd.th = Math.max(0, Math.min(100, a.nd.th + (f.th || 0)));
+    await this.needsSave(a); a.nd.sent = now; ws.serializeAttachment(a); }
+
   // ---------- spit arena ----------
   async arenaTable() {
     if (this.arenaReady) return;
@@ -658,7 +694,7 @@ export class Lounge extends DurableObject {
     const firstToday = r.last_day !== today; const streak = firstToday ? (r.last_day === yest ? r.streak + 1 : 1) : r.streak;
     let earn = Math.min(6, Math.floor(score / 25));
     const bonus = { streak: firstToday ? Math.min(5, streak) : 0, place: humans.length > 1 ? (place === 1 ? 3 : place === 2 ? 1 : 0) : 0 };
-    earn += bonus.streak + bonus.place;
+    earn += bonus.streak + bonus.place; earn = halfIfEmpty(a, earn);
     const earnedSoFar = r.earn_day === today ? r.earned : 0; earn = Math.max(0, Math.min(earn, ARENA.dayCap - earnedSoFar));
     const xp = r.xp + score + 20 + (humans.length > 1 && place === 1 ? 30 : 0);
     const best = score > r.best, wkBest = r.wk !== wk ? score : Math.max(r.wk_best, score), newWk = r.wk !== wk || score > r.wk_best;
@@ -743,7 +779,7 @@ export class Lounge extends DurableObject {
     const minMs = (G.rolls.length - 1) * LANES.minGap;
     let earn = now - G.started >= minMs ? Math.min(15, Math.floor(total / 10)) : 0;
     const bonus = { daily: firstToday ? 2 : 0, turkey: turkeys * 3, perfect: total === BOWL_FRAMES * 30 ? 10 : 0 };
-    earn += bonus.daily + bonus.turkey + bonus.perfect;
+    earn += bonus.daily + bonus.turkey + bonus.perfect; earn = halfIfEmpty(a, earn);
     const soFar = r.earn_day === today ? r.earned : 0; earn = Math.max(0, Math.min(earn, LANES.dayCap - soFar));
     const best = total > r.best, wkBest = r.wk !== wk ? total : Math.max(r.wk_best, total), newWk = r.wk !== wk || total > r.wk_best;
     await this.env.DB.prepare(`INSERT INTO bowl (uid, best, wk, wk_best, games, strikes, last_day, earn_day, earned) VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?)
