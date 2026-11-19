@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-21h";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-21j";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -87,9 +87,11 @@ const ITEMS = {
 const PR = { w: 13, h: 12, maxFurn: 60, clear: ["0,10", "1,10", "2,10", "3,10"], knockGap: 20000, letInMs: 3 * 3600e3, nameMax: 24 };
 const PR_WALLS = ["lavender", "cream", "mint", "pink", "night", "wood"], PR_FLOORS = ["wood", "checker", "carpet", "marble", "grass"];
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
-const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7 };
+const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30 };
 // what the store sells right now: one piece per category (the rest stay placeable for anyone who already owns them)
-const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign"]);
+const FURN_SIZE = { bed: 2, loveseat: 2, sofa: 3, bigtv: 2 };   // pieces bigger than one tile
+const FURN_SIDEWAYS = new Set(["loveseat", "sofa"]);   // couches run along their back, so they turn the other way
+const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa"]);
 const FURN_STAFF = new Set(["adminsign"]);   // only mods and the owner can buy these
 const FURN_WALL = new Set(["adminsign"]);    // hang on a wall: placed on a tile along a wall, don't take up floor space
 const prId = (rm) => { const m = /^p:(\d{1,9})$/.exec(String(rm || "")); return m ? +m[1] : 0; };
@@ -699,6 +701,21 @@ export class Lounge extends DurableObject {
   }
   async prOwnRoomHere(a) {   // editing: only the owner, standing in their own room
     const r = await this.prMine(a); if (!r) return null; if (!a.pres || a.pres.rm !== "p:" + r.id) return null; return r; }
+  // tiles a piece covers: the bed is two long (along x for rot 0/2, along y for rot 1/3); everything else is one tile
+  furnTiles(item, gx, gy, rot) { const n = FURN_SIZE[item] || 1, alongY = FURN_SIDEWAYS.has(item) ? (rot === 0 || rot === 3) : rot % 2 === 1, out = []; for (let k = 0; k < n; k++) out.push(alongY ? [gx, gy + k] : [gx + k, gy]); return out; }
+  furnFits(item, gx, gy, rot, furn, skipId) {   // null if it fits, otherwise the reason
+    const wall = FURN_WALL.has(item), tiles = this.furnTiles(item, gx, gy, rot);
+    for (const [x, y] of tiles) {
+      if (!(x >= 0 && y >= 0 && x < PR.w && y < PR.h)) return "That doesn't fit there.";
+      if (!wall && PR.clear.includes(x + "," + y)) return "Keep the doorway clear.";
+    }
+    for (const f of furn) {
+      if (f.id === skipId || FURN_WALL.has(f.item) !== wall) continue;
+      const ft = this.furnTiles(f.item, f.gx, f.gy, f.rot);
+      if (ft.some(([x, y]) => tiles.some(([u, v]) => u === x && v === y))) return wall ? "Something is already there." : "Something is in the way.";
+    }
+    return null;
+  }
   async prPlace(a, m) {
     const r = await this.prOwnRoomHere(a); if (!r) return { ok: false, msg: "Go into your own room to place furniture." };
     const k = String(m.item || ""); if (!Object.hasOwn(FURN_ITEMS, k)) return { ok: false, msg: "That's not furniture." };
@@ -707,9 +724,8 @@ export class Lounge extends DurableObject {
     const wall = FURN_WALL.has(k);
     if (wall && gx !== 0 && gy !== 0) return { ok: false, msg: "Wall items go on a wall. Tap a spot right next to a wall." };
     if (wall && gx === 0 && gy >= 9) return { ok: false, msg: "That's where the door is." };
-    if (!wall && PR.clear.includes(gx + "," + gy)) return { ok: false, msg: "Keep the doorway clear." };
     const furn = await this.prFurn(r.id); if (furn.length >= PR.maxFurn) return { ok: false, msg: `Rooms hold up to ${PR.maxFurn} pieces.` };
-    if (furn.some((f) => f.gx === gx && f.gy === gy && FURN_WALL.has(f.item) === wall)) return { ok: false, msg: "Something is already there." };
+    { const why = this.furnFits(k, gx, gy, rot, furn, -1); if (why) return { ok: false, msg: why }; }
     const own = await this.env.DB.prepare("SELECT n FROM finv WHERE uid = ? AND item = ?").bind(a.uid, k).first();
     if (!own || furn.filter((f) => f.item === k).length >= own.n) return { ok: false, msg: "You don't have one of those in storage." };
     await this.env.DB.prepare("INSERT INTO pfurn (room, item, gx, gy, rot) VALUES (?, ?, ?, ?, ?)").bind(r.id, k, gx, gy, rot).run();
@@ -719,6 +735,7 @@ export class Lounge extends DurableObject {
   async prEditPiece(a, m, what) {
     const r = await this.prOwnRoomHere(a); if (!r) return { ok: false, msg: "Go into your own room to change furniture." };
     const id = Math.floor(+m.fid || 0); const f = await this.env.DB.prepare("SELECT * FROM pfurn WHERE id = ? AND room = ?").bind(id, r.id).first(); if (!f) return { ok: false, msg: "That piece is gone." };
+    if (what === "rot") { const why = this.furnFits(f.item, f.gx, f.gy, (f.rot + 1) % 4, await this.prFurn(r.id), f.id); if (why) return { ok: false, msg: why === "Something is in the way." ? "No room to turn it there." : why }; }
     if (what === "rot") await this.env.DB.prepare("UPDATE pfurn SET rot = (rot + 1) % 4 WHERE id = ?").bind(id).run();
     else await this.env.DB.prepare("DELETE FROM pfurn WHERE id = ?").bind(id).run();
     const nf = await this.prFurn(r.id); this.toRoom("p:" + r.id, { t: "prf", room: r.id, furn: nf });
