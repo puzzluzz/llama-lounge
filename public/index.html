@@ -567,6 +567,15 @@
   #roombar.fr{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent 100%);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent 100%)}
   #roombar.fl.fr{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%)}
   @media (max-width:640px){ #roombar{max-width:none} #roombar .pbtn{flex:1 0 62px} }
+  /* desktop: arrows show only when some rooms are out of view; you can also drag the bar or use the mouse wheel */
+  #rbwrap{display:flex;align-items:center;gap:2px;min-width:0;flex:0 1 auto;max-width:min(680px,58vw)}
+  body:not(.joined) #rbwrap{display:none}
+  #rbwrap #roombar{max-width:none;min-width:0;flex:0 1 auto;cursor:grab} #rbwrap #roombar.dragging{cursor:grabbing;scroll-snap-type:none}
+  .rbarrow{display:none;flex:none;width:26px;height:38px;border:0;border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font:800 20px/1 var(--ui);cursor:pointer;padding:0}
+  .rbarrow:hover{background:rgba(255,255,255,.2)} .rbarrow:disabled{opacity:.25;cursor:default}
+  #rbwrap.over .rbarrow{display:block}
+  @media (min-width:641px){ #roombar .pbtn{padding:0 9px} #roombar.fl,#roombar.fr,#roombar.fl.fr{-webkit-mask-image:none;mask-image:none} }
+  @media (max-width:640px){ #rbwrap{width:100%;max-width:none} #rbwrap #roombar{flex:1 1 auto} .rbarrow,#rbwrap.over .rbarrow{display:none} }
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
   @media (max-height:520px) and (min-width:641px){ #dock{bottom:6px;padding:6px} .pbtn{height:38px} #chatin{height:38px} #saybtn{width:30px;height:30px} }
 </style>
@@ -588,7 +597,7 @@
   <div id="logbox" class="gb sheet"><span class="x" id="logx">✕</span><div id="loglines"></div></div>
   <div id="tbox" class="gb"><span id="ttext"></span><span id="tarrow">▼</span></div>
   <div id="dock">
-  <div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button><button class="pbtn" data-go="arena">💦 ARENA</button><button class="pbtn" data-go="lanes">🎳 LANES</button><button class="pbtn" data-go="store">🛍️ STORE</button></div>
+  <div id="rbwrap"><button class="rbarrow" id="rb_l" type="button" aria-label="Scroll rooms left">‹</button><div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button><button class="pbtn" data-go="arena">💦 ARENA</button><button class="pbtn" data-go="lanes">🎳 LANES</button><button class="pbtn" data-go="store">🛍️ STORE</button></div><button class="rbarrow" id="rb_r" type="button" aria-label="Scroll rooms right">›</button></div>
   <div id="bottom">
     <form id="chatrow" autocomplete="off"><input id="chatin" maxlength="120" placeholder="Say something..." enterkeyhint="send"><button class="pbtn y" id="saybtn" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10 15 12 3.4 14z" fill="currentColor"/></svg></button></form>
     <button class="pbtn" id="abtn" title="Action (Space)"><b id="alabel">SIT</b></button>
@@ -711,7 +720,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-20f";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-20h";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -3894,7 +3903,16 @@ function goThroughDoor(r){ const [dx,dy]=DOORWAY[curRoom]; if (me.gx===dx && me.
 document.getElementById('sw_stay').addEventListener('click', ()=>{ swapEl.style.display='none'; swapTo=null; });
 function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; document.getElementById('dock').classList.toggle('on', !!joined); document.body.classList.toggle('joined', !!joined); for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n=roomCount(r); const [ic,lb]=({lounge:['🍸','LOUNGE'], barn:['🌾','ACRES'], casino:['🎰','CASINO'], arena:['💦','ARENA'], lanes:['🎳','LANES'], store:['🛍️','STORE']})[r]; b.innerHTML = `<span class="ri">${ic}</span><span class="rl">${lb}</span>` + (n ? `<span class="cnt">${n}</span>` : ''); } }
 // fades show which side has more rooms; a mouse wheel scrolls the bar sideways; your room's tab stays in view
-function roombarEdges(){ const el=roombarEl, max=el.scrollWidth-el.clientWidth; el.classList.toggle('fl', el.scrollLeft>2); el.classList.toggle('fr', max>2 && el.scrollLeft<max-2); }
+function roombarEdges(){ const el=roombarEl, max=el.scrollWidth-el.clientWidth; el.classList.toggle('fl', el.scrollLeft>2); el.classList.toggle('fr', max>2 && el.scrollLeft<max-2);
+  const w=document.getElementById('rbwrap'); if (w){ w.classList.toggle('over', max>2); document.getElementById('rb_l').disabled = el.scrollLeft<=2; document.getElementById('rb_r').disabled = el.scrollLeft>=max-2; } }
+document.getElementById('rb_l').addEventListener('click', ()=>roombarEl.scrollBy({left:-180, behavior:'smooth'}));
+document.getElementById('rb_r').addEventListener('click', ()=>roombarEl.scrollBy({left:180, behavior:'smooth'}));
+// click and drag the bar sideways with a mouse (a real drag doesn't count as a click on a room)
+{ let sx=0, sl=0, down=false, dragged=false;
+  roombarEl.addEventListener('pointerdown', e=>{ if (e.pointerType!=='mouse' || roombarEl.scrollWidth<=roombarEl.clientWidth) return; down=true; dragged=false; sx=e.clientX; sl=roombarEl.scrollLeft; });
+  addEventListener('pointermove', e=>{ if (!down) return; const dx=e.clientX-sx; if (!dragged && Math.abs(dx)>5){ dragged=true; roombarEl.classList.add('dragging'); } if (dragged) roombarEl.scrollLeft=sl-dx; });
+  addEventListener('pointerup', ()=>{ if (!down) return; down=false; roombarEl.classList.remove('dragging'); if (dragged) setTimeout(()=>{ dragged=false; }, 0); });
+  roombarEl.addEventListener('click', e=>{ if (dragged){ e.stopPropagation(); e.preventDefault(); } }, true); }
 roombarEl.addEventListener('scroll', roombarEdges, {passive:true}); addEventListener('resize', roombarEdges);
 roombarEl.addEventListener('wheel', e=>{ if (Math.abs(e.deltaY)>Math.abs(e.deltaX) && roombarEl.scrollWidth>roombarEl.clientWidth){ e.preventDefault(); roombarEl.scrollLeft+=e.deltaY; } }, {passive:false});
 function roombarShowHere(){ const b=roombarEl.querySelector('.here'); if (b && roombarEl.scrollWidth>roombarEl.clientWidth){ const L=b.offsetLeft, R=L+b.offsetWidth; if (L<roombarEl.scrollLeft || R>roombarEl.scrollLeft+roombarEl.clientWidth) roombarEl.scrollTo({left:Math.max(0,L-24), behavior:'smooth'}); } roombarEdges(); }
@@ -4539,7 +4557,7 @@ $id('pm_friend').addEventListener('click', ()=>{ const o=pmTarget&&others.get(pm
 NET.handlers.fr = m => { frSet(m.fr);
   if (m.ev==='req') localMsg(`⭐ ${String(m.n).toUpperCase()} sent you a friend request! Open Menu > FRIENDS to accept.`);
   else if (m.ev==='acc') localMsg(`⭐ ${String(m.n).toUpperCase()} accepted your friend request!`); };
-{ const h0=NET.handlers.hello; NET.handlers.hello = m => { h0(m); setTimeout(frLoad, 200); }; }
+
 // ---- LLAMA STORE catalog: every shirt with a link to the website ----
 function openCatalog(){ closeAll(); const el=$id('catbox');
   $id('cat_body').innerHTML = PRODUCTS.map((pr,i)=>`<div class="ci" data-i="${i}" role="button" tabindex="0"><img src="${pr.pop}" alt="" style="background:${pr.bg}"><b>${esc(pr.name)}</b><small>${esc(pr.price)}</small><a href="${esc(pr.url)}" target="_blank" rel="noopener noreferrer">VIEW ▶</a></div>`).join('');
@@ -4584,7 +4602,7 @@ function wdBuy(id){ wdMsg('BUYING...'); NET.act('inv_buy',{item:id}).then(r=>{ i
   INV.owned=r.owned||INV.owned; tkSet(r.tk, `You bought the ${ITEMS[id].n}!`); wdWear(ITEMS[id].s, id, `Bought the ${ITEMS[id].n} and put it on!`); }); }
 function wdWear(slot, id, msg){ NET.act('inv_wear',{slot, item:id}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); me.w=cleanWear(r.w); sendPresence(true); wdMsg(msg || (id ? `You put on the ${ITEMS[id].n}.` : 'Taken off.'), true); wdDraw(); }); }
 $id('cat_clothes').addEventListener('click', ()=>openWardrobe('shop'));
-{ const h2=NET.handlers.hello; NET.handlers.hello = m => { h2(m); setTimeout(wdLoad, 300); }; }
+
 // ---- private messages between friends ----
 const DMS = { inbox:[], with:null, unread:0 }; const dmEl=$id('dmbox'), dmMsgs=$id('dm_msgs');
 const dmAgo = t => { const s=(Date.now()-t)/1000; return s<60?'now':s<3600?Math.floor(s/60)+'m':s<86400?Math.floor(s/3600)+'h':Math.floor(s/86400)+'d'; };
@@ -4630,7 +4648,7 @@ NET.handlers.dm = ({m}) => {
   if (open){ dmAppend({...m, mine:false}); NET.act('dm_read',{n:from}); }
   else { c.un=(c.un||0)+1; localMsg(`💬 ${from}: ${m.text.length>60?m.text.slice(0,57)+'...':m.text}`); }
   dmBadge(); if (dmEl.style.display==='block' && !DMS.with) dmList(); };
-{ const h1=NET.handlers.hello; NET.handlers.hello = m => { h1(m); setTimeout(dmLoad, 400); }; }
+
 // ---- account sheet (menu > ACCOUNT) and the "add your email" pop-up for older accounts ----
 const acctEl=$id('acctbox'), acBody=$id('ac_body');
 function acMsg(t, good){ const el=acBody.querySelector('.acmsg'); if (el){ el.textContent=t||''; el.classList.toggle('good', !!good); } }
@@ -4761,7 +4779,9 @@ document.getElementById('ds_refresh').addEventListener('click', loadDash);
 document.getElementById('ds_close').addEventListener('click', ()=>{ dashEl.style.display='none'; });
 NET.handlers.tg = m => tgServer(m);
 NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; renderBoard(); };
-NET.handlers.hello = m => { if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true); };
+NET.handlers.hello = m => { if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true);
+  // load friends, unread messages and the outfit every time we (re)connect
+  setTimeout(()=>{ frLoad(); wdLoad(); dmLoad(); }, 150); };
 NET.handlers.kick = m => showKicked(m.msg);
 // ---- hunger and thirst: the server keeps the real numbers; the page counts them down smoothly in between ----
 const ND = { hu:100, th:100, at:performance.now(), rate:{hu:100/(75*60000), th:100/(60*60000)}, warned:{} };
