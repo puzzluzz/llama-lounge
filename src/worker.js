@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-19y";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-19z";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -14,7 +14,11 @@ const IP_MAX_FAILS = 30;                  // per IP per 15 minutes
 const SIGNUPS_PER_IP_HOUR = 5;
 const WINDOW_MS = 15 * 60 * 1000;
 // email: reset links last 30 minutes and work once; confirm links last 2 days. Limits are per 15 minutes.
-const FRIENDS = { max: 100, inbox: 50 };   // friends plus sent requests per llama; requests waiting for one llama
+const FRIENDS = { max: 100, inbox: 50 };
+const DM = { len: 300, burst: 8, keepDays: 90 };   // private messages: longest message, most per 10 seconds, days kept
+const CHAT_KEEP_DAYS = 30;                        // the staff chat log keeps a month
+const ROOM_IDS = new Set(["lounge", "barn", "casino", "arena", "lanes"]);
+const SIPS = 5;                                   // sips or bites in every drink and snack   // friends plus sent requests per llama; requests waiting for one llama
 const RESET_MS = 30 * 60 * 1000, VERIFY_MS = 48 * 3600 * 1000;
 const FORGOT_PER_IP = 6, FORGOT_PER_EMAIL = 3, RESET_BAD_PER_IP = 10, PW_CHECK_FAILS = 8;
 
@@ -457,7 +461,7 @@ function cleanPresence(p, name, tk, muted, staff) {
   if (!p || typeof p !== "object") return o;
   for (const k of Object.keys(p)) if (PRES_KEYS.has(k)) o[k] = p[k];
   o.n = name; o.tk = tk; if (staff) o.st = staff; else delete o.st;   // the server decides who you are, what you hold and your staff badge
-  if (o.s && typeof o.s === "object") { o.s = { k: +o.s.k || 0, t: String(o.s.t || "").slice(0, 120), y: o.s.y ? 1 : 0, f: o.s.f ? 1 : 0 }; if (muted && !o.s.f) delete o.s; }
+  if (o.s && typeof o.s === "object") { o.s = { k: +o.s.k || 0, t: String(o.s.t || "").slice(0, 120), y: o.s.y ? 1 : 0, f: o.s.f ? 1 : 0 }; if (muted) delete o.s; }
   if (JSON.stringify(o).length > 3000) return { c: o.c, n: name, x: o.x, y: o.y, d: o.d, p: o.p, m: o.m, rm: o.rm, tk, ...(staff ? { st: staff } : {}) };
   return o;
 }
@@ -501,6 +505,11 @@ export class Lounge extends DurableObject {
       // balance / mute / ban are cached for a few seconds so moving around doesn't hit the database every step
       if (!a.uc || now - a.uc.t > 5000){ const u = await this.user(a.uid); if (!u || u.banned) { ws.close(4003, "banned"); return; } a.uc = { t: now, tk: u.tk, muted: u.muted }; a.staff = staffRole(this.env, u); }
       const first = !a.pres;
+      // chat log for staff: every new line, muted ones too (marked); action lines like "sat down" are marked as actions
+      const rs = m.p && m.p.s;
+      if (rs && typeof rs === "object" && rs.t && +rs.k !== a.ck) { const was = a.ck; a.ck = +rs.k; if (!first && was !== undefined) await this.chatLog(a, m.p.rm, (rs.f ? "* " : "") + String(rs.t).slice(0, 120), !!a.uc.muted); }
+      else if (first && rs && typeof rs === "object") a.ck = +rs.k;
+      if (first && a.ck === undefined) a.ck = 0;
       a.pres = cleanPresence(m.p, a.name, a.uc.tk, !!a.uc.muted, a.staff); ws.serializeAttachment(a);
       this.broadcast({ t: "peers", [first ? "joined" : "updated"]: [{ peer: a.peer, presence: a.pres }] }, ws);
       return;
@@ -517,6 +526,66 @@ export class Lounge extends DurableObject {
   async webSocketClose(ws) { this.left(ws); try { const a = ws.deserializeAttachment(); if (a && a.nd) { this.needsDrain(a, Date.now()); await this.needsSave(a); } } catch (e) {} }
   async webSocketError(ws) { this.left(ws); }
   left(ws) { const a = ws.deserializeAttachment(); if (a && a.pres) this.broadcast({ t: "peers", left: [{ peer: a.peer }] }, ws); }
+
+  // ---------- food and drink: what you hold fills your meters a fifth at a time, one sip or bite at a time ----------
+  async holdFood(uid, f) { await this.ctx.storage.put("held:" + uid, { hu: f.hu || 0, th: f.th || 0, left: SIPS, last: 0 }); }
+  async sipHeld(ws, a, now) {
+    const h = await this.ctx.storage.get("held:" + a.uid);
+    if (!h || h.left <= 0) return { ok: true, nd: this.needsOut(a) };
+    if (now - h.last < 900) return { ok: true, nd: this.needsOut(a) };   // one sip at a time
+    h.left--; h.last = now;
+    if (h.left > 0) await this.ctx.storage.put("held:" + a.uid, h); else await this.ctx.storage.delete("held:" + a.uid);
+    await this.needsEat(ws, a, { hu: h.hu / SIPS, th: h.th / SIPS }, now);
+    return { ok: true, nd: this.needsOut(a) };
+  }
+
+  // ---------- chat log (staff only) ----------
+  async chatTable() { if (this.chatReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS chatlog (id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER NOT NULL, uid INTEGER NOT NULL, name TEXT NOT NULL, rm TEXT NOT NULL, text TEXT NOT NULL, mu INTEGER NOT NULL DEFAULT 0)").run(); await this.env.DB.prepare("CREATE INDEX IF NOT EXISTS chatlog_uid ON chatlog (uid, id)").run(); this.chatReady = true; }
+  async chatLog(a, rm, text, muted) {
+    await this.chatTable();
+    const now = Date.now();
+    await this.env.DB.prepare("INSERT INTO chatlog (t, uid, name, rm, text, mu) VALUES (?, ?, ?, ?, ?, ?)").bind(now, a.uid, a.name, ROOM_IDS.has(rm) ? rm : "lounge", text, muted ? 1 : 0).run();
+    if (rnd(200) === 0) await this.env.DB.prepare("DELETE FROM chatlog WHERE t < ?").bind(now - CHAT_KEEP_DAYS * 864e5).run();
+  }
+  async dashChat(a, m) {
+    if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can see the chat log." };
+    await this.chatTable();
+    const before = Number.isInteger(m.before) && m.before > 0 ? m.before : 2 ** 53, q = String(m.q || "").trim();
+    const rows = /^[A-Za-z0-9_]{1,12}$/.test(q)
+      ? await this.env.DB.prepare("SELECT c.*, u.role, u.muted, u.banned FROM chatlog c JOIN users u ON u.id = c.uid WHERE c.id < ? AND c.name LIKE ? ORDER BY c.id DESC LIMIT 80").bind(before, q + "%").all()
+      : await this.env.DB.prepare("SELECT c.*, u.role, u.muted, u.banned FROM chatlog c JOIN users u ON u.id = c.uid WHERE c.id < ? ORDER BY c.id DESC LIMIT 80").bind(before).all();
+    return { ok: true, me: a.staff, lines: (rows.results || []).map((r) => ({ id: r.id, t: r.t, n: r.name.toUpperCase(), rm: r.rm, text: r.text, mu: r.mu, st: r.role === "admin" ? "owner" : r.role === "mod" ? "mod" : "", muted: !!r.muted, banned: !!r.banned })) };
+  }
+
+  // ---------- private messages between friends ----------
+  async dmTable() { if (this.dmReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS dms (id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEGER NOT NULL, b INTEGER NOT NULL, t INTEGER NOT NULL, text TEXT NOT NULL, rd INTEGER NOT NULL DEFAULT 0)").run(); await this.env.DB.prepare("CREATE INDEX IF NOT EXISTS dms_ab ON dms (a, b, id)").run(); await this.env.DB.prepare("CREATE INDEX IF NOT EXISTS dms_b ON dms (b, rd)").run(); this.dmReady = true; }
+  async dmSend(ws, a, m) {
+    await this.dmTable(); await this.frTable();
+    const now = Date.now(); if (!a.dmr || now - a.dmr[0] > 10000) a.dmr = [now, 0]; if (++a.dmr[1] > DM.burst) { ws.serializeAttachment(a); return { ok: false, msg: "Slow down a little." }; } ws.serializeAttachment(a);
+    const text = String(m.text || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, DM.len);
+    if (!text) return { ok: false, msg: "Type a message first." };
+    const me = await this.user(a.uid); if (!me || me.banned) return { ok: false, msg: "You can't send messages." };
+    if (me.muted) return { ok: false, msg: "You're muted, so you can't send messages right now." };
+    const T = await this.frTarget(a, m); if (T.err) return { ok: false, msg: T.err };
+    if (!T.row || T.row.st !== "ok") return { ok: false, msg: "You can only message friends." };
+    const r = await this.env.DB.prepare("INSERT INTO dms (a, b, t, text) VALUES (?, ?, ?, ?) RETURNING id").bind(a.uid, T.u.id, now, text).first();
+    if (rnd(200) === 0) await this.env.DB.prepare("DELETE FROM dms WHERE t < ?").bind(now - DM.keepDays * 864e5).run();
+    const msg = { id: r.id, from: a.name, to: T.u.name.toUpperCase(), t: now, text };
+    this.toUid(T.u.id, { t: "dm", m: msg });
+    return { ok: true, m: msg };
+  }
+  async dmInbox(uid) {
+    await this.dmTable();
+    const rows = (await this.env.DB.prepare(`SELECT x.o, x.mid, x.un, u.name, d.text, d.t, d.a FROM (SELECT CASE WHEN a = ? THEN b ELSE a END AS o, MAX(id) AS mid, SUM(CASE WHEN b = ? AND rd = 0 THEN 1 ELSE 0 END) AS un FROM dms WHERE a = ? OR b = ? GROUP BY o) x JOIN users u ON u.id = x.o JOIN dms d ON d.id = x.mid WHERE u.banned = 0 ORDER BY x.mid DESC LIMIT 50`).bind(uid, uid, uid, uid).all()).results || [];
+    return rows.map((r) => ({ n: r.name.toUpperCase(), un: r.un || 0, last: r.text, t: r.t, mine: r.a === uid }));
+  }
+  async dmThread(a, m) {
+    await this.dmTable();
+    const T = await this.frTarget(a, m); if (T.err) return { ok: false, msg: T.err };
+    const rows = (await this.env.DB.prepare("SELECT id, a, t, text FROM dms WHERE (a = ? AND b = ?) OR (a = ? AND b = ?) ORDER BY id DESC LIMIT 60").bind(a.uid, T.u.id, T.u.id, a.uid).all()).results || [];
+    await this.env.DB.prepare("UPDATE dms SET rd = 1 WHERE a = ? AND b = ? AND rd = 0").bind(T.u.id, a.uid).run();
+    return { ok: true, n: T.u.name.toUpperCase(), friend: !!(T.row && T.row.st === "ok"), msgs: rows.reverse().map((r) => ({ id: r.id, mine: r.a === a.uid, t: r.t, text: r.text })) };
+  }
 
   // ---------- friends ----------
   // One row per pair: a asked b. st is 'req' until b accepts, then 'ok'. Either side can remove it.
@@ -611,7 +680,7 @@ export class Lounge extends DurableObject {
       case "drink": {
         if (!this.near(a, "lounge", (x, y, p) => p.p === "sit" && Math.round(y) === 2)) return { ok: false, msg: "Sit at the bar first." };
         const tk = await this.debit(uid, 1, "drink"); if (tk === null) return { ok: false, msg: "Drinks cost 1 TOKEN. Earn some at the arcade, the bar or LLAMA ACRES!" };
-        await this.needsEat(ws, a, { th: 30 }, now);
+        await this.holdFood(uid, { th: 30 });
         return { ok: true, tk, nd: this.needsOut(a) };
       }
       case "slot": {
@@ -685,7 +754,7 @@ export class Lounge extends DurableObject {
         if (m.s === "bar") { if (!this.near(a, "lounge", (x, y, p) => p.p === "sit" && Math.round(y) === 2)) return { ok: false, msg: "Sit at the bar first." }; }
         else if (!this.near(a, S.rm, (x, y) => Math.abs(x - S.x) <= 2.1 && Math.abs(y - S.y) <= 1.6)) return { ok: false, msg: "Walk up to the stand first." };
         const tk = await this.debit(uid, cost, "stand " + k); if (tk === null) return { ok: false, msg: `That costs ${cost} TOKENS. Play a game or harvest carrots to earn some!` };
-        await this.needsEat(ws, a, FOOD[k] || {}, now);
+        await this.holdFood(uid, FOOD[k] || {});   // fills a little with each sip or bite
         return { ok: true, k, tk, nd: this.needsOut(a) };
       }
       case "roulette": {
@@ -712,6 +781,12 @@ export class Lounge extends DurableObject {
       case "bowl_info": return this.bowlInfo(a, now);
       case "bowl_start": return this.bowlStart(a, now);
       case "bowl_roll": return this.bowlRoll(a, m, now);
+      case "dash_chat": return this.dashChat(a, m);
+      case "dm_send": return this.dmSend(ws, a, m);
+      case "dm_inbox": return { ok: true, inbox: await this.dmInbox(uid) };
+      case "dm_thread": return this.dmThread(a, m);
+      case "dm_read": { const T = await this.frTarget(a, m); if (!T.err) { await this.dmTable(); await this.env.DB.prepare("UPDATE dms SET rd = 1 WHERE a = ? AND b = ? AND rd = 0").bind(T.u.id, uid).run(); } return { ok: true }; }
+      case "sip": return this.sipHeld(ws, a, now);
       case "fr_list": return { ok: true, fr: await this.frList(uid) };
       case "fr_add": return this.frAdd(ws, a, m);
       case "fr_accept": return this.frAccept(a, m);
@@ -1037,8 +1112,8 @@ export class Lounge extends DurableObject {
     const sr = (this.staffRate.get(a.uid) || []).filter((t) => now - t < 60000);
     if (sr.length >= 20) return { ok: false, msg: "Slow down. Too many staff actions in a minute." }; sr.push(now); this.staffRate.set(a.uid, sr);
     const cmd = String(m.cmd || ""), target = String(m.target || "").trim();
-    const ownerOnly = ["ban", "unban", "mod", "unmod"];
-    if (![...ownerOnly, "mute", "unmute", "kick"].includes(cmd) || !/^[A-Za-z0-9_]{3,12}$/.test(target)) return { ok: false, msg: a.staff === "owner" ? "Use /mute, /unmute, /kick, /ban, /unban, /mod or /unmod NAME" : "Use /mute, /unmute or /kick NAME" };
+    const ownerOnly = ["unban", "mod", "unmod"];   // mods can mute, kick and ban players; only the owner can unban or change mods
+    if (![...ownerOnly, "mute", "unmute", "kick", "ban"].includes(cmd) || !/^[A-Za-z0-9_]{3,12}$/.test(target)) return { ok: false, msg: a.staff === "owner" ? "Use /mute, /unmute, /kick, /ban, /unban, /mod or /unmod NAME" : "Use /mute, /unmute, /kick or /ban NAME" };
     if (ownerOnly.includes(cmd) && a.staff !== "owner") return { ok: false, msg: "Only the owner can do that." };
     const u = await this.env.DB.prepare("SELECT id, name, role FROM users WHERE name = ?").bind(target).first();
     if (!u) return { ok: false, msg: "No player named " + target.toUpperCase() };
