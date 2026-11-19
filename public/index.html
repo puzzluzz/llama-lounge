@@ -767,7 +767,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22l";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22m";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -4170,6 +4170,47 @@ function drawSkySign(t){
     const sx=Math.round(x0+dx), sy=Math.round(y0+dy); g.fillStyle='#f8f0c0'; g.fillRect(sx,sy,1,1); if (Math.sin(t*2.3+ph)>0.75){ g.fillRect(sx-1,sy,3,1); g.fillRect(sx,sy-1,1,3); } }
 }
 const overlayItems = [];
+// ======================= TODAY ONLY: a creepy clown that follows BOO around (switches itself off at midnight Eastern, Nov 20) =======================
+const CLOWN={until:Date.parse('2026-11-20T05:00:00Z'), x:null, y:null, rm:null, lt:0, warned:false, mv:false, face:1, near:false};
+function clownTarget(){ if (Date.now()>CLOWN.until || arcade.on || !joined) return null;
+  if ((me.n||'').toLowerCase()==='boo') return me;
+  for (const o of others.values()) if (!o.leaving && sameRoom(o) && (o.n||'').toLowerCase()==='boo') return o;
+  return null; }
+function clownStep(t){ const dt=Math.min(0.1, Math.max(0, t-(CLOWN.lt||t))); CLOWN.lt=t; const T=clownTarget(); if (!T){ CLOWN.x=null; return false; }
+  if (CLOWN.rm!==curRoom || CLOWN.x===null){ const [dx,dy]=DOORWAY[curRoom]||[0,NY-1]; CLOWN.x=dx+0.5; CLOWN.y=dy+0.5; CLOWN.rm=curRoom; }   // it comes in through the door
+  const vx=T.x-CLOWN.x, vy=T.y-CLOWN.y, d=Math.hypot(vx,vy);
+  if (d>1.0){ const sp=Math.min(d-1.0, 1.55*dt); CLOWN.x+=vx/d*sp; CLOWN.y+=vy/d*sp; CLOWN.mv=true; } else CLOWN.mv=false;
+  const sx=(vx-vy); if (Math.abs(sx)>0.05) CLOWN.face = sx>0 ? 1 : -1; CLOWN.near = d<1.7;
+  if (T===me && !CLOWN.warned){ CLOWN.warned=true; localMsg('🤡 Something is following you...'); }
+  return true; }
+function drawClown(t){ const [px,py]=P(CLOWN.x, CLOWN.y, 0); const X=Math.round(px), F=CLOWN.face, bob=CLOWN.mv ? (Math.floor(t*8)%2) : (Math.floor(t*2)%2===0?0:1), Y=Math.round(py)-bob, step=CLOWN.mv ? (Math.floor(t*8)%2 ? 1 : -1) : 0;
+  const R=(x,y,w,h,c)=>{ g.fillStyle=c; g.fillRect(x,y,w,h); };
+  ellPx(X,Y+bob+1,11,3.5,'rgba(0,0,0,0.25)');
+  // balloon on a string, held up behind
+  { const bx=X-F*12, by=Y-56+Math.round(Math.sin(t*2)*1.5); linePx(X-F*9,Y-24,bx,by+8,'#e8e0e0'); ellO(bx,by,5,6,'#e02838'); R(bx-2,by-3,2,2,'#ff8a9a'); R(bx-1,by+6,2,2,INK); }
+  // big floppy shoes
+  for (const [sx,sw] of [[-11+step,9],[2-step,9]]){ R(X+sx-1,Y-4,sw+2,5,INK); R(X+sx,Y-3,sw,3,'#e02838'); R(X+sx+1,Y-3,3,1,'#ff7088'); }
+  // baggy polka-dot trousers
+  R(X-8,Y-16,16,13,INK); R(X-7,Y-15,14,11,'#7a48c8'); R(X,Y-15,1,11,'#4e2a90'); R(X+4,Y-15,3,11,'#5e36a8');
+  for (const [dx,dy] of [[-5,-13],[3,-11],[-4,-8],[5,-6],[-1,-10]]){ R(X+dx,Y+dy,2,2,'#f8d030'); }
+  // striped top with pompom buttons
+  R(X-9,Y-30,18,15,INK); for (let yy=0; yy<13; yy++) R(X-8,Y-29+yy,16,1, (Math.floor(yy/2)%2)?'#f8f0e0':'#e02838'); R(X+4,Y-29,4,13,'rgba(0,0,0,0.18)');
+  for (const dy of [-26,-21,-17]){ R(X-1,Y+dy,3,3,INK); R(X,Y+dy+1,1,1,'#48c048'); }
+  // arms reaching out toward its target, white gloves
+  { const ax=X+F*8, hx=X+F*17; R(Math.min(ax,hx)-1,Y-27,Math.abs(hx-ax)+2,5,INK); R(Math.min(ax,hx),Y-26,Math.abs(hx-ax),3,'#e02838'); ellO(hx+F,Y-25,3,3,'#f8f8f8'); R(hx+F*3,Y-27,1,1,'#f8f8f8'); R(hx+F*3,Y-24,1,1,'#f8f8f8');
+    R(X-F*10,Y-27,3,9,INK); R(X-F*10+ (F>0?1:1),Y-26,1,7,'#e02838'); ellO(X-F*9,Y-17,2,2,'#f8f8f8'); }
+  // ruff collar
+  for (let i=-9;i<=8;i++){ R(X+i,Y-33+(i%2===0?0:1),1,4,INK); R(X+i,Y-32+(i%2===0?0:1),1,2,(i+20)%4<2?'#f8f8f8':'#48c048'); }
+  // head: chalk-white face, wild hair tufts, sunken eyes with red glints, a huge grin
+  const HY=Y-42;
+  ellO(X-9,HY-3,4,4,'#f08a30'); ellO(X+9,HY-3,4,4,'#f08a30'); ellPx(X-10,HY-4,2,2,'#ffb060'); ellPx(X+8,HY-4,2,2,'#ffb060'); ellO(X-7,HY-8,3,3,'#48c048'); ellO(X+7,HY-8,3,3,'#48c048');
+  ellO(X,HY,8,9,'#f4f0ec'); ellPx(X+4,HY+2,3,6,'#ddd4d4');
+  R(X-6,HY-5,4,1,INK); R(X-5,HY-6,2,1,INK); R(X+2,HY-6,2,1,INK); R(X+3,HY-5,3,1,INK);   // angry brows
+  for (const ex of [-4,3]){ R(X+ex-1,HY-4,4,5,'#3a1830'); R(X+ex,HY-3,2,3,'#1a0810'); const glow=(Math.floor(t*3)%5)!==0; R(X+ex+ (F>0?1:0),HY-2,1,1,glow?'#ff3048':'#901020'); }
+  ellO(X,HY+2,2,2,'#e02838'); R(X-1,HY+1,1,1,'#ff9aa8');   // nose
+  R(X-6,HY+5,13,4,INK); R(X-5,HY+6,11,2,'#a01828'); for (let i=-4;i<=4;i+=2) R(X+i,HY+6,1,1,'#fff8d8'); for (let i=-3;i<=3;i+=2) R(X+i,HY+7,1,1,'#fff8d8'); R(X-7,HY+4,2,2,INK); R(X+6,HY+4,2,2,INK);   // grin with teeth
+  if (CLOWN.near && (Math.floor(t*1.2)%3===0)) pfDraw(g,'HEE HEE',X-14,HY-20,'#ff3048',1);
+}
 function render(t){
   g = ctx; ctx.imageSmoothingEnabled=false;
   if (!joined){ ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle='#0a0814'; ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height); return; }   // nothing behind the start screens until you pick a room
@@ -4199,9 +4240,11 @@ function render(t){
   if (isP(curRoom)){ const sitters=[]; if (joined && me.p==='sit') sitters.push([me.gx,me.gy,me.x+me.y+0.02]); for (const o of others.values()) if (sameRoom(o) && o.p==='sit') sitters.push([Math.floor(o.x),Math.floor(o.y),o.x+o.y+0.01]);
     for (const [sx2,sy2,d] of sitters){ const f=FURN.find(q=>q.fid && (q.t==='couch'||q.t==='armchair'||q.t==='chair'||q.t==='bed'||q.t==='dbed') && furnTiles(q.item,q.gx,q.gy,q.rot).some(([x,y])=>x===sx2&&y===sy2)); if (f){ const su=furnTiles(f.item,f.gx,f.gy,f.rot).findIndex(([x,y])=>x===sx2&&y===sy2); items.push({d:d+0.005, f:{...f, part:'front', su, st:[sx2,sy2]}}); } } }
   for (const o of others.values()) if (sameRoom(o)) items.push({d: o.x+o.y+0.01, l: o});
+  if (clownStep(t)) items.push({d:CLOWN.x+CLOWN.y+0.01, cl:true});
   items.sort((a,b)=>a.d-b.d);
   overlayItems.length = 0; llamaHits.length = 0; cupHits.length = 0; itemHits.length = 0; vendHit = null; pvHits.length = 0;
   for (const it of items){
+    if (it.cl){ drawClown(t); continue; }
     if (it.f){ if (PDR.on && PDR.fid && it.f.fid===PDR.fid){ g.globalAlpha=0.25; drawFurn(it.f, t); g.globalAlpha=1; continue; } drawFurn(it.f, t); if (it.f.show) showroomTag(it.f); }
     else { const fa = (!it.me && it.l.leaving) ? Math.max(0, Math.min(1, 1-(performance.now()-it.l.leaving)/LEAVE_T)) : 1; g.globalAlpha=fa; const pos = drawLlama(it.l, t, it.me); g.globalAlpha=1; overlayItems.push({l:it.l, x:pos[0], y:pos[1], me:it.me, balloon:pos[2], fa}); }
   }
