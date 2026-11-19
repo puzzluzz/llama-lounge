@@ -522,7 +522,7 @@
       <li>Keep your llama fed and watered! The 🍔 and 💧 meters at the top go down while you play. Order food and drinks at the bar (sit on a bar stool and press ORDER), buy cider and snacks in LLAMA ACRES, or nibble an apple off the trees. If a meter runs empty your llama walks slower and games pay half.</li>
       <li>Earn LLAMA TOKENS by hitting arcade milestones and working the bar. Spend them on drinks (1 token), or bet up to 10 against THE HOUSE at the table games. Table games can also be played for free.</li>
       <li>Five rooms: the LLAMA LOUNGE, LLAMA ACRES outside, the LLAMA CASINO, the SPIT ARENA and LLAMA LANES. Tap a room in the bar at the bottom to walk there. Harvest the carrot patch in LLAMA ACRES for tokens.</li>
-      <li>Try the DUNK TANK in LLAMA ACRES: stand in front of the target and press THROW. Hit the bullseye to dunk whoever is on the seat (1 coin a throw, a dunk pays 3). Brave llamas can sit on the tank and earn a coin every time they get dunked.</li>
+      <li>Try the DUNK TANK in LLAMA ACRES: stand on the grass in front of the target (left of the barn) and press THROW. Hit the bullseye to dunk whoever is on the seat (1 coin a throw, a dunk pays 3). Brave llamas can sit on the tank and earn a coin every time they get dunked.</li>
       <li>In the SPIT ARENA, press PLAY for a 60-second spit-ball round. Play solo against rival llamas, or with everyone who joins. Earn tokens, level up to unlock spit colors, and keep a daily streak.</li>
       <li>At LLAMA LANES, press BOWL for a 5-frame game of hay bale bowling. Swipe up to roll. Strikes, spares and high scores win coins.</li>
       <li>Scroll, pinch, or use + and − to zoom.</li>
@@ -567,7 +567,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19h";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19i";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -756,7 +756,7 @@ const ROUL_SEATS = [[5,5],[5,6],[8,5],[8,6],[6,7],[7,7]], BJ_SEATS = [[10,5],[11
 const seatIn = (list,x,y) => curRoom==='casino' && list.some(([a,b])=>a===x&&b===y);
 const isSlotSeat = (x,y) => curRoom==='casino' && y===1 && CASINO_SLOT_X.includes(x);
 const DANCE = new Set(), CROPS = [], POND = [];
-const DUNK_SEAT = [18,10], DUNK_TGT = [16,10];   // the server checks the same tiles
+const DUNK_SEAT = [3,6], DUNK_TGT = [3,8];   // left of the barn: the target stands in front of the tank, you throw from the grass in front of the target   // the server checks the same tiles
 function clearWorld(){ [N,NY]=ROOM_DIMS[curRoom]; if (BLOCK.length!==N*NY) BLOCK=new Uint8Array(N*NY); FURN.length=0; SEATS.length=0; BLOCK.fill(0); DANCE.clear(); CROPS.length=0; POND.length=0; }
 function lounge(tx,ty,col){
   FURN.push({t:'table',gx:tx,gy:ty}); block(tx,ty);
@@ -1516,7 +1516,8 @@ function drawFurn(f,t){
       const [px,py]=P(f.gx+0.5,f.gy+0.5,0), X=Math.round(px), Y=Math.round(py);
       g.fillStyle=INK; g.fillRect(X-1,Y-34,3,34); g.fillStyle='#c8c8d8'; g.fillRect(X,Y-34,1,34);
       // arm reaching to the tank
-      g.fillStyle=INK; g.fillRect(X,Y-31,26,3); g.fillStyle='#c8c8d8'; g.fillRect(X,Y-30,26,1);
+      { const [ax,ay]=P(DUNK_SEAT[0]+0.35,DUNK_SEAT[1]+0.6,26); const dx=Math.round(ax)-X, dy=Math.round(ay)-(Y-31), n=Math.max(Math.abs(dx),Math.abs(dy));
+        for (let i=0;i<=n;i++){ const x=X+Math.round(dx*i/n), y=Y-31+Math.round(dy*i/n); g.fillStyle=INK; g.fillRect(x,y-1,1,3); g.fillStyle='#c8c8d8'; g.fillRect(x,y,1,1); } }
       const hitNow = DK.flash && performance.now()-DK.flash<400; const cy=Y-38;
       for (const [r,c] of [[9,INK],[8,'#f8f8f8'],[6,'#e03048'],[4,'#f8f8f8'],[2,'#e03048']]){ g.fillStyle = hitNow && c!==INK ? '#ffd23f' : c; for (let yy=-r;yy<=r;yy++){ const w=Math.round(Math.sqrt(r*r-yy*yy)); g.fillRect(X-w, cy+yy, w*2+1, 1); } }
       break; }
@@ -3479,7 +3480,7 @@ function casinoPointer(e){
 function barnPointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
   { const [gx0,gy0]=toGrid(e.clientX, e.clientY); const [px,py]=P(DUNK_TGT[0]+0.5,DUNK_TGT[1]+0.5,0);
-    if ((gx0===DUNK_TGT[0]&&gy0===DUNK_TGT[1]) || (Math.abs(lx-px)<=11 && ly>=py-50 && ly<=py-26)){ if (inDunkZone() && me.p!=='sit' && !me.moving) openDunk(); else walkTo(DUNK_TGT[0]-2, DUNK_TGT[1], 'dunk'); return; } }
+    if ((gx0===DUNK_TGT[0]&&gy0===DUNK_TGT[1]) || (Math.abs(lx-px)<=11 && ly>=py-50 && ly<=py-26)){ if (inDunkZone() && me.p!=='sit' && !me.moving) openDunk(); else walkTo(DUNK_TGT[0], DUNK_TGT[1]+2, 'dunk'); return; } }
   for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
   const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
   if (POND.some(([x,y])=>x===gx&&y===gy)){ if (me.fish) return; if (pondNear() && me.p!=='sit') startFish(); else { let best=null,bd=1e9; for (const [x,y] of POND) for (const [dx,dy] of DIRS8){ const ax=x+dx, ay=y+dy; if(!walkable(ax,ay)) continue; const d=Math.hypot(ax-me.gx,ay-me.gy); if(d<bd){bd=d;best=[ax,ay];} } if (best) walkTo(best[0],best[1],'fish'); } return; }
@@ -4635,7 +4636,7 @@ function dunkSitter(){ const [x,y]=DUNK_SEAT; if (me.p==='sit' && me.gx===x && m
 function dunkClip(waterY, draw){ const dp=dunkDepth(); if (dp<=0){ draw(); return; } g.save(); g.beginPath(); g.rect(-9999,-9999,99999,9999+waterY); g.clip(); draw(); g.restore(); }
 function dunkSplash(x, y, t){ const u=performance.now()-DK.t0; g.fillStyle='#c8ecff'; if (u<700){ const k=u/700; for (let i=0;i<10;i++){ const a=-Math.PI*(0.1+0.8*i/9); g.fillRect(Math.round(x+Math.cos(a)*k*18), Math.round(y+Math.sin(a)*k*22+k*k*20), 2, 2); } }
   for (let i=0;i<3;i++){ const b=((t*1.5+i*0.33)%1); g.fillRect(Math.round(x-6+i*6+Math.sin(t*5+i)*2), Math.round(y-b*6), 1, 1); } }
-function inDunkZone(){ if (curRoom!=='barn') return false; const [tx,ty]=DUNK_TGT; return me.gx<tx && Math.max(Math.abs(me.gx-tx), Math.abs(me.gy-ty))<=4; }
+function inDunkZone(){ if (curRoom!=='barn') return false; const [tx,ty]=DUNK_TGT; return me.gy>ty && Math.max(Math.abs(me.gx-tx), Math.abs(me.gy-ty))<=4; }
 // the ball flies from the thrower to the target
 function drawDunk(t){ if (curRoom!=='barn') return; const now=performance.now();
   for (let i=DK.balls.length-1;i>=0;i--){ const B=DK.balls[i], u=(now-B.t0)/550; if (u>=1){ DK.balls.splice(i,1); if (B.hit){ DK.flash=now; DK.t0=now; sfxDunk(); } else { sfxTone(300,0.08,'triangle',0.15); } continue; }
@@ -4647,24 +4648,25 @@ NET.handlers.dk = m => { if (curRoom!=='barn') return; const thrower = m.peer===
   if (m.hit && thrower!==me) setTimeout(()=>localMsg(`💦 SPLASH! ${m.by} dunked ${m.sitter ? m.sitter : 'DUNKY'}!`), 560); };
 // ---- the throw popup ----
 const dkEl=document.getElementById('dkbox'), dkCv=document.getElementById('dkcv'), dkCx=dkCv.getContext('2d');
-function openDunk(){ if (curRoom!=='barn') return; closeAll(); DK.phase='x'; DK.lx=null; DK.ly=null; DK.t=0; dkEl.style.display='block'; dunkMsg(`TAP TO STOP THE CROSSHAIR. HIT THE BULLSEYE TO DUNK ${dunkSitter() ? 'THE LLAMA ON THE SEAT' : 'DUNKY'}!`); dunkLoop(); }
+const DUNK_BULL = 0.2;   // bullseye size (fraction of the target)
+function openDunk(){ if (curRoom!=='barn') return; closeAll(); DK.phase='x'; DK.lx=null; DK.ly=null; DK.t=0; DK.ph=Math.random()*6.3; dkEl.style.display='block'; dunkMsg(`TAP TO STOP THE CROSSHAIR. HIT THE BULLSEYE TO DUNK ${dunkSitter() ? 'THE LLAMA ON THE SEAT' : 'DUNKY'}!`); dunkLoop(); }
 function dunkMsg(t){ document.getElementById('dk_msg').textContent=t; }
 let dkRaf=0; function dunkLoop(){ cancelAnimationFrame(dkRaf); const step=()=>{ if (dkEl.style.display!=='block') return; DK.t+=1/60; dunkDraw(); dkRaf=requestAnimationFrame(step); }; dkRaf=requestAnimationFrame(step); }
 const dkSweep = (t, sp) => Math.sin(t*sp);   // -1..1
 function dunkDraw(){ const c=dkCx, W=160, H=120, cx=W/2, cy=H/2, R=44; c.imageSmoothingEnabled=false; c.fillStyle='#6cb048'; c.fillRect(0,0,W,H); c.fillStyle='#5aa03c'; for (let y=0;y<H;y+=6) for (let x=(y/6)%2*3;x<W;x+=6) c.fillRect(x,y,1,1);
-  for (const [r,col] of [[R+2,'#181020'],[R,'#f8f8f8'],[R*0.8,'#e03048'],[R*0.6,'#f8f8f8'],[R*0.45,'#e03048'],[R*0.3*44/50,'#ffd23f']]){ c.fillStyle=col; for (let yy=-Math.round(r);yy<=Math.round(r);yy++){ const w=Math.round(Math.sqrt(r*r-yy*yy)); c.fillRect(cx-w, cy+yy, w*2+1, 1); } }
-  const sx = DK.lx!=null ? DK.lx : dkSweep(DK.t, 2.4), sy = DK.ly!=null ? DK.ly : (DK.phase==='y' ? dkSweep(DK.t, 2.8) : 0);
+  for (const [r,col] of [[R+2,'#181020'],[R,'#f8f8f8'],[R*0.8,'#e03048'],[R*0.6,'#f8f8f8'],[R*0.42,'#e03048'],[R*DUNK_BULL*44/50,'#ffd23f']]){ c.fillStyle=col; for (let yy=-Math.round(r);yy<=Math.round(r);yy++){ const w=Math.round(Math.sqrt(r*r-yy*yy)); c.fillRect(cx-w, cy+yy, w*2+1, 1); } }
+  const sx = DK.lx!=null ? DK.lx : dkSweep(DK.t+DK.ph, 3.3), sy = DK.ly!=null ? DK.ly : (DK.phase==='y' ? dkSweep(DK.t+DK.ph, 3.8) : 0);
   const X=Math.round(cx+sx*(R+6)), Y=Math.round(cy+sy*(R+6));
   c.fillStyle='#181020'; if (DK.phase==='x' || DK.lx!=null) c.fillRect(X,0,1,H); if (DK.phase!=='x') c.fillRect(0,Y,W,1);
   c.fillStyle='#181020'; c.fillRect(X-4,Y-4,9,9); c.fillStyle='#ffd23f'; c.fillRect(X-3,Y-3,7,7); c.fillStyle='#181020'; c.fillRect(X-1,Y-1,3,3); }
 function dunkTap(){ if (DK.busy) return; ensureAudio();
-  if (DK.phase==='x'){ DK.lx=dkSweep(DK.t, 2.4); DK.phase='y'; DK.t=0; sfxTone(660,0.05,'square',0.15); dunkMsg('NOW STOP IT UP AND DOWN!'); return; }
-  if (DK.phase==='y'){ DK.ly=dkSweep(DK.t, 2.8); DK.phase='done'; const r=Math.sqrt(DK.lx*DK.lx+DK.ly*DK.ly)*(50/44); const hit = r <= 0.3;
+  if (DK.phase==='x'){ DK.lx=dkSweep(DK.t+DK.ph, 3.3); DK.phase='y'; DK.t=0; DK.ph=Math.random()*6.3; sfxTone(660,0.05,'square',0.15); dunkMsg('NOW STOP IT UP AND DOWN!'); return; }
+  if (DK.phase==='y'){ DK.ly=dkSweep(DK.t+DK.ph, 3.8); DK.phase='done'; const r=Math.sqrt(DK.lx*DK.lx+DK.ly*DK.ly)*(50/44); const hit = r <= DUNK_BULL;
     DK.busy=true; dunkMsg('THROWING...');
     NET.act('dunk_throw',{hit}).then(res=>{ DK.busy=false; if (!res.ok){ dunkMsg((res.msg||'TRY AGAIN.').toUpperCase()); DK.phase='again'; return; } tkSet(res.tk);
       dunkMsg(res.hit ? (res.won ? `BULLSEYE! SPLASH! +${res.won} COINS` : 'BULLSEYE! SPLASH! (DAILY DUNK PRIZES ALL WON)') : (r<0.5 ? 'SO CLOSE! TRY AGAIN.' : 'MISSED! TRY AGAIN.')); DK.phase='again'; });
     return; }
-  if (DK.phase==='again'){ DK.phase='x'; DK.lx=null; DK.ly=null; DK.t=0; dunkMsg('TAP TO STOP THE CROSSHAIR ACROSS.'); } }
+  if (DK.phase==='again'){ DK.phase='x'; DK.lx=null; DK.ly=null; DK.t=0; DK.ph=Math.random()*6.3; dunkMsg('TAP TO STOP THE CROSSHAIR ACROSS.'); } }
 dkCv.addEventListener('pointerdown', e=>{ e.preventDefault(); dunkTap(); });
 document.getElementById('dk_throw').addEventListener('click', dunkTap);
 document.getElementById('dk_close').addEventListener('click', ()=>{ dkEl.style.display='none'; });

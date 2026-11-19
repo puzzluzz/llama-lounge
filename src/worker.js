@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-19h";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-19i";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -317,7 +317,7 @@ function bowlState(rolls) {
 
 // ---------- dunk tank (Llama Acres) ----------
 // A throw costs 1 coin; a bullseye dunks whoever is on the seat and pays 3. Whoever volunteers on the seat earns 1 per dunk.
-const DUNK = { seat: [18, 10], target: [16, 10], cost: 1, prize: 3, sitPay: 1, gap: 2500, winCap: 30, sitCap: 15 };
+const DUNK = { seat: [3, 6], target: [3, 8], cost: 1, prize: 3, sitPay: 1, gap: 2500, winCap: 30, sitCap: 15 };
 
 // ---------- hay bale bowling ----------
 // The server keeps each player's game, runs the same physics as the page to decide pinfall, and pays coins at the end.
@@ -719,7 +719,7 @@ export class Lounge extends DurableObject {
   // ---------- dunk tank ----------
   async dunkThrow(a, m, now) {
     const [tx, ty] = DUNK.target;
-    if (!this.near(a, "barn", (x, y, p) => p.p !== "sit" && x < tx && Math.max(Math.abs(x + 0.5 - tx), Math.abs(y + 0.5 - ty)) <= 4.6)) return { ok: false, msg: "Step up to the throwing spot in front of the target." };
+    if (!this.near(a, "barn", (x, y, p) => p.p !== "sit" && y + 0.5 > ty && Math.max(Math.abs(x + 0.5 - tx), Math.abs(y + 0.5 - ty)) <= 4.6)) return { ok: false, msg: "Step up to the throwing spot in front of the target." };
     if (now - (this.dunkLast && this.dunkLast.get(a.uid) || 0) < DUNK.gap) return { ok: false, msg: "Wait for the ball to land." };
     (this.dunkLast = this.dunkLast || new Map()).set(a.uid, now);
     let tk = await this.debit(a.uid, DUNK.cost, "dunk throw"); if (tk === null) return { ok: false, msg: "A throw costs 1 COIN. Harvest carrots or go fishing to earn some!" };
