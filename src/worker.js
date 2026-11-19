@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-21n";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-21o";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -70,7 +70,8 @@ const STANDS = {
 // Everything you buy fills them right away. When either is empty, the mini-games pay half.
 const NEEDS = { thirstMs: 60 * 60000, hungerMs: 75 * 60000, maxStep: 10 * 60000, saveMs: 60000, apple: 15, appleGap: 20000 };
 const FOOD = { soda: { th: 30 }, juice: { th: 35, hu: 5 }, shake: { th: 25, hu: 20 }, cider: { th: 40 }, caramel: { th: 40, hu: 8 },
-  capple: { hu: 30 }, corn: { hu: 35 }, pie: { hu: 45 }, nachos: { hu: 35, th: -5 }, fries: { hu: 35, th: -5 }, burger: { hu: 55 } };
+  capple: { hu: 30 }, corn: { hu: 35 }, pie: { hu: 45 }, nachos: { hu: 35, th: -5 }, fries: { hu: 35, th: -5 }, burger: { hu: 55 },
+  chips: { hu: 25, th: -3 }, candy: { hu: 20 }, cookie: { hu: 30 } };
 // ---------- wardrobe: clothes you buy in the LLAMA STORE and wear anywhere ----------
 // s = the slot it goes in (one item per slot), p = price in tokens. The game draws each one; this list is the source of truth.
 const WEAR_SLOTS = ["hat", "eyes", "neck", "shirt"];
@@ -87,11 +88,13 @@ const ITEMS = {
 const PR = { w: 13, h: 12, maxFurn: 60, clear: ["0,10", "1,10", "2,10", "3,10"], knockGap: 20000, letInMs: 3 * 3600e3, nameMax: 24 };
 const PR_WALLS = ["lavender", "cream", "mint", "pink", "night", "wood"], PR_FLOORS = ["wood", "checker", "carpet", "marble", "grass"];
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
-const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30 };
+const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30 };
 // what the store sells right now: one piece per category (the rest stay placeable for anyone who already owns them)
+// vending machines players can put in their rooms, and what each one sells
+const PV_ITEMS = { vending: { soda: 1, juice: 1, shake: 2 }, snackvend: { chips: 1, candy: 1, cookie: 2 } };
 const FURN_SIZE = { bed: 2, loveseat: 2, sofa: 3, bigtv: 2 };   // pieces bigger than one tile
 const FURN_SIDEWAYS = new Set(["loveseat", "sofa"]);   // couches run along their back, so they turn the other way
-const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa"]);
+const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend"]);
 const FURN_STAFF = new Set(["adminsign"]);   // only mods and the owner can buy these
 const FURN_WALL = new Set(["adminsign"]);    // hang on a wall: placed on a tile along a wall, don't take up floor space
 const prId = (rm) => { const m = /^p:(\d{1,9})$/.exec(String(rm || "")); return m ? +m[1] : 0; };
@@ -1042,10 +1045,21 @@ export class Lounge extends DurableObject {
         return { ok: true, full: NEEDS.apple, nd: this.needsOut(a) };
       }
       case "buy": {
-        const S = Object.hasOwn(STANDS, m.s) ? STANDS[m.s] : null, k = String(m.k || ""), cost = S && Object.hasOwn(S.items, k) ? S.items[k] : 0;
-        if (!cost) return { ok: false, msg: "They don't sell that here." };
-        if (m.s === "bar") { if (!this.near(a, "lounge", (x, y, p) => p.p === "sit" && Math.round(y) === 2)) return { ok: false, msg: "Sit at the bar first." }; }
-        else if (!this.near(a, S.rm, (x, y) => Math.abs(x - S.x) <= 2.1 && Math.abs(y - S.y) <= 1.6)) return { ok: false, msg: "Walk up to the stand first." };
+        const k = String(m.k || ""); const S = Object.hasOwn(STANDS, m.s) ? STANDS[m.s] : null; let cost = 0;
+        if (m.s === "pv") {   // a machine in a player room: you must be in that room, next to that machine
+          const rm = a.pres && a.pres.rm, rid = rm && rm.startsWith("p:") ? Math.floor(+rm.slice(2) || 0) : 0;
+          if (!rid || a.proom !== rid) return { ok: false, msg: "Walk up to the machine first." };
+          const f = await this.env.DB.prepare("SELECT item, gx, gy FROM pfurn WHERE id = ? AND room = ?").bind(Math.floor(+m.fid || 0), rid).first();
+          if (!f || !PV_ITEMS[f.item]) return { ok: false, msg: "That machine is gone." };
+          if (!this.near(a, rm, (x, y) => Math.abs(x - f.gx) <= 1.6 && Math.abs(y - f.gy) <= 1.6)) return { ok: false, msg: "Walk up to the machine first." };
+          cost = Object.hasOwn(PV_ITEMS[f.item], k) ? PV_ITEMS[f.item][k] : 0;
+          if (!cost) return { ok: false, msg: "That machine doesn't sell that." };
+        } else {
+          cost = S && Object.hasOwn(S.items, k) ? S.items[k] : 0;
+          if (!cost) return { ok: false, msg: "They don't sell that here." };
+          if (m.s === "bar") { if (!this.near(a, "lounge", (x, y, p) => p.p === "sit" && Math.round(y) === 2)) return { ok: false, msg: "Sit at the bar first." }; }
+          else if (!this.near(a, S.rm, (x, y) => Math.abs(x - S.x) <= 2.1 && Math.abs(y - S.y) <= 1.6)) return { ok: false, msg: "Walk up to the stand first." };
+        }
         const tk = await this.debit(uid, cost, "stand " + k); if (tk === null) return { ok: false, msg: `That costs ${cost} TOKENS. Play a game or harvest carrots to earn some!` };
         await this.holdFood(uid, FOOD[k] || {});   // fills a little with each sip or bite
         return { ok: true, k, tk, nd: this.needsOut(a) };

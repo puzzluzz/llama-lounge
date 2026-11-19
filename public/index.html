@@ -758,7 +758,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-21n";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-21o";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1175,7 +1175,7 @@ const RACK_UNUSED=['cap','cowboy','beanie','party','tophat','flowers','tee_loung
 // furniture showroom: one piece from each category on display (tap one to shop for furniture)
 // the store is split in two: furniture on the left half (a living room, a bedroom and a dining set), clothing on the right half
 // [item, gx, gy, rot, notag] - notag hides the price tag on repeats (the dining chairs)
-const STORE_SHOW=[['plant',0,0],['bigtv',1,0,0],['lamp',3,0],['tv',4,0],['sofa',1,3,2],['armchair',4,2,3],['lamp',0,4,0,1],['bed',0,5,0],['bookshelf',3,5],['loveseat',0,7,0],['table',4,8],['chair',3,8,0],['chair',5,8,3,1],['chair',4,7,1,1],['chair',4,9,2,1]];
+const STORE_SHOW=[['plant',0,0],['bigtv',1,0,0],['lamp',3,0],['snackvend',4,0],['tv',2,5],['sofa',1,3,2],['armchair',4,2,3],['lamp',0,4,0,1],['bed',0,5,0],['bookshelf',3,5],['loveseat',0,7,0],['table',4,8],['chair',3,8,0],['chair',5,8,3,1],['chair',4,7,1,1],['chair',4,9,2,1]];
 const STORE_CASE=[[6,2],[7,2]], CASE_ITEMS=[['shades',6.3],['hearts',6.82],['stars',7.42]];
 const STORE_RACKS=RACK_ROWS.flatMap((row,j)=>row.map((id,i)=>[7+i,4+3*j,id,i===0?-1:i===row.length-1?1:0]));
 const rackItemAt=(x,y)=>{ const r=STORE_RACKS.find(([a,b])=>a===x&&b===y); return r?r[2]:null; };
@@ -1495,17 +1495,17 @@ const FURN_DEF = {
   table:{n:'CANDLE TABLE',p:12,mk:()=>({t:'table'})}, lamp:{n:'SIDE LAMP',p:12,mk:()=>({t:'sidetable'})},
   fern:{n:'POTTED FERN',p:6,mk:rot=>({t:'fern',flip:rot%2===1})}, hay:{n:'HAY BALE',p:4,mk:()=>({t:'hay'})},
   keg:{n:'BARREL',p:8,mk:()=>({t:'keg'})}, cabinet:{n:'CABINET',p:15,mk:()=>({t:'cabinet'})},
-  counter:{n:'COUNTER',p:10,mk:()=>({t:'counter',end:0})}, vending:{n:'VENDING MACHINE',p:30,mk:()=>({t:'vending'})},
-  chair:{n:'WOODEN CHAIR',p:8,seat:8,cat:'seating',mk:rot=>({t:'chair',rot})}, armchair:{n:'ARMCHAIR',p:15,seat:7,cat:'sofas',mk:rot=>({t:'armchair',rot})},
-  bed:{sz:2,n:'COZY BED',p:25,seat:11,cat:'beds',mk:rot=>({t:'bed',rot,dz:1})}, bookshelf:{n:'BOOKSHELF',p:18,cat:'shelves',mk:()=>({t:'bookshelf'})},
+  counter:{n:'COUNTER',p:10,mk:()=>({t:'counter',end:0})}, vending:{n:'DRINK MACHINE',p:30,cat:'machines',mk:()=>({t:'vending'})}, snackvend:{n:'SNACK MACHINE',p:30,cat:'machines',mk:()=>({t:'snackvend'})},
+  chair:{n:'WOODEN CHAIR',p:8,seat:10,cat:'seating',mk:rot=>({t:'chair',rot})}, armchair:{n:'ARMCHAIR',p:15,seat:10,cat:'sofas',mk:rot=>({t:'armchair',rot})},
+  bed:{sz:2,n:'COZY BED',p:25,seat:11,cat:'beds',mk:rot=>({t:'bed',rot})}, bookshelf:{n:'BOOKSHELF',p:18,cat:'shelves',mk:()=>({t:'bookshelf'})},
   tv:{n:'TV',p:22,cat:'electronics',mk:()=>({t:'tv'})}, bigtv:{n:'BIG SCREEN TV',p:35,cat:'electronics',iconRot:0,mk:rot=>({t:'bigtv',rot,dz:1})},
-  loveseat:{n:'LOVE SEAT',p:22,seat:7,seatAll:true,cat:'sofas',iconRot:1,mk:rot=>({t:'couch',rot,n:2,dz:1,col:['#f08aa8','#c85a80','#a84468','#ffc0d4']})},
-  sofa:{n:'SOFA',p:30,seat:7,seatAll:true,cat:'sofas',iconRot:1,mk:rot=>({t:'couch',rot,n:3,dz:2,col:['#6a88e0','#4462b8','#344c98','#a8c0f8']})}, plant:{n:'BIG PLANT',p:7,cat:'plants',mk:()=>({t:'plant'})},
+  loveseat:{n:'LOVE SEAT',p:22,seat:10,seatAll:true,cat:'sofas',iconRot:1,mk:rot=>({t:'couch',rot,n:2,col:['#f08aa8','#c85a80','#a84468','#ffc0d4']})},
+  sofa:{n:'SOFA',p:30,seat:10,seatAll:true,cat:'sofas',iconRot:1,mk:rot=>({t:'couch',rot,n:3,col:['#6a88e0','#4462b8','#344c98','#a8c0f8']})}, plant:{n:'BIG PLANT',p:7,cat:'plants',mk:()=>({t:'plant'})},
   adminsign:{n:'ADMIN SIGN',p:50,cat:'staff',wall:true,staff:true,mk:()=>({t:'adminsign', dz:-3})},
 };
 FURN_DEF.table.cat='tables'; FURN_DEF.lamp.cat='lighting';
 // what the store sells, by category (one of each for now; add more pieces to a category by giving them its cat)
-const FURN_CATS=[['staff','🛡️ STAFF ONLY'],['seating','🪑 SEATING'],['sofas','🛋️ SOFAS & ARMCHAIRS'],['beds','🛏️ BEDS'],['tables','🍽️ TABLES'],['lighting','💡 LIGHTING'],['shelves','📚 SHELVES'],['electronics','📺 ELECTRONICS'],['plants','🪴 PLANTS']];
+const FURN_CATS=[['staff','🛡️ STAFF ONLY'],['seating','🪑 SEATING'],['sofas','🛋️ SOFAS & ARMCHAIRS'],['beds','🛏️ BEDS'],['tables','🍽️ TABLES'],['lighting','💡 LIGHTING'],['shelves','📚 SHELVES'],['electronics','📺 ELECTRONICS'],['plants','🪴 PLANTS'],['machines','🥤 VENDING MACHINES']];
 const SEAT_DIRS=['fr','fl','br','bl'];
 const PR_WALL={ lavender:['#b8a0f0','#d0b8f8','#7860c8','#8870d8'], cream:['#f2e2c8','#f8ecd6','#9a6436','#a86e3e'], mint:['#a8e0c8','#c0eed8','#4a9a7a','#58aa88'],
   pink:['#f8b8d0','#fcd0e0','#c86890','#d87aa0'], night:['#2a2450','#342c60','#141030','#1a1438'], wood:['#a87444','#b8834e','#6a4220','#7a4c26'] };
@@ -2111,6 +2111,7 @@ function drawFurn(f,t){
         wbox(back[0]-0.01,back[1]-0.01,back[2]+0.02,back[3]+0.02,4,'#f0c890','#b07440','#8a5a30',0,23,'#7a4c26');
       };
       for (const [u,v] of [[0.26,0.26],[0.74,0.26],[0.26,0.74],[0.74,0.74]]){ const [lx,ly]=P(x+u,y+v,0), [,ty]=P(x+u,y+v,9); g.fillStyle=INK; g.fillRect(Math.round(lx)-1,Math.round(ty),3,Math.round(ly-ty)+1); g.fillStyle='#8a5a30'; g.fillRect(Math.round(lx),Math.round(ty),1,Math.round(ly-ty)); }
+      if (f.part==='front'){ if (!far) drawBack(); break; }
       if (far) drawBack();
       wbox(x+0.2,y+0.2,0.6,0.6,2,'#e8b878','#b07440','#8a5a30',0,9,'#b07440');
       if (!far) drawBack();
@@ -2121,11 +2122,12 @@ function drawFurn(f,t){
       const R=(u0,u1,v0,v1)=> r===0 ? [x+v0,y+u0,v1-v0,u1-u0] : r===1 ? [x+u0,y+v0,u1-u0,v1-v0] : r===2 ? [x+u0,y+1-v1,u1-u0,v1-v0] : [x+1-v1,y+u0,v1-v0,u1-u0];
       const B=(q,h,lift,top)=>{ const k=R(...q); box(k[0],k[1],k[2],k[3],h,top||C[0],C[1],C[2],0,lift); return k; };
       const mid=(q,h)=>{ const k=R(...q); return P(k[0]+k[2]/2,k[1]+k[3]/2,h); };
-      const U0=0.08, U1=n-0.08, V0=0.1, V1=0.9, BK=0.32, AW=0.17;
+      const U0=0.1, U1=n-0.1, V0=0.1, V1=0.9, BK=0.3, AW=0.2;   // every edge lands on a whole pixel, so both arms come out the same width
       for (const [u,v] of [[U0+0.06,V0+0.06],[U1-0.06,V0+0.06],[U0+0.06,V1-0.06],[U1-0.06,V1-0.06]]){ const k=R(u,u,v,v); const [lx,ly]=P(k[0],k[1],0); g.fillStyle=INK; g.fillRect(Math.round(lx)-1,Math.round(ly)-3,3,4); g.fillStyle='#5a3418'; g.fillRect(Math.round(lx),Math.round(ly)-2,1,2); }
       B([U0,U1,V0,V1],7,2);
       const back=()=>{ B([U0,U1,V0,BK],16,9); for (let i=0;i<n;i++){ const [bx,by]=mid([U0+AW+(i+0.5)*(U1-U0-2*AW)/n, U0+AW+(i+0.5)*(U1-U0-2*AW)/n, BK, BK],18); g.fillStyle=C[2]; g.fillRect(Math.round(bx),Math.round(by),1,1); } };
       const arm=(u0,u1)=>{ B([u0,u1,BK,V1],8,9); };
+      if (f.part==='front'){ arm(U1-AW,U1); if (r>=2) back(); break; }
       if (r<2) back();
       arm(U0,U0+AW);
       for (let i=0;i<n;i++){ const s0=U0+AW+i*(U1-U0-2*AW)/n, s1=U0+AW+(i+1)*(U1-U0-2*AW)/n; B([s0+0.01,s1-0.01,BK,V1],3,9,HI); }
@@ -2219,15 +2221,19 @@ function drawFurn(f,t){
       if (f.end===-1) ed(B[3],T[3],'#d8ecff'); if (f.end===1) ed(B[1],T[1],'#d8ecff'); ed(B[2],T[2],'#ffffff');
       { const s0=P(a+0.15,e,Hg-2), s1=P(a+0.3,e,Hb+3); ed(s0,s1,'rgba(255,255,255,0.7)'); }   // shine
       break; }
-    case 'vending': { // drinks machine against the back wall: red cabinet, lit sign, a window full of bottles
-      const a=f.gx+0.12, b=f.gy+0.12, c=f.gx+0.88, e=f.gy+0.86, H=46;
-      box(a,b,c-a,e-b,H,'#f0f0f8','#e03048','#b0203a');
-      if (curRoom==='store'){ const q=[P(a,e,0),P(c,e,0),P(c,b,0),P(a,b,H),P(c,e,H)]; vendHit={x0:Math.min(...q.map(v=>v[0]))-2, x1:Math.max(...q.map(v=>v[0]))+2, y0:Math.min(...q.map(v=>v[1]))-2, y1:Math.max(...q.map(v=>v[1]))+2}; }
+    case 'vending': case 'snackvend': { // vending machine against the back wall: lit sign, a window of drinks or snacks, a coin panel and a pick-up flap
+      const snack=f.t==='snackvend', a=f.gx+0.12, b=f.gy+0.12, c=f.gx+0.88, e=f.gy+0.86, H=46;
+      if (snack) box(a,b,c-a,e-b,H,'#f0f0f8','#3a7ad8','#2a5aa8'); else box(a,b,c-a,e-b,H,'#f0f0f8','#e03048','#b0203a');
+      { const q=[P(a,e,0),P(c,e,0),P(c,b,0),P(a,b,H),P(c,e,H)], hb={x0:Math.min(...q.map(v=>v[0]))-2, x1:Math.max(...q.map(v=>v[0]))+2, y0:Math.min(...q.map(v=>v[1]))-2, y1:Math.max(...q.map(v=>v[1]))+2};
+        if (curRoom==='store' && !f.fid && !f.show) vendHit=hb; else if (f.fid) pvHits.push({...hb, f}); }
       const FL=(u,v)=>P(a+(c-a)*u, e, v), quad=(u0,u1,v0,v1,col)=>polyPx([FL(u0,v0),FL(u1,v0),FL(u1,v1),FL(u0,v1)],col);
-      quad(0.08,0.66,12,40,INK); quad(0.11,0.63,13,39,'#1e2a40');
-      const cols=['#f84848','#48c048','#f878b8','#f8d030'];
-      for (let r=0;r<3;r++) for (let k=0;k<4;k++){ const [x,y]=FL(0.16+k*0.12, 16+r*8); g.fillStyle=INK; g.fillRect(Math.round(x),Math.round(y)-5,3,6); g.fillStyle=cols[(k+r)%4]; g.fillRect(Math.round(x)+1,Math.round(y)-4,1,4); }
-      const glow=(Math.floor(t*1.5)%7)!==0; quad(0.08,0.92,42,45,glow?'#ffe070':'#c0a040');
+      quad(0.08,0.66,12,40,INK); quad(0.11,0.63,13,39,snack?'#1a2030':'#1e2a40');
+      if (snack){ const cols=['#f8d030','#8a48e0','#f07830','#48c048','#e03048','#f8f0e0'];
+        for (let r=0;r<3;r++){ for (let k=0;k<3;k++){ const [x,y]=FL(0.17+k*0.16, 16+r*8); const X=Math.round(x), Y=Math.round(y); g.fillStyle=INK; g.fillRect(X-1,Y-6,5,7); g.fillStyle=cols[(k+r*2)%cols.length]; g.fillRect(X,Y-5,3,5); g.fillStyle='rgba(255,255,255,0.45)'; g.fillRect(X,Y-5,1,1); }
+          const l0=FL(0.12,15+r*8), l1=FL(0.62,15+r*8); linePx(l0[0],l0[1]+1,l1[0],l1[1]+1,'#8890a8'); } }
+      else { const cols=['#f84848','#48c048','#f878b8','#f8d030'];
+        for (let r=0;r<3;r++) for (let k=0;k<4;k++){ const [x,y]=FL(0.16+k*0.12, 16+r*8); g.fillStyle=INK; g.fillRect(Math.round(x),Math.round(y)-5,3,6); g.fillStyle=cols[(k+r)%4]; g.fillRect(Math.round(x)+1,Math.round(y)-4,1,4); } }
+      const glow=(Math.floor(t*1.5+(snack?3:0))%7)!==0; quad(0.08,0.92,42,45,glow?(snack?'#a8e0ff':'#ffe070'):(snack?'#6a98c0':'#c0a040'));
       quad(0.72,0.9,24,34,INK); quad(0.74,0.88,25,33,'#d8d8e8'); for (let k=0;k<3;k++){ const [x,y]=FL(0.81,31-k*2.5); g.fillStyle=k===0?'#48c048':'#f8d030'; g.fillRect(Math.round(x)-1,Math.round(y)-1,2,1); }
       quad(0.2,0.6,4,8,INK); quad(0.22,0.58,5,7,'#2a2a3a');   // pick-up flap
       break; }
@@ -2639,7 +2645,7 @@ function tokUI(dir){ const el=document.getElementById('tokn'), row=document.getE
   if (typeof sendPresence==='function' && joined) sendPresence(); }
 const DRINKS = { soda:{label:'HAY SODA', c:'#f84848'}, juice:{label:'GRASS JUICE', c:'#48c048'}, shake:{label:'BERRY SHAKE', c:'#f878b8'}, cider:{label:'HOT APPLE CIDER', c:'#c87028'}, caramel:{label:'CARAMEL APPLE CIDER', c:'#e8a038'},
   capple:{label:'CARAMEL APPLE', c:'#d83838', food:true}, corn:{label:'CORN ON THE COB', c:'#f8d030', food:true}, pie:{label:'SLICE OF APPLE PIE', c:'#e8c070', food:true},
-  nachos:{label:'HAY NACHOS', c:'#f8c040', food:true}, fries:{label:'ALFALFA FRIES', c:'#f8d860', food:true}, burger:{label:'CLOVER BURGER', c:'#c87838', food:true} };
+  nachos:{label:'HAY NACHOS', c:'#f8c040', food:true}, fries:{label:'ALFALFA FRIES', c:'#f8d860', food:true}, burger:{label:'CLOVER BURGER', c:'#c87838', food:true}, chips:{label:'BAG OF HAY CHIPS', c:'#8a48e0', food:true}, candy:{label:'CLOVER CANDY BAR', c:'#7a3a18', food:true}, cookie:{label:'OAT COOKIE', c:'#c88a50', food:true} };
 const DRINK_IDS = Object.keys(DRINKS), BAR_IDS = ['soda','juice','shake'];   // the bar pours these; cider and snacks come from the stands in LLAMA ACRES
 const FOOD_PX = {   // held snacks, bottom row sits in the hoof; bites come off the top
   capple:['...K...','...T...','.KKTKK.','KCCCCCK','KCRCCRK','KRRRRWK','KRRRRRK','.KRRRK.','..KKK..'],
@@ -2647,8 +2653,11 @@ const FOOD_PX = {   // held snacks, bottom row sits in the hoof; bites come off 
   pie:['K.......','KFK.....','KFFKK...','KFFFFKK.','KFFFFFFK','KBBBBBBK','.KKKKKK.'],
   nachos:['..K.K...','.KYKYK..','KYyYKYK.','KYYyYYyK','KCCCCCCK','.KRRRRK.','..KKKK..'],
   fries:['.K.K.K.','KYKYKYK','KYKYKYK','KRRRRRK','KRWRRWK','KRRRRRK','.KKKKK.'],
-  burger:['.KKKKK.','KBBTBBK','KGGGGGK','KMMMMMK','KYYYYYK','KBBBBBK','.KKKKK.'] };
-const FOOD_PAL = {K:'#181020',T:'#e8d0a0',C:'#d89838',R:'#d82838',W:'#f8a0a0',Y:'#f8d030',y:'#d8a818',G:'#58a840',F:'#e8c070',B:'#c88a50',M:'#7a3a18'};
+  burger:['.KKKKK.','KBBTBBK','KGGGGGK','KMMMMMK','KYYYYYK','KBBBBBK','.KKKKK.'],
+  chips:['.K.K.K.','KPKPKPK','KPPPPPK','KPYYYPK','KPYyYPK','KPYYYPK','KPPPPPK','KKKKKKK'],
+  candy:['KKKKK','KOOOK','KMMMK','KMDMK','KMMMK','KMDMK','KMMMK','KOOOK','KKKKK'],
+  cookie:['.KKKK.','KBBBBK','KBDBBK','KBBBDK','KDBBBK','KBBDBK','.KKKK.'] };
+const FOOD_PAL = {K:'#181020',T:'#e8d0a0',C:'#d89838',R:'#d82838',W:'#f8a0a0',Y:'#f8d030',y:'#d8a818',G:'#58a840',F:'#e8c070',B:'#c88a50',M:'#7a3a18',P:'#8a48e0',O:'#f07830',D:'#4a2010'};
 const EMOTES = ['heart','bang','huh','note','lol','zzz','wave','flex','palm'];
 const SONGS = ['LOUNGE GROOVE','HAYLOFT HOP','FUNKY HOOVES'];
 
@@ -2728,7 +2737,7 @@ function context(){
   }
   if (curRoom==='arena') return me.h ? (DRINKS[me.h].food ? 'bite' : 'sip') : 'arena';
   if (curRoom==='lanes') return me.h ? (DRINKS[me.h].food ? 'bite' : 'sip') : 'bowl';
-  if (isP(curRoom)){ if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip'; return me.p==='sit' ? 'stand' : 'sit'; }
+  if (isP(curRoom)){ if (pvNear() && !PRED.on) return 'pvend'; if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip'; return me.p==='sit' ? 'stand' : 'sit'; }
   if (curRoom==='store'){
     if (me.p!=='sit' && STORE_COUNTER.some(([x,y])=>near(x,y))) return 'shop';
     if (standNear()==='vend') return 'vend';
@@ -2752,7 +2761,7 @@ function context(){
   if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
   return me.p==='sit' ? 'stand' : 'sit';
 }
-const ALABEL = {vend:'DRINKS', clothes:'CLOTHES', shop:'SHOP', dunk:'THROW', grab:'ORDER', arena:'PLAY', bowl:'BOWL', fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
+const ALABEL = {pvend:'BUY', vend:'DRINKS', clothes:'CLOTHES', shop:'SHOP', dunk:'THROW', grab:'ORDER', arena:'PLAY', bowl:'BOWL', fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
 const alabel=document.getElementById('alabel'); let lastLabel='';
 function updateALabel(){ const c=context(); const l = arcade.on ? (arcade.mode==='menu'?'SELECT':arcade.over?'RETRY':arcade.mode==='dash'?'JUMP':'---') : (c?ALABEL[c]:'SIT'); if(l!==lastLabel){ alabel.textContent=l; lastLabel=l; } }
 // ---- bartending: slip past the rope, pace behind the bar pouring drinks ----
@@ -2794,6 +2803,7 @@ function doAction(a){
   if (a==='shop'){ openCatalog(); return; }
   if (a==='leaveroom'){ prLeaveNow(); return; }
   if (a==='vend'){ openFw('vend'); return; }
+  if (a==='pvend'){ pvOpen(); return; }
   if (a==='clothes'){ const r=STORE_RACKS.find(([x,y])=>near(x,y)); openWardrobe('shop', r ? r[2] : STORE_CASE.some(([x,y])=>near(x,y)) ? 'shades' : null); return; }
   if (a==='dunk'){ openDunk(); return; }
   if (a==='goCasino'){ if (!me.moving) showSwap('casino'); return; }
@@ -3428,7 +3438,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; };   // local test helper only
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null];   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
   return [Math.floor((wx/(TW/2) + wy/(TH/2))/2), Math.floor((wy/(TH/2) - wx/(TW/2))/2)];
@@ -3878,9 +3888,12 @@ function render(t){
   const items = [];
   for (const f of FURN) items.push({d: f.gx+f.gy+1+(f.dz||0), f});
   if (joined) items.push({d: me.x+me.y+0.02, l: me, me:true});
+  // someone sitting in a chair or couch whose back or arm is on the camera side: draw those parts again over them
+  if (isP(curRoom)){ const sitters=[]; if (joined && me.p==='sit') sitters.push([me.gx,me.gy,me.x+me.y+0.02]); for (const o of others.values()) if (sameRoom(o) && o.p==='sit') sitters.push([Math.floor(o.x),Math.floor(o.y),o.x+o.y+0.01]);
+    for (const [sx2,sy2,d] of sitters){ const f=FURN.find(q=>q.fid && (q.t==='couch'||q.t==='armchair'||q.t==='chair') && furnTiles(q.item,q.gx,q.gy,q.rot).some(([x,y])=>x===sx2&&y===sy2)); if (f) items.push({d:d+0.005, f:{...f, part:'front'}}); } }
   for (const o of others.values()) if (sameRoom(o)) items.push({d: o.x+o.y+0.01, l: o});
   items.sort((a,b)=>a.d-b.d);
-  overlayItems.length = 0; llamaHits.length = 0; cupHits.length = 0; itemHits.length = 0; vendHit = null;
+  overlayItems.length = 0; llamaHits.length = 0; cupHits.length = 0; itemHits.length = 0; vendHit = null; pvHits.length = 0;
   for (const it of items){
     if (it.f){ if (PDR.on && PDR.fid && it.f.fid===PDR.fid){ g.globalAlpha=0.25; drawFurn(it.f, t); g.globalAlpha=1; continue; } drawFurn(it.f, t); if (it.f.show) showroomTag(it.f); }
     else { const fa = (!it.me && it.l.leaving) ? Math.max(0, Math.min(1, 1-(performance.now()-it.l.leaving)/LEAVE_T)) : 1; g.globalAlpha=fa; const pos = drawLlama(it.l, t, it.me); g.globalAlpha=1; overlayItems.push({l:it.l, x:pos[0], y:pos[1], me:it.me, balloon:pos[2], fa}); }
@@ -4342,6 +4355,15 @@ const STANDS={ bar:{gx:0,gy:2, title:'🍸 THE BAR', note:'DRINKS FILL 💧 THIR
   snack:{gx:10,gy:4, title:'🌽 FARM SNACKS', note:'HOMEMADE TREATS FROM LLAMA ACRES. EAT IT ANYWHERE!', items:[['capple','CARAMEL APPLE',2],['corn','CORN ON THE COB',2],['pie','APPLE PIE',3]]} };
 let standOpen=null;
 const nearStand = ST => near(ST.gx,ST.gy) || near(ST.gx+1,ST.gy);   // stalls are two tiles wide
+// vending machines placed in player rooms (anyone in the room can use them; the server checks the machine is really there)
+const PV_ITEMS = { vending:{title:'🥤 DRINK MACHINE', note:'ICE COLD AND READY. SIP IT ANYWHERE!', items:[['soda','HAY SODA',1],['juice','GRASS JUICE',1],['shake','BERRY SHAKE',2]]},
+  snackvend:{title:'🍪 SNACK MACHINE', note:'CRUNCHY, SWEET AND READY. EAT IT ANYWHERE!', items:[['chips','HAY CHIPS',1],['candy','CANDY BAR',1],['cookie','OAT COOKIE',2]]} };
+const pvHits=[];
+const pvNear = () => isP(curRoom) && me.p!=='sit' ? FURN.find(f=>f.fid && PV_ITEMS[f.item] && Math.abs(me.gx-f.gx)<=1 && Math.abs(me.gy-f.gy)<=1) : null;
+function pvOpen(f){ f = f || (me.pvF && FURN.find(q=>q.fid===me.pvF && Math.abs(me.gx-q.gx)<=1 && Math.abs(me.gy-q.gy)<=1)) || pvNear(); me.pvF=null; if (!f) return; const D=PV_ITEMS[f.item]; STANDS.pv={gx:f.gx, gy:f.gy, rm:curRoom, fid:f.fid, title:D.title, note:D.note, items:D.items}; openFw('pv'); }
+function pvGo(f){ if (me.p!=='sit' && Math.abs(me.gx-f.gx)<=1 && Math.abs(me.gy-f.gy)<=1){ pvOpen(f); return; } if (me.p==='sit') doAction('stand');
+  const spots=[[f.gx,f.gy+1],[f.gx+1,f.gy+1],[f.gx-1,f.gy+1],[f.gx+1,f.gy],[f.gx-1,f.gy]].filter(([x,y])=>x>=0&&y>=0&&x<N&&y<NY&&walkable(x,y)).sort((p,q)=>Math.hypot(p[0]-me.gx,p[1]-me.gy)-Math.hypot(q[0]-me.gx,q[1]-me.gy));
+  me.pvF=f.fid; if (!spots.length || !walkTo(spots[0][0], spots[0][1], 'pvend')) localMsg('Walk up to the machine.'); }
 const standRoom = k => STANDS[k].rm || (k==='bar' ? 'lounge' : 'barn');
 function standNear(){ if (me.p==='sit') return null; for (const k in STANDS) if (k!=='bar' && standRoom(k)===curRoom && nearStand(STANDS[k])) return k; return null; }
 function openFw(k){ k = k || standNear(); const S=STANDS[k]; if (!S || standRoom(k)!==curRoom) return; closeAll(); standOpen=k;
@@ -4350,9 +4372,9 @@ function openFw(k){ k = k || standNear(); const S=STANDS[k]; if (!S || standRoom
   for (const [id,label,cost] of S.items){ const b=document.createElement('button'); b.className='gbbtn y'; const F=FOOD_FILL[id]||{}; b.innerHTML=`${label}<br><small>${cost} TOKEN${cost>1?'S':''} · ${F.hu?'🍔+'+F.hu:''}${F.hu&&F.th>0?' ':''}${F.th>0?'💧+'+F.th:''}</small>`; b.addEventListener('click', ()=>buyAt(k,id)); row.appendChild(b); }
   document.getElementById('fw_msg').textContent = me.h ? `YOU'RE HOLDING ${DRINKS[me.h].label}. A NEW ONE REPLACES IT.` : `YOU HAVE ${wallet.get()} TOKENS`; fwEl.style.display='block'; }
 document.getElementById('fw_close').addEventListener('click', ()=>{ fwEl.style.display='none'; });
-const FOOD_FILL = { soda:{th:30}, juice:{th:35,hu:5}, shake:{th:25,hu:20}, cider:{th:40}, caramel:{th:40,hu:8}, capple:{hu:30}, corn:{hu:35}, pie:{hu:45}, nachos:{hu:35,th:-5}, fries:{hu:35,th:-5}, burger:{hu:55} };   // same as the server
+const FOOD_FILL = { chips:{hu:25,th:-3}, candy:{hu:20}, cookie:{hu:30}, soda:{th:30}, juice:{th:35,hu:5}, shake:{th:25,hu:20}, cider:{th:40}, caramel:{th:40,hu:8}, capple:{hu:30}, corn:{hu:35}, pie:{hu:45}, nachos:{hu:35,th:-5}, fries:{hu:35,th:-5}, burger:{hu:55} };   // same as the server
 function buyAt(k,id){ ensureAudio(); document.getElementById('fw_msg').textContent = DRINKS[id] && !DRINKS[id].food ? 'POURING...' : 'WRAPPING IT UP...';
-  NET.act('buy',{s:k, k:id}).then(r=>{ if (!r.ok){ document.getElementById('fw_msg').textContent=(r.msg||'TRY AGAIN.').toUpperCase(); return; }
+  NET.act('buy',{s:k, k:id, fid:(STANDS[k]&&STANDS[k].fid)||0}).then(r=>{ if (!r.ok){ document.getElementById('fw_msg').textContent=(r.msg||'TRY AGAIN.').toUpperCase(); return; }
     me.h = DRINKS[r.k] ? r.k : id; me.hl=5; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; if (r.nd) ndSet(r.nd); if (k!=='bar') face(STANDS[k].gx+(me.gx>STANDS[k].gx?1:0),STANDS[k].gy);
     tkSet(r.tk, `You bought ${DRINKS[me.h].food?'a':'a cup of'} ${DRINKS[me.h].label}! Your llama ${DRINKS[me.h].food?'is eating':'is drinking'} it now.`); sendPresence(true); fwEl.style.display='none'; }); }
 // ---- carrot patch: harvest ripe plots for tokens (timers kept per player) ----
@@ -5148,6 +5170,7 @@ function playerPointer(e){
   // the door (left wall, by tile 0,10): walk out, then pick where to go next
   if (!PRED.on && lx>=OX-222 && lx<=OX-198 && ly>=OY+100-50 && ly<=OY+111){ prLeave(); return; }
   if (!PRED.on) for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
+  if (!PRED.on) for (let i=pvHits.length-1;i>=0;i--){ const h=pvHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ pvGo(h.f); return; } }
   const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
   if (PRED.on){ const f=prFurnAt(gx,gy);
     if (f){ prDragStart(e, {fid:f.fid, item:f.item, rot:f.rot||0, gx0:f.gx, gy0:f.gy, ox:gx-f.gx, oy:gy-f.gy}); PDR.tapGx=gx; PDR.tapGy=gy; return; }
