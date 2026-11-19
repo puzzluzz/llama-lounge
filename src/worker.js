@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-22f";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-22g";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -88,23 +88,25 @@ const ITEMS = {
 const PR = { w: 13, h: 12, maxFurn: 60, clear: ["0,10", "1,10", "2,10", "3,10"], knockGap: 20000, letInMs: 3 * 3600e3, nameMax: 24 };
 const PR_WALLS = ["lavender", "cream", "mint", "pink", "night", "wood"], PR_FLOORS = ["wood", "checker", "carpet", "marble", "grass"];
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
-const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30, rug_persian: 25, rug_round: 15, rug_stripe: 12, rug_shag: 18 };
+const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30, rug_persian: 25, rug_round: 15, rug_stripe: 12, rug_shag: 18,
+  beanbag: 10, barstool: 7, dbed: 40, coffeetable: 14, roundtable: 16, floorlamp: 16, lavalamp: 12, cubeshelf: 14, dresser: 20, cactus: 5, flowers: 6, boombox: 18 };
 // what the store sells right now: one piece per category (the rest stay placeable for anyone who already owns them)
 // vending machines players can put in their rooms, and what each one sells
 const PV_ITEMS = { vending: { soda: 1, juice: 1, shake: 2 }, snackvend: { chips: 1, candy: 1, cookie: 2 } };
-const FURN_SWITCH = new Set(["tv", "bigtv", "lamp"]);   // things you can tap to switch on or off
+const FURN_SWITCH = new Set(["tv", "bigtv", "lamp", "floorlamp", "lavalamp", "boombox"]);   // things you can tap to switch on or off
 const FURN_SIZE = { bed: 2, loveseat: 2, sofa: 3, bigtv: 2 };   // pieces bigger than one tile
 const FURN_SIDEWAYS = new Set(["loveseat", "sofa"]);
 // colour variants: same piece and price as their base, their own item so they're bought, stored and placed separately
 const FURN_VARIANTS = { sofa_gray: "sofa", sofa_green: "sofa", sofa_red: "sofa", loveseat_mustard: "loveseat", loveseat_teal: "loveseat", loveseat_purple: "loveseat",
   armchair_mustard: "armchair", armchair_red: "armchair", armchair_gray: "armchair", bed_blue: "bed", bed_green: "bed", bed_purple: "bed", chair_walnut: "chair", chair_white: "chair", chair_red: "chair" };
 const furnBase = (item) => FURN_VARIANTS[item] || item;   // couches run along their back, so they turn the other way
-const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend", "rug_persian", "rug_round", "rug_stripe", "rug_shag"]);
+const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend", "rug_persian", "rug_round", "rug_stripe", "rug_shag",
+  "beanbag", "barstool", "dbed", "coffeetable", "roundtable", "floorlamp", "lavalamp", "cubeshelf", "dresser", "cactus", "flowers", "boombox"]);
 for (const [k, b] of Object.entries(FURN_VARIANTS)) { FURN_ITEMS[k] = FURN_ITEMS[b]; FURN_SALE.add(k); }   // variants cost the same as their base
 const FURN_STAFF = new Set(["adminsign"]);   // only mods and the owner can buy these
 const FURN_WALL = new Set(["adminsign"]);
 const FURN_RUG = new Set(["rug_persian", "rug_round", "rug_stripe", "rug_shag"]);   // lie flat on the floor: walk on them, put furniture on top
-const FURN_DIM = { rug_persian: [3, 2], rug_round: [2, 2], rug_stripe: [3, 1], rug_shag: [2, 2] };   // width x depth (swapped when turned)
+const FURN_DIM = { dbed: [2, 2], rug_persian: [3, 2], rug_round: [2, 2], rug_stripe: [3, 1], rug_shag: [2, 2] };   // width x depth (swapped when turned)
 const layerOf = (item) => (FURN_WALL.has(item) ? "wall" : FURN_RUG.has(item) ? "rug" : "floor");    // hang on a wall: placed on a tile along a wall, don't take up floor space
 const prId = (rm) => { const m = /^p:(\d{1,9})$/.exec(String(rm || "")); return m ? +m[1] : 0; };
 const cleanRoomName = (n) => String(n || "").replace(/[^A-Za-z0-9 '!?&.,:-]/g, "").replace(/\s+/g, " ").trim().slice(0, PR.nameMax);
