@@ -567,7 +567,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19g";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19h";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -810,7 +810,8 @@ function buildBarnWorld(){
   for (const y of [13,15,17]) for (let x=2;x<=5;x++){ const k=x+','+y; CROPS.push({gx:x,gy:y,k}); FURN.push({t:'crop',gx:x,gy:y,k}); block(x,y); }
   FARM_PATH = new Set(); for (let x=1;x<=6;x++) for (let y=12;y<=18;y++) if (x===1||x===6||y%2===0) FARM_PATH.add(y*N+x);
   // single benches spread around the field: by the farm, behind and beside the pond, out on the grass
-  for (const [x,y,d,ax] of [[0,13,'fr','y'],[4,11,'fl','x'],[17,1,'fl','x'],[13,6,'fr','y'],[17,13,'fl','x']]){ SEATS.push({gx:x,gy:y,dir:d,lift:8}); FURN.push({t:'bench',gx:x,gy:y,ax}); }
+  for (const [x,y,d,ax] of [[0,13,'fr','y'],[4,11,'fl','x'],[17,1,'fl','x'],[13,6,'fr','y'],[17,13,'fl','x']]){   // two-seat benches
+    const x2=ax==='x'?x+1:x, y2=ax==='y'?y+1:y; SEATS.push({gx:x,gy:y,dir:d,lift:8}); SEATS.push({gx:x2,gy:y2,dir:d,lift:8}); FURN.push({t:'bench',gx:x,gy:y,ax,len:2,dz:ax==='x'?0.5:0}); }
   FURN.push({t:'scarecrow',gx:0,gy:15}); block(0,15);
   // market stalls, two tiles wide (the server checks the same spots)
   FURN.push({t:'cider',gx:7,gy:4,w:2,dz:0.5}); block(7,4); block(8,4);
@@ -1694,19 +1695,20 @@ function drawFurn(f,t){
       L(P(X0,Y1,0),P(X1,Y1,0),INK); L(P(X1,Y1,0),P(X1,Y0,0),INK); L(P(X1,Y0,0),P(X1,Y0,H-1),INK); L(P(X0,Y1,0),P(X0,Y1,H-3),INK);
       break; }
     case 'bench': {
-      // wooden park bench: four legs, slatted seat, backrest on the far side
-      const W1='#c88a50', W2='#a86a34', W3='#7e4c24', X=f.ax==='x';
-      const legs = X ? [[0.14,0.3],[0.8,0.3],[0.14,0.7],[0.8,0.7]] : [[0.3,0.14],[0.3,0.8],[0.7,0.14],[0.7,0.8]];
-      ellPx(sx,sy+1,13,4,'rgba(40,80,20,0.3)');
-      for (const [u,v] of legs) box(f.gx+u-0.03,f.gy+v-0.03,0.06,0.06,7,W3,W3,'#5e3418');
-      if (X){ box(f.gx+0.08,f.gy+0.22,0.84,0.56,2,W1,W2,W3,0,7);
-        for (const v of [0.4,0.6]) linePx(...P(f.gx+0.1,f.gy+v,9),...P(f.gx+0.9,f.gy+v,9),W2);
-        for (const u of [0.14,0.8]) box(f.gx+u-0.03,f.gy+0.16,0.06,0.06,10,W3,W3,'#5e3418',0,7);
-        box(f.gx+0.08,f.gy+0.14,0.84,0.08,4,W1,W2,W3,0,13); }
-      else { box(f.gx+0.22,f.gy+0.08,0.56,0.84,2,W1,W2,W3,0,7);
-        for (const u of [0.4,0.6]) linePx(...P(f.gx+u,f.gy+0.1,9),...P(f.gx+u,f.gy+0.9,9),W2);
-        for (const v of [0.14,0.8]) box(f.gx+0.16,f.gy+v-0.03,0.06,0.06,10,W3,W3,'#5e3418',0,7);
-        box(f.gx+0.14,f.gy+0.08,0.08,0.84,4,W1,W2,W3,0,13); }
+      // wooden park bench, L tiles long: legs at the ends and the middle, slatted seat, backrest on the far side
+      const W1='#c88a50', W2='#a86a34', W3='#7e4c24', X=f.ax==='x', L=f.len||1;
+      const along=[0.14, ...(L>1?[L/2-0.03]:[]), L-0.2];
+      const [cx2,cy2]=P(f.gx+(X?L/2:0.5), f.gy+(X?0.5:L/2)); ellPx(cx2,cy2+1,13+(L-1)*14,4+(L-1)*3,'rgba(40,80,20,0.3)');
+      if (X){ for (const u of along) for (const v of [0.3,0.7]) box(f.gx+u-0.03,f.gy+v-0.03,0.06,0.06,7,W3,W3,'#5e3418');
+        box(f.gx+0.08,f.gy+0.22,L-0.16,0.56,2,W1,W2,W3,0,7);
+        for (const v of [0.4,0.6]) linePx(...P(f.gx+0.1,f.gy+v,9),...P(f.gx+L-0.1,f.gy+v,9),W2);
+        for (const u of along) box(f.gx+u-0.03,f.gy+0.16,0.06,0.06,10,W3,W3,'#5e3418',0,7);
+        box(f.gx+0.08,f.gy+0.14,L-0.16,0.08,4,W1,W2,W3,0,13); }
+      else { for (const v of along) for (const u of [0.3,0.7]) box(f.gx+u-0.03,f.gy+v-0.03,0.06,0.06,7,W3,W3,'#5e3418');
+        box(f.gx+0.22,f.gy+0.08,0.56,L-0.16,2,W1,W2,W3,0,7);
+        for (const u of [0.4,0.6]) linePx(...P(f.gx+u,f.gy+0.1,9),...P(f.gx+u,f.gy+L-0.1,9),W2);
+        for (const v of along) box(f.gx+0.16,f.gy+v-0.03,0.06,0.06,10,W3,W3,'#5e3418',0,7);
+        box(f.gx+0.14,f.gy+0.08,0.08,L-0.16,4,W1,W2,W3,0,13); }
       break; }
     case 'hayseat': box(f.gx+0.1,f.gy+0.15,0.8,0.7,10,'#f8d030','#e0b020','#b88818');
       { g.fillStyle='#c09018'; for (let k=0;k<6;k++) g.fillRect(sx-10+k*4,sy-6-((k*3)%3),1,2); g.fillStyle='#f8e888'; g.fillRect(sx-6,sy-12,5,1); g.fillStyle='#884020'; g.fillRect(sx-1,sy-10,1,9); } break;
@@ -2515,12 +2517,11 @@ function chatMsg(name,text,yell){ logLine(name.toUpperCase()+(yell?' YELLS: ':':
 const bars=[];
 function addBar(name, text, cid, gx, gy, mine, yell){
   const head=(name.toUpperCase()+':');
-  let body=yell?text.toUpperCase()+'!':text; const maxW=Math.max(80, LW-14);
-  const wOf=t=>pfW(head)+2+pfW(t,1,!yell)+10;
-  if (wOf(body)>maxW){ while (body.length>1 && wOf(body+'...')>maxW) body=body.slice(0,-1); body=body.trimEnd()+'...'; }
+  const body=yell?text.toUpperCase()+'!':text;
+  const wOf=t=>(pfW(head)+2+pfW(t,1,!yell)+10)*0.9;   // first guess; the real size is measured when it's drawn
   const [wx,wy]=proj(gx,gy);
   const st = mine ? (me.st||'') : (([...others.values()].find(o=>o.n && o.n.toUpperCase()===name.toUpperCase())||{}).st||'');
-  bars.push({st, head, body, yell:!!yell, cid, mine, x:wx, y:wy-66-9, w:wOf(body)+(st?BADGE_W:0), h:9, born:performance.now(), dur:Math.min(18000, 4500+text.length*110)});
+  bars.push({st, head, body, yell:!!yell, cid, mine, x:wx, y:wy-66-14, w:wOf(body), h:22/S, born:performance.now(), dur:Math.min(18000, 4500+text.length*110)});
   if (bars.length>14) bars.shift();
 }
 function updateBars(dt){
@@ -2652,7 +2653,8 @@ function resize(){
   // UI scale: full size normally, a step smaller on short (sideways) or very narrow phones
   { let px = 2; if (H < 520) px = H < 400 ? 1.5 : 1.75; if (W < 340) px = Math.min(px, 1.75); document.documentElement.style.setProperty('--px', px); }
 }
-function updateChatLimit(){ const name=(me.n||'YOU').length; const max=Math.floor((LW-14-12)/4)-name-2; chatin.maxLength=Math.max(10, Math.min(120, max)); if (chatin.value.length>chatin.maxLength) chatin.value=chatin.value.slice(0,chatin.maxLength); }
+// chat length: what fits on one line of a chat bubble
+function updateChatLimit(){ const name=(me.n||'YOU').length; const max=Math.floor((Math.min(LW*S-20, 340)-30)/6.6)-name; chatin.maxLength=Math.max(10, Math.min(120, max)); if (chatin.value.length>chatin.maxLength) chatin.value=chatin.value.slice(0,chatin.maxLength); }
 addEventListener('resize', ()=>{ resize(); updateChatLimit(); });
 // the dock and top bar are HTML; measure them so the camera frames the room in the space between
 function hudSizes(){ const d=document.getElementById('dock'), st=document.getElementById('status');
@@ -3173,34 +3175,44 @@ function drawOverlay(t){
     if (curRoom==='lounge') for (const pr of PRODUCTS){ if (pr.at && pr.hi_img.complete) c.drawImage(pr.hi_img, pr.at[0]-14, pr.at[1]-14, 28, 28); }
     if (curRoom==='lounge' && LOGO.complete) c.drawImage(LOGO, OX-210-9, OY+105-75.5-9, 18, 18);
     overlayItems.sort((a,b)=>a.y-b.y);
+    // ---- name tags and chat bubbles in the app's own style (sizes are screen pixels, so they stay sharp at any zoom) ----
+    const u = 1/S;                                  // one screen pixel in game units
+    const pill = (x,y,w,h,r) => { c.beginPath(); if (c.roundRect) c.roundRect(x,y,w,h,r); else c.rect(x,y,w,h); };
     for (const it of overlayItems){
-      // name tag: ink-outlined plate, 2px padding, colour pip for the llama, little pointer down to the head
       const name = (it.me ? (me.n||'YOU') : it.l.n).toUpperCase(); const fa = it.fa==null?1:it.fa;
       const cid = it.me ? me.c : (it.l && it.l.c); const tag = (CHARS[cid]||{}).tag || '#f8d030';
-      const st = staffOf(it.me, it.l), bw = st ? BADGE_W : 0;
-      const tw = pfW(name), w = tw + 9 + bw, h = 9;
-      const nx = Math.round(it.x - w/2), ny = Math.round(it.y - 10);
+      const st = staffOf(it.me, it.l), icon = st==='owner' ? '👑 ' : st==='mod' ? '🛡 ' : '';
+      c.font = `800 ${10.5*u}px Inter, system-ui, sans-serif`; const tw = c.measureText(icon+name).width;
+      const h = 18*u, w = tw + 22*u, nx = it.x - w/2, ny = it.y - h - 5*u;
       c.globalAlpha = fa;
-      c.fillStyle = INK; c.fillRect(nx+1, ny, w-2, h); c.fillRect(nx, ny+1, w, h-2);
-      c.fillRect(Math.round(it.x)-1, ny+h, 3, 1); c.fillRect(Math.round(it.x), ny+h+1, 1, 1);
-      c.globalAlpha = fa*0.88; c.fillStyle = it.me ? '#fff4c0' : '#f8f8f8'; c.fillRect(nx+1, ny+1, w-2, h-2);
-      c.globalAlpha = fa; c.fillStyle = tag; c.fillRect(nx+2, ny+3, 2, 3);
-      if (st) drawBadge(c, st, nx+6, ny+2);
-      pfDraw(c, name, nx+6+bw, ny+2, INK);
+      c.shadowColor='rgba(0,0,0,0.35)'; c.shadowBlur=6*u*S*DPR; c.shadowOffsetY=1.5*u*S*DPR;
+      c.fillStyle = it.me ? '#ffd23f' : 'rgba(22,15,40,0.78)'; pill(nx, ny, w, h, h/2); c.fill();
+      c.shadowColor='transparent'; c.shadowBlur=0; c.shadowOffsetY=0;
+      // little pointer down to the head
+      c.beginPath(); c.moveTo(it.x-4*u, ny+h-0.5*u); c.lineTo(it.x+4*u, ny+h-0.5*u); c.lineTo(it.x, ny+h+4*u); c.closePath(); c.fill();
+      c.fillStyle = tag; c.beginPath(); c.arc(nx+9*u, ny+h/2, 3*u, 0, Math.PI*2); c.fill();
+      c.fillStyle = it.me ? '#2a1d00' : '#ffffff'; c.textBaseline='middle'; c.fillText(icon+name, nx+15*u, ny+h/2+0.5*u);
       c.globalAlpha = 1;
     }
+    c.textBaseline='alphabetic';
     drawTableGames(c, t);
     const now=performance.now();
     for (const b of bars){
       const age=now-b.born; if (age>b.dur && Math.floor((age-b.dur)/140)%2===1) continue;
-      // chat bar: ink outline, translucent plate, colour strip, NAME: in the llama's colour, 2px padding all round
-      let bx=Math.round(OX+b.x-b.w/2); bx=Math.max(2, Math.min(LW-b.w-2, bx)); const by=Math.round(OY+b.y);
-      c.globalAlpha=0.9; c.fillStyle=INK; c.fillRect(bx+1,by,b.w-2,b.h); c.fillRect(bx,by+1,b.w,b.h-2);
-      c.globalAlpha=b.yell?0.92:0.8; c.fillStyle=b.yell?'#e02838':b.mine?'#fff4c0':'#f8f8f8'; c.fillRect(bx+1,by+1,b.w-2,b.h-2);
-      c.globalAlpha=1; const tag=(CHARS[b.cid]||{}).tag||'#f8d030'; c.fillStyle=tag; c.fillRect(bx+2,by+2,2,b.h-4);
-      if (b.st) drawBadge(c, b.st, bx+6, by+2);
-      const x1 = pfDraw(c, b.head, bx+6+(b.st?BADGE_W:0), by+2, b.yell?'#f8e070':'#8a2a6a');
-      pfDraw(c, b.body, x1+2, by+2, b.yell?'#f8f8f8':INK, 1, !b.yell);
+      const icon = b.st==='owner' ? '👑 ' : b.st==='mod' ? '🛡 ' : '';
+      // measure (and shorten if it won't fit) once per zoom level
+      if (b._S!==S){ b._S=S; c.font=`800 ${11*u}px Inter, system-ui, sans-serif`; const hw=c.measureText(icon+b.head).width; c.font=`500 ${12*u}px Inter, system-ui, sans-serif`;
+        const maxW=Math.min(LW-10, 340*u) - hw - 22*u; let txt=b.body; if (c.measureText(txt).width>maxW){ while (txt.length>1 && c.measureText(txt+'…').width>maxW) txt=txt.slice(0,-1); txt=txt.trimEnd()+'…'; }
+        b._txt=txt; b._hw=hw; b.w=hw+5*u+c.measureText(txt).width+20*u; b.h=22*u; }
+      let bx=OX+b.x-b.w/2; bx=Math.max(3*u, Math.min(LW-b.w-3*u, bx)); const by=OY+b.y;
+      c.shadowColor='rgba(0,0,0,0.3)'; c.shadowBlur=8*S*DPR*u; c.shadowOffsetY=2*S*DPR*u;
+      c.fillStyle = b.yell ? '#ff5c8a' : b.mine ? '#fff4c8' : '#ffffff'; pill(bx, by, b.w, b.h, 8*u); c.fill();
+      c.shadowColor='transparent'; c.shadowBlur=0; c.shadowOffsetY=0;
+      const tag=(CHARS[b.cid]||{}).tag||'#f8d030'; c.fillStyle=tag; pill(bx+5*u, by+5*u, 3*u, b.h-10*u, 1.5*u); c.fill();
+      c.textBaseline='middle';
+      c.font=`800 ${11*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#c03070'; c.fillText(icon+b.head, bx+12*u, by+b.h/2+0.5*u);
+      c.font=`${b.yell?800:500} ${12*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#1d1530'; c.fillText(b._txt, bx+12*u+b._hw+5*u, by+b.h/2+0.5*u);
+      c.textBaseline='alphabetic';
     }
   } else if (arcadeText){ drawArcadeText(c, t); }
 }
