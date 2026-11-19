@@ -758,7 +758,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-21v";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-21y";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1495,10 +1495,10 @@ const FURN_DEF = {
   table:{n:'CANDLE TABLE',p:12,mk:()=>({t:'table'})}, lamp:{n:'SIDE LAMP',p:12,mk:()=>({t:'sidetable'})},
   fern:{n:'POTTED FERN',p:6,mk:rot=>({t:'fern',flip:rot%2===1})}, hay:{n:'HAY BALE',p:4,mk:()=>({t:'hay'})},
   keg:{n:'BARREL',p:8,mk:()=>({t:'keg'})}, cabinet:{n:'CABINET',p:15,mk:()=>({t:'cabinet'})},
-  counter:{n:'COUNTER',p:10,mk:()=>({t:'counter',end:0})}, vending:{n:'DRINK MACHINE',p:30,cat:'machines',mk:()=>({t:'vending'})}, snackvend:{n:'SNACK MACHINE',p:30,cat:'machines',mk:()=>({t:'snackvend'})},
+  counter:{n:'COUNTER',p:10,mk:()=>({t:'counter',end:0})}, vending:{n:'DRINK MACHINE',p:30,cat:'machines',mk:rot=>({t:'vending',rot})}, snackvend:{n:'SNACK MACHINE',p:30,cat:'machines',mk:rot=>({t:'snackvend',rot})},
   chair:{n:'WOODEN CHAIR',p:8,seat:10,cat:'seating',mk:rot=>({t:'chair',rot})}, armchair:{n:'ARMCHAIR',p:15,seat:10,cat:'sofas',mk:rot=>({t:'armchair',rot})},
-  bed:{sz:2,n:'COZY BED',p:25,seat:11,cat:'beds',mk:rot=>({t:'bed',rot})}, bookshelf:{n:'BOOKSHELF',p:18,cat:'shelves',mk:()=>({t:'bookshelf'})},
-  tv:{n:'TV',p:22,cat:'electronics',mk:()=>({t:'tv'})}, bigtv:{n:'BIG SCREEN TV',p:35,cat:'electronics',iconRot:0,mk:rot=>({t:'bigtv',rot,dz:1})},
+  bed:{sz:2,n:'COZY BED',p:25,seat:11,cat:'beds',mk:rot=>({t:'bed',rot})}, bookshelf:{n:'BOOKSHELF',p:18,cat:'shelves',mk:rot=>({t:'bookshelf',rot})},
+  tv:{n:'TV',p:22,cat:'electronics',mk:rot=>({t:'tv',rot})}, bigtv:{n:'BIG SCREEN TV',p:35,cat:'electronics',iconRot:0,mk:rot=>({t:'bigtv',rot,dz:1})},
   loveseat:{n:'LOVE SEAT',p:22,seat:10,seatAll:true,cat:'sofas',iconRot:1,mk:rot=>({t:'couch',rot,n:2,col:['#f08aa8','#c85a80','#a84468','#ffc0d4']})},
   sofa:{n:'SOFA',p:30,seat:10,seatAll:true,cat:'sofas',iconRot:1,mk:rot=>({t:'couch',rot,n:3,col:['#6a88e0','#4462b8','#344c98','#a8c0f8']})}, plant:{n:'BIG PLANT',p:7,cat:'plants',mk:()=>({t:'plant'})},
   adminsign:{n:'ADMIN SIGN',p:50,cat:'staff',wall:true,staff:true,mk:()=>({t:'adminsign', dz:-3})},
@@ -1512,7 +1512,7 @@ const PR_WALL={ lavender:['#b8a0f0','#d0b8f8','#7860c8','#8870d8'], cream:['#f2e
 const PR_FLOOR={ wood:['#d8a468','#cf9a5e','#a87440'], checker:['#f4f0f8','#3a3458','#d8d0e8'], carpet:['#4a64c8','#3a54b0','#6a84e0'], marble:['#ece8f0','#d8d2e2','#b8b0c8'], grass:['#6ab04a','#5aa040','#88c860'] };
 function buildPlayerWorld(){
   clearWorld(); const R=PRD[curRoom]; if (!R) return;
-  for (const f of R.furn||[]){ const D=FURN_DEF[f.item]; if (!D) continue; FURN.push({...D.mk(f.rot||0), gx:f.gx, gy:f.gy, fid:f.id, item:f.item, rot:f.rot||0, off:!!f.off}); if (D.wall) continue; const tl=furnTiles(f.item,f.gx,f.gy,f.rot); if (D.seat) SEATS.push({gx:f.gx,gy:f.gy,dir:SEAT_DIRS[f.rot||0],lift:D.seat}); else block(f.gx,f.gy); for (const [tx,ty] of tl.slice(1)){ if (D.seatAll) SEATS.push({gx:tx,gy:ty,dir:SEAT_DIRS[f.rot||0],lift:D.seat}); else block(tx,ty); } }
+  for (const f of R.furn||[]){ const D=FURN_DEF[f.item]; if (!D) continue; FURN.push({...D.mk(f.rot||0), gx:f.gx, gy:f.gy, fid:f.id, item:f.item, rot:f.rot||0, off:!!f.off}); if (D.wall) continue; const tl=furnTiles(f.item,f.gx,f.gy,f.rot); if (D.seat){ const r=f.rot||0; SEATS.push({gx:f.gx,gy:f.gy,dir:SEAT_DIRS[r],lift:D.seat, bed: f.item==='bed' ? {cx: r%2 ? f.gx+0.5 : f.gx+1, cy: r%2 ? f.gy+1 : f.gy+0.5, headLeft: r===0||r===3, hx: r===0?-1:r===2?1:0, hy: r===1?-1:r===3?1:0} : null}); } else block(f.gx,f.gy); for (const [tx,ty] of tl.slice(1)){ if (D.seatAll) SEATS.push({gx:tx,gy:ty,dir:SEAT_DIRS[f.rot||0],lift:D.seat}); else block(tx,ty); } }
 }
 function buildPlayerBG(){
   g = bg.getContext('2d'); g.clearRect(0,0,bg.width,bg.height);
@@ -1633,6 +1633,11 @@ function grain(gx,gy,w,d,h,lift,col,faces='lrt'){
     if (Math.min(w,d)>=0.15) linePx(p[0],p[1],q[0],q[1],col); }
   g.globalAlpha=1;
 }
+function frm(f){ const r=f.rot||0, x=f.gx, y=f.gy;
+  const W=(u,v)=> r===0?[x+u,y+v]: r===1?[x+v,y+u]: r===2?[x+u,y+1-v]:[x+1-v,y+u];
+  const RB=(u0,v0,du,dv)=>{ const a=W(u0,v0), b=W(u0+du,v0+dv); return [Math.min(a[0],b[0]), Math.min(a[1],b[1]), Math.abs(b[0]-a[0]), Math.abs(b[1]-a[1])]; };
+  const FP=(u,v,h)=>{ const [wx,wy]=W(u,v); return P(wx,wy,h); };
+  return {r, W, RB, FP, face: r<2}; }
 function wbox(gx,gy,w,d,h,top,lf,rf,inset=0,lift=0,col='#5a3418',faces='lrt'){ box(gx,gy,w,d,h,top,lf,rf,inset,lift); grain(gx+inset,gy+inset,w-2*inset,d-2*inset,h,lift,col,faces); }
 // tiles a piece covers: most are one tile, the bed is two long (along x when rot is 0/2, along y when 1/3)
 const FURN_SIZE={bed:2,loveseat:2,sofa:3,bigtv:2}, FURN_SIDEWAYS=new Set(['loveseat','sofa']);   // couches run along their back, so they turn the other way
@@ -2135,16 +2140,15 @@ function drawFurn(f,t){
       if (r>=2) back();
       break; }
     case 'bigtv': { // wide flat-screen on a long grained media console with doors, a soundbar and a picture that changes
-      const r=f.rot||0, x=f.gx, y=f.gy;
-      const R=(u0,u1,v0,v1)=> r%2 ? [x+v0,y+u0,v1-v0,u1-u0] : [x+u0,y+v0,u1-u0,v1-v0];
-      const FL=(u,v,h)=> r%2 ? P(x+v,y+u,h) : P(x+u,y+v,h);
+      const {RB,FP,face}=frm(f), R=(u0,u1,v0,v1)=>RB(u0,v0,u1-u0,v1-v0), FL=FP;
       { const k=R(0.04,1.96,0.2,0.85); wbox(k[0],k[1],k[2],k[3],10,'#a86c3a','#7a4c26','#6a4220',0,0,'#4a2e16','t'); }
-      for (const u of [0.04,0.68,1.32,1.96]){ const a2=FL(u,0.85,1), b2=FL(u,0.85,9); linePx(a2[0],a2[1],b2[0],b2[1],'#3a2410'); }
-      for (const u of [0.6,0.76,1.24,1.4]){ const k2=FL(u,0.85,5); g.fillStyle='#f0c070'; g.fillRect(Math.round(k2[0]),Math.round(k2[1]),1,1); }
-      for (const [u0,u1] of [[0.12,0.6],[0.76,1.24],[1.4,1.88]]){ for (let h=3;h<=7;h+=2){ const a2=FL(u0,0.85,h), b2=FL(u1,0.85,h); g.globalAlpha=0.35; linePx(a2[0],a2[1],b2[0],b2[1],'#3a2410'); g.globalAlpha=1; } }
+      if (face) for (const u of [0.04,0.68,1.32,1.96]){ const a2=FL(u,0.85,1), b2=FL(u,0.85,9); linePx(a2[0],a2[1],b2[0],b2[1],'#3a2410'); }
+      if (face) for (const u of [0.6,0.76,1.24,1.4]){ const k2=FL(u,0.85,5); g.fillStyle='#f0c070'; g.fillRect(Math.round(k2[0]),Math.round(k2[1]),1,1); }
+      if (face) for (const [u0,u1] of [[0.12,0.6],[0.76,1.24],[1.4,1.88]]){ for (let h=3;h<=7;h+=2){ const a2=FL(u0,0.85,h), b2=FL(u1,0.85,h); g.globalAlpha=0.35; linePx(a2[0],a2[1],b2[0],b2[1],'#3a2410'); g.globalAlpha=1; } }
       { const k=R(0.88,1.12,0.42,0.6); box(k[0],k[1],k[2],k[3],3,'#2a2a3a','#1a1a26','#121220',0,10); }
       { const k=R(0.62,1.38,0.62,0.76); box(k[0],k[1],k[2],k[3],2,'#3a3a4a','#22222e','#1a1a26',0,10); }
       { const k=R(0.1,1.9,0.46,0.56); box(k[0],k[1],k[2],k[3],27,'#2a2a3a','#1a1a26','#121220',0,13); }
+      if (!face){ for (let h=22; h<=34; h+=3){ const a2=FL(0.7,0.46,h), b2=FL(1.3,0.46,h); linePx(a2[0],a2[1],b2[0],b2[1],'#3a3a4c'); } const a2=FL(1.6,0.46,16), b2=FL(1.65,0.5,10); linePx(a2[0],a2[1],b2[0],b2[1],'#121220'); break; }
       if (f.off){ const vs=0.56; polyPx([FL(0.17,vs,15),FL(1.83,vs,15),FL(1.83,vs,38),FL(0.17,vs,38)], '#141822'); { const a2=FL(0.3,34), b2=FL(0.7,22); linePx(a2[0],a2[1],b2[0],b2[1],'rgba(255,255,255,0.16)'); } const k2=FL(1.84,vs,14); g.fillStyle='#a02030'; g.fillRect(Math.round(k2[0]),Math.round(k2[1]),1,1); break; }
       const ph=Math.floor(t*0.8)%4, SC=[['#58c8f0','#3aa860','#2a8048'],['#f8a060','#f878a8','#c05888'],['#1a2a60','#f8e070','#3a4a90'],['#a8e0f8','#f8f8f8','#c8d8e8']][ph], vs=0.56;
       polyPx([FL(0.17,vs,22),FL(1.83,vs,22),FL(1.83,vs,38),FL(0.17,vs,38)], SC[0]);
@@ -2163,36 +2167,41 @@ function drawFurn(f,t){
       const head=()=>{ B([0,0.1,0.02,0.98],18,'#d8a468','#9a6436','#7a4c26',2,'#6a4220'); B([-0.01,0.11,0.0,1.0],3,'#f0c890','#b07440','#8a5a30',20,'#8a5a30');
         const k=R(0,0.1,0.3,0.7); const [cx,cy]=P(k[0]+k[2]/2,k[1]+k[3]/2,22); g.fillStyle='#f8d890'; g.fillRect(Math.round(cx)-1,Math.round(cy)+1,2,1); };
       const foot=()=>{ B([1.9,2.0,0.02,0.98],9,'#d8a468','#9a6436','#7a4c26',2,'#6a4220'); B([1.89,2.01,0.0,1.0],2,'#f0c890','#b07440','#8a5a30',11,'#8a5a30'); };
-      for (const [u,v] of [[0.06,0.06],[1.94,0.06],[0.06,0.94],[1.94,0.94]]){ const k=R(u,u,v,v); const [lx,ly]=P(k[0],k[1],0); g.fillStyle=INK; g.fillRect(Math.round(lx)-1,Math.round(ly)-3,3,4); g.fillStyle='#7a4c26'; g.fillRect(Math.round(lx),Math.round(ly)-2,1,2); }
-      if (headFar) head(); else foot();
+      const FRONT=f.part==='front';
+      if (!FRONT) for (const [u,v] of [[0.06,0.06],[1.94,0.06],[0.06,0.94],[1.94,0.94]]){ const k=R(u,u,v,v); const [lx,ly]=P(k[0],k[1],0); g.fillStyle=INK; g.fillRect(Math.round(lx)-1,Math.round(ly)-3,3,4); g.fillStyle='#7a4c26'; g.fillRect(Math.round(lx),Math.round(ly)-2,1,2); }
+      if (!FRONT){ if (headFar) head(); else foot();
       B([0.04,1.96,0.05,0.95],4,'#c8905a','#9a6436','#7a4c26',2,'#6a4220');
-      B([0.1,1.9,0.08,0.92],4,'#fbf8f4','#dcd6e2','#c4bed0',6);
+      B([0.1,1.9,0.08,0.92],4,'#fbf8f4','#dcd6e2','#c4bed0',6); }
       const pillow=()=>{ B([0.16,0.5,0.16,0.84],3,'#ffffff','#e6e2ec','#cfc9da',10); const k=R(0.16,0.5,0.16,0.84); const [cx,cy]=P(k[0]+k[2]/2,k[1]+k[3]/2,13); g.fillStyle='#e6e2ec'; g.fillRect(Math.round(cx)-2,Math.round(cy),4,1); };
       const quilt=()=>{ B([0.66,1.9,0.08,0.92],2,'#f878a8','#d85888','#b84070',10); B([0.58,0.72,0.08,0.92],2,'#ffffff','#e8e4ee','#d0cad8',10.5);
         // patchwork squares on top of the quilt
         for (let i=0;i<4;i++) for (let j=0;j<3;j++){ if ((i+j)%2) continue; const k=R(0.78+i*0.27,0.78+i*0.27+0.2,0.16+j*0.26,0.16+j*0.26+0.18); polyPx([P(k[0],k[1],12),P(k[0]+k[2],k[1],12),P(k[0]+k[2],k[1]+k[3],12),P(k[0],k[1]+k[3],12)],'#ffa8c8'); } };
+      if (f.part==='front'){ quilt(); break; }
       if (headFar){ pillow(); quilt(); } else { quilt(); pillow(); }
       if (headFar) foot(); else head();
       break; }
-    case 'bookshelf': { // tall bookcase: crown and base trim, three shelves of books in every colour, a little plant on top
-      const x=f.gx, y=f.gy; wbox(x+0.08,y+0.2,0.84,0.6,34,'#c8905a','#9a6436','#7a4c26',0,0,'#6a4220','r');
-      wbox(x+0.05,y+0.17,0.9,0.66,3,'#e0b070','#a86c3a','#86522a',0,34,'#a86c3a','t'); box(x+0.06,y+0.18,0.88,0.64,2,'#7a4c26','#6a4220','#5a3418');
-      const FL=(u,v)=>P(x+0.08+0.84*u, y+0.8, v), cols=['#e03048','#3a7ad8','#f8d030','#4aa04a','#8a48e0','#f08a30','#f4f0e8','#2fbfa8'];
+    case 'bookshelf': { // tall bookcase: crown and base trim, three shelves of books in every colour, a little plant on top (turned around you just see its wooden back)
+      const {RB,FP,face}=frm(f);
+      wbox(...RB(0.08,0.2,0.84,0.6),34,'#c8905a','#9a6436','#7a4c26',0,0,'#6a4220',face?'r':'lr');
+      wbox(...RB(0.05,0.17,0.9,0.66),3,'#e0b070','#a86c3a','#86522a',0,34,'#a86c3a','t'); box(...RB(0.06,0.18,0.88,0.64),2,'#7a4c26','#6a4220','#5a3418');
+      if (face){ const FL=(u,v)=>FP(0.08+0.84*u, 0.8, v), cols=['#e03048','#3a7ad8','#f8d030','#4aa04a','#8a48e0','#f08a30','#f4f0e8','#2fbfa8'];
       polyPx([FL(0.05,3),FL(0.95,3),FL(0.95,32),FL(0.05,32)],'#4a2e16');
       for (const sv of [4,14,24]){ let u=0.08, k=0;
         while (u<0.9){ const w=0.07+((k*7+sv)%3)*0.02, h=6+((k*5+sv)%4), lean=(k*3+sv)%11===0; const c=cols[(k*3+sv)%cols.length];
           const q = lean ? [FL(u,sv),FL(u+w,sv),FL(u+w+0.05,sv+h-1),FL(u+0.05,sv+h-1)] : [FL(u,sv),FL(u+w,sv),FL(u+w,sv+h),FL(u,sv+h)];
           polyPx(q, c); const a2=FL(u+w*0.3,sv+h-2); g.fillStyle='rgba(255,255,255,0.35)'; g.fillRect(Math.round(a2[0]),Math.round(a2[1]),1,1); u+=w+0.015; k++; }
-        const a2=FL(0.03,sv-1), b2=FL(0.97,sv-1); linePx(a2[0],a2[1],b2[0],b2[1],'#c8905a'); linePx(a2[0],a2[1]+1,b2[0],b2[1]+1,'#5a3418'); }
-      { const [px,py]=P(x+0.32,y+0.5,37); ellPx(px,py-1,2.5,1.5,'#c8642e'); ellPx(px,py-4,3,2.5,'#3a8f3a'); ellPx(px-1,py-6,1.5,1.5,'#6ac06a'); }
+        const a2=FL(0.03,sv-1), b2=FL(0.97,sv-1); linePx(a2[0],a2[1],b2[0],b2[1],'#c8905a'); linePx(a2[0],a2[1]+1,b2[0],b2[1]+1,'#5a3418'); } }
+      { const [px,py]=FP(0.32,0.5,37); ellPx(px,py-1,2.5,1.5,'#c8642e'); ellPx(px,py-4,3,2.5,'#3a8f3a'); ellPx(px-1,py-6,1.5,1.5,'#6ac06a'); }
       break; }
-    case 'tv': { // TV on a low wooden stand with doors; black bezel, glowing screen with scanlines, a little light on the stand
-      const x=f.gx, y=f.gy;
-      wbox(x+0.1,y+0.18,0.8,0.64,10,'#8a5a30','#6a4220','#5a3418',0,0,'#3a2410','rt');
-      { const FL=(u,v)=>P(x+0.1+0.8*u, y+0.82, v); const a2=FL(0.5,1), b2=FL(0.5,9); linePx(a2[0],a2[1],b2[0],b2[1],'#3a2410'); for (const u of [0.42,0.58]){ const k2=FL(u,5); g.fillStyle='#e8c070'; g.fillRect(Math.round(k2[0]),Math.round(k2[1]),1,1); } }
-      box(x+0.42,y+0.42,0.16,0.16,2,'#2a2a3a','#1a1a26','#121220',0,10);
-      box(x+0.12,y+0.44,0.76,0.1,19,'#2a2a3a','#1a1a26','#121220',0,12);
-      const FL=(u,v)=>P(x+0.12+0.76*u, y+0.54, v), ph=Math.floor(t*1.3)%4, sc=[['#58c8f0','#3a9ad0'],['#f878a8','#d05888'],['#7fe0a0','#4ab070'],['#f8d030','#d0a018']][ph];
+    case 'tv': { // TV on a low wooden stand with doors; black bezel, glowing screen with scanlines (turned around: the back of the set, with vents and a cable)
+      const {RB,FP,face}=frm(f);
+      wbox(...RB(0.1,0.18,0.8,0.64),10,'#8a5a30','#6a4220','#5a3418',0,0,'#3a2410','rt');
+      if (face){ const FL=(u,v)=>FP(0.1+0.8*u, 0.82, v); const a2=FL(0.5,1), b2=FL(0.5,9); linePx(a2[0],a2[1],b2[0],b2[1],'#3a2410'); for (const u of [0.42,0.58]){ const k2=FL(u,5); g.fillStyle='#e8c070'; g.fillRect(Math.round(k2[0]),Math.round(k2[1]),1,1); } }
+      box(...RB(0.42,0.42,0.16,0.16),2,'#2a2a3a','#1a1a26','#121220',0,10);
+      box(...RB(0.12,0.44,0.76,0.1),19,'#2a2a3a','#1a1a26','#121220',0,12);
+      if (!face){ const BK=(u,v)=>FP(0.12+0.76*u, 0.44, v); for (let v=18; v<=26; v+=3){ const a2=BK(0.3,v), b2=BK(0.7,v); linePx(a2[0],a2[1],b2[0],b2[1],'#3a3a4c'); }
+        { const a2=BK(0.8,13), b2=BK(0.85,3); linePx(a2[0],a2[1],b2[0],b2[1],'#121220'); } break; }
+      const FL=(u,v)=>FP(0.12+0.76*u, 0.54, v), ph=Math.floor(t*1.3)%4, sc=[['#58c8f0','#3a9ad0'],['#f878a8','#d05888'],['#7fe0a0','#4ab070'],['#f8d030','#d0a018']][ph];
       if (f.off){ polyPx([FL(0.07,14),FL(0.93,14),FL(0.93,29),FL(0.07,29)], '#141822'); { const a2=FL(0.18,27), b2=FL(0.4,22); linePx(a2[0],a2[1],b2[0],b2[1],'rgba(255,255,255,0.18)'); } const k2=FL(0.88,13); g.fillStyle='#a02030'; g.fillRect(Math.round(k2[0]),Math.round(k2[1]),1,1); break; }
       polyPx([FL(0.07,14),FL(0.93,14),FL(0.93,29),FL(0.07,29)], sc[0]);
       for (let v=15; v<29; v+=3){ const a2=FL(0.08,v), b2=FL(0.92,v); g.globalAlpha=0.35; linePx(a2[0],a2[1],b2[0],b2[1],sc[1]); g.globalAlpha=1; }
@@ -2224,11 +2233,12 @@ function drawFurn(f,t){
       { const s0=P(a+0.15,e,Hg-2), s1=P(a+0.3,e,Hb+3); ed(s0,s1,'rgba(255,255,255,0.7)'); }   // shine
       break; }
     case 'vending': case 'snackvend': { // vending machine against the back wall: lit sign, a window of drinks or snacks, a coin panel and a pick-up flap
-      const snack=f.t==='snackvend', a=f.gx+0.12, b=f.gy+0.12, c=f.gx+0.88, e=f.gy+0.86, H=46;
-      if (snack) box(a,b,c-a,e-b,H,'#f0f0f8','#3a7ad8','#2a5aa8'); else box(a,b,c-a,e-b,H,'#f0f0f8','#e03048','#b0203a');
+      const snack=f.t==='snackvend', {RB,FP,face}=frm(f), H=46, K=RB(0.12,0.12,0.76,0.74), a=K[0], b=K[1], c=K[0]+K[2], e=K[1]+K[3];
+      if (snack) box(...K,H,'#f0f0f8','#3a7ad8','#2a5aa8'); else box(...K,H,'#f0f0f8','#e03048','#b0203a');
       { const q=[P(a,e,0),P(c,e,0),P(c,b,0),P(a,b,H),P(c,e,H)], hb={x0:Math.min(...q.map(v=>v[0]))-2, x1:Math.max(...q.map(v=>v[0]))+2, y0:Math.min(...q.map(v=>v[1]))-2, y1:Math.max(...q.map(v=>v[1]))+2};
         if (curRoom==='store' && !f.fid && !f.show) vendHit=hb; else if (f.fid) pvHits.push({...hb, f}); }
-      const FL=(u,v)=>P(a+(c-a)*u, e, v), quad=(u0,u1,v0,v1,col)=>polyPx([FL(u0,v0),FL(u1,v0),FL(u1,v1),FL(u0,v1)],col);
+      if (!face){ const BK=(u,v)=>FP(0.12+0.76*u, 0.12, v); for (let v=30; v<=40; v+=3){ const a2=BK(0.25,v), b2=BK(0.75,v); linePx(a2[0],a2[1],b2[0],b2[1],snack?'#2a4a88':'#8a1a2c'); } const a2=BK(0.5,6), b2=BK(0.55,1); linePx(a2[0],a2[1],b2[0],b2[1],'#121220'); break; }
+      const FL=(u,v)=>FP(0.12+0.76*u, 0.86, v), quad=(u0,u1,v0,v1,col)=>polyPx([FL(u0,v0),FL(u1,v0),FL(u1,v1),FL(u0,v1)],col);
       quad(0.08,0.66,12,40,INK); quad(0.11,0.63,13,39,snack?'#1a2030':'#1e2a40');
       if (snack){ const cols=['#f8d030','#8a48e0','#f07830','#48c048','#e03048','#f8f0e0'];
         for (let r=0;r<3;r++){ for (let k=0;k<3;k++){ const [x,y]=FL(0.17+k*0.16, 16+r*8); const X=Math.round(x), Y=Math.round(y); g.fillStyle=INK; g.fillRect(X-1,Y-6,5,7); g.fillStyle=cols[(k+r*2)%cols.length]; g.fillRect(X,Y-5,3,5); g.fillStyle='rgba(255,255,255,0.45)'; g.fillRect(X,Y-5,1,1); }
@@ -3587,6 +3597,11 @@ function drawLlama(o, t, isMe){
   else {
     if (fe>=FLIP_T && fe<FLIP_T+350){ const k=(fe-FLIP_T)/350; g.fillStyle=k<0.5?'#f8f070':'#f8f8f8'; for(let a=0;a<6;a++){ const r=4+k*10; g.fillRect(x0+14+Math.round(Math.cos(a*1.05)*r), y0+44+Math.round(Math.sin(a*1.05)*r*0.4), 2, 1); } }
     if (seat && seat.dunk){ const dp=dunkDepth(); dunkClip(sy-21, ()=>g.drawImage(sprite(o.c, dir, fr, pose, WR), x0+jit, y0-gulp+dp)); if (dp>0) dunkSplash(sx, sy-21, t); }
+    else if (seat && seat.bed){ const B2=seat.bed, [bx,by]=P(B2.cx+B2.hx*0.12, B2.cy+B2.hy*0.12, 15); const X=Math.round(bx), Y=Math.round(by);   // lying down: the llama on its side, head on the pillow
+      g.save(); g.translate(X, Y); g.rotate(B2.headLeft ? -Math.PI/2 : Math.PI/2); g.drawImage(sprite(o.c, B2.headLeft?'fr':'fl', 0, 'stand', WR), -14, -23); g.restore();
+      if (!o.leaving) llamaHits.push({id: isMe?null:o.id, x0:X-23, x1:X+23, y0:Y-14, y1:Y+14});
+      if (Math.floor(t*0.8)%3===0){ g.fillStyle='#e8ecff'; pfDraw(g,'z',X+(B2.headLeft?-22:18),Y-20-Math.floor(t*2)%3,'#e8ecff',1); }
+      return [X, Y-16]; }
     else g.drawImage(sprite(o.c, dir, fr, pose, WR), x0+jit, y0-gulp); }
   if (jit){ g.fillStyle='#a8e0f8'; g.fillRect(x0+22,y0+6,2,3); g.fillStyle='#f8f8f8'; g.fillRect(x0+22,y0+6,1,1); }
   if (!o.leaving) llamaHits.push({id: isMe?null:o.id, x0:x0+4, x1:x0+24, y0:y0, y1:y0+46});
@@ -3892,7 +3907,7 @@ function render(t){
   if (joined) items.push({d: me.x+me.y+0.02, l: me, me:true});
   // someone sitting in a chair or couch whose back or arm is on the camera side: draw those parts again over them
   if (isP(curRoom)){ const sitters=[]; if (joined && me.p==='sit') sitters.push([me.gx,me.gy,me.x+me.y+0.02]); for (const o of others.values()) if (sameRoom(o) && o.p==='sit') sitters.push([Math.floor(o.x),Math.floor(o.y),o.x+o.y+0.01]);
-    for (const [sx2,sy2,d] of sitters){ const f=FURN.find(q=>q.fid && (q.t==='couch'||q.t==='armchair'||q.t==='chair') && furnTiles(q.item,q.gx,q.gy,q.rot).some(([x,y])=>x===sx2&&y===sy2)); if (f){ const su=furnTiles(f.item,f.gx,f.gy,f.rot).findIndex(([x,y])=>x===sx2&&y===sy2); items.push({d:d+0.005, f:{...f, part:'front', su}}); } } }
+    for (const [sx2,sy2,d] of sitters){ const f=FURN.find(q=>q.fid && (q.t==='couch'||q.t==='armchair'||q.t==='chair'||q.t==='bed') && furnTiles(q.item,q.gx,q.gy,q.rot).some(([x,y])=>x===sx2&&y===sy2)); if (f){ const su=furnTiles(f.item,f.gx,f.gy,f.rot).findIndex(([x,y])=>x===sx2&&y===sy2); items.push({d:d+0.005, f:{...f, part:'front', su}}); } } }
   for (const o of others.values()) if (sameRoom(o)) items.push({d: o.x+o.y+0.01, l: o});
   items.sort((a,b)=>a.d-b.d);
   overlayItems.length = 0; llamaHits.length = 0; cupHits.length = 0; itemHits.length = 0; vendHit = null; pvHits.length = 0;
@@ -5135,22 +5150,23 @@ function prFits(item, gx, gy, rot, skip){ const D=FURN_DEF[item]; if (!D) return
 // how tall each piece looks (game pixels), so a new piece hangs centred on the pointer instead of standing on it
 const FURN_VH={chair:26,armchair:24,couch:24,sofa:24,loveseat:24,bed:20,bookshelf:38,tv:30,bigtv:40,plant:30,lamp:30,table:16,vending:46,vendrink:46,snackvend:46,adminsign:0};
 function prWallTile(lx){ const u=(lx-OX)/(TW/2); return u>=0 ? [Math.max(0,Math.min(N-1,Math.floor(u))), 0] : [0, Math.max(1,Math.min(8,Math.floor(-u)))]; }   // right wall, or left wall (above the door is off limits)
-function prCentreTile(item, rot, clientX, clientY){ if ((FURN_DEF[item]||{}).wall) return prWallTile(clientX/S); const vh=FURN_VH[item]!==undefined ? FURN_VH[item] : 16;
+// base=true: the pointer marks the piece's bottom (moving a piece); otherwise the piece hangs centred on the pointer (bringing in a new one).
+// Either way the spot is kept inside the room, so pulling a piece past a wall leaves it right up against that wall.
+function prCentreTile(item, rot, clientX, clientY, base){ if ((FURN_DEF[item]||{}).wall) return prWallTile(clientX/S); const vh=base ? 0 : (FURN_VH[item]!==undefined ? FURN_VH[item] : 16);
   const wx=clientX/S-OX, wy=clientY/S-OY+vh/2, fx=(wx/(TW/2)+wy/(TH/2))/2, fy=(wy/(TH/2)-wx/(TW/2))/2;
   const t=furnTiles(item,0,0,rot), w=Math.max(...t.map(q=>q[0]))+1, d=Math.max(...t.map(q=>q[1]))+1;   // footprint, centred on the pointer too
-  return [Math.floor(fx-(w-1)/2), Math.floor(fy-(d-1)/2)]; }
+  return [Math.max(0, Math.min(N-w, Math.floor(fx-(w-1)/2))), Math.max(0, Math.min(NY-d, Math.floor(fy-(d-1)/2)))]; }
 function prDragAim(e){ const bar=$id('editbar').getBoundingClientRect();
   if (e.clientY>=bar.top-4 && e.clientX>=bar.left && e.clientX<=bar.right){ PDR.gx=null; return; }   // over the bar: dropping here cancels
-  if (PDR.fid && (FURN_DEF[PDR.item]||{}).wall) [PDR.gx,PDR.gy]=prWallTile(e.clientX/S);
-  else if (PDR.fid){ const [tx,ty]=toGrid(e.clientX, e.clientY); PDR.gx=tx-PDR.ox; PDR.gy=ty-PDR.oy; }   // moving a piece: it stays where you grabbed it
-  else [PDR.gx,PDR.gy]=prCentreTile(PDR.item, PDR.rot, e.clientX, e.clientY); PDR.ok=prFits(PDR.item, PDR.gx, PDR.gy, PDR.rot, PDR.fid); }
+  PDR.px=e.clientX/S; PDR.py=e.clientY/S;
+  [PDR.gx,PDR.gy]=prCentreTile(PDR.item, PDR.rot, e.clientX, e.clientY, !!PDR.fid); PDR.ok=prFits(PDR.item, PDR.gx, PDR.gy, PDR.rot, PDR.fid); }
 addEventListener('pointermove', e=>{
   if (PDR.armed && e.pointerId===PDR.id){ if (!PDR.on){ const dx=e.clientX-PDR.sx, dy=e.clientY-PDR.sy;
       // from the bar, a sideways swipe still scrolls the bar; pull up (or press a piece and move) to start dragging
       if (PDR.fromBar ? (dy<-14 && Math.abs(dy)>Math.abs(dx)) : Math.hypot(dx,dy)>8){ PDR.on=true; if (!PRED.on && prInMine()) prEditStart(); PRED.piece=null; PRED.item=null; prEditBar(); } }
     if (PDR.on){ prDragAim(e); e.preventDefault(); } return; }
   // mouse hover with an item picked: show where a tap would put it
-  if (PRED.on && PRED.item && e.pointerType==='mouse' && e.target===cv){ const [tx,ty]=prCentreTile(PRED.item, 0, e.clientX, e.clientY); PDR.hgx=tx; PDR.hgy=ty; } else PDR.hgx=null;
+  if (PRED.on && PRED.item && e.pointerType==='mouse' && e.target===cv){ const [tx,ty]=prCentreTile(PRED.item, 0, e.clientX, e.clientY); PDR.hgx=tx; PDR.hgy=ty; PDR.px=e.clientX/S; PDR.py=e.clientY/S; } else PDR.hgx=null;
 }, {passive:false});
 function prDragEnd(e, cancel){ if (!PDR.armed || e.pointerId!==PDR.id) return; clearTimeout(PDR.lp); const was=PDR.on; PDR.armed=false; PDR.on=false;
   if (!was){ if (PDR.auto){ if (!cancel){ if (PDR.tapHit) prTapPiece(PDR.tapHit); else prTapWalk(PDR.tapGx, PDR.tapGy); } return; } if (PDR.fid && !cancel){ PRED.piece={fid:PDR.fid, item:PDR.item, gx:PDR.tapGx, gy:PDR.tapGy}; PRED.item=null; prEditBar(); } return; }   // just a tap: select it as before
@@ -5171,7 +5187,8 @@ function prGhost(t){ if (!PRED.on) return; let item, gx, gy, rot, ok;
   const c=g.canvas; if (ghostCv.width!==c.width || ghostCv.height!==c.height){ ghostCv.width=c.width; ghostCv.height=c.height; }
   const gc=ghostCv.getContext('2d'); gc.setTransform(1,0,0,1,0,0); gc.clearRect(0,0,ghostCv.width,ghostCv.height); gc.setTransform(g.getTransform()); gc.imageSmoothingEnabled=false;
   const sg=g; try { g=gc; drawFurn({...D.mk(rot), gx, gy}, t); } finally { g=sg; }
-  g.save(); g.setTransform(1,0,0,1,0,0); g.globalAlpha=ok?0.55:0.4; g.drawImage(ghostCv,0,0); g.restore(); }
+  g.save(); g.setTransform(1,0,0,1,0,0); g.globalAlpha=D.wall ? 0.3 : (ok?0.55:0.4); g.drawImage(ghostCv,0,0); g.restore();
+  if (D.wall && adminSignCv && PDR.px!=null){ const W=adminSignCv.width, H=adminSignCv.height; g.globalAlpha=ok?0.8:0.5; g.drawImage(adminSignCv, Math.round(PDR.px-W/2), Math.round(PDR.py-H/2)); g.globalAlpha=1; } }
 $id('editbar').addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; ensureAudio(); if (PDR.noClick && performance.now()-PDR.noClick<400) return;
   if (b.id==='eb_done'){ prEditStop(); localMsg('Room saved.'); return; }
   if (b.dataset.it){ PRED.item = PRED.item===b.dataset.it ? null : b.dataset.it; prEditBar(); return; }
