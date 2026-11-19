@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-22d";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-22e";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -88,7 +88,7 @@ const ITEMS = {
 const PR = { w: 13, h: 12, maxFurn: 60, clear: ["0,10", "1,10", "2,10", "3,10"], knockGap: 20000, letInMs: 3 * 3600e3, nameMax: 24 };
 const PR_WALLS = ["lavender", "cream", "mint", "pink", "night", "wood"], PR_FLOORS = ["wood", "checker", "carpet", "marble", "grass"];
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
-const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30 };
+const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30, rug_persian: 25, rug_round: 15, rug_stripe: 12, rug_shag: 18 };
 // what the store sells right now: one piece per category (the rest stay placeable for anyone who already owns them)
 // vending machines players can put in their rooms, and what each one sells
 const PV_ITEMS = { vending: { soda: 1, juice: 1, shake: 2 }, snackvend: { chips: 1, candy: 1, cookie: 2 } };
@@ -99,10 +99,13 @@ const FURN_SIDEWAYS = new Set(["loveseat", "sofa"]);
 const FURN_VARIANTS = { sofa_gray: "sofa", sofa_green: "sofa", sofa_red: "sofa", loveseat_mustard: "loveseat", loveseat_teal: "loveseat", loveseat_purple: "loveseat",
   armchair_mustard: "armchair", armchair_red: "armchair", armchair_gray: "armchair", bed_blue: "bed", bed_green: "bed", bed_purple: "bed", chair_walnut: "chair", chair_white: "chair", chair_red: "chair" };
 const furnBase = (item) => FURN_VARIANTS[item] || item;   // couches run along their back, so they turn the other way
-const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend"]);
+const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend", "rug_persian", "rug_round", "rug_stripe", "rug_shag"]);
 for (const [k, b] of Object.entries(FURN_VARIANTS)) { FURN_ITEMS[k] = FURN_ITEMS[b]; FURN_SALE.add(k); }   // variants cost the same as their base
 const FURN_STAFF = new Set(["adminsign"]);   // only mods and the owner can buy these
-const FURN_WALL = new Set(["adminsign"]);    // hang on a wall: placed on a tile along a wall, don't take up floor space
+const FURN_WALL = new Set(["adminsign"]);
+const FURN_RUG = new Set(["rug_persian", "rug_round", "rug_stripe", "rug_shag"]);   // lie flat on the floor: walk on them, put furniture on top
+const FURN_DIM = { rug_persian: [3, 2], rug_round: [2, 2], rug_stripe: [3, 1], rug_shag: [2, 2] };   // width x depth (swapped when turned)
+const layerOf = (item) => (FURN_WALL.has(item) ? "wall" : FURN_RUG.has(item) ? "rug" : "floor");    // hang on a wall: placed on a tile along a wall, don't take up floor space
 const prId = (rm) => { const m = /^p:(\d{1,9})$/.exec(String(rm || "")); return m ? +m[1] : 0; };
 const cleanRoomName = (n) => String(n || "").replace(/[^A-Za-z0-9 '!?&.,:-]/g, "").replace(/\s+/g, " ").trim().slice(0, PR.nameMax);
 const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
@@ -717,15 +720,16 @@ export class Lounge extends DurableObject {
   async prOwnRoomHere(a) {   // editing: only the owner, standing in their own room
     const r = await this.prMine(a); if (!r) return null; if (!a.pres || a.pres.rm !== "p:" + r.id) return null; return r; }
   // tiles a piece covers: the bed is two long (along x for rot 0/2, along y for rot 1/3); everything else is one tile
-  furnTiles(item, gx, gy, rot) { const bi = furnBase(item), n = FURN_SIZE[bi] || 1, alongY = FURN_SIDEWAYS.has(bi) ? (rot === 0 || rot === 3) : rot % 2 === 1, out = []; for (let k = 0; k < n; k++) out.push(alongY ? [gx, gy + k] : [gx + k, gy]); return out; }
+  furnTiles(item, gx, gy, rot) { if (FURN_DIM[item]) { let [W, D] = FURN_DIM[item]; if (rot % 2) [W, D] = [D, W]; const out = []; for (let i = 0; i < W; i++) for (let j = 0; j < D; j++) out.push([gx + i, gy + j]); return out; }
+    const bi = furnBase(item), n = FURN_SIZE[bi] || 1, alongY = FURN_SIDEWAYS.has(bi) ? (rot === 0 || rot === 3) : rot % 2 === 1, out = []; for (let k = 0; k < n; k++) out.push(alongY ? [gx, gy + k] : [gx + k, gy]); return out; }
   furnFits(item, gx, gy, rot, furn, skipId) {   // null if it fits, otherwise the reason
-    const wall = FURN_WALL.has(item), tiles = this.furnTiles(item, gx, gy, rot);
+    const layer = layerOf(item), wall = layer === "wall", tiles = this.furnTiles(item, gx, gy, rot);
     for (const [x, y] of tiles) {
       if (!(x >= 0 && y >= 0 && x < PR.w && y < PR.h)) return "That doesn't fit there.";
-      if (!wall && PR.clear.includes(x + "," + y)) return "Keep the doorway clear.";
+      if (layer === "floor" && PR.clear.includes(x + "," + y)) return "Keep the doorway clear.";
     }
     for (const f of furn) {
-      if (f.id === skipId || FURN_WALL.has(f.item) !== wall) continue;
+      if (f.id === skipId || layerOf(f.item) !== layer) continue;   // rugs only bump into rugs, wall items into wall items
       const ft = this.furnTiles(f.item, f.gx, f.gy, f.rot);
       if (ft.some(([x, y]) => tiles.some(([u, v]) => u === x && v === y))) return wall ? "Something is already there." : "Something is in the way.";
     }
