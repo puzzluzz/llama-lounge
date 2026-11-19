@@ -46,6 +46,19 @@ Open **MENU > DASHBOARD** (only staff see it) to see who is online, who is muted
 
 Rules the server enforces on every action: staff role is re-read from the database each time (a removed mod loses access instantly), nobody can act on the owner or on themselves, mods can't act on other mods, the owner row can never be changed by a command, staff actions are limited to 20 a minute, and every action is written to the staff log.
 
+## Credits and licenses
+
+Everything in the game is original to this project or openly licensed:
+
+- **Art:** all rooms, llamas, furniture, signs, cards, slots and icons are pixel art drawn in code in `public/index.html`. No outside sprites or image packs.
+- **Shirt pictures and logo:** product photos and the La Llama PIC logo from llamalifematters.com, owned by the store.
+- **Music:** the three jukebox songs (Lounge Groove, Hayloft Hop, Funky Hooves) are original note patterns played by a tiny synthesizer in the browser. No recordings or samples.
+- **Sound effects:** spit, splat, crunch and game sounds are synthesized in code. No recordings.
+- **Fonts:** [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) and [Inter](https://fonts.google.com/specimen/Inter), both under the SIL Open Font License, loaded from Google Fonts.
+- **Emoji** in menus are drawn by each player's own device.
+
+If you add anything later (music, images, fonts), use your own work or something with a license that allows commercial use, and note it here.
+
 ## Security
 
 - **Passwords:** never stored. The server keeps only a salted PBKDF2-SHA256 hash (100,000 rounds).

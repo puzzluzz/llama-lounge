@@ -357,6 +357,15 @@
     #shopimg{width:140px;height:140px}
     #tbox{max-width:calc(100% - 16px);font-size:14px}
   }
+  #sndbox{display:none;top:calc(64px + var(--sat));right:calc(10px + env(safe-area-inset-right,0px));width:300px;max-width:calc(100% - 20px)}
+  #sndbox .slt{color:var(--ink);margin-bottom:10px}
+  .vrow{display:grid;grid-template-columns:96px 1fr 44px;align-items:center;gap:10px;margin:14px 0;font-size:13px;font-weight:800;letter-spacing:.03em}
+  .vrow b{text-align:right;font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums}
+  .vrow input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:999px;margin:0;outline:none;cursor:pointer;
+     background:linear-gradient(90deg,var(--pink) 0 var(--f,50%),#e8e3f2 var(--f,50%) 100%)}
+  .vrow input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:0;box-shadow:0 2px 8px rgba(0,0,0,.3),0 0 0 2px var(--pink)}
+  .vrow input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#fff;border:0;box-shadow:0 2px 8px rgba(0,0,0,.3),0 0 0 2px var(--pink)}
+  #sndbox .srow{display:flex;justify-content:center;margin-top:6px}
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
   @media (max-height:520px) and (min-width:641px){ #dock{bottom:6px;padding:6px} .pbtn{height:38px} #chatin{height:38px} #saybtn{width:30px;height:30px} }
 </style>
@@ -406,6 +415,10 @@
     <div class="slbet" id="sl_bet"><span>BET</span><button class="gbbtn" data-bet="1">1</button><button class="gbbtn" data-bet="2">2</button><button class="gbbtn" data-bet="5">5</button><button class="gbbtn" data-bet="10">10</button></div>
     <div class="srow"><button class="gbbtn y" id="sl_spin">SPIN ▶</button><button class="gbbtn" id="sl_close">CLOSE</button></div>
     <canvas id="slpaycv" width="130" height="40"></canvas><div id="sl_tok"></div></div>
+  <div id="sndbox" class="gb sheet"><div class="slt">🔊 SOUND</div>
+    <label class="vrow"><span>🎵 MUSIC</span><input type="range" id="mvol" min="0" max="100" step="1" aria-label="Music volume"><b id="mvol_n"></b></label>
+    <label class="vrow"><span>💦 EFFECTS</span><input type="range" id="svol" min="0" max="100" step="1" aria-label="Sound effects volume"><b id="svol_n"></b></label>
+    <div class="srow"><button class="gbbtn" id="mmute">MUTE MUSIC</button><button class="gbbtn" id="snd_close">DONE</button></div></div>
   <div id="dashbox" class="gb sheet"><div class="slt" id="ds_title">STAFF DASHBOARD</div><div id="ds_body"></div><div class="srow"><button class="gbbtn" id="ds_refresh">REFRESH</button><button class="gbbtn" id="ds_close">CLOSE</button></div></div>
   <div id="tblbox" class="gb sheet"><div class="slt" id="tb_title"></div><canvas id="tbcv" width="150" height="66"></canvas><div id="tb_msg"></div>
     <div class="tbopts" id="tb_opts"></div>
@@ -455,7 +468,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19a";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19b";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1684,7 +1697,7 @@ const FOOD_PX = {   // held snacks, bottom row sits in the hoof; bites come off 
   pie:['K.......','KFK.....','KFFKK...','KFFFFKK.','KFFFFFFK','KBBBBBBK','.KKKKKK.'] };
 const FOOD_PAL = {K:'#181020',T:'#e8d0a0',C:'#d89838',R:'#d82838',W:'#f8a0a0',Y:'#f8d030',y:'#d8a818',G:'#58a840',F:'#e8c070',B:'#c88a50'};
 const EMOTES = ['heart','bang','huh','note','lol','zzz','wave','flex','palm'];
-const SONGS = ['LOUNGE GROOVE','HAY DAY','FUNKY HOOVES'];
+const SONGS = ['LOUNGE GROOVE','HAYLOFT HOP','FUNKY HOOVES'];
 
 function dirFrom(dx,dy,prev){ const sx=dx-dy, sy=dx+dy; const v = sy>0?'f':sy<0?'b':prev[0]; const s = sx>0?'r':sx<0?'l':prev[1]; return v+s; }
 const WALK_PX = 46; // screen pixels per second: one steady pace in every direction
@@ -1845,13 +1858,16 @@ const lamp = { on: true, ts: 0 };
 const lampOn = () => lamp.on;
 function toggleLamp(){ lamp.on=!lamp.on; lamp.ts=Date.now(); sendPresence(true); }
 const jukeOn = () => juke.s>=0 && juke.s<SONGS.length;
-let musicOn = store.music!==false;
+// volumes 0-100, saved on this device. Older saves that turned music off start at 0.
+let mvol = Number.isFinite(+store.mvol) ? Math.max(0,Math.min(100,+store.mvol)) : (store.music===false ? 0 : 60);
+let svol = Number.isFinite(+store.svol) ? Math.max(0,Math.min(100,+store.svol)) : 80;
+let musicOn = mvol > 0;
 function nextSong(){ juke.s = juke.s>=SONGS.length-1 ? -1 : juke.s+1; juke.ts = Date.now(); songChanged(true); }
 function songChanged(mine, who){ restartSong(); if (jukeOn()) localMsg(`${mine?'You':who} played ♪ ${SONGS[juke.s]}!`); else localMsg(`${mine?'You':who} turned the jukebox off.`); }
-let actx=null, master=null, noiseBuf=null, nextTime=0, stepIdx=0;
+let actx=null, master=null, sfxBus=null, noiseBuf=null, nextTime=0, stepIdx=0;
 function ensureAudio(){
   try {
-    if (!actx){ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; actx=new AC(); master=actx.createGain(); master.gain.value=0.05; master.connect(actx.destination);
+    if (!actx){ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; actx=new AC(); master=actx.createGain(); master.connect(actx.destination); sfxBus=actx.createGain(); sfxBus.connect(actx.destination); applyVolumes();
       noiseBuf=actx.createBuffer(1, actx.sampleRate*0.1, actx.sampleRate); const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; }
     if (actx.state==='suspended') actx.resume().catch(()=>{});
   } catch(e){}
@@ -1865,8 +1881,23 @@ const SONG_DATA = [
     bass:[45,0,45,57,0,45,55,0, 43,0,43,55,0,43,53,0, 41,0,41,53,0,41,52,0, 40,0,40,52,0,47,52,0], kick:[0,6,8,14,16,22,24,30], hat:1 },
 ];
 const mtof = m => 440*Math.pow(2,(m-69)/12);
-function tone(type,freq,t,dur,vol){ const o=actx.createOscillator(), gn=actx.createGain(); o.type=type; o.frequency.value=freq; gn.gain.setValueAtTime(vol,t); gn.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(gn); gn.connect(master); o.start(t); o.stop(t+dur+0.02); }
-function noise(t,dur,vol,hp){ const s=actx.createBufferSource(); s.buffer=noiseBuf; const f=actx.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp; const gn=actx.createGain(); gn.gain.setValueAtTime(vol,t); gn.gain.exponentialRampToValueAtTime(0.0001,t+dur); s.connect(f); f.connect(gn); gn.connect(master); s.start(t); s.stop(t+dur+0.02); }
+// master = music bus, sfxBus = sound effects. Curves feel even across the slider.
+function applyVolumes(){ if (!actx) return; const m=(mvol/100)**2*0.07, f=(svol/100)**2*0.12; master.gain.setTargetAtTime(m, actx.currentTime, 0.03); sfxBus.gain.setTargetAtTime(f, actx.currentTime, 0.03); }
+function tone(type,freq,t,dur,vol,bus){ const o=actx.createOscillator(), gn=actx.createGain(); o.type=type; o.frequency.value=freq; gn.gain.setValueAtTime(vol,t); gn.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(gn); gn.connect(bus||master); o.start(t); o.stop(t+dur+0.02); }
+function noise(t,dur,vol,hp,bus){ const s=actx.createBufferSource(); s.buffer=noiseBuf; const f=actx.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp; const gn=actx.createGain(); gn.gain.setValueAtTime(vol,t); gn.gain.exponentialRampToValueAtTime(0.0001,t+dur); s.connect(f); f.connect(gn); gn.connect(bus||master); s.start(t); s.stop(t+dur+0.02); }
+// ---- sound effects (made in code, nothing recorded) ----
+function sfxReady(){ ensureAudio(); return actx && actx.state==='running' && svol>0; }
+function wetNoise(t, dur, vol, type, f0, f1, q){ const s=actx.createBufferSource(); s.buffer=noiseBuf; const f=actx.createBiquadFilter(); f.type=type; f.Q.value=q||1;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur); const gn=actx.createGain(); gn.gain.setValueAtTime(0.0001,t); gn.gain.exponentialRampToValueAtTime(vol,t+0.012); gn.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  s.connect(f); f.connect(gn); gn.connect(sfxBus); s.start(t); s.stop(t+dur+0.02); }
+function pop(t, f0, f1, dur, vol){ const o=actx.createOscillator(), gn=actx.createGain(); o.type='sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  gn.gain.setValueAtTime(vol,t); gn.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(gn); gn.connect(sfxBus); o.start(t); o.stop(t+dur+0.02); }
+// "ptoo": a lip pop and a wet hiss. scale is 1 for your own spit and quieter for other llamas.
+function sfxSpit(scale){ try { if (!sfxReady()) return; const t=actx.currentTime+0.01, v=scale;
+  pop(t, 420, 140, 0.07, 0.9*v); wetNoise(t+0.015, 0.16, 0.8*v, 'bandpass', 3200, 900, 1.4); wetNoise(t+0.03, 0.1, 0.35*v, 'highpass', 5000, 3000); } catch(e){} }
+// the splat when it lands
+function sfxSplat(scale){ try { if (!sfxReady()) return; const t=actx.currentTime+0.005, v=scale;
+  wetNoise(t, 0.2, 0.9*v, 'lowpass', 1600, 300, 0.8); pop(t, 200, 70, 0.12, 0.6*v); wetNoise(t+0.04, 0.12, 0.3*v, 'bandpass', 2400, 1200, 2); } catch(e){} }
 function restartSong(){ if(actx){ nextTime=actx.currentTime+0.08; stepIdx=0; } }
 function scheduleMusic(){
   if (!actx || !musicOn || !jukeOn() || !joined || actx.state!=='running') return;
@@ -1876,15 +1907,27 @@ function scheduleMusic(){
     const i=stepIdx%32;
     if (sd.lead[i]) tone('square', mtof(sd.lead[i]), nextTime, st*1.8, 0.5);
     if (sd.bass[i]) tone('triangle', mtof(sd.bass[i]), nextTime, st*2.2, 0.9);
-    if (sd.kick.includes(i)) { const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.setValueAtTime(150,nextTime); o.frequency.exponentialRampToValueAtTime(40,nextTime+0.12); gn.gain.setValueAtTime(0.9,nextTime); gn.gain.exponentialRampToValueAtTime(0.0001,nextTime+0.14); o.connect(gn); gn.connect(master); o.start(nextTime); o.stop(nextTime+0.16); }
-    if (i%sd.hat===0) noise(nextTime, 0.04, 0.25, 7000);
+    if (sd.kick.includes(i)) { const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.setValueAtTime(150,nextTime); o.frequency.exponentialRampToValueAtTime(40,nextTime+0.12); gn.gain.setValueAtTime(0.7,nextTime); gn.gain.exponentialRampToValueAtTime(0.0001,nextTime+0.14); o.connect(gn); gn.connect(master); o.start(nextTime); o.stop(nextTime+0.16); }
+    if (i%sd.hat===0) noise(nextTime, 0.03, i%4===0 ? 0.07 : 0.04, 8500);
     nextTime += st; stepIdx++;
   }
 }
 const musicbtn=document.getElementById('musicbtn');
-function setMusic(on){ musicOn=on; store.music=on; saveStore(); musicbtn.classList.toggle('off', !on); musicbtn.title = on ? 'Music on' : 'Music off'; if(on){ ensureAudio(); restartSong(); } }
-musicbtn.addEventListener('click', ()=>setMusic(!musicOn));
-setMusic(musicOn);
+const sndEl=document.getElementById('sndbox'), mvolEl=document.getElementById('mvol'), svolEl=document.getElementById('svol');
+function sndUI(){ mvolEl.value=mvol; svolEl.value=svol; document.getElementById('mvol_n').textContent=mvol+'%'; document.getElementById('svol_n').textContent=svol+'%';
+  mvolEl.style.setProperty('--f', mvol+'%'); svolEl.style.setProperty('--f', svol+'%');
+  musicbtn.classList.toggle('off', mvol===0); musicbtn.title = mvol ? 'Sound' : 'Music off'; document.getElementById('mmute').textContent = mvol ? 'MUTE MUSIC' : 'MUSIC ON'; }
+function setMvol(v, save){ const was=musicOn; mvol=Math.round(v); musicOn=mvol>0; store.mvol=mvol; store.music=musicOn; if (save) saveStore(); applyVolumes(); sndUI(); if (musicOn && !was){ ensureAudio(); restartSong(); } }
+function setSvol(v, save){ svol=Math.round(v); store.svol=svol; if (save) saveStore(); applyVolumes(); sndUI(); }
+function setMusic(on){ setMvol(on ? (store.mlast||60) : 0, true); }
+musicbtn.addEventListener('click', ()=>{ ensureAudio(); if (sndEl.style.display==='block'){ sndEl.style.display='none'; return; } closeAll(); sndUI(); sndEl.style.display='block'; });
+mvolEl.addEventListener('input', ()=>{ ensureAudio(); setMvol(+mvolEl.value, false); });
+mvolEl.addEventListener('change', ()=>{ if (mvol) store.mlast=mvol; saveStore(); });
+svolEl.addEventListener('input', ()=>{ ensureAudio(); setSvol(+svolEl.value, false); });
+svolEl.addEventListener('change', ()=>{ saveStore(); sfxSpit(1); });
+document.getElementById('mmute').addEventListener('click', ()=>{ ensureAudio(); if (mvol){ store.mlast=mvol; setMvol(0,true); } else setMvol(store.mlast||60, true); });
+document.getElementById('snd_close').addEventListener('click', ()=>{ sndEl.style.display='none'; });
+sndUI();
 
 // ======================= ARCADE (game selector + 2 games) =======================
 const GAMES = [ {id:'hay', name:'HAY CATCH', blurb:'CATCH HAY, DODGE POOP'}, {id:'dash', name:'LLAMA DASH', blurb:'JUMP THE FENCES'} ];
@@ -2295,12 +2338,12 @@ function openLogo(){ closeAll(); shopImgEl.src=LOGO.src; shopImgEl.style.backgro
 document.getElementById('shopclose').addEventListener('click', ()=>closeAll());
 const menu=document.getElementById('menu'), emenu=document.getElementById('emenu'), logbox=document.getElementById('logbox'), pick=document.getElementById('pick');
 let curMenu=null, menuIdx=0;
-function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || (typeof tblEl!=='undefined' && tblEl.style.display==='block') || (typeof dashEl!=='undefined' && dashEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
+function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || (typeof tblEl!=='undefined' && tblEl.style.display==='block') || (typeof dashEl!=='undefined' && dashEl.style.display==='block') || (typeof sndEl!=='undefined' && sndEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
 function items(m){ return [...m.children]; }
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
   const a=el.dataset.a;
@@ -2904,7 +2947,8 @@ function launchSpit(from, to, dir){
   const [fx,fy]=llamaWorld(from); const fdir=dir||from.d||'fr';
   const mouthX = fx + ((fdir==='fr'||fdir==='br')?6:-6), mouthY=fy+19;
   let tx,ty; if (to){ const [ax,ay]=llamaWorld(to); tx=ax; ty=ay+12; } else { const dx=(fdir==='fr'||fdir==='br')?1:-1, dy=fdir[0]==='f'?1:-1; tx=mouthX+dx*40; ty=mouthY+dy*20+10; }
-  spits.push({x0:mouthX,y0:mouthY,x1:tx,y1:ty,t:0,dur:0.45,to});
+  const vol = from===me ? 1 : 0.35; sfxSpit(vol);
+  spits.push({x0:mouthX,y0:mouthY,x1:tx,y1:ty,t:0,dur:0.45,to,vol});
 }
 function spitAt(id){
   const tgt=others.get(id); if(!tgt||!joined) return;
@@ -2921,7 +2965,7 @@ function drawSpits(t){
   for (let i=spits.length-1;i>=0;i--){ const p=spits[i]; p.t+=dt;
     const u=Math.min(1,p.t/p.dur); const x=p.x0+(p.x1-p.x0)*u, y=p.y0+(p.y1-p.y0)*u - Math.sin(u*Math.PI)*16;
     if (u<1){ g.fillStyle=INK; g.fillRect(OX+Math.round(x)-1,OY+Math.round(y)-1,4,3); g.fillStyle='#c8f0f8'; g.fillRect(OX+Math.round(x),OY+Math.round(y),2,1); }
-    else { if(!p.hit){ p.hit=true; if(p.to) p.to.flinch=performance.now()+700; p.splat=0; }
+    else { if(!p.hit){ p.hit=true; if(p.to){ p.to.flinch=performance.now()+700; sfxSplat(p.to===me ? Math.max(p.vol, 0.8) : p.vol); } p.splat=0; }
       p.splat+=dt; const k=p.splat*30; g.fillStyle='#c8f0f8'; for(let a=0;a<6;a++){ const ang=a*1.05; g.fillRect(OX+Math.round(p.x1+Math.cos(ang)*k),OY+Math.round(p.y1+Math.sin(ang)*k*0.7),2,2); }
       if (p.splat>0.3) spits.splice(i,1); }
   }
@@ -3142,7 +3186,7 @@ function eatApple(k){
   if (!appleReady(k)){ localMsg('Someone already ate that one. It will grow back soon!'); return; }
   appleState[k]={back:Date.now()+APPLE_MS, at:Date.now()};
   face(ap.gx,ap.gy); me.eaK=(me.eaK||0)+1; me.lastEat={k:me.eaK, a:k}; sendPresence(true);
-  localMsg(['CRUNCH! A juicy red apple.','Mmm, sweet and crisp!','Apple a day keeps the vet away!'][me.eaK%3]); try { if (actx && actx.state==='running'){ const t0=actx.currentTime; noise(t0,0.07,0.25,1800); noise(t0+0.09,0.06,0.18,2200); } } catch(_){}
+  localMsg(['CRUNCH! A juicy red apple.','Mmm, sweet and crisp!','Apple a day keeps the vet away!'][me.eaK%3]); try { if (actx && actx.state==='running'){ const t0=actx.currentTime; noise(t0,0.07,0.6,1800,sfxBus); noise(t0+0.09,0.06,0.45,2200,sfxBus); } } catch(_){}
 }
 // ---- market stands in LLAMA ACRES: spend tokens on cider or a snack you carry around (the server charges for it) ----
 const fwEl=document.getElementById('fwbox');
