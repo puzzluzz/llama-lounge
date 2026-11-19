@@ -805,7 +805,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22w";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22x";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -890,7 +890,7 @@ const TEE_PRINTS={ smile:['..aa..','.abba.','.aaaa.','..cc..'], cancelled:['.bbb
   lounge:['gggggg','g.ii.g','g.ii.g','gggggg'], acres:['...jj.','..kk..','.kk...','kk....'], arena:['.g..g.','gg.gg.','.g..g.','......'] };
 const TEE_PC={a:'#d8b07a',b:'#6fd0ff',c:'#1a1626',d:'#d8b07a',e:'#ffb030',f:'#e03048',g:'#ffffff',h:'#1a1626',i:'#f8d030',j:'#4aa04a',k:'#ff8a30'};
 const cleanWear = w => { const o={}; if (w && typeof w==='object') for (const s2 of WEAR_SLOTS){ const k=w[s2]; if (typeof k==='string' && ITEMS[k] && ITEMS[k].s===s2) o[s2]=k; } return o; };
-const wearKey = w => w ? WEAR_SLOTS.map(s2=>w[s2]||'').join(',') : '';
+const wearKey = w => w ? WEAR_SLOTS.map(s2=>w[s2]||'').join(',')+(w.hold?',h':'') : '';
 function buildSprite(cid, dir, frame, pose, wear, only) {
   const W = cleanWear(wear), L = !only;   // only: draw just the worn items (for the store racks and previews)
   const ch = CHARS[cid];
@@ -979,7 +979,7 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
       const tx=Math.round(cx+(front?1.6:-1.6)), ty=Math.round(cy-1); if (front){ put(tx,ty,C[1]); put(tx,ty+1,OUT); }
       for (let x=Math.round(cx-2);x<=Math.round(cx+2);x++){ put(x,Math.round(cy-3),OUT); put(x,Math.round(cy-2.5)+0,CF); }
       put(Math.round(cx-3),Math.round(cy-2.5),OUT); put(Math.round(cx+3),Math.round(cy-2.5),OUT); };
-    glove(5.5,swing); glove(21.5,-swing); }
+    glove(5.5,swing); if (!(wear && wear.hold)) glove(21.5,-swing); }
   // outfit details (a worn shirt covers the character's own outfit)
   if (!L || TEE) {}
   else if (ch.outfit==='furcoat') {
@@ -1296,12 +1296,19 @@ const walkable = (x,y) => x>=0&&y>=0&&x<N&&y<NY&&!BLOCK[y*N+x];
 const DIRS8 = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
 // Seats (chairs, stools, cushions, benches, logs) are only stepped on when you're going to sit there:
 // paths go around them, and fall back to crossing one only if there's no other way.
-function findPath(sx,sy,tx,ty){ return findPath2(sx,sy,tx,ty,true) || findPath2(sx,sy,tx,ty,false); }
-function findPath2(sx,sy,tx,ty,avoidSeats){
+// One llama per tile: where other llamas in this room are standing, or are walking to, can't be where you stop.
+// Paths go around them when they can; squeezing past is allowed only if there's no other way.
+function llamaTiles(){ const occ=new Set(); if (typeof others==='undefined') return occ;
+  for (const o of others.values()){ if (!sameRoom(o) || o.leaving) continue;
+    for (const [x,y] of [[o.x,o.y],[o.tx,o.ty]]) if (Number.isFinite(x)&&Number.isFinite(y)) occ.add(Math.floor(y)*N+Math.floor(x)); }
+  return occ; }
+function findPath(sx,sy,tx,ty){ const occ=llamaTiles(); if (occ.has(ty*N+tx)) return null;
+  return findPath2(sx,sy,tx,ty,true,occ) || findPath2(sx,sy,tx,ty,false,occ) || findPath2(sx,sy,tx,ty,true,null) || findPath2(sx,sy,tx,ty,false,null); }
+function findPath2(sx,sy,tx,ty,avoidSeats,occ){
   if (!walkable(tx,ty)) return null;
   const prev = new Int16Array(N*NY).fill(-1); const s=sy*N+sx, t=ty*N+tx;
   const seat = new Uint8Array(N*NY); if (avoidSeats) for (const st of SEATS) if (st.gx>=0&&st.gy>=0&&st.gx<N&&st.gy<NY) seat[st.gy*N+st.gx]=1;
-  const pass = (x,y) => walkable(x,y) && (!seat[y*N+x] || y*N+x===t);
+  const pass = (x,y) => walkable(x,y) && (!seat[y*N+x] || y*N+x===t) && !(occ && occ.has(y*N+x) && y*N+x!==s);
   const q=[s]; prev[s]=s; let qi=0;
   while (qi<q.length){ const c=q[qi++]; if(c===t) break; const cx=c%N, cy=(c/N)|0;
     for (const [dx,dy] of DIRS8){ const nx=cx+dx, ny=cy+dy; if(!pass(nx,ny)) continue; if(dx&&dy&&(!pass(cx+dx,cy)||!pass(cx,cy+dy))) continue; const n=ny*N+nx; if(prev[n]!==-1) continue; prev[n]=c; q.push(n); } }
@@ -3021,12 +3028,19 @@ const SONGS = ['LOUNGE GROOVE','HAYLOFT HOP','FUNKY HOOVES'];
 function dirFrom(dx,dy,prev){ const sx=dx-dy, sy=dx+dy; const v = sy>0?'f':sy<0?'b':prev[0]; const s = sx>0?'r':sx<0?'l':prev[1]; return v+s; }
 const WALK_PX = 46; // screen pixels per second: one steady pace in every direction
 const stepLen = (dx,dy) => Math.hypot((dx-dy)*TW/2, (dx+dy)*TH/2);
-function startStep(){ if (me.fish) stopFish(true); me.from=[me.gx,me.gy]; me.to=me.path[0]; me.stepT = Math.max(0.2, stepLen(me.to[0]-me.gx, me.to[1]-me.gy)/(WALK_PX*(ndEmpty()?0.6:1))); me.d=dirFrom(me.to[0]-me.gx, me.to[1]-me.gy, me.d); me.moving=true; me.p=me.bar?'bar':'stand'; sendPresence(); }
+function startStep(){ if (me.fish) stopFish(true);
+  { const nx=me.path[0], occ=llamaTiles(); if (nx && occ.has(nx[1]*N+nx[0])){ const end=me.path[me.path.length-1];   // someone stepped into the way
+      const p2 = (end[0]===nx[0]&&end[1]===nx[1]) ? null : findPath(me.gx,me.gy,end[0],end[1]);
+      if (p2 && p2.length && !occ.has(p2[0][1]*N+p2[0][0])) me.path=p2; else { me.path=[]; me.moving=false; me.x=me.gx+0.5; me.y=me.gy+0.5; me.pending=null; sendPresence(); return; } } } me.from=[me.gx,me.gy]; me.to=me.path[0]; me.stepT = Math.max(0.2, stepLen(me.to[0]-me.gx, me.to[1]-me.gy)/(WALK_PX*(ndEmpty()?0.6:1))); me.d=dirFrom(me.to[0]-me.gx, me.to[1]-me.gy, me.d); me.moving=true; me.p=me.bar?'bar':'stand'; sendPresence(); }
 function walkTo(tx,ty,pending){
   if (me.bar){ leaveBar(tx,ty,pending); return true; }
   me.pending = pending||null;
   if (me.moving){ const rest=findPath(me.to[0],me.to[1],tx,ty); if(!rest) return false; me.path=[me.path[0],...rest]; return true; }
   if (me.gx===tx && me.gy===ty){ arrive(); return true; }
+  { const occ=llamaTiles(); if (occ.has(ty*N+tx) && !seatAt(tx,ty)){ let best=null, bd=1e9;   // someone's standing there: stop right next to them instead
+      for (let r=1;r<=3 && !best;r++) for (let dx=-r;dx<=r;dx++) for (let dy=-r;dy<=r;dy++){ const x=tx+dx, y=ty+dy; if (Math.max(Math.abs(dx),Math.abs(dy))!==r || !walkable(x,y) || seatAt(x,y) || occ.has(y*N+x)) continue;
+        const d=Math.hypot(dx,dy)*10+Math.hypot(x-me.gx,y-me.gy); if (d<bd){ bd=d; best=[x,y]; } }
+      if (!best) return false; if (best[0]===me.gx && best[1]===me.gy){ arrive(); return true; } tx=best[0]; ty=best[1]; } }
   const p=findPath(me.gx,me.gy,tx,ty); if(!p||!p.length) return false; me.path=p; me.prog=0; startStep(); return true;
 }
 const onDance = () => DANCE.has(me.gy*N+me.gx);
@@ -3049,7 +3063,7 @@ function keyStep(){
   if (keys.has('up')){ dx-=1; dy-=1; } if (keys.has('down')){ dx+=1; dy+=1; }
   if (keys.has('left')){ dx-=1; dy+=1; } if (keys.has('right')){ dx+=1; dy-=1; }
   dx=Math.sign(dx); dy=Math.sign(dy); if(!dx&&!dy) return false;
-  const tryStep=(a,b)=>{ const nx=me.gx+a, ny=me.gy+b; if(!walkable(nx,ny)) return false; if(a&&b&&(!walkable(me.gx+a,me.gy)||!walkable(me.gx,me.gy+b))) return false; me.path=[[nx,ny]]; me.prog=0; startStep(); return true; };
+  const occ=llamaTiles(); const tryStep=(a,b)=>{ const nx=me.gx+a, ny=me.gy+b; if(!walkable(nx,ny) || occ.has(ny*N+nx)) return false; if(a&&b&&(!walkable(me.gx+a,me.gy)||!walkable(me.gx,me.gy+b))) return false; me.path=[[nx,ny]]; me.prog=0; startStep(); return true; };
   if (tryStep(dx,dy) || (dx&&dy&&(tryStep(dx,0)||tryStep(0,dy)))) return true;
   const nd = dirFrom(dx,dy,me.d); if (nd!==me.d && me.p!=='sit'){ me.d=nd; sendPresence(); }
   return false;
@@ -3925,7 +3939,8 @@ function drawBottle(o, x0, y0, oy, dir, walking, t){
   }
 }
 function drawLlama(o, t, isMe){
-  const WR = isMe ? me.w : o.w;   // what they're wearing
+  let WR = isMe ? me.w : o.w;   // what they're wearing
+  if (WR && WR.hands && o.p!=='bar' && (isMe ? me.h : o.h)) WR = {...WR, hold:1};   // holding food or a drink: that glove rides on the lifting hoof instead
   const [sx0,sy0] = P(o.x,o.y); const sx=Math.round(sx0), sy=Math.round(sy0);
   const seat = (o.p==='sit') ? seatAt(Math.floor(o.x),Math.floor(o.y)) : null;
   const lift = seat ? seat.lift : 0;
@@ -5611,9 +5626,14 @@ const FURN_SWITCH=new Set(['tv','bigtv','lamp','floorlamp','lavalamp','boombox']
 function prTapPiece(hit){ if ((FURN_DEF[hit.f.item]||{}).wall) return; if ((FURN_DEF[hit.f.item]||{}).rug){ prTapWalk(hit.tx, hit.ty); return; }
   if (FURN_SWITCH.has(hit.f.item)){ const f=hit.f; f.off=!f.off; try{ ensureAudio(); if (actx){ const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.value=f.off?320:640; gn.gain.value=0.05*(svol/100); o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime+0.05); } }catch(_){}
     NET.act('pr_toggle',{fid:f.fid}).then(r=>{ if (!r.ok){ f.off=!f.off; localMsg(r.msg||'That switch is stuck.'); } }); return; } const f=hit.f, tl=furnTiles(f.item,f.gx,f.gy,f.rot);
-  const seats=SEATS.filter(q=>tl.some(([x,y])=>x===q.gx&&y===q.gy)); if (seats.length){ const free=seats.filter(q=>!seatTaken(q.gx,q.gy)); if (!free.length){ localMsg("Someone's already sitting there."); return; } const q=free.find(q=>q.gx===hit.tx&&q.gy===hit.ty) || free[0]; walkTo(q.gx,q.gy); return; }
+  const seats=SEATS.filter(q=>tl.some(([x,y])=>x===q.gx&&y===q.gy)); if (seats.length){ const free=seats.filter(q=>!seatTaken(q.gx,q.gy)); if (!free.length){ localMsg("Someone's already sitting there."); return; } const q=free.find(q=>q.gx===hit.tx&&q.gy===hit.ty) || free[0]; walkToSeatIn(q, tl); return; }
   const near=[]; for (const [x,y] of tl) for (const [dx,dy] of [[0,1],[1,0],[-1,0],[0,-1]]){ const a=x+dx, b=y+dy; if (a>=0&&b>=0&&a<N&&b<NY&&walkable(a,b)&&!seatAt(a,b)) near.push([a,b]); }
   near.sort((p,q)=>Math.hypot(p[0]-me.gx,p[1]-me.gy)-Math.hypot(q[0]-me.gx,q[1]-me.gy)); if (near.length) walkTo(near[0][0],near[0][1]); }
+/* walk to a seat; if it's boxed in (a bed's pillow end against a wall, a lamp and a plant), climb in over the piece itself */
+function walkToSeatIn(q, tl){ if (walkTo(q.gx,q.gy)) return true;
+  const saved=tl.map(([x,y])=>[x,y,BLOCK[y*N+x]]); for (const [x,y] of tl) if (x>=0&&y>=0&&x<N&&y<NY) BLOCK[y*N+x]=0;
+  let ok=false; try { ok=walkTo(q.gx,q.gy); } finally { for (const [x,y,v] of saved) if (x>=0&&y>=0&&x<N&&y<NY) BLOCK[y*N+x]=v; }
+  if (!ok) localMsg("Can't get to that spot."); return ok; }
 function prTapWalk(gx,gy){
   if (walkable(gx,gy) && !seatAt(gx,gy)){ walkTo(gx,gy); return; }
   let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } }
