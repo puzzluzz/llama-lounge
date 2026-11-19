@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-21m";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-21n";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -732,6 +732,17 @@ export class Lounge extends DurableObject {
     const nf = await this.prFurn(r.id); this.toRoom("p:" + r.id, { t: "prf", room: r.id, furn: nf });
     return { ok: true, furn: nf, storage: await this.furnStorage(a.uid) };
   }
+  async prMove(a, m) {   // drag a placed piece to another tile (same checks as placing it)
+    const r = await this.prOwnRoomHere(a); if (!r) return { ok: false, msg: "Go into your own room to move furniture." };
+    const id = Math.floor(+m.fid || 0); const f = await this.env.DB.prepare("SELECT * FROM pfurn WHERE id = ? AND room = ?").bind(id, r.id).first(); if (!f) return { ok: false, msg: "That piece is gone." };
+    const gx = Math.floor(+m.gx), gy = Math.floor(+m.gy);
+    if (!(gx >= 0 && gy >= 0 && gx < PR.w && gy < PR.h)) return { ok: false, msg: "That's outside the room." };
+    if (FURN_WALL.has(f.item)) { if (gx !== 0 && gy !== 0) return { ok: false, msg: "Wall items go on a wall." }; if (gx === 0 && gy >= 9) return { ok: false, msg: "That's where the door is." }; }
+    const why = this.furnFits(f.item, gx, gy, f.rot, await this.prFurn(r.id), f.id); if (why) return { ok: false, msg: why };
+    await this.env.DB.prepare("UPDATE pfurn SET gx = ?, gy = ? WHERE id = ?").bind(gx, gy, id).run();
+    const nf = await this.prFurn(r.id); this.toRoom("p:" + r.id, { t: "prf", room: r.id, furn: nf });
+    return { ok: true, furn: nf, storage: await this.furnStorage(a.uid) };
+  }
   async prEditPiece(a, m, what) {
     const r = await this.prOwnRoomHere(a); if (!r) return { ok: false, msg: "Go into your own room to change furniture." };
     const id = Math.floor(+m.fid || 0); const f = await this.env.DB.prepare("SELECT * FROM pfurn WHERE id = ? AND room = ?").bind(id, r.id).first(); if (!f) return { ok: false, msg: "That piece is gone." };
@@ -1075,6 +1086,7 @@ export class Lounge extends DurableObject {
       case "pr_invite": return this.prInvite(a, m);
       case "pr_kick": return this.prKick(a, m);
       case "pr_place": return this.prPlace(a, m);
+      case "pr_move": return this.prMove(a, m);
       case "pr_rot": return this.prEditPiece(a, m, "rot");
       case "pr_pick": return this.prEditPiece(a, m, "pick");
       case "pr_staff": return this.prStaff(a, m);

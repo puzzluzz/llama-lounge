@@ -387,7 +387,8 @@
   body.editing #editbar{display:flex} body.editing #signs{visibility:hidden}
   body.editing #tbox{bottom:calc(var(--dockh) + 100px + var(--sab))!important}
   #eb_items{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;max-width:min(560px,70vw)} #eb_items::-webkit-scrollbar{display:none}
-  #eb_items .ebi{position:relative;flex:none;width:58px;height:58px;border-radius:12px;border:2px solid transparent;background:rgba(255,255,255,.12);cursor:pointer;padding:0} #eb_items .ebi.on{border-color:var(--yel);background:rgba(255,210,63,.18)} #eb_items .ebi:disabled{opacity:.35}
+  #wardbox .wi.drag{cursor:grab;touch-action:pan-y} #wardbox .wi [data-placef]{margin-top:4px;min-height:30px;padding:0 10px;font-size:11px}
+  #eb_items .ebi{touch-action:pan-x;position:relative;flex:none;width:58px;height:58px;border-radius:12px;border:2px solid transparent;background:rgba(255,255,255,.12);cursor:pointer;padding:0} #eb_items .ebi.on{border-color:var(--yel);background:rgba(255,210,63,.18)} #eb_items .ebi:disabled{opacity:.35}
   #eb_items .ebi canvas{width:48px;height:48px;image-rendering:pixelated} #eb_items .ebi i{position:absolute;right:3px;bottom:2px;font:800 11px var(--ui);color:#fff;font-style:normal;text-shadow:0 1px 2px #000}
   #eb_items .fre{color:#fff;font:600 13px var(--ui);padding:0 6px;white-space:nowrap}
   #eb_piece{display:none;gap:6px} #editbar.piece #eb_piece{display:flex} #editbar.piece #eb_items{display:none} #eb_piece .gbbtn,#eb_done{min-height:44px;padding:0 14px;white-space:nowrap}
@@ -757,7 +758,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-21m";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-21n";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -3427,6 +3428,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; };   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
   return [Math.floor((wx/(TW/2) + wy/(TH/2))/2), Math.floor((wy/(TH/2) - wx/(TW/2))/2)];
@@ -3880,9 +3882,10 @@ function render(t){
   items.sort((a,b)=>a.d-b.d);
   overlayItems.length = 0; llamaHits.length = 0; cupHits.length = 0; itemHits.length = 0; vendHit = null;
   for (const it of items){
-    if (it.f){ drawFurn(it.f, t); if (it.f.show) showroomTag(it.f); }
+    if (it.f){ if (PDR.on && PDR.fid && it.f.fid===PDR.fid){ g.globalAlpha=0.25; drawFurn(it.f, t); g.globalAlpha=1; continue; } drawFurn(it.f, t); if (it.f.show) showroomTag(it.f); }
     else { const fa = (!it.me && it.l.leaving) ? Math.max(0, Math.min(1, 1-(performance.now()-it.l.leaving)/LEAVE_T)) : 1; g.globalAlpha=fa; const pos = drawLlama(it.l, t, it.me); g.globalAlpha=1; overlayItems.push({l:it.l, x:pos[0], y:pos[1], me:it.me, balloon:pos[2], fa}); }
   }
+  if (isP(curRoom)) prGhost(t);
   drawSpits(t); drawDunk(t);
   drawFishing(t);
   drawNight(t);
@@ -4645,7 +4648,7 @@ function drawFishing(t){
 
 // ======================= CONTEXT TIPS =======================
 const TIPS = {
-  myroom:'<b>YOUR ROOM</b> Open 🏠 ROOMS > SETTINGS to name it, change the walls and floor, make it private, invite friends, or EDIT FURNITURE.',
+  myroom:'<b>YOUR ROOM</b> Place furniture from 🎒 INVENTORY > ITEMS (drag it in). Open 🏠 ROOMS > SETTINGS to name it, change the walls and floor, make it private or invite friends.',
   counter:'<b>CHECKOUT</b> Press SHOP or tap the counter to see the real La Llama P.I.C. shirts.',
   racks:'<b>CLOTHES</b> Tap anything on the racks or in the glass case to try it on and buy it with tokens. Change outfits any time in MENU > WARDROBE.',
   arcade:'<b>ARCADE</b> Tap the cabinet to play HAY CATCH or LLAMA DASH.',
@@ -4946,7 +4949,7 @@ function wdDraw(){
   let h='';
   if (shop) h+=`<div class="autabs" id="wd_kind"><button type="button" data-k="clothes" class="${WD.kind==='clothes'?'on':''}">👕 CLOTHES</button><button type="button" data-k="furn" class="${WD.kind==='furn'?'on':''}">🛋️ FURNITURE</button></div>`;
   if (shop && WD.kind==='furn'){ const own=k=>{ const r=WD.furn.find(x=>x.item===k); return r?r.n:0; };
-    h+='<div class="fre">Furniture goes into 🎒 INVENTORY > ITEMS. Place it in your own room from 🏠 ROOMS > SETTINGS > EDIT FURNITURE.</div>';
+    h+='<div class="fre">Furniture goes into 🎒 INVENTORY > ITEMS. Take it out of there to place it in your own room.</div>';
     for (const [cat,label] of FURN_CATS){ if (cat==='staff' && !me.st) continue; const ks=Object.keys(FURN_DEF).filter(k=>FURN_DEF[k].cat===cat); if (!ks.length) continue; h+=`<div class="wdh">${label}</div><div class="wdg">`;
     h+=ks.map(k=>`<div class="wi fi" data-f="${k}"><canvas width="48" height="48" data-fk="${k}"></canvas><b>${esc(FURN_DEF[k].n)}</b><small>${FURN_DEF[k].p} 🪙${own(k)?` · <span class="own">YOU HAVE ${own(k)}</span>`:''}</small><button class="gbbtn y" data-buyf="${k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button></div>`).join('')+'</div>'; } }
   else if (WD.tab==='shop'){ for (const s2 of WEAR_SLOTS){ h+=`<div class="wdh">${SLOT_NAMES[s2]}</div><div class="wdg">`+Object.keys(ITEMS).filter(k=>ITEMS[k].s===s2).map(wdCard).join('')+'</div>'; }
@@ -4954,10 +4957,10 @@ function wdDraw(){
     h+='<div class="srow"><button class="gbbtn" id="wd_toinv">🎒 MY INVENTORY</button></div>'; }
   else if (WD.tab==='storage'){ const list=WD.furn.filter(x=>FURN_DEF[x.item]&&x.n>0), inMine=isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine;
     if (!list.length) h='<div class="wdstore"><div class="wdbox">📦</div><b>NO ITEMS YET</b><small>Buy furniture at the 🛍️ LLAMA STORE, then place it in your room.</small></div>';
-    else { const card=x=>`<div class="wi fi"><canvas width="48" height="48" data-fk="${x.item}"></canvas><b>${esc(FURN_DEF[x.item].n)}</b><small class="own">${x.n-x.placed} LEFT${x.placed?` · ${x.placed} PLACED`:''}</small></div>`;
-      h='<div class="fre">Furniture you own. Pieces in your room come back here when you put them away.</div>';
+    else { const card=x=>{ const left=x.n-x.placed; return `<div class="wi fi${inMine&&left>0?' drag':''}" data-pf="${x.item}"><canvas width="48" height="48" data-fk="${x.item}"></canvas><b>${esc(FURN_DEF[x.item].n)}</b><small class="own">${left} LEFT${x.placed?` · ${x.placed} PLACED`:''}</small>${inMine?`<button class="gbbtn y" data-placef="${x.item}" ${left<=0?'disabled':''}>PLACE</button>`:''}</div>`; };
+      h=`<div class="fre">${inMine ? 'Drag a piece into your room, or tap PLACE. Only you can place furniture, and only in your own room.' : 'Furniture you own. You can place it in your own room.'}</div>`;
       for (const [cat,label] of [...FURN_CATS,[null,'📦 OTHER']]){ const ls=list.filter(x=>(FURN_DEF[x.item].cat||null)===cat); if (ls.length) h+=`<div class="wdh">${label}</div><div class="wdg">${ls.map(card).join('')}</div>`; }
-      h+=`<div class="srow"><button class="gbbtn y" id="wd_place">${inMine?'🛋️ PLACE FURNITURE':'🏠 GO TO MY ROOM'}</button></div>`; } }
+      h+=`<div class="srow"><button class="gbbtn y" id="wd_place">${inMine?'🛋️ ARRANGE MY ROOM':'🏠 GO TO MY ROOM'}</button></div>`; } }
   else { const mine=INV.owned.filter(k=>ITEMS[k]);
     if (!mine.length) h='<div class="fre">No clothes yet. Buy some at the 🛍️ LLAMA STORE, then wear them anywhere.</div>';
     h+='<div class="srow"><button class="gbbtn" id="wd_toshop">🛍️ BROWSE THE STORE</button></div>';
@@ -4975,6 +4978,17 @@ $id('wd_body').addEventListener('click', e=>{
   const c=e.target.closest('.wi'); if (!c || c.classList.contains('fi')) return; ensureAudio(); WD.pick = WD.pick===c.dataset.id ? null : c.dataset.id; wdMsg(''); wdDraw(); });
 for (const b of $id('wd_tabs').children) b.addEventListener('click', ()=>{ WD.tab=b.dataset.t; wdDraw(); });
 $id('wd_prev').addEventListener('click', ()=>{ WD.dir=(WD.dir+1)%4; wdPreview(); });
+// inventory ITEMS: PLACE picks the piece in edit mode; pressing a card and pulling it out of the sheet starts a drag into the room
+function prInMine(){ return isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine; }
+function prTakeOut(item){ if (!prInMine()) return; closeAll(); if (!PRED.on) prEditStart(); PRED.item=item; PRED.piece=null; prEditBar(); localMsg(`Tap or drag on the floor to place your ${FURN_DEF[item].n}. Press DONE when you're finished.`); }
+$id('wardbox').addEventListener('click', e=>{ const b=e.target.closest('[data-placef]'); if (!b || b.disabled) return; e.stopPropagation(); ensureAudio(); prTakeOut(b.dataset.placef); });
+$id('wardbox').addEventListener('pointerdown', e=>{ const c=e.target.closest('.wi.drag[data-pf]'); if (!c || e.target.closest('button') || !prInMine()) return;
+  const item=c.dataset.pf; const sx=e.clientX, sy=e.clientY, id=e.pointerId;
+  const mv=ev=>{ if (ev.pointerId!==id) return; const box=$id('wardbox').getBoundingClientRect(); const out = ev.clientX<box.left || ev.clientX>box.right || ev.clientY<box.top || ev.clientY>box.bottom;
+    if (out || Math.hypot(ev.clientX-sx, ev.clientY-sy)>40){ off(); closeAll(); if (!PRED.on) prEditStart(); PRED.item=null; PRED.piece=null; prEditBar();
+      prDragStart(ev, {item, rot:0, ox:0, oy:0}); PDR.on=true; prDragAim(ev); } };
+  const up=ev=>{ if (ev.pointerId===id) off(); }; const off=()=>{ removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); };
+  addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up); });
 function openWardrobe(tab, pick, kind){ closeAll(); WD.tab = tab==='closet' ? 'clothing' : (tab||'clothing'); WD.kind = kind || 'clothes'; wdFurnLoad(); WD.pick=pick||null; WD.dir=0; wdMsg(''); $id('wardbox').style.display='block'; wdDraw(); wdLoad(); }
 function wdBuy(id){ wdMsg('BUYING...'); NET.act('inv_buy',{item:id}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.');
   INV.owned=r.owned||INV.owned; tkSet(r.tk, `You bought the ${ITEMS[id].n}!`); wdWear(ITEMS[id].s, id, `Bought the ${ITEMS[id].n} and put it on!`); }); }
@@ -5046,7 +5060,7 @@ $id('pr_body').addEventListener('click', e=>{ const b=e.target.closest('button')
   if (b.id==='pr_inv'){ const n=$id('pr_invname').value.trim(); if (!n) return; NET.act('pr_invite',{n, add:true}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.info=r; prDraw(); prMsg('Invited!',true); }); return; }
   if (b.dataset.uninv){ NET.act('pr_invite',{n:b.dataset.uninv, add:false}).then(r=>{ if (r.ok){ PRUI.info=r; prDraw(); } }); return; }
   if (b.dataset.kickp){ NET.act('pr_kick',{n:b.dataset.kickp}).then(r=>prMsg(r.msg||'', r.ok)); return; }
-  if (b.id==='pr_edit'){ const L=PRUI.list; if (!L||!L.mine) return; if (curRoom!=='p:'+L.mine.id){ PRED.pending=true; prGo(L.mine.id); } else { closeAll(); prEditStart(); } return; }
+  if (b.id==='pr_edit'){ const L=PRUI.list; if (!L||!L.mine) return; if (curRoom!=='p:'+L.mine.id){ PRED.pending=true; prGo(L.mine.id); } else openWardrobe('storage'); return; }
 });
 $id('pr_body').addEventListener('keydown', e=>e.stopPropagation());
 function prDrawSettings(){
@@ -5061,7 +5075,7 @@ function prDrawSettings(){
   h+=`<div class="prsec">INVITED (${I.invites.length})</div>`+(I.invites.length?I.invites.map(n=>`<span class="chip">${esc(n)}<button data-uninv="${esc(n)}" aria-label="Remove ${esc(n)}">✕</button></span>`).join(''):'<div class="fre">Nobody yet. Invited llamas can always come in, even when it\'s private.</div>');
   h+=`<input id="pr_invname" maxlength="12" placeholder="Invite by llama name" autocapitalize="off" spellcheck="false"><div class="srow"><button class="gbbtn" id="pr_inv">INVITE</button></div>`;
   if (inside.length){ h+='<div class="prsec">IN YOUR ROOM NOW</div>'+inside.map(n=>`<div class="prr"><div class="prn"><b>${esc(n)}</b></div><button class="gbbtn" data-kickp="${esc(n)}">ASK TO LEAVE</button></div>`).join(''); }
-  h+=`<div class="srow"><button class="gbbtn y" id="pr_edit">🛋️ EDIT FURNITURE</button><button class="gbbtn" id="pr_back">◀ ROOMS</button></div><div class="prmsg"></div>`;
+  h+=`<div class="srow"><button class="gbbtn y" id="pr_edit">🎒 PLACE FURNITURE</button><button class="gbbtn" id="pr_back">◀ ROOMS</button></div><div class="prmsg"></div>`;
   B.innerHTML=h;
 }
 function prApplyRoom(room){ const key='p:'+room.id; PRN[key]=room.name; ROOM_NAMES[key]=room.name; if (PRD[key]){ Object.assign(PRD[key], room); if (curRoom===key){ rebuildBG(); document.getElementById('stitle').textContent=room.name; } } }
@@ -5073,7 +5087,7 @@ function prGo(id){ NET.act('pr_enter',{rid:id}).then(r=>{
   if (arcade.on) exitArcade(); localMsg(`Heading to ${r.room.name}...`); goThroughDoor(key); }); }
 // ---- edit mode (owner only; the server checks every change) ----
 const PRED={on:false, item:null, piece:null, storage:[], pending:false};
-function prEditStart(){ const R=PRD[curRoom]; if (!R || !R.mine) return; PRED.on=true; PRED.item=null; PRED.piece=null; document.body.classList.add('editing'); prEditBar(); NET.act('furn_info').then(r=>{ if (r.ok){ PRED.storage=r.furn; prEditBar(); } }); localMsg('EDIT MODE: pick furniture below, then tap the floor (wall items: tap a spot next to a wall). Tap a piece to turn it or put it away.'); }
+function prEditStart(){ const R=PRD[curRoom]; if (!R || !R.mine) return; PRED.on=true; PRED.item=null; PRED.piece=null; document.body.classList.add('editing'); prEditBar(); NET.act('furn_info').then(r=>{ if (r.ok){ PRED.storage=r.furn; prEditBar(); } }); localMsg('EDIT MODE: drag pieces to move them, or drag new ones up from the bar. Tap a piece to turn it or put it away.'); }
 function prEditStop(){ if (!PRED.on) return; PRED.on=false; PRED.item=null; PRED.piece=null; document.body.classList.remove('editing'); $id('editbar').classList.remove('piece'); }
 function prEditBar(){ const el=$id('eb_items'), bar=$id('editbar'); bar.classList.toggle('piece', !!PRED.piece);
   if (PRED.piece){ const D=FURN_DEF[PRED.piece.item]; $id('eb_piece').innerHTML=`<button class="gbbtn" id="eb_rot">↻ TURN</button><button class="gbbtn" id="eb_pick">📦 PUT AWAY</button><button class="gbbtn" id="eb_cancel">✕</button>`; return; }
@@ -5081,8 +5095,47 @@ function prEditBar(){ const el=$id('eb_items'), bar=$id('editbar'); bar.classLis
   if (!list.length){ el.innerHTML='<div class="fre">No items yet. Buy furniture at the 🛍️ LLAMA STORE.</div>'; return; }
   el.innerHTML=list.map(x=>{ const left=x.n-x.placed; return `<button class="ebi${PRED.item===x.item?' on':''}" data-it="${x.item}" title="${esc(FURN_DEF[x.item].n)}" ${left<=0?'disabled':''}><canvas width="48" height="48" data-fi="${x.item}"></canvas><i>×${left}</i></button>`; }).join('');
   for (const cv of el.querySelectorAll('canvas[data-fi]')) cv.getContext('2d').drawImage(furnIcon(cv.dataset.fi),0,0); }
-$id('editbar').addEventListener('pointerdown', e=>e.stopPropagation());
-$id('editbar').addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; ensureAudio();
+$id('editbar').addEventListener('pointerdown', e=>{ e.stopPropagation(); const b=e.target.closest('.ebi'); if (b && !b.disabled && b.dataset.it) prDragStart(e, {item:b.dataset.it, rot:0, ox:0, oy:0, fromBar:true}); });
+// ---- drag and drop: press a piece (or an item in the bar), drag it, let go to drop it; a see-through copy shows where it lands ----
+const PDR={on:false, armed:false};
+function prDragStart(e, o){ Object.assign(PDR, {on:false, armed:true, id:e.pointerId, sx:e.clientX, sy:e.clientY, fid:null, gx:null, gy:null, ok:false, tapGx:null, tapGy:null}, o); PDR.hgx=null; }
+function prFits(item, gx, gy, rot, skip){ const D=FURN_DEF[item]; if (!D) return false; const wall=!!D.wall;
+  if (wall && gx!==0 && gy!==0) return false; if (wall && gx===0 && gy>=9) return false;
+  for (const [x,y] of furnTiles(item,gx,gy,rot)){ if (x<0||y<0||x>=N||y>=NY) return false; if (!wall && x<=3 && y===10) return false; }
+  for (const f of FURN){ if (!f.fid || f.fid===skip || !!(FURN_DEF[f.item]||{}).wall!==wall) continue; const ft=furnTiles(f.item,f.gx,f.gy,f.rot); if (ft.some(([x,y])=>furnTiles(item,gx,gy,rot).some(([u,v])=>u===x&&v===y))) return false; }
+  return true; }
+function prDragAim(e){ const [tx,ty]=toGrid(e.clientX, e.clientY); const bar=$id('editbar').getBoundingClientRect();
+  if (e.clientY>=bar.top-4 && e.clientX>=bar.left && e.clientX<=bar.right){ PDR.gx=null; return; }   // over the bar: dropping here cancels
+  PDR.gx=tx-PDR.ox; PDR.gy=ty-PDR.oy; PDR.ok=prFits(PDR.item, PDR.gx, PDR.gy, PDR.rot, PDR.fid); }
+addEventListener('pointermove', e=>{
+  if (PDR.armed && e.pointerId===PDR.id){ if (!PDR.on){ const dx=e.clientX-PDR.sx, dy=e.clientY-PDR.sy;
+      // from the bar, a sideways swipe still scrolls the bar; pull up (or press a piece and move) to start dragging
+      if (PDR.fromBar ? (dy<-14 && Math.abs(dy)>Math.abs(dx)) : Math.hypot(dx,dy)>8){ PDR.on=true; PRED.piece=null; prEditBar(); } }
+    if (PDR.on){ prDragAim(e); e.preventDefault(); } return; }
+  // mouse hover with an item picked: show where a tap would put it
+  if (PRED.on && PRED.item && e.pointerType==='mouse' && e.target===cv){ const [tx,ty]=toGrid(e.clientX, e.clientY); PDR.hgx=tx; PDR.hgy=ty; } else PDR.hgx=null;
+}, {passive:false});
+function prDragEnd(e, cancel){ if (!PDR.armed || e.pointerId!==PDR.id) return; const was=PDR.on; PDR.armed=false; PDR.on=false;
+  if (!was){ if (PDR.fid && !cancel){ PRED.piece={fid:PDR.fid, item:PDR.item, gx:PDR.tapGx, gy:PDR.tapGy}; PRED.item=null; prEditBar(); } return; }   // just a tap: select it as before
+  PDR.noClick=performance.now();
+  if (cancel || PDR.gx===null) return;
+  if (!PDR.ok){ localMsg(PDR.fid ? 'That piece doesn\'t fit there.' : 'That doesn\'t fit there.'); return; }
+  if (PDR.fid){ if (PDR.gx===PDR.gx0 && PDR.gy===PDR.gy0) return; NET.act('pr_move',{fid:PDR.fid, gx:PDR.gx, gy:PDR.gy}).then(r=>{ if (!r.ok) localMsg(r.msg||'Can\'t move that there.'); }); return; }
+  const item=PDR.item; NET.act('pr_place',{item, gx:PDR.gx, gy:PDR.gy, rot:0}).then(r=>{ if (!r.ok) return localMsg(r.msg||'Can\'t put that there.'); if (r.storage){ PRED.storage=r.storage; const s2=r.storage.find(x=>x.item===PRED.item); if (PRED.item && (!s2 || s2.n-s2.placed<=0)) PRED.item=null; } prEditBar(); }); }
+addEventListener('pointerup', e=>prDragEnd(e,false)); addEventListener('pointercancel', e=>prDragEnd(e,true));
+// draw the piece see-through where it would land: green floor tiles if it fits, red if it doesn't
+const ghostCv=document.createElement('canvas');
+function prGhost(t){ if (!PRED.on) return; let item, gx, gy, rot, ok;
+  if (PDR.on && PDR.gx!==null){ item=PDR.item; gx=PDR.gx; gy=PDR.gy; rot=PDR.rot; ok=PDR.ok; }
+  else if (PRED.item && PDR.hgx!==null && !PDR.on){ item=PRED.item; gx=PDR.hgx; gy=PDR.hgy; rot=0; ok=prFits(item,gx,gy,0,null); }
+  else return;
+  const D=FURN_DEF[item]; if (!D) return;
+  if (!D.wall) for (const [x,y] of furnTiles(item,gx,gy,rot)){ if (x<0||y<0||x>=N||y>=NY) continue; g.globalAlpha=0.35; polyPx([P(x,y),P(x+1,y),P(x+1,y+1),P(x,y+1)], ok?'#3ddc75':'#f04050'); g.globalAlpha=1; }
+  const c=g.canvas; if (ghostCv.width!==c.width || ghostCv.height!==c.height){ ghostCv.width=c.width; ghostCv.height=c.height; }
+  const gc=ghostCv.getContext('2d'); gc.setTransform(1,0,0,1,0,0); gc.clearRect(0,0,ghostCv.width,ghostCv.height); gc.setTransform(g.getTransform()); gc.imageSmoothingEnabled=false;
+  const sg=g; try { g=gc; drawFurn({...D.mk(rot), gx, gy}, t); } finally { g=sg; }
+  g.save(); g.setTransform(1,0,0,1,0,0); g.globalAlpha=ok?0.55:0.4; g.drawImage(ghostCv,0,0); g.restore(); }
+$id('editbar').addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; ensureAudio(); if (PDR.noClick && performance.now()-PDR.noClick<400) return;
   if (b.id==='eb_done'){ prEditStop(); localMsg('Room saved.'); return; }
   if (b.dataset.it){ PRED.item = PRED.item===b.dataset.it ? null : b.dataset.it; prEditBar(); return; }
   if (b.id==='eb_cancel'){ PRED.piece=null; prEditBar(); return; }
@@ -5097,7 +5150,7 @@ function playerPointer(e){
   if (!PRED.on) for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
   const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
   if (PRED.on){ const f=prFurnAt(gx,gy);
-    if (f){ PRED.piece={fid:f.fid, item:f.item, gx, gy}; PRED.item=null; prEditBar(); return; }
+    if (f){ prDragStart(e, {fid:f.fid, item:f.item, rot:f.rot||0, gx0:f.gx, gy0:f.gy, ox:gx-f.gx, oy:gy-f.gy}); PDR.tapGx=gx; PDR.tapGy=gy; return; }
     if (PRED.item){ const rot=0; NET.act('pr_place',{item:PRED.item, gx, gy, rot}).then(r=>{ if (!r.ok) return localMsg(r.msg||'Can\'t put that there.'); if (r.storage){ PRED.storage=r.storage; const s2=r.storage.find(x=>x.item===PRED.item); if (!s2 || s2.n-s2.placed<=0) PRED.item=null; } prEditBar(); }); return; }
     PRED.piece=null; prEditBar(); return; }
   if (walkable(gx,gy) && !seatAt(gx,gy)){ walkTo(gx,gy); return; }
