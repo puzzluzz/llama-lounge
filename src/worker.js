@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-20e";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-20f";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -61,6 +61,7 @@ const STANDS = {
   cider: { rm: "barn", x: 7.5, y: 4, items: { cider: 2, caramel: 3 } },     // two tiles wide: x is the middle of the stall
   snack: { rm: "barn", x: 10.5, y: 4, items: { capple: 2, corn: 2, pie: 3 } },
   bar:   { rm: "lounge", items: { soda: 1, juice: 1, shake: 2, nachos: 2, fries: 2, burger: 3 } },   // sit at the bar to order
+  vend:  { rm: "store", x: 5, y: 0.5, items: { soda: 1, juice: 1, shake: 2 } },   // vending machine on the LLAMA STORE's back wall
 };
 // ---------- hunger and thirst ----------
 // Meters go from 100 (full) to 0. They only drain while you're online: thirst empties in about an hour, hunger in 75 minutes.
@@ -68,6 +69,15 @@ const STANDS = {
 const NEEDS = { thirstMs: 60 * 60000, hungerMs: 75 * 60000, maxStep: 10 * 60000, saveMs: 60000, apple: 15, appleGap: 20000 };
 const FOOD = { soda: { th: 30 }, juice: { th: 35, hu: 5 }, shake: { th: 25, hu: 20 }, cider: { th: 40 }, caramel: { th: 40, hu: 8 },
   capple: { hu: 30 }, corn: { hu: 35 }, pie: { hu: 45 }, nachos: { hu: 35, th: -5 }, fries: { hu: 35, th: -5 }, burger: { hu: 55 } };
+// ---------- wardrobe: clothes you buy in the LLAMA STORE and wear anywhere ----------
+// s = the slot it goes in (one item per slot), p = price in tokens. The game draws each one; this list is the source of truth.
+const WEAR_SLOTS = ["hat", "eyes", "neck", "shirt"];
+const ITEMS = {
+  cap: { s: "hat", p: 20 }, cowboy: { s: "hat", p: 30 }, beanie: { s: "hat", p: 15 }, party: { s: "hat", p: 10 }, tophat: { s: "hat", p: 40 }, flowers: { s: "hat", p: 25 },
+  shades: { s: "eyes", p: 20 }, hearts: { s: "eyes", p: 25 }, stars: { s: "eyes", p: 25 },
+  bandana: { s: "neck", p: 12 }, bowtie: { s: "neck", p: 15 }, scarf: { s: "neck", p: 18 }, lei: { s: "neck", p: 15 },
+  tee_smile: { s: "shirt", p: 25 }, tee_cancelled: { s: "shirt", p: 25 }, tee_wild: { s: "shirt", p: 25 }, tee_cancel: { s: "shirt", p: 25 }, tee_woke: { s: "shirt", p: 25 },
+};
 const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
 
 // ---------- helpers ----------
@@ -482,7 +492,8 @@ export class Lounge extends DurableObject {
     const peer = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
     this.ctx.acceptWebSocket(server);
     const nd = await this.needsLoad(uid);
-    server.serializeAttachment({ uid, name, staff, peer, pres: null, rate: [Date.now(), 0], nd });
+    const wear = await this.wearLoad(uid);
+    server.serializeAttachment({ uid, name, staff, peer, pres: null, rate: [Date.now(), 0], nd, wear });
     // greet with everyone already here, the leaderboard and table states
     const peers = this.sockets().filter((w) => w !== server && w.readyState === 1).map((w) => w.deserializeAttachment()).filter((a) => a && a.pres && a.uid !== uid).map((a) => ({ peer: a.peer, presence: a.pres }));
     server.send(JSON.stringify({ t: "hello", v: VERSION, peer, peers, board: await this.board(), nd: { hu: nd.hu, th: nd.th, rate: { hu: 100 / NEEDS.hungerMs, th: 100 / NEEDS.thirstMs } } }));
@@ -511,6 +522,7 @@ export class Lounge extends DurableObject {
       else if (first && rs && typeof rs === "object") a.ck = +rs.k;
       if (first && a.ck === undefined) a.ck = 0;
       a.pres = cleanPresence(m.p, a.name, a.uc.tk, !!a.uc.muted, a.staff); if (a.uc.c) a.pres.c = a.uc.c;   // everyone sees the llama the account picked
+      if (a.wear && Object.keys(a.wear).length) a.pres.w = a.wear;   // and the clothes it owns and has on
       ws.serializeAttachment(a);
       this.broadcast({ t: "peers", [first ? "joined" : "updated"]: [{ peer: a.peer, presence: a.pres }] }, ws);
       return;
@@ -527,6 +539,38 @@ export class Lounge extends DurableObject {
   async webSocketClose(ws) { this.left(ws); try { const a = ws.deserializeAttachment(); if (a && a.nd) { this.needsDrain(a, Date.now()); await this.needsSave(a); } } catch (e) {} }
   async webSocketError(ws) { this.left(ws); }
   left(ws) { const a = ws.deserializeAttachment(); if (a && a.pres) this.broadcast({ t: "peers", left: [{ peer: a.peer }] }, ws); }
+
+  // ---------- wardrobe and inventory ----------
+  async invTables() { if (this.invReady) return;
+    await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS inv (uid INTEGER NOT NULL, item TEXT NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (uid, item))").run();
+    await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS wear (uid INTEGER PRIMARY KEY, hat TEXT, eyes TEXT, neck TEXT, shirt TEXT)").run();
+    this.invReady = true; }
+  async wearLoad(uid) { await this.invTables(); const r = await this.env.DB.prepare("SELECT * FROM wear WHERE uid = ?").bind(uid).first(); const w = {};
+    if (r) for (const s of WEAR_SLOTS) if (r[s] && ITEMS[r[s]] && ITEMS[r[s]].s === s) w[s] = r[s]; return w; }
+  async invInfo(uid) { await this.invTables(); const rows = (await this.env.DB.prepare("SELECT item FROM inv WHERE uid = ? ORDER BY t").bind(uid).all()).results || []; return { owned: rows.map((r) => r.item).filter((k) => ITEMS[k]) }; }
+  async invBuy(ws, a, m) {
+    await this.invTables();
+    const k = String(m.item || ""); const it = Object.hasOwn(ITEMS, k) ? ITEMS[k] : null;
+    if (!it) return { ok: false, msg: "The store doesn't sell that." };
+    if (!a.pres || a.pres.rm !== "store") return { ok: false, msg: "Visit the LLAMA STORE to buy clothes." };
+    const have = await this.env.DB.prepare("SELECT 1 FROM inv WHERE uid = ? AND item = ?").bind(a.uid, k).first();
+    if (have) return { ok: false, msg: "You already own that. Find it in your wardrobe." };
+    const tk = await this.debit(a.uid, it.p, "wardrobe " + k); if (tk === null) return { ok: false, msg: `That costs ${it.p} TOKENS. Play some games to earn more!` };
+    await this.env.DB.prepare("INSERT OR IGNORE INTO inv (uid, item, t) VALUES (?, ?, ?)").bind(a.uid, k, Date.now()).run();
+    return { ok: true, tk, ...(await this.invInfo(a.uid)) };
+  }
+  async invWear(ws, a, m) {
+    await this.invTables();
+    const slot = String(m.slot || ""); if (!WEAR_SLOTS.includes(slot)) return { ok: false, msg: "Bad slot." };
+    let k = m.item == null || m.item === "" ? null : String(m.item);
+    if (k) { if (!Object.hasOwn(ITEMS, k) || ITEMS[k].s !== slot) return { ok: false, msg: "That doesn't go there." };
+      const have = await this.env.DB.prepare("SELECT 1 FROM inv WHERE uid = ? AND item = ?").bind(a.uid, k).first(); if (!have) return { ok: false, msg: "You don't own that yet." }; }
+    await this.env.DB.prepare(`INSERT INTO wear (uid, ${slot}) VALUES (?, ?) ON CONFLICT(uid) DO UPDATE SET ${slot} = excluded.${slot}`).bind(a.uid, k).run();
+    a.wear = { ...(a.wear || {}) }; if (k) a.wear[slot] = k; else delete a.wear[slot];
+    if (a.pres){ if (Object.keys(a.wear).length) a.pres.w = a.wear; else delete a.pres.w; this.broadcast({ t: "peers", updated: [{ peer: a.peer, presence: a.pres }] }, ws); }
+    ws.serializeAttachment(a);
+    return { ok: true, w: a.wear };
+  }
 
   // ---------- food and drink: what you hold fills your meters a fifth at a time, one sip or bite at a time ----------
   async holdFood(uid, f) { await this.ctx.storage.put("held:" + uid, { hu: f.hu || 0, th: f.th || 0, left: SIPS, last: 0 }); }
@@ -785,6 +829,9 @@ export class Lounge extends DurableObject {
       case "bowl_start": return this.bowlStart(a, now);
       case "bowl_roll": return this.bowlRoll(a, m, now);
       case "dash_chat": return this.dashChat(a, m);
+      case "inv_info": return { ok: true, ...(await this.invInfo(uid)), w: a.wear || {} };
+      case "inv_buy": return this.invBuy(ws, a, m);
+      case "inv_wear": return this.invWear(ws, a, m);
       case "dm_send": return this.dmSend(ws, a, m);
       case "dm_inbox": return { ok: true, inbox: await this.dmInbox(uid) };
       case "dm_thread": return this.dmThread(a, m);

@@ -176,3 +176,12 @@ No API keys or passwords are involved.
 - **Walking:** paths go around chairs, stools, benches and logs. A llama only steps onto a seat when it's going to sit there.
 - Mods have a gold heart 💛 badge. The owner has the crown 👑.
 - **Lounge wall:** the framed shirts and the round logo over the door are taken down, and the neon LLAMA LOUNGE sign hangs on that wall instead. Everything for the shirts (shop pop-ups, links, tips) is still in the code. Set `SHOW_MERCH = true` in `public/index.html` to hang them again, which also moves the sign back up into the sky.
+
+## LLAMA STORE, wardrobe and inventory
+
+- **The room:** framed La Llama P.I.C. shirts and logo on the left wall (they open the real shop pages), and a checkout counter whose catalog lists every real shirt. Penny the cashier llama is drawn with the same sprite code as player llamas, but players can't pick her. There's also a vending machine for drinks.
+- **In-game clothes:** 18 items in 4 slots: 6 hats, 3 glasses, 4 neck pieces, and pixel versions of the 5 real shirts. Each one hangs on the store's two long racks in the same art you see when it's worn. Prices are in tokens.
+- **Buying:** buying only works in the store (tap a rack item, or press CLOTHES next to a rack). A new item goes on right away. MENU > WARDROBE lets you try things on (tap the llama to turn it) and wear or take off anything you own, anywhere.
+- **The server keeps the source of truth:** the item list and prices (`ITEMS` in `src/worker.js`), what each llama owns (`inv` table) and what it has on (`wear` table). It stamps the outfit onto every presence update, so nobody can wear something they haven't bought.
+- **Your llama is permanent:** the llama picked at sign-up stays for good, and the server ignores attempts to change it.
+- **Adding an item:** add it to `ITEMS` in both `src/worker.js` (slot and price) and `public/index.html` (name, colors and how it's drawn in `buildSprite`), then hang it on a rack in `RACK_A` / `RACK_B`.
