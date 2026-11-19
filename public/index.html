@@ -757,7 +757,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-21l";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-21m";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -2123,9 +2123,8 @@ function drawFurn(f,t){
       const U0=0.08, U1=n-0.08, V0=0.1, V1=0.9, BK=0.32, AW=0.17;
       for (const [u,v] of [[U0+0.06,V0+0.06],[U1-0.06,V0+0.06],[U0+0.06,V1-0.06],[U1-0.06,V1-0.06]]){ const k=R(u,u,v,v); const [lx,ly]=P(k[0],k[1],0); g.fillStyle=INK; g.fillRect(Math.round(lx)-1,Math.round(ly)-3,3,4); g.fillStyle='#5a3418'; g.fillRect(Math.round(lx),Math.round(ly)-2,1,2); }
       B([U0,U1,V0,V1],7,2);
-      const back=()=>{ B([U0,U1,V0,BK],16,9); for (let i=0;i<n;i++){ const [cx,cy]=mid([U0+AW+i*(U1-U0-2*AW)/n, U0+AW+(i+1)*(U1-U0-2*AW)/n, V0, BK],25); ellPx(cx,cy,n>1?6:5,1.4,HI);
-          const [bx,by]=mid([U0+AW+(i+0.5)*(U1-U0-2*AW)/n, U0+AW+(i+0.5)*(U1-U0-2*AW)/n, BK, BK],18); g.fillStyle=C[2]; g.fillRect(Math.round(bx),Math.round(by),1,1); } };
-      const arm=(u0,u1)=>{ B([u0,u1,BK,V1],8,9); const [cx,cy]=mid([u0,u1,BK,V1],17); if (r===0||r===3) ellPx(cx,cy,2.5,2,HI); else ellPx(cx,cy,3,1,HI); };
+      const back=()=>{ B([U0,U1,V0,BK],16,9); for (let i=0;i<n;i++){ const [bx,by]=mid([U0+AW+(i+0.5)*(U1-U0-2*AW)/n, U0+AW+(i+0.5)*(U1-U0-2*AW)/n, BK, BK],18); g.fillStyle=C[2]; g.fillRect(Math.round(bx),Math.round(by),1,1); } };
+      const arm=(u0,u1)=>{ B([u0,u1,BK,V1],8,9); };
       if (r<2) back();
       arm(U0,U0+AW);
       for (let i=0;i<n;i++){ const s0=U0+AW+i*(U1-U0-2*AW)/n, s1=U0+AW+(i+1)*(U1-U0-2*AW)/n; B([s0+0.01,s1-0.01,BK,V1],3,9,HI); }
