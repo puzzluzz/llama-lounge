@@ -337,6 +337,17 @@
   .aulink{border:0;background:transparent;font:700 14px var(--ui);color:#5a48b0;text-decoration:underline;cursor:pointer;padding:6px}
   #au_err.good{color:#1f8a4c}
   #acctbox{width:min(calc(100% - 24px),400px)}
+  #frbox{width:min(calc(100% - 24px),420px)}
+  #frbox .fradd{display:flex;gap:8px;margin:10px 0 4px} #frbox .fradd input{flex:1;min-width:0;font:16px var(--ui);padding:11px 13px;border:2px solid var(--line);border-radius:12px;background:#fff;outline:none} #frbox .fradd input:focus{border-color:var(--yel)} #frbox .fradd .gbbtn{min-width:72px}
+  #frbox .frmsg{min-height:18px;font:600 13px var(--ui);color:#e02838;margin:2px 0 4px;text-align:left} #frbox .frmsg.good{color:#1f8a4c}
+  #frbox .frh{font:800 12px var(--ui);letter-spacing:.06em;color:var(--sub);margin:12px 0 6px;text-align:left}
+  #frbox .frr{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:14px;background:#f6f4fb;margin-bottom:6px;text-align:left}
+  #frbox .frd{width:10px;height:10px;border-radius:50%;background:#c9c3d8;flex:none} #frbox .frd.on{background:#2fbf63;box-shadow:0 0 0 3px rgba(47,191,99,.2)}
+  #frbox .frn{flex:1;min-width:0;font:800 14px var(--ui);overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #frbox .frn small{display:block;font:600 12px var(--ui);color:var(--sub);letter-spacing:.02em}
+  #frbox .frr .gbbtn{min-height:36px;padding:0 12px;font-size:13px;flex:none} #frbox .frx{background:transparent!important;color:var(--sub)!important;min-width:36px;padding:0!important}
+  #frbox .fre{font:500 14px/1.45 var(--ui);color:var(--sub);text-align:left;padding:4px 2px}
+  .mbadge{display:none;margin-left:8px;min-width:18px;padding:0 6px;border-radius:999px;background:var(--pink);color:#fff;font:800 11px/18px var(--ui);text-align:center} .mbadge.on{display:inline-block}
+  #menubtn.frdot{position:relative} #menubtn.frdot::after{content:'';position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;background:var(--pink);box-shadow:0 0 0 2px var(--yel)}
   #acctbox .acsec{background:#f6f4fb;border-radius:14px;padding:12px 14px;margin:10px 0;text-align:left}
   #acctbox .ach{font:800 12px var(--ui);letter-spacing:.06em;color:var(--sub);margin-bottom:6px}
   #acctbox .acv{font:600 15px var(--ui);word-break:break-all}
@@ -476,6 +487,7 @@
   .jb-nail{position:absolute;top:5px;width:4px;height:4px;border-radius:50%;background:#2a1606;box-shadow:inset 1px 1px 0 #8a6a4a} .jb-nail.l{left:5px} .jb-nail.r{right:5px}
   .jb-coin{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0 0 18%,#ffd23f 20% 62%,#d79a12 64%);box-shadow:0 0 0 2px #2a1606;flex:none}
   @media (max-width:640px){ #jobsbtn{font-size:11px;padding:10px 12px 9px 10px} .jb-coin{width:13px;height:13px} }
+  @media (max-width:640px){ body.joined:not(.arena-on) #tbox{bottom:calc(var(--dockh) + 66px + var(--sab))!important} }   /* messages sit above the JOBS sign on phones */
   #jobsbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:min(480px,calc(100% - 24px));max-height:86vh;animation:popIn .18s ease-out}
   #jobsbox .slt{text-align:center;color:#a06808} .jsub{font-size:13px;color:var(--sub);text-align:center;margin:4px 0 10px;line-height:1.4}
   .jroom{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--sub);margin:14px 0 6px} .jroom.here{color:#1e8a3a}
@@ -513,9 +525,9 @@
   <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button class="pbtn ic" id="zout" title="Zoom out" aria-label="Zoom out">−</button><button class="pbtn ic" id="zin" title="Zoom in" aria-label="Zoom in">+</button><button class="pbtn ic" id="musicbtn" title="Music" aria-label="Music">♪</button><button class="pbtn y" id="menubtn" aria-label="Menu"><span class="hamb"><i></i><i></i><i></i></span><span class="mtx">MENU</span></button></div>
   <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
   <div id="keys">ARROWS/WASD WALK · SPACE ACTION<br>ENTER TALK · M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
-  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">CHANGE ROOM</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="llama" data-i="🦙">CHANGE LLAMA</div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
+  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">CHANGE ROOM</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="llama" data-i="🦙">CHANGE LLAMA</div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
   <div id="emenu" class="gb menu sheet"><div data-e="heart">♥ HEART</div><div data-e="bang">! WOW</div><div data-e="huh">? HUH</div><div data-e="note">♪ SING</div><div data-e="lol">^^ LOL</div><div data-e="zzz">Z SLEEP</div><div data-e="wave">✋ WAVE</div><div data-e="flex">💪 FLEX</div><div data-e="palm">-_- FACEPALM</div></div>
-  <div id="pmenu" class="gb"><div id="pm_name" class="pmn"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_close">✕</button></div></div>
+  <div id="pmenu" class="gb"><div id="pm_name" class="pmn"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_close">✕</button></div></div>
   <div id="tmenu" class="gb sheet"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
   <div id="lboard" class="gb sheet"><div class="lbt">🏆 HIGH SCORES</div><div class="lbcols"><div><div class="lbh">HAY CATCH</div><div id="lb_hay"></div></div><div><div class="lbh">LLAMA DASH</div><div id="lb_dash"></div></div></div><div class="srow"><button class="gbbtn" id="lbclose">CLOSE</button></div></div>
   <div id="shop" class="gb sheet"><img id="shopimg" alt=""><div id="shopname"></div><div id="shopprice"></div><div id="shopsub"></div><div class="srow"><a id="shoplink" class="gbbtn" href="#" target="_blank" rel="noopener noreferrer">VIEW PRODUCT ▶</a><button class="gbbtn" id="shopclose">CLOSE</button></div></div>
@@ -544,6 +556,9 @@
     </form>
     <div class="aunote" id="au_note"></div>
   </div>
+  <div id="frbox" class="gb sheet"><div class="slt">⭐ FRIENDS</div>
+    <form class="fradd" id="fr_form" autocomplete="off"><input id="fr_name" maxlength="12" placeholder="Add a friend by llama name" autocapitalize="off" spellcheck="false"><button class="gbbtn y" type="submit">ADD</button></form>
+    <div class="frmsg" id="fr_msg"></div><div id="fr_body"></div><div class="srow"><button class="gbbtn" id="fr_close">DONE</button></div></div>
   <div id="acctbox" class="gb sheet"><div class="slt" id="ac_title">🔐 ACCOUNT</div><div id="ac_body"></div></div>
   <div id="kicked"></div>
   <div id="roompick" class="gb sheet"><div class="rpt" id="rp_title">WHERE TO?</div>
@@ -633,7 +648,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19w";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19x";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -2556,7 +2571,7 @@ function upsertPeer(peer){
   if (joined && me.n && st.n.toUpperCase()===String(me.n).toUpperCase()){ const o=others.get(id); if (o) others.delete(id); return; }   // never draw yourself twice
   let o = others.get(id); const now=performance.now();
   if (o && o.leaving){ others.delete(id); o=null; }
-  if (!o){ o = { id, x:st.x, y:st.y, anim:0, lastK: st.s?st.s.k:0, lastE: st.e?st.e.k:0, lastSk: st.sk, lastSp: st.sp?st.sp.k:0, lastTd: st.td?st.td.k:0, lastG: st.g?st.g.k:0, lastTG: st.tg?st.tg.k:0, lastFk: st.fk||0, lastEa: st.ea?st.ea.k:0, flipStart:-9999, bubble:null, emote:null, sipStart:-9999, flinch:0 }; others.set(id,o); sysMsg(`${st.n.toUpperCase()} is online in ${ROOM_NAMES[st.rm]||'the lounge'}!`); }
+  if (!o){ o = { id, x:st.x, y:st.y, anim:0, lastK: st.s?st.s.k:0, lastE: st.e?st.e.k:0, lastSk: st.sk, lastSp: st.sp?st.sp.k:0, lastTd: st.td?st.td.k:0, lastG: st.g?st.g.k:0, lastTG: st.tg?st.tg.k:0, lastFk: st.fk||0, lastEa: st.ea?st.ea.k:0, flipStart:-9999, bubble:null, emote:null, sipStart:-9999, flinch:0 }; others.set(id,o); if (isFriend(st.n)) localMsg(`⭐ Your friend ${st.n.toUpperCase()} is online in ${ROOM_NAMES[st.rm]||'the lounge'}!`); else sysMsg(`${st.n.toUpperCase()} is online in ${ROOM_NAMES[st.rm]||'the lounge'}!`); }
   else {
     const here = st.rm===curRoom;
     if (st.sl && st.sl.k !== o.lastSl){ o.lastSl = st.sl.k; if (here) slotRemote(st.sl.r, Math.floor(st.x)); }
@@ -2712,7 +2727,7 @@ function items(m){ return [...m.children].filter(c=>!c.classList.contains('sheet
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
   const a=el.dataset.a;
@@ -2722,6 +2737,7 @@ function menuAct(el){
   else if (a==='room') showRoomPick(false);
   else if (a==='dash') openDash();
   else if (a==='account'){ openAccount(); }
+  else if (a==='friends'){ openFriends(); }
   else if (a==='logout'){ apiPost('/api/logout').then(()=>{ NET.closedForGood=true; location.reload(); }); }
   else if (a==='sit') toggleSit();
   else if (a==='tips'){ tipsOff=!tipsOff; if(!tipsOff){ tipHidden={}; store.tipHidden={}; } store.tipsOff=tipsOff; saveStore(); mtips.textContent=tipsOff?'TIPS: OFF':'TIPS: ON'; localMsg(tipsOff?'Tips are off.':'Tips are back on!'); }
@@ -3314,7 +3330,7 @@ function drawOverlay(t){
     for (const it of overlayItems){
       const name = (it.me ? (me.n||'YOU') : it.l.n).toUpperCase(); const fa = it.fa==null?1:it.fa;
       const cid = it.me ? me.c : (it.l && it.l.c); const tag = (CHARS[cid]||{}).tag || '#f8d030';
-      const st = staffOf(it.me, it.l), icon = st==='owner' ? '👑 ' : st==='mod' ? '🛡 ' : '';
+      const st = staffOf(it.me, it.l), icon = (st==='owner' ? '👑 ' : st==='mod' ? '🛡 ' : '') + (!it.me && isFriend(name) ? '⭐ ' : '');
       c.font = `800 ${10.5*u}px Inter, system-ui, sans-serif`; const tw = c.measureText(icon+name).width;
       const h = 18*u, w = tw + 22*u, nx = it.x - w/2, ny = it.y - h - 5*u;
       c.globalAlpha = fa;
@@ -3363,7 +3379,7 @@ function cupClick(gx){ const st=(me.p==='sit'&&!me.moving)?seatAt(me.gx,me.gy):n
 // ======================= PLAYER MENU (tap another llama) =======================
 const pmenuEl=document.getElementById('pmenu'); let pmTarget=null;
 function openPlayerMenu(id, cx, cy){ const o=others.get(id); if(!o) return; closeAll(); pmTarget=id;
-  document.getElementById('pm_name').textContent=o.n.toUpperCase();
+  document.getElementById('pm_name').textContent=o.n.toUpperCase(); if (typeof pmFriendBtn==='function') pmFriendBtn();
   pmenuEl.style.display='block'; const r=pmenuEl.getBoundingClientRect();
   pmenuEl.style.left=Math.max(8,Math.min(innerWidth-r.width-8, cx-r.width/2))+'px'; pmenuEl.style.top=Math.max(8,Math.min(innerHeight-r.height-70, cy-r.height-12))+'px'; }
 document.getElementById('pm_spit').addEventListener('click', ()=>{ const id=pmTarget; closeAll(); if(id) spitAt(id); });
@@ -4147,6 +4163,49 @@ async function handleEmailLink(){
   return false;
 }
 addEventListener('hashchange', async ()=>{ const v=await handleEmailLink(); if (!v && pendingNote && joined){ localMsg(pendingNote); pendingNote=''; } });
+// ---- friends: requests, list with who's online and where, GO to their room ----
+const FR = { friends:[], inc:[], out:[] }; const frEl=$id('frbox'), frBody=$id('fr_body');
+const isFriend = n => FR.friends.includes(String(n||'').toUpperCase());
+function frWhere(n){ for (const o of others.values()) if (!o.leaving && o.n && o.n.toUpperCase()===n) return o.rm||'lounge'; return null; }
+function frSet(fr){ if (!fr) return; FR.friends=fr.friends||[]; FR.inc=fr.inc||[]; FR.out=fr.out||[];
+  const b=$id('fr_badge'); b.textContent=FR.inc.length; b.classList.toggle('on', FR.inc.length>0); $id('menubtn').classList.toggle('frdot', FR.inc.length>0);
+  if (frEl.style.display==='block') frDraw(); pmFriendBtn(); }
+function frMsg(t, good){ const el=$id('fr_msg'); el.textContent=t||''; el.classList.toggle('good', !!good); }
+function frLoad(){ NET.act('fr_list').then(r=>{ if (r.ok) frSet(r.fr); }); }
+function frDo(a, n){ return NET.act(a, {n}).then(r=>{ if (r.fr) frSet(r.fr); if (r.msg) frMsg(r.msg, r.ok); return r; }); }
+function frDraw(){
+  const row = (n, sub, on, btns) => `<div class="frr"><span class="frd${on?' on':''}"></span><span class="frn">${esc(n)}${sub?`<small>${sub}</small>`:''}</span>${btns}</div>`;
+  let h='';
+  if (FR.inc.length){ h+='<div class="frh">FRIEND REQUESTS</div>'; for (const n of FR.inc) h+=row(n, 'wants to be friends', !!frWhere(n), `<button class="gbbtn y" data-fa="fr_accept" data-n="${esc(n)}">ACCEPT</button><button class="gbbtn frx" data-fa="fr_decline" data-n="${esc(n)}" aria-label="Decline">✕</button>`); }
+  const list=[...FR.friends].sort((a,b)=>(!!frWhere(b))-(!!frWhere(a)) || a.localeCompare(b));
+  h+=`<div class="frh">FRIENDS · ${FR.friends.filter(n=>frWhere(n)).length} ONLINE</div>`;
+  if (!list.length) h+='<div class="fre">No friends yet. Tap another llama and press ⭐ ADD, or type their name above.</div>';
+  for (const n of list){ const rm=frWhere(n);
+    h+=row(n, rm ? (rm===curRoom ? 'Here with you' : 'In '+ROOM_NAMES[rm]) : 'Offline', !!rm, (rm && rm!==curRoom ? `<button class="gbbtn y" data-go2="${rm}">GO ▶</button>` : '') + `<button class="gbbtn frx" data-fa="fr_remove" data-n="${esc(n)}" aria-label="Remove friend">✕</button>`); }
+  if (FR.out.length){ h+='<div class="frh">SENT</div>'; for (const n of FR.out) h+=row(n, 'waiting for them to accept', !!frWhere(n), `<button class="gbbtn" data-fa="fr_remove" data-n="${esc(n)}">CANCEL</button>`); }
+  frBody.innerHTML=h;
+}
+frBody.addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; ensureAudio();
+  if (b.dataset.go2){ closeAll(); showSwap(b.dataset.go2); return; }
+  const a=b.dataset.fa, n=b.dataset.n; if (!a) return;
+  if (a==='fr_remove' && FR.friends.includes(n) && !confirm(`Remove ${n} from your friends?`)) return;
+  frDo(a, n); });
+function openFriends(){ closeAll(); frMsg(''); frDraw(); frEl.style.display='block'; frLoad(); }
+$id('fr_close').addEventListener('click', ()=>{ frEl.style.display='none'; });
+$id('fr_form').addEventListener('submit', e=>{ e.preventDefault(); const n=$id('fr_name').value.trim(); if (!n) return;
+  if (!/^[A-Za-z0-9_]{3,12}$/.test(n)) return frMsg('Llama names are 3 to 12 letters, numbers or _.');
+  frDo('fr_add', n).then(r=>{ if (r.ok) $id('fr_name').value=''; }); });
+$id('fr_name').addEventListener('keydown', e=>e.stopPropagation());
+// the button on the pop-up you get by tapping another llama
+function pmFriendBtn(){ const b=$id('pm_friend'); const o=pmTarget&&others.get(pmTarget); if (!b||!o) return; const n=o.n.toUpperCase();
+  b.textContent = FR.friends.includes(n) ? '⭐ FRIENDS' : FR.out.includes(n) ? '⏳ ASKED' : FR.inc.includes(n) ? '⭐ ACCEPT' : '⭐ ADD';
+  b.disabled = FR.friends.includes(n) || FR.out.includes(n); }
+$id('pm_friend').addEventListener('click', ()=>{ const o=pmTarget&&others.get(pmTarget); if (!o) return; const n=o.n.toUpperCase(); closeAll();
+  NET.act(FR.inc.includes(n)?'fr_accept':'fr_add', {n}).then(r=>{ if (r.fr) frSet(r.fr); localMsg(r.msg||(r.ok?'Done.':'That did not work.')); }); });
+NET.handlers.fr = m => { frSet(m.fr);
+  if (m.ev==='req') localMsg(`⭐ ${String(m.n).toUpperCase()} sent you a friend request! Open Menu > FRIENDS to accept.`);
+  else if (m.ev==='acc') localMsg(`⭐ ${String(m.n).toUpperCase()} accepted your friend request!`); };
+{ const h0=NET.handlers.hello; NET.handlers.hello = m => { h0(m); setTimeout(frLoad, 200); }; }
 // ---- account sheet (menu > ACCOUNT) and the "add your email" pop-up for older accounts ----
 const acctEl=$id('acctbox'), acBody=$id('ac_body');
 function acMsg(t, good){ const el=acBody.querySelector('.acmsg'); if (el){ el.textContent=t||''; el.classList.toggle('good', !!good); } }

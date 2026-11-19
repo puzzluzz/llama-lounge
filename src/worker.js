@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-19w";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-19x";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -14,6 +14,7 @@ const IP_MAX_FAILS = 30;                  // per IP per 15 minutes
 const SIGNUPS_PER_IP_HOUR = 5;
 const WINDOW_MS = 15 * 60 * 1000;
 // email: reset links last 30 minutes and work once; confirm links last 2 days. Limits are per 15 minutes.
+const FRIENDS = { max: 100, inbox: 50 };   // friends plus sent requests per llama; requests waiting for one llama
 const RESET_MS = 30 * 60 * 1000, VERIFY_MS = 48 * 3600 * 1000;
 const FORGOT_PER_IP = 6, FORGOT_PER_EMAIL = 3, RESET_BAD_PER_IP = 10, PW_CHECK_FAILS = 8;
 
@@ -517,6 +518,62 @@ export class Lounge extends DurableObject {
   async webSocketError(ws) { this.left(ws); }
   left(ws) { const a = ws.deserializeAttachment(); if (a && a.pres) this.broadcast({ t: "peers", left: [{ peer: a.peer }] }, ws); }
 
+  // ---------- friends ----------
+  // One row per pair: a asked b. st is 'req' until b accepts, then 'ok'. Either side can remove it.
+  async frTable() { if (this.frReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS friends (a INTEGER NOT NULL, b INTEGER NOT NULL, st TEXT NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (a, b))").run(); await this.env.DB.prepare("CREATE INDEX IF NOT EXISTS friends_b ON friends (b)").run(); this.frReady = true; }
+  async frList(uid) {
+    await this.frTable();
+    const rows = (await this.env.DB.prepare("SELECT f.a, f.st, u.name FROM friends f JOIN users u ON u.id = CASE WHEN f.a = ? THEN f.b ELSE f.a END WHERE (f.a = ? OR f.b = ?) AND u.banned = 0 ORDER BY u.name").bind(uid, uid, uid).all()).results || [];
+    const out = { friends: [], inc: [], out: [] };
+    for (const r of rows) (r.st === "ok" ? out.friends : r.a === uid ? out.out : out.inc).push(r.name.toUpperCase());
+    return out;
+  }
+  toUid(uid, obj) { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.uid === uid) { try { w.send(s); } catch (e) {} } } }
+  async frTarget(a, m) {
+    const n = String(m.n || "").trim();
+    if (!/^[A-Za-z0-9_]{3,12}$/.test(n)) return { err: "No llama has that name." };
+    const u = await this.env.DB.prepare("SELECT id, name, banned FROM users WHERE name = ?").bind(n).first();
+    if (!u || u.banned) return { err: "No llama has that name." };
+    if (u.id === a.uid) return { err: "You're already your own best friend!" };
+    const row = await this.env.DB.prepare("SELECT a, b, st FROM friends WHERE (a = ? AND b = ?) OR (a = ? AND b = ?)").bind(a.uid, u.id, u.id, a.uid).first();
+    return { u, row };
+  }
+  async frAdd(ws, a, m) {
+    await this.frTable();
+    const now = Date.now(); if (!a.fr || now - a.fr[0] > 60000) a.fr = [now, 0]; if (++a.fr[1] > 10) { ws.serializeAttachment(a); return { ok: false, msg: "Slow down on the friend requests. Try again in a minute." }; } ws.serializeAttachment(a);
+    const T = await this.frTarget(a, m); if (T.err) return { ok: false, msg: T.err };
+    const { u, row } = T, them = u.name.toUpperCase();
+    if (row && row.st === "ok") return { ok: false, msg: `You and ${them} are already friends.` };
+    if (row && row.a === a.uid) return { ok: false, msg: `You already asked ${them}. Waiting for them to accept.` };
+    if (row) return this.frAccept(a, m);   // they already asked you, so this just accepts
+    const mine = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM friends WHERE a = ? OR (b = ? AND st = 'ok')").bind(a.uid, a.uid).first();
+    if (mine.n >= FRIENDS.max) return { ok: false, msg: `You can have up to ${FRIENDS.max} friends and requests. Remove some first.` };
+    const theirs = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM friends WHERE b = ? AND st = 'req'").bind(u.id).first();
+    if (theirs.n >= FRIENDS.inbox) return { ok: false, msg: `${them} has too many friend requests waiting right now.` };
+    await this.env.DB.prepare("INSERT OR IGNORE INTO friends (a, b, st, t) VALUES (?, ?, 'req', ?)").bind(a.uid, u.id, now).run();
+    this.toUid(u.id, { t: "fr", ev: "req", n: a.name, fr: await this.frList(u.id) });
+    return { ok: true, msg: `Friend request sent to ${them}!`, fr: await this.frList(a.uid) };
+  }
+  async frAccept(a, m) {
+    await this.frTable();
+    const T = await this.frTarget(a, m); if (T.err) return { ok: false, msg: T.err };
+    const { u, row } = T, them = u.name.toUpperCase();
+    if (!row || row.st !== "req" || row.a !== u.id) return { ok: false, msg: `${them} hasn't sent you a request.` };
+    await this.env.DB.prepare("UPDATE friends SET st = 'ok', t = ? WHERE a = ? AND b = ?").bind(Date.now(), u.id, a.uid).run();
+    this.toUid(u.id, { t: "fr", ev: "acc", n: a.name, fr: await this.frList(u.id) });
+    return { ok: true, msg: `You and ${them} are now friends!`, fr: await this.frList(a.uid) };
+  }
+  async frDrop(a, m, why) {   // decline a request, cancel your own, or unfriend
+    await this.frTable();
+    const T = await this.frTarget(a, m); if (T.err) return { ok: false, msg: T.err };
+    const { u, row } = T;
+    if (!row) return { ok: true, fr: await this.frList(a.uid) };
+    if (why === "decline" && !(row.st === "req" && row.a === u.id)) return { ok: false, msg: "There's no request to decline." };
+    await this.env.DB.prepare("DELETE FROM friends WHERE (a = ? AND b = ?) OR (a = ? AND b = ?)").bind(a.uid, u.id, u.id, a.uid).run();
+    this.toUid(u.id, { t: "fr", ev: "upd", fr: await this.frList(u.id) });   // their list just updates quietly
+    return { ok: true, fr: await this.frList(a.uid) };
+  }
+
   // ---------- database helpers ----------
   async user(uid) { return this.env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(uid).first(); }
   async credit(uid, n, why) {
@@ -655,6 +712,11 @@ export class Lounge extends DurableObject {
       case "bowl_info": return this.bowlInfo(a, now);
       case "bowl_start": return this.bowlStart(a, now);
       case "bowl_roll": return this.bowlRoll(a, m, now);
+      case "fr_list": return { ok: true, fr: await this.frList(uid) };
+      case "fr_add": return this.frAdd(ws, a, m);
+      case "fr_accept": return this.frAccept(a, m);
+      case "fr_decline": return this.frDrop(a, m, "decline");
+      case "fr_remove": return this.frDrop(a, m, "remove");
       case "bowl_quit": { await this.ctx.storage.delete("bowl:" + a.uid); this.bowlLiveDrop(a.uid); return { ok: true }; }
     }
     return { ok: false, msg: "The game was just updated. Refresh the page to get the newest version." };
