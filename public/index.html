@@ -793,7 +793,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22r";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22s";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -3759,7 +3759,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__ward=(t,k)=>openWardrobe(t,null,k); window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__ward=(t,k)=>openWardrobe(t,null,k); window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__wear=(sl,id)=>wdWear(sl,id); window.__face=d=>{ me.d=d; }; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
@@ -4232,7 +4232,7 @@ function render(t){
   overlayItems.length = 0; llamaHits.length = 0; cupHits.length = 0; itemHits.length = 0; vendHit = null; pvHits.length = 0;
   for (const it of items){
     if (it.f){ if (PDR.on && PDR.fid && it.f.fid===PDR.fid){ g.globalAlpha=0.25; drawFurn(it.f, t); g.globalAlpha=1; continue; } drawFurn(it.f, t); if (it.f.show) showroomTag(it.f); }
-    else { const fa = (!it.me && it.l.leaving) ? Math.max(0, Math.min(1, 1-(performance.now()-it.l.leaving)/LEAVE_T)) : 1; g.globalAlpha=fa; const pos = drawLlama(it.l, t, it.me); g.globalAlpha=1; overlayItems.push({l:it.l, x:pos[0], y:pos[1], me:it.me, balloon:pos[2], fa}); }
+    else { const fa = (!it.me && it.l.leaving) ? Math.max(0, Math.min(1, 1-(performance.now()-it.l.leaving)/LEAVE_T)) : 1; g.globalAlpha=fa; const pos = drawLlama(it.l, t, it.me); g.globalAlpha=1; overlayItems.push({l:it.l, x:pos[0], y:pos[1], me:it.me, balloon:pos[2] || fishAbove(it.l, it.me), fa}); }
   }
   if (isP(curRoom)) prGhost(t);
   drawSpits(t); drawDunk(t);
@@ -4983,6 +4983,8 @@ function afkTick(){
   afkCount(); if (now-afkBlink>1000){ afkBlink=now; document.title = (Math.floor(now/1000)%2) ? '⚠️ Are you still there?' : (afkTitle||document.title); }
   if (now-afkShownAt > AFK_GRACE) afkLogout(); }
 function drawFishBmp(f, x, y){ const K=FISH_KINDS[f]; g.fillStyle=INK; g.fillRect(x,y,9,5); g.fillRect(x+9,y+1,2,3); g.fillStyle=K.c; g.fillRect(x+1,y+1,7,3); g.fillRect(x+9,y+2,1,1); g.fillStyle=K.d; g.fillRect(x+1,y+3,7,1); g.fillStyle='#f8f8f8'; g.fillRect(x+2,y+1,1,1); g.fillStyle=INK; g.fillRect(x+2,y+2,1,1); }
+/* the bite "!" and a freshly caught fish show above the head, so the name tag moves up out of their way (like an emote bubble) */
+function fishAbove(l, isMe){ if (curRoom!=='barn') return false; const F=isMe?me.fish:l.fs, sh=isMe?me.fishShow:l.fishShow; return !!((F && F.st==='bite') || (sh && performance.now()<sh.until)); }
 function drawFishing(t){
   if (curRoom!=='barn') return;
   const list=[]; if (joined) list.push({l:me, F:me.fish, show:me.fishShow});
