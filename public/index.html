@@ -349,6 +349,10 @@
   #cat_body .ci img{width:100%;max-width:150px;aspect-ratio:1;object-fit:contain;border-radius:12px;image-rendering:auto}
   #cat_body .ci b{font:800 13px/1.25 var(--ui);color:var(--ink)} #cat_body .ci small{font:700 13px var(--ui);color:#1f8a4c}
   #cat_body .ci a{font:800 12px var(--ui);color:#2a1d00;background:var(--yel);padding:7px 12px;border-radius:999px;text-decoration:none}
+  .afk{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(16,12,28,.7);z-index:20;padding:20px}
+  .afkc{background:var(--card);border-radius:22px;padding:24px 22px;max-width:340px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;box-shadow:0 24px 60px rgba(8,4,20,.5)}
+  .afki{font-size:40px} .afkc b{font:800 18px var(--ui);color:var(--ink)} .afkc small{font:500 14px/1.45 var(--ui);color:var(--sub)} .afkc .gbbtn{margin-top:6px;min-height:48px;padding:0 22px;font-size:15px}
+  #afk_left{font-weight:800;color:#e02838}
   .picknote{font:600 13px var(--ui);color:var(--sub);text-align:center;margin:2px 0 6px}
   #wardbox{width:min(calc(100% - 24px),480px)}
   #wardbox .wdtop{display:flex;gap:14px;align-items:center;background:#f6f4fb;border-radius:18px;padding:10px 14px;margin:6px 0 10px}
@@ -634,6 +638,8 @@
     <div id="dm_thread"><div id="dm_msgs"></div><form id="dm_form" autocomplete="off"><input id="dm_in" maxlength="300" placeholder="Message..." enterkeyhint="send"><button class="pbtn y" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10 15 12 3.4 14z" fill="currentColor"/></svg></button></form><div class="dmnote" id="dm_note"></div></div></div>
   <div id="acctbox" class="gb sheet"><div class="slt" id="ac_title">🔐 ACCOUNT</div><div id="ac_body"></div></div>
   <div id="kicked"></div>
+  <div id="afkbox" class="afk"><div class="afkc"><div class="afki">⏰</div><b>Are you still there?</b><small>You haven't moved in a while. You'll be logged out of the room in <span id="afk_left">2:00</span>.</small><button class="gbbtn y" id="afk_here">I'M STILL HERE</button></div></div>
+  <div id="afkout" class="afk"><div class="afkc"><div class="afki">💤</div><b>You were away, so we logged you out.</b><small>Your tokens and stuff are all saved.</small><button class="gbbtn y" id="afk_back">COME BACK</button></div></div>
   <div id="roompick" class="gb sheet"><div class="rpt" id="rp_title">WHERE TO?</div>
     <button class="rpb" data-r="lounge"><span class="rpi">🍸</span><span class="rpx"><b>LLAMA LOUNGE</b><small>BAR · ARCADE · JUKEBOX · DANCE FLOOR · TABLE GAMES</small><i id="rp_n_lounge"></i></span></button>
     <button class="rpb" data-r="casino"><span class="rpi">🎰</span><span class="rpx"><b>LLAMA CASINO</b><small>SLOTS · ROULETTE · BLACKJACK TABLES</small><i id="rp_n_casino"></i></span></button>
@@ -722,7 +728,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-20i";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-20j";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -4297,7 +4303,7 @@ function startFish(){
   face(Math.round(me.gx+dx/L), Math.round(me.gy+dy/L)); me.p='stand'; sendPresence(true);
   const spot=bobberSpot() || [me.gx+0.5+dx/L*k, me.gy+0.5+dy/L*k];
   me.fishK=(me.fishK||0)+1; const F={k:me.fishK, st:'wait', f:0, t0:performance.now(), biteAt:Infinity, bx:spot[0], by:spot[1]}; me.fish=F;
-  setTimeout(()=>NET.act('fish_cast').then(r=>{ if (me.fish!==F) return; if (!r.ok){ me.fish=null; localMsg(r.msg||'No luck casting.'); sendPresence(true); return; }
+  setTimeout(()=>NET.act('fish_cast').then(r=>{ if (me.fish!==F) return; if (!r.ok){ me.fish=null; localMsg(r.msg||'No luck casting.'); sendPresence(true); if (r.afk) afkAsk(); return; }
     F.st='cast'; F.biteAt=performance.now()+r.bite; localMsg('You cast your line...'); sendPresence(true); }), 250);
 }
 function stopFish(quiet){ if (!me.fish) return; me.fish=null; if (!quiet) localMsg('You reeled in your line.'); sendPresence(true); }
@@ -4311,8 +4317,26 @@ function updateFish(){
       F.recastAt=performance.now()+2300; sendPresence(true); }); }
   else if (F.st==='got' && now>=F.recastAt){ F.st='wait'; F.k=++me.fishK; startRecast(F); }
 }
-function startRecast(F){ NET.act('fish_cast').then(r=>{ if (me.fish!==F) return; if (!r.ok){ me.fish=null; sendPresence(true); return; } F.st='cast'; F.biteAt=performance.now()+r.bite; sendPresence(true); }); }
-setInterval(updateFish, 100);
+function startRecast(F){ NET.act('fish_cast').then(r=>{ if (me.fish!==F) return; if (!r.ok){ me.fish=null; sendPresence(true); if (r.afk) afkAsk(); return; } F.st='cast'; F.biteAt=performance.now()+r.bite; sendPresence(true); }); }
+// Browsers slow down timers in background tabs (to about once a minute after 5 minutes), which would make fishing
+// miss its bites. A tiny worker keeps a steady tick going, so fishing carries on while you're in another tab.
+const BG_TICK = (()=>{ try { const w=new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},250)'],{type:'text/javascript'}))); w.onmessage=()=>{ updateFish(); afkTick(); }; return w; } catch(e){ return null; } })();
+if (!BG_TICK) setInterval(()=>{ updateFish(); afkTick(); }, 250);
+// ---- "Are you still there?": after 10 minutes with no input, ask; after 2 more minutes with no answer, log out of the room ----
+const AFK_ASK=10*60000, AFK_GRACE=2*60000; let lastInput=Date.now(), afkShownAt=0, afkPing=0, afkTitle=null, afkBlink=0;
+for (const ev of ['pointerdown','keydown','wheel','touchstart']) addEventListener(ev, ()=>{ if (!afkShownAt) lastInput=Date.now(); }, {passive:true, capture:true});
+function afkAsk(){ if (afkShownAt || !joined) return; afkShownAt=Date.now(); const el=document.getElementById('afkbox'); el.style.display='flex'; afkCount(); afkTitle=document.title;
+  try { ensureAudio(); if (actx){ const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.value=880; gn.gain.value=0.06*(svol/100); o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime+0.15); } } catch(_){} }
+function afkCount(){ const left=Math.max(0, AFK_GRACE-(Date.now()-afkShownAt)); document.getElementById('afk_left').textContent=`${Math.floor(left/60000)}:${String(Math.floor(left/1000)%60).padStart(2,'0')}`; }
+function afkHere(){ document.getElementById('afkbox').style.display='none'; afkShownAt=0; lastInput=Date.now(); afkPing=Date.now(); if (afkTitle){ document.title=afkTitle; afkTitle=null; } NET.act('afk_ok');
+  if (curRoom==='barn' && !me.fish && pondNear() && me.p!=='sit') setTimeout(startFish, 300); }
+function afkLogout(){ document.getElementById('afkbox').style.display='none'; if (me.fish) stopFish(true); if (afkTitle){ document.title=afkTitle; afkTitle=null; }
+  NET.closedForGood=true; try{ NET.ws&&NET.ws.close(1000,'away'); }catch(_){} document.getElementById('afkout').style.display='flex'; afkShownAt=0; joined=false; }
+function afkTick(){
+  if (!joined || NET.closedForGood) return; const now=Date.now();
+  if (!afkShownAt){ if (now-lastInput > AFK_ASK) afkAsk(); else if (now-lastInput < 60000 && now-afkPing > 60000){ afkPing=now; NET.act('afk_ok'); } return; }
+  afkCount(); if (now-afkBlink>1000){ afkBlink=now; document.title = (Math.floor(now/1000)%2) ? '⚠️ Are you still there?' : (afkTitle||document.title); }
+  if (now-afkShownAt > AFK_GRACE) afkLogout(); }
 function drawFishBmp(f, x, y){ const K=FISH_KINDS[f]; g.fillStyle=INK; g.fillRect(x,y,9,5); g.fillRect(x+9,y+1,2,3); g.fillStyle=K.c; g.fillRect(x+1,y+1,7,3); g.fillRect(x+9,y+2,1,1); g.fillStyle=K.d; g.fillRect(x+1,y+3,7,1); g.fillStyle='#f8f8f8'; g.fillRect(x+2,y+1,1,1); g.fillStyle=INK; g.fillRect(x+2,y+2,1,1); }
 function drawFishing(t){
   if (curRoom!=='barn') return;
@@ -4652,6 +4676,8 @@ function wdBuy(id){ wdMsg('BUYING...'); NET.act('inv_buy',{item:id}).then(r=>{ i
   INV.owned=r.owned||INV.owned; tkSet(r.tk, `You bought the ${ITEMS[id].n}!`); wdWear(ITEMS[id].s, id, `Bought the ${ITEMS[id].n} and put it on!`); }); }
 function wdWear(slot, id, msg){ NET.act('inv_wear',{slot, item:id}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); me.w=cleanWear(r.w); sendPresence(true); wdMsg(msg || (id ? `You put on the ${ITEMS[id].n}.` : 'Taken off.'), true); wdDraw(); }); }
 $id('cat_clothes').addEventListener('click', ()=>openWardrobe('shop'));
+$id('afk_here').addEventListener('click', e=>{ e.stopPropagation(); afkHere(); });
+$id('afk_back').addEventListener('click', ()=>location.reload());
 $id('invbtn').addEventListener('click', ()=>{ ensureAudio(); openWardrobe('clothing'); });
 
 // ---- private messages between friends ----

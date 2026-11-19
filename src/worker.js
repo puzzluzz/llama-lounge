@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-20i";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-20j";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -18,6 +18,7 @@ const FRIENDS = { max: 100, inbox: 50 };
 const DM = { len: 300, burst: 8, perDay: 300 };   // private messages: longest message, most per 10 seconds, most a day (kept forever)
 // the staff chat log is kept forever too
 const ROOM_IDS = new Set(["lounge", "barn", "casino", "arena", "lanes", "store"]);
+const AFK_MS = 12 * 60000;   // no moving, chatting or "I'm still here" for this long: no more fishing or bar tips until they're back
 const SIPS = 5;                                   // sips or bites in every drink and snack   // friends plus sent requests per llama; requests waiting for one llama
 const RESET_MS = 30 * 60 * 1000, VERIFY_MS = 48 * 3600 * 1000;
 const FORGOT_PER_IP = 6, FORGOT_PER_EMAIL = 3, RESET_BAD_PER_IP = 10, PW_CHECK_FAILS = 8;
@@ -493,7 +494,7 @@ export class Lounge extends DurableObject {
     this.ctx.acceptWebSocket(server);
     const nd = await this.needsLoad(uid);
     const wear = await this.wearLoad(uid);
-    server.serializeAttachment({ uid, name, staff, peer, pres: null, rate: [Date.now(), 0], nd, wear });
+    server.serializeAttachment({ uid, name, staff, peer, pres: null, rate: [Date.now(), 0], nd, wear, act: Date.now() });
     // greet with everyone already here, the leaderboard and table states
     const peers = this.sockets().filter((w) => w !== server && w.readyState === 1).map((w) => w.deserializeAttachment()).filter((a) => a && a.pres && a.uid !== uid).map((a) => ({ peer: a.peer, presence: a.pres }));
     server.send(JSON.stringify({ t: "hello", v: VERSION, peer, peers, board: await this.board(), nd: { hu: nd.hu, th: nd.th, rate: { hu: 100 / NEEDS.hungerMs, th: 100 / NEEDS.thirstMs } } }));
@@ -516,6 +517,8 @@ export class Lounge extends DurableObject {
       // balance / mute / ban are cached for a few seconds so moving around doesn't hit the database every step
       if (!a.uc || now - a.uc.t > 5000){ const u = await this.user(a.uid); if (!u || u.banned) { ws.close(4003, "banned"); return; } a.uc = { t: now, tk: u.tk, muted: u.muted, c: u.c || null }; a.staff = staffRole(this.env, u); }
       const first = !a.pres;
+      // anything a person does (walking, changing rooms, chatting) counts as being here
+      if (m.p && (first || +m.p.x !== a.pres.x || +m.p.y !== a.pres.y || m.p.rm !== a.pres.rm || (m.p.s && typeof m.p.s === "object" && +m.p.s.k !== a.ck))) a.act = now;
       // chat log for staff: every new line, muted ones too (marked); action lines like "sat down" are marked as actions
       const rs = m.p && m.p.s;
       if (rs && typeof rs === "object" && rs.t && +rs.k !== a.ck) { const was = a.ck; a.ck = +rs.k; if (!first && was !== undefined) await this.chatLog(a, m.p.rm, (rs.f ? "* " : "") + String(rs.t).slice(0, 120), !!a.uc.muted); }
@@ -753,7 +756,9 @@ export class Lounge extends DurableObject {
         await this.setTimer(uid, "crop:" + k, now + CROP_MS);
         return { ok: true, left: CROP_MS, tk: await this.credit(uid, 1, "harvest") };
       }
+      case "afk_ok": { a.act = now; ws.serializeAttachment(a); return { ok: true }; }
       case "fish_cast": {
+        if (now - (a.act || 0) > AFK_MS) return { ok: false, afk: true, msg: "Are you still there? Tap I'M STILL HERE to keep fishing." };
         if (!this.near(a, "barn", (x, y) => x >= POND.x0 - 1.6 && x <= POND.x1 + 1.6 && y >= POND.y0 - 1.6 && y <= POND.y1 + 1.6)) return { ok: false, msg: "Stand next to the pond to fish." };
         const bite = 10000 + rnd(10000);
         await this.setTimer(uid, "fish", now + bite);
@@ -761,12 +766,13 @@ export class Lounge extends DurableObject {
       }
       case "fish_reel": {
         const t = await this.timer(uid, "fish");
-        if (!t || now < t - 300 || now > t + 20000) return { ok: false, msg: "Nothing on the line." };
+        if (!t || now < t - 300 || now > t + 60000) return { ok: false, msg: "Nothing on the line." };   // a minute to reel, so a background tab still makes it
         await this.clearTimer(uid, "fish");
         const f = pickW(FISH.map((x) => x.w));
         return { ok: true, f, pay: FISH[f].pay, name: FISH[f].n, tk: await this.credit(uid, Math.max(1, halfIfEmpty(a, FISH[f].pay)), "fish") };
       }
       case "bar_tick": {
+        if (now - (a.act || 0) > AFK_MS) return { ok: false, afk: true };
         if (!this.near(a, "lounge", (x, y, p) => p.p === "bar" && y < 1.2)) { await this.clearTimer(uid, "bar"); return { ok: false }; }
         const last = await this.timer(uid, "bar");
         if (!last) { await this.setTimer(uid, "bar", now); return { ok: true, started: true }; }
