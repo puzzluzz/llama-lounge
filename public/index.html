@@ -758,7 +758,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22b";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22c";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1651,7 +1651,15 @@ function box(gx,gy,w,d,h,top,lf,rf,inset=0,lift=0){
   L(P(a,b,lift+h),P(c,b,lift+h)); L(P(a,b,lift+h),P(a,e,lift+h)); L(P(a,e,lift+h),P(c,e,lift+h)); L(P(c,b,lift+h),P(c,e,lift+h));
   L(P(a,e,lift+h),P(a,e,lift)); L(P(c,e,lift+h),P(c,e,lift)); L(P(c,b,lift+h),P(c,b,lift));
   L(P(a,e,lift),P(c,e,lift)); L(P(c,b,lift),P(c,e,lift));
+  // shared finish for every box in the game: a light rim just inside the top's front edges, and a soft dark band at the foot of each side
+  if (w-2*inset>=0.12 && d-2*inset>=0.12){ const hi=tint(top,0.28); if (hi){ const S1=(p,q)=>linePx(p[0],p[1]-1,q[0],q[1]-1,hi); S1(P(a,e,lift+h),P(c,e,lift+h)); S1(P(c,b,lift+h),P(c,e,lift+h)); } }
+  if (h>=4){ const dl=tint(lf,-0.22), dr=tint(rf,-0.22); if (dl && c-a>=0.12){ const p=P(a,e,lift+1), q=P(c,e,lift+1); linePx(p[0]+1,p[1],q[0]-1,q[1],dl); } if (dr && e-b>=0.12){ const p=P(c,b,lift+1), q=P(c,e,lift+1); linePx(p[0]-1,p[1],q[0]+1,q[1],dr); } }
 }
+// lighten (k>0) or darken (k<0) a #rrggbb colour; cached because boxes are drawn every frame
+const TINT=new Map();
+function tint(col, k){ const key=col+k; if (TINT.has(key)) return TINT.get(key); let out=null; const m=/^#([0-9a-f]{6})$/i.exec(col||'');
+  if (m){ const n=parseInt(m[1],16), ch=[n>>16&255, n>>8&255, n&255].map(v=>Math.round(k>0 ? v+(255-v)*k : v*(1+k))); out='#'+ch.map(v=>v.toString(16).padStart(2,'0')).join(''); }
+  TINT.set(key,out); return out; }
 const JUKE = ['#f84848','#f8d030','#48c048','#58b8f8','#b058e0'];
 // padded loveseat armrest: chunky block with a soft rounded top and a rolled front end
 function sofaArmrest(y0){
@@ -2128,14 +2136,22 @@ function drawFurn(f,t){
       const B=(q,h,lift,top)=>{ const k=R(...q); box(k[0],k[1],k[2],k[3],h,top||C[0],C[1],C[2],0,lift); return k; };
       const mid=(q,h)=>{ const k=R(...q); return P(k[0]+k[2]/2,k[1]+k[3]/2,h); };
       const U0=0.1, U1=n-0.1, V0=0.1, V1=0.9, BK=0.3, AW=0.2;   // every edge lands on a whole pixel, so both arms come out the same width
-      const back=()=>{ B([U0,U1,V0,BK],16,9); for (let i=0;i<n;i++){ const [bx,by]=mid([U0+AW+(i+0.5)*(U1-U0-2*AW)/n, U0+AW+(i+0.5)*(U1-U0-2*AW)/n, BK, BK],18); g.fillStyle=C[2]; g.fillRect(Math.round(bx),Math.round(by),1,1); } };
-      const arm=(u0,u1)=>{ B([u0,u1,BK,V1],8,9); };
+      // a point on the piece in its own frame (u along the seats, v back to front), and a line between two such points
+      const Q=(u,v,h)=>{ const [wx,wy] = r===0 ? [x+v,y+u] : r===1 ? [x+u,y+v] : r===2 ? [x+u,y+1-v] : [x+1-v,y+u]; return P(wx,wy,h); };
+      const LN=(u0,v0,h0,u1,v1,h1,col)=>{ const a2=Q(u0,v0,h0), b2=Q(u1,v1,h1); linePx(a2[0],a2[1],b2[0],b2[1],col); };
+      const SW=(U1-U0-2*AW)/n, faceV = r<2 ? BK : V0;   // the side of the back you can see: the cushioned front, or (turned away) its outer back
+      const back=()=>{ B([U0,U1,V0,BK],16,9);
+        for (let i=1;i<n;i++){ const us=U0+AW+i*SW; LN(us,faceV,11,us,faceV,24,C[2]); LN(us,V0,25,us,BK,25,C[2]); }   // a seam between seat backs
+        if (r>=2) LN(U0+0.02,V0,21,U1-0.02,V0,21,C[1]);   // welt line across the outer back
+        for (let i=0;i<n;i++){ const um=U0+AW+(i+0.5)*SW; for (const [du,h] of [[-0.12,19],[0.12,19],[0,15]]){ const [bx,by]=Q(um+du,faceV,h); g.fillStyle=C[2]; g.fillRect(Math.round(bx),Math.round(by),1,1); g.fillStyle=tint(C[0],0.12)||C[0]; g.fillRect(Math.round(bx),Math.round(by)-1,1,1); } } };   // buttoned tufting
+      const arm=(u0,u1)=>{ B([u0,u1,BK,V1],8,9); if (r<2){ LN(u0+0.04,V1,14,u1-0.04,V1,14,HI); LN(u0+0.04,V1,11,u1-0.04,V1,11,C[2]); } };   // rolled front on the arm
       if (f.part==='front'){ if (f.su===n-1 || n===1) arm(U1-AW,U1); if (r>=2) back(); break; }
       for (const [u,v] of [[U0+0.06,V0+0.06],[U1-0.06,V0+0.06],[U0+0.06,V1-0.06],[U1-0.06,V1-0.06]]){ const k=R(u,u,v,v); const [lx,ly]=P(k[0],k[1],0); g.fillStyle=INK; g.fillRect(Math.round(lx)-1,Math.round(ly)-3,3,4); g.fillStyle='#5a3418'; g.fillRect(Math.round(lx),Math.round(ly)-2,1,2); }
-      B([U0,U1,V0,V1],7,2);
+      B([U0,U1,V0,V1],7,2); LN(U0+0.02, r<2?V1:V0, 4, U1-0.02, r<2?V1:V0, 4, C[2]);   // skirt line along the base
       if (r<2) back();
       arm(U0,U0+AW);
-      for (let i=0;i<n;i++){ const s0=U0+AW+i*(U1-U0-2*AW)/n, s1=U0+AW+(i+1)*(U1-U0-2*AW)/n; B([s0+0.01,s1-0.01,BK,V1],3,9,HI); }
+      for (let i=0;i<n;i++){ const s0=U0+AW+i*SW, s1=U0+AW+(i+1)*SW; B([s0+0.01,s1-0.01,BK,V1],3,9,HI); if (r<2) LN(s0+0.04,V1,10,s1-0.04,V1,10,C[2]);   // seat cushion with piping
+        const [cx,cy]=Q((s0+s1)/2,(BK+V1)/2,12); g.fillStyle=tint(HI,-0.12)||C[1]; g.fillRect(Math.round(cx)-2,Math.round(cy),4,1); }
       arm(U1-AW,U1);
       if (r>=2) back();
       break; }
@@ -2208,14 +2224,20 @@ function drawFurn(f,t){
       { const a2=FL(0.14,27), b2=FL(0.34,27); linePx(a2[0],a2[1],b2[0],b2[1],'rgba(255,255,255,0.7)'); const c2=FL(0.14,25); g.fillStyle='rgba(255,255,255,0.5)'; g.fillRect(Math.round(c2[0]),Math.round(c2[1]),1,1); }
       { const k2=FL(0.88,13); g.fillStyle=(Math.floor(t*2)%2)?'#ff4050':'#a02030'; g.fillRect(Math.round(k2[0]),Math.round(k2[1]),1,1); }
       break; }
-    case 'plant': { // big leafy plant: terracotta pot with a rim, dark soil, layered leaves
+    case 'plant': { // big leafy plant: terracotta pot with a rim and soil, then separate pointed leaves fanning out (back ones darker, front ones lighter)
       const x=f.gx, y=f.gy; box(x+0.3,y+0.3,0.4,0.4,8,'#5a3018','#c8642e','#a04a1c');
       box(x+0.26,y+0.26,0.48,0.48,2,'#4a2810','#e07a40','#b85a28',0,8);
+      { const [sx2,sy2]=P(x+0.5,y+0.5,10); ellPx(Math.round(sx2),Math.round(sy2),4,1.5,'#3a2010'); }
       const [cx,cy]=P(x+0.5,y+0.5,10); const X=Math.round(cx), Y=Math.round(cy);
-      for (const [dx,dy,rx,ry,c] of [[0,-13,6,9,'#2e7a2e'],[-6,-8,5,6,'#2e7a2e'],[6,-9,5,6,'#2e7a2e'],[-4,-15,4,6,'#3a8f3a'],[5,-16,4,6,'#3a8f3a'],[0,-21,4,5,'#4aa04a'],[-2,-25,2,3,'#6ac06a'],[3,-23,2,3,'#6ac06a']]){ ellPx(X+dx,Y+dy,rx+1,ry+1,INK); }
-      for (const [dx,dy,rx,ry,c] of [[0,-13,6,9,'#2e7a2e'],[-6,-8,5,6,'#2e7a2e'],[6,-9,5,6,'#2e7a2e'],[-4,-15,4,6,'#3a8f3a'],[5,-16,4,6,'#3a8f3a'],[0,-21,4,5,'#4aa04a'],[-2,-25,2,3,'#6ac06a'],[3,-23,2,3,'#6ac06a']]){ ellPx(X+dx,Y+dy,rx,ry,c); }
-      g.fillStyle='#8ad88a'; for (const [dx,dy] of [[-5,-17],[4,-18],[0,-23],[-7,-10],[6,-11]]) g.fillRect(X+dx,Y+dy,1,2);
-      g.fillStyle='#1e5a1e'; for (const [dx,dy] of [[0,-6],[-3,-11],[3,-12]]) g.fillRect(X+dx,Y+dy,1,3);
+      const leaf=(ang,len,wid,col,lift)=>{ const a2=ang*Math.PI/180, dx=Math.cos(a2), dy=Math.sin(a2), nx=-dy, ny=dx, bx=X+dx*2, by=Y-lift+dy*2;
+        const tip=[bx+dx*len, by+dy*len], m=[bx+dx*len*0.45, by+dy*len*0.45], pts=[[bx,by],[m[0]+nx*wid,m[1]+ny*wid],tip,[m[0]-nx*wid,m[1]-ny*wid]];
+        linePx(X,Y,bx,by,'#2a5a1a');
+        polyPx(pts,col); for (let i=0;i<4;i++){ const p0=pts[i], p1=pts[(i+1)%4]; linePx(p0[0],p0[1],p1[0],p1[1],INK); }
+        linePx(bx+dx,by+dy,tip[0]-dx*2,tip[1]-dy*2,tint(col,-0.25)); const hx2=m[0]+nx*wid*0.45, hy2=m[1]+ny*wid*0.45; g.fillStyle=tint(col,0.35); g.fillRect(Math.round(hx2),Math.round(hy2),1,1); };
+      // back layer, middle layer, then the leaves nearest you
+      for (const [ang,len,lift] of [[-150,11,4],[-30,11,4],[-110,13,6],[-70,13,6]]) leaf(ang,len,3.2,'#2e7a2e',lift);
+      for (const [ang,len,lift] of [[-170,10,1],[-10,10,1],[-125,12,9],[-55,12,9],[-90,14,10]]) leaf(ang,len,3.4,'#3f9a3a',lift);
+      for (const [ang,len,lift] of [[-140,9,0],[-40,9,0],[-95,10,14],[160,7,-1],[20,7,-1]]) leaf(ang,len,3,'#5cbc52',lift);
       break; }
     case 'glasscase': { // accessories case: wood base, purple velvet top, glasses laid out under glass
       const a=f.gx+(f.end===-1?0.06:0), c=f.gx+(f.end===1?0.94:1), b=f.gy+0.14, e=f.gy+0.86, Hb=11, Hg=20;
@@ -2320,7 +2342,9 @@ function drawFurn(f,t){
       g.fillStyle=INK; g.fillRect(sx-2,sy-22,4,7); g.fillStyle='#f8d030'; g.fillRect(sx-1,sy-21,2,5);
       const lit = f.fid ? !f.off : lampOn();   // a lamp in someone's room has its own switch
       if (lit){ g.fillStyle='rgba(248,232,120,0.28)'; ellPx(sx,sy-24,16,11,'rgba(248,232,120,0.22)'); ellPx(sx,sy-24,10,7,'rgba(248,240,160,0.3)'); }
-      g.fillStyle=INK; g.fillRect(sx-5,sy-29,10,8); g.fillStyle=lit?'#f8e870':'#a8a090'; g.fillRect(sx-4,sy-28,8,6); g.fillStyle=lit?'#f8f8f8':'#c8c0b0'; g.fillRect(sx-3,sy-27,2,4);
+      { const SH=lit?'#f8e870':'#b8b0a0', SD=lit?'#e0c050':'#989080', SL=lit?'#fffbe0':'#d0c8b8';   // drum shade: wider at the bottom, rim lines, light side
+        polyPx([[sx-4,sy-30],[sx+4,sy-30],[sx+6,sy-21],[sx-6,sy-21]], INK); polyPx([[sx-3,sy-29],[sx+3,sy-29],[sx+5,sy-22],[sx-5,sy-22]], SH);
+        g.fillStyle=SD; g.fillRect(sx+2,sy-28,2,6); g.fillStyle=SL; g.fillRect(sx-3,sy-28,1,5); g.fillStyle=SD; g.fillRect(sx-5,sy-22,10,1); g.fillStyle=SL; g.fillRect(sx-3,sy-29,6,1); }
       if (lit){ g.fillStyle='#f8e870'; g.fillRect(sx-7,sy-25,1,1); g.fillRect(sx+6,sy-25,1,1); g.fillRect(sx,sy-32,1,1); }
       // book
       g.fillStyle=INK; g.fillRect(sx+3,sy-18,7,3); g.fillStyle='#3890e0'; g.fillRect(sx+4,sy-17,5,1);
