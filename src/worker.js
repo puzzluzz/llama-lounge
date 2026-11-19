@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-19b";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-19c";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -185,6 +185,20 @@ async function api(req, env, url) {
   return json({ error: "not found" }, 404);
 }
 
+// ---------- spit arena ----------
+// 60-second rounds. Everyone who presses PLAY during the countdown (or early in a round) shares the round.
+// The server keeps the round clock, relays live moves between the players in it, and pays tokens.
+const ARENA = {
+  countdown: 4000, dur: 60000, lateJoin: 25000,            // you can still hop into a round with 25s or more left
+  maxRate: 12,                                             // points a second nobody can beat (combo x5, frenzy x2)
+  dayCap: 40,                                              // most arena tokens a llama can earn in one day
+  colors: [["blue", 1], ["green", 2], ["pink", 4], ["gold", 6], ["rainbow", 8], ["fire", 10]],   // spit colours and the level that unlocks each
+};
+const arenaLevel = (xp) => Math.floor(Math.sqrt(Math.max(0, xp) / 100)) + 1;
+const etDay = (t) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(t));   // 2026-11-19, Eric's time zone
+function etWeek(t) { const d = new Date(etDay(t) + "T12:00:00Z"); const wd = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - wd); return d.toISOString().slice(0, 10); }   // Monday of the week
+const unlocked = (lvl) => ARENA.colors.filter(([, l]) => lvl >= l).map(([c]) => c);
+
 // ---------- realtime room ----------
 const PRES_KEYS = new Set(["bj", "c", "n", "x", "y", "d", "p", "m", "s", "h", "hl", "sk", "e", "a", "sp", "td", "g", "fk", "rm", "fs", "sl", "j", "l", "ea"]);
 function cleanPresence(p, name, tk, muted, staff) {
@@ -238,6 +252,7 @@ export class Lounge extends DurableObject {
       this.broadcast({ t: "peers", [first ? "joined" : "updated"]: [{ peer: a.peer, presence: a.pres }] }, ws);
       return;
     }
+    if (m.t === "ar") { this.arenaRelay(ws, a, m, now); return; }
     if (m.t === "act") {
       let res;
       try { res = await this.act(ws, a, String(m.a || ""), m); } catch (e) { console.error(e); res = { ok: false, msg: "Server hiccup, try again." }; }
@@ -369,6 +384,9 @@ export class Lounge extends DurableObject {
       case "tg_start": return this.tableStart(ws, a, m);
       case "admin": return this.admin(a, m);
       case "dash": return this.dashboard(a);
+      case "arena_info": return this.arenaInfo(a, now);
+      case "arena_join": return this.arenaJoin(ws, a, m, now);
+      case "arena_end": return this.arenaEnd(ws, a, m, now);
     }
     return { ok: false, msg: "The game was just updated. Refresh the page to get the newest version." };
   }
@@ -452,6 +470,93 @@ export class Lounge extends DurableObject {
       for (const w2 of this.sockets()) { const a2 = w2.deserializeAttachment(); if (a2 && a2.uid === u.id) this.send(w2, { t: "tk", tk, msg: note }); }
     }
     setTimeout(() => { this.tables[i] = null; }, 4000);
+  }
+
+  // ---------- spit arena ----------
+  async arenaTable() {
+    if (this.arenaReady) return;
+    await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS arena (uid INTEGER PRIMARY KEY, xp INTEGER NOT NULL DEFAULT 0, best INTEGER NOT NULL DEFAULT 0, wk TEXT NOT NULL DEFAULT '', wk_best INTEGER NOT NULL DEFAULT 0, played INTEGER NOT NULL DEFAULT 0, wins INTEGER NOT NULL DEFAULT 0, streak INTEGER NOT NULL DEFAULT 0, last_day TEXT NOT NULL DEFAULT '', earn_day TEXT NOT NULL DEFAULT '', earned INTEGER NOT NULL DEFAULT 0, color TEXT NOT NULL DEFAULT 'blue')").run();
+    this.arenaReady = true;
+  }
+  async arenaRow(uid) { await this.arenaTable(); return (await this.env.DB.prepare("SELECT * FROM arena WHERE uid = ?").bind(uid).first()) || { uid, xp: 0, best: 0, wk: "", wk_best: 0, played: 0, wins: 0, streak: 0, last_day: "", earn_day: "", earned: 0, color: "blue" }; }
+  async arenaBoard(now) {
+    await this.arenaTable(); const wk = etWeek(now);
+    const q = async (sql, ...b) => ((await this.env.DB.prepare(sql).bind(...b).all()).results || []).map((r) => ({ n: r.name.toUpperCase(), s: r.s }));
+    return { week: await q("SELECT u.name, a.wk_best AS s FROM arena a JOIN users u ON u.id = a.uid WHERE a.wk = ? AND a.wk_best > 0 AND u.banned = 0 ORDER BY a.wk_best DESC LIMIT 10", wk),
+             all: await q("SELECT u.name, a.best AS s FROM arena a JOIN users u ON u.id = a.uid WHERE a.best > 0 AND u.banned = 0 ORDER BY a.best DESC LIMIT 5") };
+  }
+  arenaMe(r, now) {
+    const lvl = arenaLevel(r.xp), today = etDay(now), yest = etDay(now - 86400000);
+    const streak = r.last_day === today || r.last_day === yest ? r.streak : 0;
+    return { xp: r.xp, lvl, lo: (lvl - 1) ** 2 * 100, hi: lvl ** 2 * 100, best: r.best, wkBest: r.wk === etWeek(now) ? r.wk_best : 0, played: r.played, wins: r.wins,
+             streak, playedToday: r.last_day === today, earnedToday: r.earn_day === today ? r.earned : 0, cap: ARENA.dayCap, colors: unlocked(lvl), color: unlocked(lvl).includes(r.color) ? r.color : "blue",
+             next: ARENA.colors.find(([, l]) => l > lvl) || null };
+  }
+  arenaMatchInfo(now) { const M = this.arenaM; if (!M || now > M.t0 + M.dur + 3000) return null;
+    return { id: M.id, seed: M.seed, t0: M.t0, dur: M.dur, now, players: [...M.players.values()].map((p) => ({ n: p.n, c: p.c, sc: p.sc, peer: p.peer, done: p.done })) }; }
+  arenaRoomBroadcast(obj) { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === "arena") { try { w.send(s); } catch (e) {} } } }
+  async arenaInfo(a, now) {
+    const r = await this.arenaRow(a.uid);
+    return { ok: true, me: this.arenaMe(r, now), board: await this.arenaBoard(now), match: this.arenaMatchInfo(now) };
+  }
+  async arenaJoin(ws, a, m, now) {
+    if (!a.pres || a.pres.rm !== "arena") return { ok: false, msg: "Head to the SPIT ARENA to play." };
+    const r = await this.arenaRow(a.uid), me = this.arenaMe(r, now);
+    const color = me.colors.includes(m.color) ? m.color : me.color;
+    if (color !== r.color) await this.env.DB.prepare("INSERT INTO arena (uid, color) VALUES (?, ?) ON CONFLICT(uid) DO UPDATE SET color = excluded.color").bind(a.uid, color).run();
+    let M = this.arenaM;
+    if (!M || now > M.t0 + M.dur - ARENA.lateJoin) {   // start a fresh round with a short countdown
+      M = this.arenaM = { id: crypto.randomUUID().slice(0, 8), seed: (Math.random() * 2 ** 31) >>> 0, t0: now + ARENA.countdown, dur: ARENA.dur, players: new Map(), lastCast: 0 };
+      this.arenaMs = this.arenaMs || new Map(); this.arenaMs.set(M.id, M);
+      for (const [id, old] of this.arenaMs) if (now > old.t0 + old.dur + 120000) this.arenaMs.delete(id);   // forget rounds that ended two minutes ago
+    }
+    M.players.set(a.uid, { n: a.name, c: (a.pres && a.pres.c) || "twotone", peer: a.peer, sc: 0, color, done: false, joined: Math.max(now, M.t0) });
+    a.arm = M.id; a.arc = color; ws.serializeAttachment(a);
+    const info = this.arenaMatchInfo(now);
+    this.arenaRoomBroadcast({ t: "am", match: info });
+    return { ok: true, match: info, me, color };
+  }
+  // live moves: only between players in the same round. The server stamps who sent it.
+  arenaRelay(ws, a, m, now) {
+    const M = this.arenaMs && this.arenaMs.get(a.arm); if (!M || now > M.t0 + M.dur + 2000) return;
+    const P = M.players.get(a.uid); if (!P) return;
+    const raw = JSON.stringify(m); if (raw.length > 900) return;
+    // the running score is kept for the wall scoreboard and for placing; it can only go up and never faster than the game allows
+    if (Number.isFinite(+m.sc)) { const cap = Math.max(0, (now - P.joined) / 1000) * ARENA.maxRate + 10; P.sc = Math.max(P.sc, Math.min(cap, Math.floor(+m.sc))); }
+    const out = JSON.stringify({ ...m, t: "ar", from: a.peer, n: a.name, c: P.c, col: P.color, sc: P.sc });   // server-stamped fields last so nobody can pretend to be someone else
+    for (const w of this.sockets()) { if (w === ws) continue; const x = w.deserializeAttachment(); if (x && x.arm === M.id) { try { w.send(out); } catch (e) {} } }
+    if (now - M.lastCast > 1500 && M === this.arenaM) { M.lastCast = now; this.arenaRoomBroadcast({ t: "am", match: this.arenaMatchInfo(now) }); }
+  }
+  async arenaEnd(ws, a, m, now) {
+    const M = this.arenaMs && this.arenaMs.get(String(m.mid)); if (!M) return { ok: false, msg: "That round already ended." };
+    const P = M.players.get(a.uid); if (!P) return { ok: false, msg: "You weren't in that round." };
+    if (P.done) return { ok: false, msg: "Already counted." };
+    if (now < M.t0 + M.dur - 2500) return { ok: false, msg: "The round isn't over yet." };
+    P.done = true; if (a.arm === M.id) { a.arm = null; ws.serializeAttachment(a); }
+    const secs = Math.max(0, (M.t0 + M.dur - P.joined) / 1000);
+    const score = Math.max(0, Math.min(Math.floor(+m.score || 0), Math.floor(secs * ARENA.maxRate)));
+    P.sc = Math.max(P.sc, score);
+    const humans = [...M.players.values()]; const place = 1 + humans.filter((q) => q !== P && q.sc > score).length;
+    const r = await this.arenaRow(a.uid), today = etDay(now), yest = etDay(now - 86400000), wk = etWeek(now);
+    // daily streak: the first round each day keeps it going (or starts it again)
+    const firstToday = r.last_day !== today; const streak = firstToday ? (r.last_day === yest ? r.streak + 1 : 1) : r.streak;
+    let earn = Math.min(6, Math.floor(score / 25));
+    const bonus = { streak: firstToday ? Math.min(5, streak) : 0, place: humans.length > 1 ? (place === 1 ? 3 : place === 2 ? 1 : 0) : 0 };
+    earn += bonus.streak + bonus.place;
+    const earnedSoFar = r.earn_day === today ? r.earned : 0; earn = Math.max(0, Math.min(earn, ARENA.dayCap - earnedSoFar));
+    const xp = r.xp + score + 20 + (humans.length > 1 && place === 1 ? 30 : 0);
+    const best = score > r.best, wkBest = r.wk !== wk ? score : Math.max(r.wk_best, score), newWk = r.wk !== wk || score > r.wk_best;
+    const win = humans.length > 1 && place === 1 ? 1 : 0;
+    await this.env.DB.prepare(`INSERT INTO arena (uid, xp, best, wk, wk_best, played, wins, streak, last_day, earn_day, earned, color) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(uid) DO UPDATE SET xp = excluded.xp, best = MAX(best, excluded.best), wk = excluded.wk, wk_best = excluded.wk_best, played = played + 1, wins = wins + excluded.wins, streak = excluded.streak, last_day = excluded.last_day, earn_day = excluded.earn_day, earned = excluded.earned`)
+      .bind(a.uid, xp, score, wk, wkBest, win, streak, today, today, earnedSoFar + earn, r.color || "blue").run();
+    const tk = earn ? await this.credit(a.uid, earn, "spit arena") : (await this.user(a.uid)).tk;
+    const before = arenaLevel(r.xp), after = arenaLevel(xp);
+    const me = this.arenaMe({ ...r, xp, best: Math.max(r.best, score), wk, wk_best: wkBest, streak, last_day: today, earn_day: today, earned: earnedSoFar + earn }, now);
+    const board = await this.arenaBoard(now);
+    if (best || newWk) this.arenaRoomBroadcast({ t: "ab", board });
+    return { ok: true, score, place, players: humans.length, earned: earn, bonus, capped: earnedSoFar + earn >= ARENA.dayCap, best, wkBest: newWk && score > 0, levelUp: after > before ? after : 0,
+             newColors: unlocked(after).filter((c) => !unlocked(before).includes(c)), me, board, tk };
   }
 
   // ---------- staff tools: mods mute, unmute and kick; the owner can also ban, unban and make or remove mods ----------

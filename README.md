@@ -31,6 +31,17 @@ Each release bumps `VERSION` in `src/worker.js` and `GAME_VERSION` in `public/in
 
 After any change, run `npx wrangler deploy` again from this folder. Accounts and tokens stay in the database.
 
+## Spit Arena
+
+A fourth room with a quick mini-game. Press PLAY (or tap the ring) for a 60-second spit-ball round.
+
+- **Solo:** rival llamas wander the pit and spit back. Rivals flash `!` before they spit. Waves get faster every 15 seconds, the last 10 seconds are double points, and a golden llama worth 5 shows up three times a round. Power-ups: rapid fire, triple spit, shield.
+- **Together:** everyone who presses PLAY during the countdown (or with 25+ seconds left) shares the round. Rivals, the golden llama and power-ups come from the round's seed, so everyone sees the same ones. A hit on another player only counts when that player's game confirms it.
+- **Combos:** chain hits without getting hit for up to x5 points.
+- **Rewards (decided by the server):** 1 token per 25 points (max 6 a round), +1 to +5 for the first round of the day (daily streak), +3 for winning a round with other players, +1 for second. Arena tokens are capped at 40 a day. Scores faster than the game allows are cut down.
+- **Progress:** XP levels unlock spit colors (green 2, pink 4, gold 6, rainbow 8, fire 10). There's a weekly leaderboard (resets Monday, Eastern time) and an all-time best.
+- The `arena` table is created automatically the first time someone plays.
+
 ## Owner and mods
 
 The owner is the account with `role = 'admin'` in the `users` table (PUZZ). Nothing else can make someone the owner. The owner shows a gold crown by their name, mods show a blue shield. The server stamps these badges, so nobody can fake one.

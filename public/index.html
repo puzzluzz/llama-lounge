@@ -366,6 +366,51 @@
   .vrow input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:0;box-shadow:0 2px 8px rgba(0,0,0,.3),0 0 0 2px var(--pink)}
   .vrow input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#fff;border:0;box-shadow:0 2px 8px rgba(0,0,0,.3),0 0 0 2px var(--pink)}
   #sndbox .srow{display:flex;justify-content:center;margin-top:6px}
+  /* ---------- SPIT ARENA overlay ---------- */
+  #arena{position:absolute;inset:0;display:none;z-index:7;background:radial-gradient(ellipse at 50% 40%,#2a1c4e,#0e0a1c 70%);touch-action:none;-webkit-user-select:none;user-select:none}
+  #arcv{position:absolute;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.55),0 0 0 2px rgba(255,255,255,.08)}
+  #ar_hud{position:absolute;left:0;right:0;top:calc(8px + var(--sat));height:48px;display:flex;align-items:center;gap:10px;padding:0 10px;pointer-events:none}
+  #ar_hud>*{pointer-events:auto}
+  #ar_exit{width:44px;height:44px;border-radius:14px;border:1px solid var(--gline);background:var(--glass);color:#fff;font-size:18px;font-weight:700;cursor:pointer;flex:none}
+  .arsc{display:flex;align-items:baseline;gap:8px;min-width:0;flex-wrap:wrap}
+  #ar_score{font-family:'Press Start 2P',monospace;font-size:20px;color:#ffd23f;text-shadow:2px 2px 0 #181020}
+  #ar_combo{font-style:normal;font-weight:800;font-size:14px;background:var(--pink);color:#fff;border-radius:999px;padding:3px 9px;animation:pulse .6s ease-in-out infinite alternate}
+  #ar_pow{width:100%;font-size:13px;color:#fff;font-weight:700;min-height:0}
+  #ar_time{margin-left:auto;font-family:'Press Start 2P',monospace;font-size:16px;color:#fff;background:var(--glass);border:1px solid var(--gline);border-radius:12px;padding:10px 12px}
+  #ar_time.low{color:#ff6e96;animation:pulse .5s ease-in-out infinite alternate}
+  #ar_rank{position:absolute;right:10px;top:54px;background:var(--glass);border:1px solid var(--gline);border-radius:12px;padding:6px 10px;color:#d9d2ee;font-size:12px;font-weight:700;line-height:1.6;min-width:110px}
+  #ar_combo:empty,#ar_rank:empty{display:none!important}
+  #ar_rank .me{color:#ffd23f} #ar_rank b{float:right;margin-left:10px;color:#7ce07c}
+  @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.08)}}
+  #ar_stick{position:absolute;width:112px;height:112px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.22);display:none;pointer-events:none}
+  #ar_knob{position:absolute;left:32px;top:32px;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.85);box-shadow:0 4px 12px rgba(0,0,0,.4)}
+  #ar_fire{position:absolute;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(28px + var(--sab));width:104px;height:104px;border-radius:50%;border:0;background:radial-gradient(circle at 35% 30%,#ff9cb8,#ff5c8a 55%,#d8306a);color:#fff;font-family:var(--ui);font-weight:800;font-size:18px;letter-spacing:.06em;box-shadow:0 10px 26px rgba(255,92,138,.5),inset 0 -4px 0 rgba(0,0,0,.15);display:none}
+  #ar_fire.on{transform:scale(.93);filter:brightness(1.1)}
+  @media (pointer:coarse){ #ar_fire{display:block} #arena::after{content:'DRAG HERE TO RUN';position:absolute;left:22px;bottom:calc(64px + var(--sab));color:rgba(255,255,255,.28);font-weight:800;font-size:12px;letter-spacing:.08em;pointer-events:none} }
+  body.arena-on #status,body.arena-on #topbtns,body.arena-on #dock,body.arena-on #tbox,body.arena-on #tip{visibility:hidden}
+  #arbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:min(460px,calc(100% - 24px));max-height:90vh;z-index:9!important;animation:popIn .18s ease-out}
+  .arh{text-align:center;margin-bottom:12px} .art{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:.02em} .ars{font-size:13px;color:var(--sub);margin-top:4px;line-height:1.4}
+  .xpw{display:flex;align-items:center;gap:10px;margin:10px 0} .lvl{font-weight:800;font-size:13px;background:var(--ink);color:#ffd23f;border-radius:8px;padding:4px 8px;white-space:nowrap}
+  .xpb{flex:1;height:10px;border-radius:999px;background:#ece8f4;overflow:hidden} .xpb i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ff5c8a,#ffd23f);transition:width .8s ease-out}
+  .xpn{font-size:11px;color:var(--sub);font-weight:700;white-space:nowrap}
+  .arstats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:12px 0} .arstats div{background:var(--soft);border-radius:12px;padding:8px 4px;text-align:center} .arstats b{display:block;font-size:17px;font-weight:800} .arstats small{font-size:10px;font-weight:800;color:var(--sub);letter-spacing:.04em}
+  .arbonus{background:#fff4cc;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4;margin:8px 0} .arbonus.done{background:#e9f8ea}
+  .arlive{background:#ffe3ea;color:#b0203a;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:700;line-height:1.4;margin:8px 0}
+  .arplay{width:100%;min-height:56px!important;font-size:18px!important;border-radius:16px!important;margin:10px 0 4px;box-shadow:0 6px 0 #c99a10}
+  .arplay:active{transform:translateY(4px)!important;box-shadow:0 2px 0 #c99a10}
+  .arsec{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--sub);margin:16px 0 8px}
+  .cols{display:grid;grid-template-columns:repeat(6,1fr);gap:6px} .col{border:0;background:var(--soft);border-radius:12px;padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-family:var(--ui)}
+  .col i{width:24px;height:24px;border-radius:50%;box-shadow:inset 0 -2px 0 rgba(0,0,0,.15)} .col small{font-size:9px;font-weight:800;color:var(--sub)} .col.on{background:#fff;box-shadow:0 0 0 2px var(--ink)} .col.lock{opacity:.45}
+  .arlb{list-style:none;margin:0;padding:0} .arlb li{display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid var(--line);font-size:14px} .arlb li span{width:24px;text-align:center;font-weight:800;color:var(--sub)} .arlb li b{flex:1} .arlb li em{font-style:normal;font-weight:800;color:#1e8a3a} .arlb li.me{background:#fff4cc;border-radius:8px}
+  .arnone,.arload{font-size:13px;color:var(--sub);text-align:center;padding:12px}
+  .arhow{font-size:12px;line-height:1.5;color:var(--sub);background:var(--soft);border-radius:12px;padding:10px 12px;margin-top:14px} .arhow b{color:var(--ink)}
+  .arbig{font-family:'Press Start 2P',monospace;font-size:44px;text-align:center;color:var(--ink);margin:6px 0 10px}
+  .arbadges{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:8px} .bdg{font-size:12px;font-weight:800;border-radius:999px;padding:5px 10px} .bdg.gold{background:#fff0b8;color:#8a5a00} .bdg.pink{background:#ffe0ea;color:#b0203a} .bdg.blue{background:#dfeeff;color:#1c4aa8}
+  .arunlock{text-align:center;font-size:14px;margin:6px 0}
+  .artok{background:var(--soft);border-radius:14px;padding:12px;margin:8px 0} .artk{font-size:26px;font-weight:800;color:#a06808;text-align:center} .artk span{font-size:13px;color:var(--sub)}
+  .artok ul{list-style:none;margin:8px 0 0;padding:0} .artok li{display:flex;justify-content:space-between;font-size:13px;padding:3px 0} .arcap{font-size:12px;color:var(--sub);text-align:center;margin-top:6px}
+  #arbox .srow{display:flex;justify-content:center;margin-top:10px}
+  @media (max-width:640px){ #arbox{max-height:88vh!important} .cols{grid-template-columns:repeat(3,1fr)} .arbig{font-size:36px} #ar_score{font-size:16px} #ar_time{font-size:13px;padding:9px 10px} }
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
   @media (max-height:520px) and (min-width:641px){ #dock{bottom:6px;padding:6px} .pbtn{height:38px} #chatin{height:38px} #saybtn{width:30px;height:30px} }
 </style>
@@ -387,7 +432,7 @@
   <div id="logbox" class="gb sheet"><span class="x" id="logx">✕</span><div id="loglines"></div></div>
   <div id="tbox" class="gb"><span id="ttext"></span><span id="tarrow">▼</span></div>
   <div id="dock">
-  <div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button></div>
+  <div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button><button class="pbtn" data-go="arena">💦 ARENA</button></div>
   <div id="bottom">
     <form id="chatrow" autocomplete="off"><input id="chatin" maxlength="120" placeholder="Say something..." enterkeyhint="send"><button class="pbtn y" id="saybtn" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10 15 12 3.4 14z" fill="currentColor"/></svg></button></form>
     <button class="pbtn" id="abtn" title="Action (Space)"><b id="alabel">SIT</b></button>
@@ -409,6 +454,7 @@
   <div id="roompick" class="gb sheet"><div class="rpt" id="rp_title">WHERE TO?</div>
     <button class="rpb" data-r="lounge"><span class="rpi">🍸</span><span class="rpx"><b>LLAMA LOUNGE</b><small>BAR · ARCADE · JUKEBOX · DANCE FLOOR · TABLE GAMES</small><i id="rp_n_lounge"></i></span></button>
     <button class="rpb" data-r="casino"><span class="rpi">🎰</span><span class="rpx"><b>LLAMA CASINO</b><small>SLOTS · ROULETTE · BLACKJACK TABLES</small><i id="rp_n_casino"></i></span></button>
+    <button class="rpb" data-r="arena"><span class="rpi">💦</span><span class="rpx"><b>SPIT ARENA</b><small>60-SECOND SPIT-BALL ROUNDS · SOLO OR FREE-FOR-ALL · WEEKLY LEADERBOARD</small><i id="rp_n_arena"></i></span></button>
     <button class="rpb" data-r="barn"><span class="rpi">🌾</span><span class="rpx"><b>LLAMA ACRES</b><small>BARN · CAMPFIRE · CARROT PATCH (EARN TOKENS)</small><i id="rp_n_barn"></i></span></button>
     <div class="srow"><button class="gbbtn" id="rp_llama">CHANGE LLAMA</button><button class="gbbtn" id="rp_close">CLOSE</button></div></div>
   <div id="slotbox" class="gb sheet"><div class="slt" id="sl_title">🎰 LLAMA SLOTS</div><canvas id="slotcv" width="130" height="70"></canvas><div id="sl_msg">1 TOKEN A SPIN. GOOD LUCK!</div>
@@ -440,7 +486,8 @@
       <li>Tap another llama to wave or spit. Use MENU for emotes and more.</li>
       <li>The pink button does the action for wherever you are. On the dance floor it does a FLIP (or press F).</li>
       <li>Earn LLAMA TOKENS by hitting arcade milestones and working the bar. Spend them on drinks (1 token), or bet up to 10 against THE HOUSE at the table games. Table games can also be played for free.</li>
-      <li>Two rooms: the LLAMA LOUNGE indoors and LLAMA ACRES outside. Use the door, the gate, or MENU &gt; CHANGE ROOM to switch. Harvest the carrot patch in LLAMA ACRES for tokens.</li>
+      <li>Four rooms: the LLAMA LOUNGE, LLAMA ACRES outside, the LLAMA CASINO and the SPIT ARENA. Tap a room in the bar at the bottom to walk there. Harvest the carrot patch in LLAMA ACRES for tokens.</li>
+      <li>In the SPIT ARENA, press PLAY for a 60-second spit-ball round. Play solo against rival llamas, or with everyone who joins. Earn tokens, level up to unlock spit colors, and keep a daily streak.</li>
       <li>Scroll, pinch, or use + and − to zoom.</li>
     </ul>
     <div class="rsec">LOUNGE RULES</div>
@@ -461,6 +508,13 @@
     <div id="who"></div>
     <div class="row"><input id="pname" maxlength="12" placeholder="NAME"><button class="gbbtn" id="bGo">OK</button></div>
   </div>
+  <div id="arena">
+    <canvas id="arcv"></canvas>
+    <div id="ar_hud"><button id="ar_exit" aria-label="Leave the arena">✕</button><div class="arsc"><span id="ar_score">0</span><em id="ar_combo"></em><div id="ar_pow"></div></div><div id="ar_time">1:00</div><div id="ar_rank" style="display:none"></div></div>
+    <div id="ar_stick"><div id="ar_knob"></div></div>
+    <button id="ar_fire" aria-label="Spit">SPIT</button>
+    <div id="arbox" class="gb sheet"><div id="ar_body"></div></div>
+  </div>
   <div id="flash"></div>
 </div>
 
@@ -468,7 +522,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19b";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19c";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -635,7 +689,7 @@ function sprite(cid,dir,frame,pose){ const k=cid+'|'+dir+'|'+frame+'|'+pose; let
 // ======================= WORLD =======================
 const ARC_X = 9, JUKE_X = 12;   // arcade cabinet and jukebox spots on the lounge's back wall
 const TW = 40, TH = 20, WH = 96;
-const ROOM_DIMS = { lounge:[13,12], barn:[22,20], casino:[13,12] };
+const ROOM_DIMS = { lounge:[13,12], barn:[22,20], casino:[13,12], arena:[13,12] };
 let N = 13, NY = 12;   // current room: N = width (gx) and row stride, NY = depth (gy)
 const proj = (gx,gy) => [(gx-gy)*TW/2, (gx+gy)*TH/2];
 let BLOCK = new Uint8Array(N*NY);
@@ -643,8 +697,8 @@ const FURN = [], SEATS = [];
 const block = (x,y) => { BLOCK[y*N+x] = 1; };
 // two rooms share one grid; each build function lays out its own furniture
 let curRoom = 'lounge';
-const ROOM_NAMES = { lounge:'LLAMA LOUNGE', barn:'LLAMA ACRES', casino:'LLAMA CASINO' };
-const ROOMS = ['lounge','barn','casino'];
+const ROOM_NAMES = { lounge:'LLAMA LOUNGE', barn:'LLAMA ACRES', casino:'LLAMA CASINO', arena:'SPIT ARENA' };
+const ROOMS = ['lounge','barn','casino','arena'];
 const CASINO_SLOT_X = [0,1,2,3,4,5,6,7,8,9,10,11,12];   // a full row of slot machines on the casino's back wall; stools one tile in front (the server checks the same spots)
 const slotKind = x => x<=3 ? 'fruit' : x<=8 ? 'classic' : 'gold';
 // what each kind looks like and pays (three of a kind, times the bet); the server holds the same table and decides every spin
@@ -734,7 +788,14 @@ function buildCasinoWorld(){
   // velvet ropes marking the way in from the door
   for (const [x,y] of [[2,9],[2,11]]){ FURN.push({t:'stanchion',gx:x,gy:y}); block(x,y); }
 }
-function buildWorld(){ if (curRoom==='barn') buildBarnWorld(); else if (curRoom==='casino') buildCasinoWorld(); else buildLoungeWorld(); }
+// SPIT ARENA room: a painted ring in the middle (tap it or press PLAY), spectator stools along the back wall
+const ARENA_RING = { cx:6.5, cy:6, r:2.9 };
+function buildArenaWorld(){
+  clearWorld();
+  for (let x=1; x<=11; x+=2){ SEATS.push({gx:x,gy:1,dir:'br',lift:9}); FURN.push({t:'stool',gx:x,gy:1,c:'casino'}); }
+  FURN.push({t:'fern',gx:12,gy:11,flip:true}); block(12,11); FURN.push({t:'fern',gx:0,gy:0}); block(0,0);
+}
+function buildWorld(){ if (curRoom==='barn') buildBarnWorld(); else if (curRoom==='casino') buildCasinoWorld(); else if (curRoom==='arena') buildArenaWorld(); else buildLoungeWorld(); }
 buildLoungeWorld();
 const seatAt = (x,y) => SEATS.find(s=>s.gx===x&&s.gy===y);
 const walkable = (x,y) => x>=0&&y>=0&&x<N&&y<NY&&!BLOCK[y*N+x];
@@ -908,6 +969,41 @@ function buildCasinoBG(){
   { const R=(x0,y0,x1,y1,c)=>polyPx([T(x0,y0),T(x1,y0),T(x1,y1),T(x0,y1)],c); R(0,9.85,3.1,11.15,'#d8a830'); R(0,9.95,3,11.05,'#1a0810'); R(0,10.15,3,10.85,'#2a1018'); }
 }
 
+// ======================= SPIT ARENA ROOM BACKGROUND =======================
+function buildArenaBG(){
+  g = bg.getContext('2d'); g.clearRect(0,0,bg.width,bg.height);
+  const ox=BGX, oy=BGY;
+  for (let x=-NY*20; x<N*20; x++){
+    const left=x<0, ax=left?-x:x, base=Math.floor(ax/2), top=base-WH;
+    g.fillStyle = left ? '#1c2452' : '#232c62'; g.fillRect(ox+x, oy+top, 1, WH+2);                     // navy wall
+    g.fillStyle = left ? '#ff5c8a' : '#ff6e96'; g.fillRect(ox+x, oy+base-58, 1, 6);                    // pink stripe
+    g.fillStyle = left ? '#f8c828' : '#ffd23f'; g.fillRect(ox+x, oy+base-50, 1, 3);                    // gold stripe
+    g.fillStyle = left ? '#141a3c' : '#182046'; g.fillRect(ox+x, oy+base-26, 1, 26);                   // padded lower wall
+    if (ax%16===0){ g.fillStyle='#0c1030'; g.fillRect(ox+x, oy+base-26, 1, 26); }
+    // pennant bunting along the top
+    { const k=ax%14, cols=['#ff5c8a','#ffd23f','#5ad0ff','#7ce07c']; const col=cols[Math.floor(ax/14)%4]; const len = k<7 ? k : 13-k; if (k<13){ g.fillStyle=col; g.fillRect(ox+x, oy+top+4, 1, Math.max(1,len)); } g.fillStyle=INK; g.fillRect(ox+x, oy+top+3, 1, 1); }
+    g.fillStyle=INK; g.fillRect(ox+x, oy+top-1, 1, 1); g.fillRect(ox+x, oy+base, 1, 1);
+  }
+  g.fillStyle=INK; g.fillRect(ox-1, oy-WH-5, 2, WH+6); g.fillRect(ox-NY*20-1, oy+NY*10-WH-5, 1, WH+6); g.fillRect(ox+N*20, oy+N*10-WH-5, 1, WH+6);
+  drawDoor(ox, oy, -220, -200, -1, -205);
+  // floor: wooden court boards with a painted sand ring in the middle
+  const T=(gx,gy)=>{ const p=proj(gx,gy); return [ox+p[0], oy+p[1]]; };
+  { const x0=ox-NY*20, x1=ox+N*20, y0=oy, y1=oy+(N+NY)*10; const img=g.getImageData(x0,y0,x1-x0,y1-y0), D=img.data, W=x1-x0;
+    const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+    const C={w1:hex('#c88a4a'),w2:hex('#b87a3c'),seam:hex('#8a5426'),sand:hex('#ead098'),sand2:hex('#dcbc80'),red:hex('#d8304c'),white:hex('#f8f0e0'),pink:hex('#ff6e96'),line:hex('#f8f0e0')};
+    const R=ARENA_RING;
+    for (let py=0; py<y1-y0; py++) for (let px=0; px<W; px++){ const wx=px+x0-ox, wy=py+y0-oy; const gx=(wx/20+wy/10)/2, gy=(wy/10-wx/20)/2;
+      if (gx<0||gy<0||gx>=N||gy>=NY) continue;
+      const d=Math.hypot(gx-R.cx, gy-R.cy); let c;
+      if (d<R.r-0.25){ const n=((Math.floor(gx*9)*7+Math.floor(gy*9)*13)%5===0); c = n ? C.sand2 : C.sand; const dd=Math.hypot(gx-R.cx,gy-R.cy); if (dd<0.55 && dd>0.42) c=C.pink; }
+      else if (d<R.r-0.12) c=C.white; else if (d<R.r+0.12) c=C.red; else if (d<R.r+0.22) c=C.white;
+      else { const board=Math.floor(gy*2.5); c = board%2 ? C.w1 : C.w2; if ((gy*2.5)%1<0.06) c=C.seam; if (Math.abs(((gx+board*1.7)%4))<0.04) c=C.seam;
+        if (Math.abs(gx-0.6)<0.04 || Math.abs(gx-(N-0.6))<0.04 || Math.abs(gy-(NY-0.6))<0.04) c=C.line; }
+      const i=(py*W+px)*4; D[i]=c[0]; D[i+1]=c[1]; D[i+2]=c[2]; D[i+3]=255; }
+    g.putImageData(img,x0,y0); }
+  { const R=(x0,y0,x1,y1,c)=>polyPx([T(x0,y0),T(x1,y0),T(x1,y1),T(x0,y1)],c); R(0,9.85,2.6,11.15,'#f8f0e0'); R(0,9.95,2.5,11.05,'#2a3270'); }
+}
+
 // ======================= FURNITURE DRAW =======================
 let OX=0, OY=0;
 
@@ -978,7 +1074,7 @@ function buildBarnBG(){
   g = null;
 }
 function barnSky(){ const per=(typeof period==='string')?period:'day'; return per==='day' ? ['#78b8f0','#98ccf8','#b8e0f8'] : per==='dusk' ? ['#d86858','#f09868','#f8c890'] : ['#181c50','#222a68','#2c3a80']; }
-function rebuildBG(){ sizeBG(); if (curRoom==='barn') buildBarnBG(); else if (curRoom==='casino') buildCasinoBG(); else buildBG(); }
+function rebuildBG(){ sizeBG(); if (curRoom==='barn') buildBarnBG(); else if (curRoom==='casino') buildCasinoBG(); else if (curRoom==='arena') buildArenaBG(); else buildBG(); }
 
 function P(gx,gy,h=0){ const [x,y]=proj(gx,gy); return [OX+x, OY+y-h]; }
 function box(gx,gy,w,d,h,top,lf,rf,inset=0,lift=0){
@@ -1772,6 +1868,7 @@ function context(){
     if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
     return me.p==='sit' ? 'stand' : 'sit';
   }
+  if (curRoom==='arena') return me.h ? (DRINKS[me.h].food ? 'bite' : 'sip') : 'arena';
   if (curRoom==='casino'){
     if (me.p==='sit' && isSlotSeat(me.gx,me.gy)) return 'spin';
     if (me.p==='sit' && seatIn(ROUL_SEATS,me.gx,me.gy)) return 'roul';
@@ -1789,7 +1886,7 @@ function context(){
   if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
   return me.p==='sit' ? 'stand' : 'sit';
 }
-const ALABEL = {fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
+const ALABEL = {arena:'PLAY', fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
 const alabel=document.getElementById('alabel'); let lastLabel='';
 function updateALabel(){ const c=context(); const l = arcade.on ? (arcade.mode==='menu'?'SELECT':arcade.over?'RETRY':arcade.mode==='dash'?'JUMP':'---') : (c?ALABEL[c]:'SIT'); if(l!==lastLabel){ alabel.textContent=l; lastLabel=l; } }
 // ---- bartending: slip past the rope, pace behind the bar pouring drinks ----
@@ -1826,6 +1923,7 @@ function doAction(a){
   if (a==='travel'){ const r=me.travelTo; me.travelTo=null; if (r) switchRoom(r); return; }
   if (a==='goBarn'){ if (!me.moving) showSwap('barn'); return; }
   if (a==='roul'||a==='bj'){ openTable(a); return; }
+  if (a==='arena'){ openArena(); return; }
   if (a==='goCasino'){ if (!me.moving) showSwap('casino'); return; }
   if (a==='goLoungeC'){ if (!me.moving) showSwap('lounge'); return; }
   if (a==='goLounge'){ if (!me.moving && near(14,0)) showSwap('lounge'); return; }
@@ -2151,7 +2249,7 @@ function presencePayload(){
   o.hl = me.h ? (me.hl||5) : null;
   o.sk = me.sipK || null;
   o.e = me.lastEm || null;
-  o.a = arcade.on ? 'arcade' : null;
+  o.a = arcade.on ? 'arcade' : (typeof AR!=='undefined' && AR.on) ? 'arena' : null;
   o.sp = me.lastSpit || null;
   o.td = me.lastTable || null;
   o.g = me.lastScore || null;
@@ -2454,6 +2552,7 @@ cv.addEventListener('pointerdown', e => {
   chatin.blur(); ensureAudio();
   if (curRoom==='barn'){ barnPointer(e); return; }
   if (curRoom==='casino'){ casinoPointer(e); return; }
+  if (curRoom==='arena'){ arenaPointer(e); return; }
   { const lx=e.clientX/S, ly=e.clientY/S; for (const h of shopHit){ if(lx>=h.x0&&lx<h.x1&&ly>=h.y0&&ly<=h.y1){ openShop(h.i); return; } }
     const lcx=OX-210, lcy=OY+105-75.5; if (Math.abs(lx-lcx)<=13 && Math.abs(ly-lcy)<=13){ openLogo(); return; } }
   { const lx=e.clientX/S, ly=e.clientY/S;
@@ -2622,7 +2721,7 @@ function drawLlama(o, t, isMe){
     }
   }
   // balloon: emote beats chat dots
-  const em = isMe ? me.emote : o.emote, playing = isMe ? arcade.on : o.a==='arcade';
+  const em = isMe ? me.emote : o.emote, playing = isMe ? (arcade.on || (typeof AR!=='undefined' && AR.on)) : (o.a==='arcade' || o.a==='arena');
   if (em || playing){ const bx=sx-7, by=y0+oy-28; g.fillStyle=INK; g.fillRect(bx,by,15,11); g.fillRect(bx+2,by+11,3,2); g.fillStyle='#f8f8f8'; g.fillRect(bx+1,by+1,13,9); g.fillRect(bx+3,by+10,1,1);
     if (em && em.t==='wave') drawWaveIcon(bx+1, by+1, t);
     else if (em){ const E=EMO_BMP[em.t]; const bounce=(Math.floor(t*6)%2); bmp(E.r, bx+4, by+2+bounce*0, E.c); }
@@ -2669,6 +2768,37 @@ function plateImg(text, fg, bgc, rim){ const k=text+fg+bgc+rim; if (plateCache[k
   x.fillStyle=INK; x.fillRect(1,0,w-2,h); x.fillRect(0,1,w,h-2); x.fillStyle=rim; x.fillRect(1,1,w-2,h-2); x.fillStyle=bgc; x.fillRect(2,2,w-4,h-4); pfDraw(x,text,5,3,fg); return plateCache[k]=c; }
 function wallPlate(img, cx, h, sg){ const wx=Math.round(cx-img.width/2); const wy = sg>0 ? Math.round(wx/2-h) : Math.round(-wx/2-h); wallText(img, wx, wy, sg*0.5); }
 const marquee = document.createElement('canvas');
+const arenaBoardCv = document.createElement('canvas'), arenaTitleCv = document.createElement('canvas');
+let arenaBoardHit = null;
+function drawArenaSigns(t){
+  // title on the left wall
+  { const sc=2, tw=pfW('SPIT ARENA',sc), W=tw+16, H=5*sc+12; if (arenaTitleCv.width!==W){ arenaTitleCv.width=W; arenaTitleCv.height=H; }
+    const m=arenaTitleCv.getContext('2d'); m.clearRect(0,0,W,H); m.fillStyle=INK; m.fillRect(0,0,W,H); m.fillStyle='#ff5c8a'; m.fillRect(1,1,W-2,H-2); m.fillStyle='#2a0e30'; m.fillRect(3,3,W-6,H-6);
+    const fl = Math.floor(t*3)%7===0; pfDraw(m,'SPIT ARENA',9,7,'#7a1a40',sc); pfDraw(m,'SPIT ARENA',8,6,fl?'#ffffff':'#ff8fb1',sc);
+    wallPlate(arenaTitleCv, -125, 92, -1); }
+  // live scoreboard on the back wall: the round that's on now, or this week's leaders
+  const W=112, H=60; if (arenaBoardCv.width!==W){ arenaBoardCv.width=W; arenaBoardCv.height=H; }
+  const m=arenaBoardCv.getContext('2d'); m.clearRect(0,0,W,H);
+  m.fillStyle=INK; m.fillRect(0,0,W,H); m.fillStyle='#5a6070'; m.fillRect(1,1,W-2,H-2); m.fillStyle='#0a0c18'; m.fillRect(3,3,W-6,H-6);
+  const AM = (typeof AR!=='undefined') ? AR.live : null, nowS = Date.now() + ((typeof AR!=='undefined')?AR.off:0);
+  const live = AM && nowS < AM.t0 + AM.dur + 2500;
+  if (live){
+    const left = Math.max(0, Math.ceil((AM.t0 + AM.dur - nowS)/1000)), pre = nowS < AM.t0;
+    pfDraw(m, pre ? 'STARTING' : 'LIVE', 7, 7, (Math.floor(t*2)%2||pre)?'#ff5c8a':'#ff9cb8');
+    pfDraw(m, pre ? String(Math.ceil((AM.t0-nowS)/1000)) : `0:${String(left).padStart(2,'0')}`, W-8-pfW(pre ? String(Math.ceil((AM.t0-nowS)/1000)) : `0:${String(left).padStart(2,'0')}`), 7, '#ffd23f');
+    const ps = [...AM.players].sort((a,b)=>b.sc-a.sc).slice(0,4);
+    ps.forEach((p,i)=>{ const y=19+i*9; const nm=p.n.slice(0,10); pfDraw(m, `${i+1}`, 7, y, i===0?'#ffd23f':'#8890b0'); pfDraw(m, nm, 16, y, '#e8ecff'); const sc=String(p.sc); pfDraw(m, sc, W-8-pfW(sc), y, '#7ce07c'); });
+  } else {
+    pfDraw(m, 'THIS WEEK', 7, 7, '#ffd23f');
+    const b = (typeof AR!=='undefined' && AR.board) ? AR.board.week : [];
+    if (!b.length){ pfDraw(m, 'NO SCORES YET', 7, 22, '#8890b0'); pfDraw(m, 'TAP THE RING', 7, 34, '#ff8fb1'); pfDraw(m, 'TO PLAY!', 7, 43, '#ff8fb1'); }
+    b.slice(0,4).forEach((p,i)=>{ const y=19+i*9; pfDraw(m, `${i+1}`, 7, y, i===0?'#ffd23f':'#8890b0'); pfDraw(m, p.n.slice(0,10), 16, y, '#e8ecff'); const sc=String(p.s); pfDraw(m, sc, W-8-pfW(sc), y, '#7ce07c'); });
+  }
+  // little bulbs along the bottom edge
+  { const lit=Math.floor(t*6); for (let x=6, k=0; x<W-6; x+=5, k++){ m.fillStyle=(k+lit)%4===0?'#ffffff':'#ff5c8a'; m.fillRect(x,H-3,2,1); } }
+  wallPlate(arenaBoardCv, 150, 82, 1);
+  { const wx=Math.round(150-W/2), wy=Math.round(wx/2-82); arenaBoardHit = {x0:OX+wx, x1:OX+wx+W, y0:OY+wy, y1:OY+wy+H+W/2}; }
+}
 function drawCasinoSigns(t){
   // CASINO marquee on the back wall: dark board, gold letters, a ring of chasing bulbs
   const sc=3, tw=pfW('CASINO',sc), W=tw+20, H=5*sc+14; if (marquee.width!==W){ marquee.width=W; marquee.height=H; }
@@ -2802,7 +2932,7 @@ function render(t){
   if (curRoom==='barn'){ const sk=barnSky(); const top=OY-BGY; ctx.fillStyle=sk[2]; ctx.fillRect(0,0,LW,LH); ctx.fillStyle=sk[1]; ctx.fillRect(0,0,LW,top+140); ctx.fillStyle=sk[0]; ctx.fillRect(0,0,LW,top+70); }
   else { ctx.fillStyle='#100c1c'; ctx.fillRect(0,0,LW,LH); }
   ctx.drawImage(bg, OX-BGX, OY-BGY);
-  if (curRoom==='lounge'){ drawSkySign(t); drawSigns(t); drawBoardWall(t); drawDanceFloor(t); } else { shopHit=[]; boardHit=null; if (curRoom==='casino') drawCasinoSigns(t); }
+  if (curRoom==='lounge'){ drawSkySign(t); drawSigns(t); drawBoardWall(t); drawDanceFloor(t); } else { shopHit=[]; boardHit=null; if (curRoom==='casino') drawCasinoSigns(t); else if (curRoom==='arena') drawArenaSigns(t); }
   const items = [];
   for (const f of FURN) items.push({d: f.gx+f.gy+1+(f.dz||0), f});
   if (joined) items.push({d: me.x+me.y+0.02, l: me, me:true});
@@ -3103,7 +3233,7 @@ function drawTableGames(c, t){
 // ======================= ROOMS: LLAMA LOUNGE <-> LLAMA ACRES =======================
 const roomPickEl=document.getElementById('roompick'), loadingEl=document.getElementById('loading');
 // where you appear in a room, by the room you came from
-const ENTRY = { lounge:{ any:{at:[1,10], to:[3,10]} }, barn:{ any:{at:[14,1], to:[13,3]} }, casino:{ any:{at:[1,10], to:[3,10]} } };
+const ENTRY = { lounge:{ any:{at:[1,10], to:[3,10]} }, barn:{ any:{at:[14,1], to:[13,3]} }, casino:{ any:{at:[1,10], to:[3,10]} }, arena:{ any:{at:[1,10], to:[3,10]} } };
 let entryFrom = null;
 const entryFor = r => { const E=ENTRY[r]; return (entryFrom && E[entryFrom]) || E.any || E[Object.keys(E)[0]]; };
 // pick a free tile near the room's entrance so new arrivals don't stand on top of each other
@@ -3123,7 +3253,7 @@ for (const b of document.querySelectorAll('#roompick [data-r]')) b.addEventListe
   else switchRoom(r); });
 document.getElementById('rp_close').addEventListener('click', ()=>{ roomPickEl.style.display='none'; });
 document.getElementById('rp_llama').addEventListener('click', ()=>{ roomPickEl.style.display='none'; pick.style.display='flex'; });
-function setRoom(r){ if (me.fish) stopFish(true);
+function setRoom(r){ if (me.fish) stopFish(true); if (typeof AR!=='undefined' && AR.on) arenaClose(true);
   curRoom = ROOMS.includes(r) ? r : 'lounge'; store.room=curRoom; saveStore();
   buildWorld(); rebuildBG();
   me.bar=false; me.path=[]; me.moving=false; me.p='stand'; me.pending=null; me.after=null; me.prog=0;
@@ -3133,12 +3263,12 @@ function setRoom(r){ if (me.fish) stopFish(true);
 }
 // ---- bottom-left room selector: walk to the doorway, then confirm the swap ----
 const swapEl=document.getElementById('swapbox'), roombarEl=document.getElementById('roombar'); let swapTo=null;
-const DOORWAY = { lounge:[0,10], barn:[14,1], casino:[0,10] };   // each room has one door; you walk to it whichever room you're going to
+const DOORWAY = { lounge:[0,10], barn:[14,1], casino:[0,10], arena:[0,10] };   // each room has one door; you walk to it whichever room you're going to
 function showSwap(r){ if (!joined || r===curRoom || !ROOMS.includes(r)) return; closeAll(); swapTo=r; document.getElementById('sw_text').textContent=`GO TO ${ROOM_NAMES[r]}?`; swapEl.style.display='block'; }
 document.getElementById('sw_go').addEventListener('click', ()=>{ swapEl.style.display='none'; const r=swapTo; swapTo=null; if (!r) return; if (arcade.on) exitArcade(); localMsg(`Heading to ${ROOM_NAMES[r]}...`); goThroughDoor(r); });
 function goThroughDoor(r){ const [dx,dy]=DOORWAY[curRoom]; if (me.gx===dx && me.gy===dy && !me.moving && !me.bar){ switchRoom(r); return; } me.travelTo=r; if (!walkTo(dx,dy,'travel')){ me.travelTo=null; switchRoom(r); } }
 document.getElementById('sw_stay').addEventListener('click', ()=>{ swapEl.style.display='none'; swapTo=null; });
-function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; document.getElementById('dock').classList.toggle('on', !!joined); document.body.classList.toggle('joined', !!joined); for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n=roomCount(r); b.innerHTML = ({lounge:'🍸 LOUNGE', barn:'🌾 ACRES', casino:'🎰 CASINO'})[r] + (n ? ` <span class="cnt">${n}</span>` : ''); } }
+function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; document.getElementById('dock').classList.toggle('on', !!joined); document.body.classList.toggle('joined', !!joined); for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n=roomCount(r); b.innerHTML = ({lounge:'🍸 LOUNGE', barn:'🌾 ACRES', casino:'🎰 CASINO', arena:'💦 ARENA'})[r] + (n ? ` <span class="cnt">${n}</span>` : ''); } }
 for (const b of roombarEl.querySelectorAll('[data-go]')) b.addEventListener('click', ()=>{ ensureAudio(); const r=b.dataset.go;
   if (!joined) return; if (r===curRoom){ localMsg(`You're already in ${ROOM_NAMES[r]}.`); return; }
   showSwap(r); });
@@ -3146,8 +3276,18 @@ function switchRoom(r){
   if (r===curRoom){ localMsg(`You're already in ${ROOM_NAMES[r]}.`); return; }
   if (arcade.on) exitArcade();
   entryFrom = curRoom; setRoom(r); flash(); sendPresence(true);
-  localMsg(r==='barn' ? 'You stepped outside to LLAMA ACRES!' : r==='casino' ? 'Welcome to the LLAMA CASINO! Feeling lucky?' : 'You headed back into the LLAMA LOUNGE!');
+  localMsg(r==='barn' ? 'You stepped outside to LLAMA ACRES!' : r==='casino' ? 'Welcome to the LLAMA CASINO! Feeling lucky?' : r==='arena' ? 'Welcome to the SPIT ARENA! Press PLAY to start a round.' : 'You headed back into the LLAMA LOUNGE!');
   setTimeout(()=>walkTo(...spawnSpot(r)), 400);
+}
+function arenaPointer(e){
+  const lx=e.clientX/S, ly=e.clientY/S;
+  for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
+  if (arenaBoardHit && lx>=arenaBoardHit.x0 && lx<=arenaBoardHit.x1 && ly>=arenaBoardHit.y0 && ly<=arenaBoardHit.y1){ openArena(); return; }
+  const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
+  if (Math.hypot(gx+0.5-ARENA_RING.cx, gy+0.5-ARENA_RING.cy) < ARENA_RING.r){ openArena(); return; }
+  if (walkable(gx,gy)){ walkTo(gx,gy); return; }
+  let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } }
+  if (best) walkTo(best.gx,best.gy);
 }
 function casinoPointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
@@ -3599,7 +3739,7 @@ NET.handlers.tk = m => tkSet(m.tk, m.msg);
 // ======================= STAFF DASHBOARD (owner and mods; the server checks every action) =======================
 const dashEl=document.getElementById('dashbox'), dsBody=document.getElementById('ds_body');
 function dashMenu(){ const el=document.getElementById('mdash'); if (el) el.style.display = me.st ? '' : 'none'; }
-const ROOM_SHORT={lounge:'LOUNGE', barn:'ACRES', casino:'CASINO'};
+const ROOM_SHORT={lounge:'LOUNGE', barn:'ACRES', casino:'CASINO', arena:'ARENA'};
 const esc = s => String(s).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const badgeHtml = st => st==='owner' ? '<span class="badge" title="Owner">👑</span>' : st==='mod' ? '<span class="badge" title="Mod">🛡</span>' : '<span class="badge"></span>';
 function openDash(){ if (!me.st) return; closeAll(); dsBody.innerHTML='<div class="dl">LOADING...</div>'; dashEl.style.display='block'; loadDash(); }
@@ -3641,6 +3781,338 @@ NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.boar
 NET.handlers.hello = m => { if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true); };
 NET.handlers.kick = m => showKicked(m.msg);
 NET.handlers.staff = m => { me.st = ['owner','mod'].includes(m.st) ? m.st : ''; dashMenu(); if (m.msg) localMsg(m.msg); };
+// ======================= SPIT ARENA: 60-second spit-ball rounds =======================
+// Solo you face rival llamas that spit back. Everyone who presses PLAY together shares the round and can spit at each other.
+// Rival llamas, the golden llama and power-ups all come from the round's seed, so every player sees the same ones.
+// A hit on another player only counts when THEIR game confirms it; the server pays tokens and caps them.
+const AR = { on:false, phase:'lobby', match:null, off:0, live:null, board:null, me:null, color:'blue', humans:1,
+  W:288, H:288, sc:2, t:0, last:0, sendT:0, fires:[], events:[], remote:new Map(), bots:[], gold:[], ups:[], spits:[], parts:[], texts:[],
+  p:null, shake:0, banner:null, beeps:{}, keys:new Set(), stick:{on:false,id:null,x0:0,y0:0,dx:0,dy:0}, fireHeld:false, mouse:null, result:null, ending:false };
+const ARW = AR.W, ARH = AR.H, AR_MINX = 22, AR_MAXX = ARW-22, AR_MINY = 70, AR_MAXY = ARH-14;
+const SPIT_COLS = { blue:['#5ab8f0','#c8f0ff'], green:['#48c058','#c8f8b8'], pink:['#f060a8','#ffd0ec'], gold:['#e8a818','#fff0a0'], rainbow:null, fire:null };
+const COLOR_NAMES = { blue:'BLUE', green:'GREEN', pink:'PINK', gold:'GOLD', rainbow:'RAINBOW', fire:'FIRE' };
+const COLOR_LVL = { blue:1, green:2, pink:4, gold:6, rainbow:8, fire:10 };
+function spitCol(col, t, k){
+  if (col==='rainbow'){ const h=Math.floor(((t*3+k*0.37)%1)*6); const R=['#ff5050','#ffa030','#ffe040','#50d860','#50a8ff','#b060f0']; return [R[h], '#ffffff']; }
+  if (col==='fire'){ return (Math.floor(t*14+k)%2) ? ['#ff6018','#ffe080'] : ['#e82818','#ffb040']; }
+  return SPIT_COLS[col] || SPIT_COLS.blue;
+}
+// ---- deterministic randomness from the round's seed ----
+function mulberry(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const arRng = (...k) => mulberry(k.reduce((h,v)=>Math.imul(h^(v|0),2654435761)>>>0, (AR.match?AR.match.seed:1)>>>0));
+const DUR = () => AR.match ? AR.match.dur/1000 : 60;
+const mtime = () => AR.match ? (Date.now() + AR.off - AR.match.t0)/1000 : -99;
+const waveAt = t => Math.max(0, Math.min(3, Math.floor(t/15)));
+const botsFor = t => Math.max(2, Math.min(8, 4 + waveAt(t) - (AR.humans-1)));
+const FRENZY = 50;
+const GOLD_TIMES = [14, 33, 47], UP_TIMES = [6, 15, 24, 33, 42, 51];
+const UP_KINDS = ['rapid','triple','shield'];
+const UP_INFO = { rapid:{n:'RAPID FIRE', c:'#ff6e3a', i:'🌶'}, triple:{n:'TRIPLE SPIT', c:'#5ad0ff', i:'✳'}, shield:{n:'SHIELD', c:'#ffd23f', i:'🛡'} };
+const BOT_NAMES = ['GUS','PEPE','DOLLY','KARL','LULU','BEANS','TACO','MOCHI','RAMONA','NACHO','PANCHO','ZIGGY'];
+
+// ---- DOM: the overlay, HUD, touch controls, and the lobby/results sheet ----
+const arEl=document.getElementById('arena'), arCv=document.getElementById('arcv'), arCx=arCv.getContext('2d');
+const arBox=document.getElementById('arbox'), arBody=document.getElementById('ar_body');
+arCv.width=ARW; arCv.height=ARH;
+const arBG=document.createElement('canvas'); arBG.width=ARW; arBG.height=ARH;
+function arSize(){ const W=innerWidth, H=innerHeight, touch=matchMedia('(pointer:coarse)').matches; const top=64, bot = touch ? 170 : 24;
+  const dpr=devicePixelRatio||1; let sc=Math.min((W-12)/ARW, (H-top-bot)/ARH); sc=Math.max(1, Math.floor(sc*dpr))/dpr; AR.sc=sc;
+  arCv.style.width=(ARW*sc)+'px'; arCv.style.height=(ARH*sc)+'px'; arCv.style.left=Math.round((W-ARW*sc)/2)+'px';
+  arCv.style.top=Math.round(top + Math.max(0,(H-top-bot-ARH*sc)/2))+'px'; }
+addEventListener('resize', ()=>{ if (AR.on) arSize(); });
+
+// arena floor: sand pit, fence, cheering crowd on the bleachers
+function buildArBG(){ const c=arBG.getContext('2d'); c.imageSmoothingEnabled=false; const r=mulberry(77);
+  c.fillStyle='#1a1430'; c.fillRect(0,0,ARW,ARH);
+  // bleachers
+  for (let y=0;y<44;y+=8){ c.fillStyle= (y/8)%2 ? '#2a2250' : '#322a5c'; c.fillRect(0,y,ARW,8); c.fillStyle='#1a1430'; c.fillRect(0,y+7,ARW,1); }
+  // sand
+  for (let y=48;y<ARH;y++) for (let x=0;x<ARW;x++){ const n=r(); c.fillStyle = n<0.06 ? '#d8b878' : n<0.1 ? '#f4e0b0' : (((x>>3)+(y>>3))%2 ? '#ead098' : '#e6ca90'); c.fillRect(x,y,1,1); }
+  // painted ring and centre spot
+  const cx=ARW/2, cy=(AR_MINY+AR_MAXY)/2+6;
+  for (let a=0;a<360;a+=0.5){ const rad=a*Math.PI/180; for (const [rr,col] of [[96,'#f8f0e0'],[94,'#d8304c'],[92,'#d8304c'],[90,'#f8f0e0']]) { c.fillStyle=col; c.fillRect(Math.round(cx+Math.cos(rad)*rr), Math.round(cy+Math.sin(rad)*rr*0.86), 1, 1); } }
+  for (let a=0;a<360;a+=2){ const rad=a*Math.PI/180; c.fillStyle='#ff6e96'; c.fillRect(Math.round(cx+Math.cos(rad)*14), Math.round(cy+Math.sin(rad)*12), 2, 2); }
+  // wooden fence along the top with posts, and side boards
+  c.fillStyle='#8a5426'; c.fillRect(0,44,ARW,10); c.fillStyle='#c88a4a'; c.fillRect(0,45,ARW,4); c.fillStyle='#a86e34'; c.fillRect(0,50,ARW,3); c.fillStyle='#181020'; c.fillRect(0,54,ARW,1);
+  for (let x=4;x<ARW;x+=24){ c.fillStyle='#181020'; c.fillRect(x-1,40,6,15); c.fillStyle='#d89a5a'; c.fillRect(x,41,4,13); c.fillStyle='#ffd23f'; c.fillRect(x,40,4,2); }
+  for (const x of [0, ARW-6]){ c.fillStyle='#8a5426'; c.fillRect(x,54,6,ARH-54); c.fillStyle='#c88a4a'; c.fillRect(x+1,54,4,ARH-54); }
+  c.fillStyle='#8a5426'; c.fillRect(0,ARH-6,ARW,6); c.fillStyle='#c88a4a'; c.fillRect(0,ARH-5,ARW,3);
+}
+const CROWD = []; { const r=mulberry(9); for (let y=4;y<40;y+=8) for (let x=3;x<ARW;x+=7+Math.floor(r()*4)) CROWD.push({x, y, c:['#ff5c8a','#ffd23f','#5ad0ff','#7ce07c','#f0a060','#c090f0','#e8e8f0'][Math.floor(r()*7)], p:r()*6}); }
+
+// ---- your llama ----
+function newMe(){ return { x:ARW/2, y:AR_MAXY-40, d:'br', vx:0, vy:0, cd:0, stun:0, inv:0, shield:0, rapid:0, triple:0, combo:0, comboT:0, mult:1, score:0, hits:0, bestCombo:0, walk:0 }; }
+const dirOf = (dx,dy,prev) => (Math.abs(dx)<0.01 && Math.abs(dy)<0.01) ? prev : ((dy>=0?'f':'b') + (dx>=0?'r':'l'));
+
+// ---- rival llamas: path and spit timing all come from the seed ----
+function botPlan(i, L, born){ const r=arRng(11, i, L), w=waveAt(born);
+  const cid = CHAR_IDS[(i + L) % CHAR_IDS.length], name = BOT_NAMES[(i*5 + L*3) % BOT_NAMES.length];
+  const pts=[[AR_MINX + r()*(AR_MAXX-AR_MINX), AR_MINY - 6]]; for (let k=0;k<40;k++) pts.push([AR_MINX+10 + r()*(AR_MAXX-AR_MINX-20), AR_MINY+10 + r()*(AR_MAXY-AR_MINY-20)]);
+  const seg = Math.max(0.9, 1.8 - 0.28*w - r()*0.3), fireP = Math.max(0.95, 2.1 - 0.35*w + r()*0.5), first = 0.7 + r()*0.6;
+  return { i, L, born, cid, name, pts, seg, fireP, first, alive:true, lastFire:-1, dead:0 }; }
+function botPos(b, t){ const u=Math.max(0, t-b.born), k=Math.floor(u/b.seg), f=(u%b.seg)/b.seg, e=f*f*(3-2*f); const a=b.pts[Math.min(k,b.pts.length-1)], c=b.pts[Math.min(k+1,b.pts.length-1)];
+  return [a[0]+(c[0]-a[0])*e, a[1]+(c[1]-a[1])*e, c[0]-a[0], c[1]-a[1]]; }
+function nextBorn(i, t){ let b=t, guard=0; while (i >= botsFor(b) && guard++<6) b = (waveAt(b)+1)*15; return b; }
+function botsInit(){ AR.bots = []; for (let i=0;i<8;i++){ const b0 = nextBorn(i, 0.6 + i*0.8); AR.bots.push({ i, L:0, born:b0, plan:null, alive:false, dead:0 }); } }
+function botsTick(t){
+  for (const s of AR.bots){
+    if (!s.alive && t >= s.born && s.born < DUR()-0.5){ s.alive=true; s.plan=botPlan(s.i, s.L, s.born); }
+    if (!s.alive) continue;
+    const b=s.plan, [x,y,dx,dy]=botPos(b,t); b.x=x; b.y=y; b.d=dirOf(dx,dy,b.d||'fr'); b.walk = (b.walk||0) + 0.016;
+    // fire on schedule at the nearest llama
+    const k = Math.floor((t - b.born - b.first)/b.fireP); if (k>=0 && k!==b.lastFire){ b.lastFire=k; botFire(b); }
+    const nextF = b.born + b.first + (Math.max(0,k)+(k>=0?1:0))*b.fireP; b.tele = (nextF - t) < 0.4 && (nextF - t) > 0;
+  }
+}
+function targetsFor(fromX, fromY){ const list=[]; if (AR.phase==='play') list.push({x:AR.p.x, y:AR.p.y, vx:AR.p.vx, vy:AR.p.vy, me:true}); for (const o of AR.remote.values()) if (!o.gone) list.push({x:o.x, y:o.y, vx:o.vx||0, vy:o.vy||0}); return list; }
+function botFire(b){ const ts=targetsFor(b.x,b.y); if (!ts.length) return; let best=null, bd=1e9; for (const q of ts){ const d=Math.hypot(q.x-b.x,q.y-b.y); if (d<bd){ bd=d; best=q; } }
+  if (bd > 220) return; const sp=135 + waveAt(mtime())*16; const lead=0.6*bd/sp; const a=Math.atan2(best.y+(best.vy||0)*lead-b.y, best.x+(best.vx||0)*lead-b.x);   // aims a little ahead of where you're running
+  AR.spits.push({ x:b.x, y:b.y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life:1.6, own:'bot', col:'bot', k:Math.random() });
+  sfxSpit(0.22); }
+function killBot(i, L, tm, mine){ const s=AR.bots[i]; if (!s || !s.alive || s.L!==L) return false; s.alive=false; s.L=L+1; s.born=nextBorn(i, tm+1.6);
+  arBurst(s.plan.x, s.plan.y-14, '#c8f0ff', 10); return true; }
+
+// ---- golden llama: shows up three times a round, runs fast, worth 5 ----
+function goldInit(){ AR.gold = GOLD_TIMES.map((t0,n)=>{ const r=arRng(23,n); const pts=[]; for (let k=0;k<16;k++) pts.push([AR_MINX+10+r()*(AR_MAXX-AR_MINX-20), AR_MINY+10+r()*(AR_MAXY-AR_MINY-20)]); return { n, t0, t1:t0+7, pts, seg:0.7, alive:false, done:false, born:t0 }; }); }
+function goldTick(t){ for (const G of AR.gold){ if (G.done) continue; if (t>=G.t0 && t<G.t1 && !G.alive){ G.alive=true; arBanner('GOLDEN LLAMA! 5 POINTS', '#ffd23f'); sfxChime([880,1175,1568]); }
+  if (G.alive && t>=G.t1){ G.alive=false; G.done=true; } if (!G.alive) continue; const [x,y,dx,dy]=botPos(G,t); G.x=x; G.y=y; G.d=dirOf(dx,dy,G.d||'fr'); } }
+// ---- power-ups ----
+function upsInit(){ AR.ups = UP_TIMES.map((t0,n)=>{ const r=arRng(31,n); return { n, t0, t1:t0+8, x:AR_MINX+16+r()*(AR_MAXX-AR_MINX-32), y:AR_MINY+16+r()*(AR_MAXY-AR_MINY-32), k:UP_KINDS[Math.floor(r()*3)], got:false }; }); }
+
+// ---- effects ----
+function arBurst(x,y,col,n){ for (let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, v=30+Math.random()*70; AR.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-20,life:0.35+Math.random()*0.3,col}); } }
+function floatText(x,y,txt,col){ AR.texts.push({x,y,txt,col,life:1.0}); }
+function arBanner(txt,col){ AR.banner={txt,col,t:0}; }
+function sfxTone(f, dur, type, vol, delay){ try { if (!sfxReady()) return; const t=actx.currentTime+0.01+(delay||0); const o=actx.createOscillator(), gn=actx.createGain(); o.type=type||'square'; o.frequency.setValueAtTime(f,t);
+  gn.gain.setValueAtTime(vol||0.3,t); gn.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(gn); gn.connect(sfxBus); o.start(t); o.stop(t+dur+0.02); } catch(e){} }
+function sfxChime(notes){ notes.forEach((f,i)=>sfxTone(f, 0.16, 'square', 0.22, i*0.07)); }
+
+// ---- spitting ----
+function myFire(ax, ay){ const P=AR.p; if (AR.phase!=='play' || P.stun>0 || P.cd>0) return;
+  let a; if (ax!=null){ a=Math.atan2(ay-(P.y-14), ax-P.x); }
+  else { // auto-aim: nearest rival in reach, else straight ahead
+    let best=null, bd=190; const cands=[]; for (const s of AR.bots) if (s.alive) cands.push(s.plan); for (const G of AR.gold) if (G.alive) cands.push(G); for (const o of AR.remote.values()) if (!o.gone) cands.push(o);
+    for (const q of cands){ const d=Math.hypot(q.x-P.x,q.y-P.y); if (d<bd){ bd=d; best=q; } }
+    if (best){ const lead=bd/230; const vx=best.vx||0, vy=best.vy||0; a=Math.atan2((best.y+vy*lead)-P.y, (best.x+vx*lead)-P.x); } else { a=Math.atan2(P.d[0]==='f'?1:-1, P.d[1]==='r'?1:-1); } }
+  P.d = dirOf(Math.cos(a), Math.sin(a), P.d);
+  const angs = P.triple>0 ? [a-0.22, a, a+0.22] : [a];
+  for (const g of angs){ const sp=230; const s={ x:P.x, y:P.y, vx:Math.cos(g)*sp, vy:Math.sin(g)*sp, life:0.85, own:'me', col:AR.color, k:Math.random() }; AR.spits.push(s); AR.fires.push([Math.round(s.x),Math.round(s.y),Math.round(s.vx),Math.round(s.vy)]); }
+  P.cd = P.rapid>0 ? 0.15 : 0.42; sfxSpit(0.75);
+}
+function addPoints(base, x, y, label){ const P=AR.p; P.combo++; P.comboT=3.5; P.bestCombo=Math.max(P.bestCombo,P.combo); const newMult=Math.min(5, 1+Math.floor(P.combo/3));
+  if (newMult>P.mult){ sfxChime([523*Math.pow(1.122,newMult),659*Math.pow(1.122,newMult)]); floatText(P.x, P.y-52, `COMBO x${newMult}!`, '#ff5c8a'); }
+  P.mult=newMult; const fz = mtime()>=FRENZY ? 2 : 1; const pts=base*P.mult*fz; P.score+=pts; P.hits++;
+  floatText(x, y-30, `+${pts}${label?' '+label:''}`, fz>1?'#ff5c8a':'#ffd23f'); AR.shake=Math.min(4, AR.shake+1.5); }
+function gotHit(by){ const P=AR.p; if (P.inv>0 || AR.phase!=='play') return false;
+  if (P.shield>0){ P.shield=0; P.inv=0.6; arBurst(P.x,P.y-16,'#ffd23f',14); floatText(P.x,P.y-50,'BLOCKED!','#ffd23f'); sfxTone(330,0.2,'triangle',0.4); return true; }
+  P.stun=0.6; P.inv=1.3; if (P.combo>=3) floatText(P.x,P.y-50,'COMBO LOST','#ff8080'); P.combo=0; P.mult=1; AR.shake=5; sfxSplat(1); sfxTone(150,0.25,'sawtooth',0.25);
+  if (by) AR.events.push({k:'h', by}); return true; }
+function spitsTick(dt, t){
+  const P=AR.p;
+  for (let i=AR.spits.length-1;i>=0;i--){ const s=AR.spits[i]; s.x+=s.vx*dt; s.y+=s.vy*dt; s.life-=dt; let gone = s.life<=0 || s.x<AR_MINX-14 || s.x>AR_MAXX+14 || s.y<AR_MINY-24 || s.y>AR_MAXY+10;
+    if (!gone && s.own==='me'){
+      for (const b of AR.bots){ if (!b.alive) continue; const q=b.plan; if (Math.hypot(q.x-s.x,q.y-s.y)<12){ const L=b.L; if (killBot(b.i, L, t, true)){ AR.events.push({k:'b', i:b.i, L, tm:+t.toFixed(2)}); addPoints(1, q.x, q.y); sfxSplat(0.8); } gone=true; break; } }
+      if (!gone) for (const G of AR.gold){ if (!G.alive) continue; if (Math.hypot(G.x-s.x,G.y-s.y)<12){ G.alive=false; G.done=true; AR.events.push({k:'g', n:G.n}); arBurst(G.x,G.y-14,'#ffd23f',22); addPoints(5, G.x, G.y, 'GOLD!'); sfxChime([784,988,1319,1568]); gone=true; break; } }
+      if (!gone) for (const o of AR.remote.values()){ if (o.gone || o.inv>0) continue; if (Math.hypot(o.x-s.x,o.y-s.y)<11){ arBurst(s.x,s.y-18,spitCol(AR.color,t,0)[1],8); gone=true; break; } }   // their game decides if it counts
+    } else if (!gone && (s.own==='bot' || s.from)){
+      if (AR.phase==='play' && Math.hypot(P.x-s.x,P.y-s.y)<10){ if (gotHit(s.from||null)){ arBurst(P.x,P.y-18,'#c8f0ff',12); gone=true; } }
+      if (!gone && s.from){ for (const b of AR.bots){ if (b.alive && Math.hypot(b.plan.x-s.x,b.plan.y-s.y)<12){ gone=true; break; } } }
+    }
+    if (gone){ if (s.life>0) arBurst(s.x, s.y-18, s.own==='bot'?'#c8f0ff':spitCol(s.col,t,s.k)[1], 5); AR.spits.splice(i,1); }
+  }
+}
+
+// ---- multiplayer: send my moves, apply theirs ----
+function arSend(now){ if (AR.phase!=='play' && AR.phase!=='count') return; if (now - AR.sendT < 100) return; AR.sendT=now; const P=AR.p;
+  const m={ t:'ar', x:Math.round(P.x), y:Math.round(P.y), d:P.d, sc:P.score, st:P.stun>0?1:0, sh:P.shield>0?1:0 };
+  if (AR.fires.length) m.f=AR.fires.splice(0,9); if (AR.events.length) m.e=AR.events.splice(0,8); NET.send(m); }
+NET.handlers.ar = m => { if (!AR.on || !AR.match) return; const id=m.from; if (!id || id===(NET.peer||myPeer)) return;
+  let o=AR.remote.get(id); if (!o){ o={ x:+m.x||ARW/2, y:+m.y||ARH/2, n:String(m.n||'LLAMA').slice(0,12), c:CHAR_IDS.includes(m.c)?m.c:'twotone', col:SPIT_COLS.hasOwnProperty(m.col)?m.col:'blue', sc:0, d:'fr', inv:0, walk:0 }; AR.remote.set(id,o); }
+  o.tx=Math.max(AR_MINX,Math.min(AR_MAXX,+m.x||o.x)); o.ty=Math.max(AR_MINY-8,Math.min(AR_MAXY,+m.y||o.y)); o.d=['fr','fl','br','bl'].includes(m.d)?m.d:o.d; o.sc=Math.max(0,+m.sc||0); o.st=!!m.st; o.sh=!!m.sh; o.seen=performance.now(); o.gone=false;
+  if (Array.isArray(m.f)) for (const f of m.f.slice(0,9)){ if (!Array.isArray(f)) continue; const [x,y,vx,vy]=f.map(Number); if (![x,y,vx,vy].every(Number.isFinite) || Math.hypot(vx,vy)>260) continue; AR.spits.push({x,y,vx,vy,life:0.85,own:'them',from:id,col:o.col,k:Math.random()}); sfxSpit(0.3); }
+  if (Array.isArray(m.e)) for (const e of m.e.slice(0,8)){ if (!e) continue;
+    if (e.k==='b') killBot(+e.i, +e.L, +e.tm||mtime(), false);
+    else if (e.k==='g'){ const G=AR.gold[+e.n]; if (G && G.alive){ G.alive=false; G.done=true; arBurst(G.x,G.y-14,'#ffd23f',16); floatText(G.x,G.y-30,`${o.n} GOT IT`,'#ffd23f'); } }
+    else if (e.k==='u'){ const U=AR.ups[+e.n]; if (U) U.got=true; }
+    else if (e.k==='h' && e.by===(NET.peer||myPeer) && AR.phase==='play'){ addPoints(3, o.x, o.y, 'HIT '+o.n+'!'); sfxSplat(0.9); o.inv=1.3; arBurst(o.x,o.y-18,spitCol(AR.color,performance.now()/1000,0)[1],14); }
+    else if (e.k==='h'){ o.inv=1.3; } }
+};
+NET.handlers.am = m => { AR.live = m.match || null; if (AR.on && AR.match && m.match && m.match.id===AR.match.id){ AR.humans=Math.max(1, m.match.players.length); } if (AR.on && AR.phase==='lobby') arLobby(); };
+NET.handlers.ab = m => { AR.board = m.board; };
+
+// ---- the round loop ----
+function arenaTick(dt, now){
+  if (!AR.on) return; const t=mtime(), P=AR.p; AR.t+=dt;
+  if (AR.phase==='count'){ const left=Math.ceil(-t); if (left>0 && left<=3 && !AR.beeps[left]){ AR.beeps[left]=1; sfxTone(440,0.15,'square',0.3); }
+    if (t>=0){ AR.phase='play'; arBanner('GO!', '#7ce07c'); sfxTone(880,0.3,'square',0.35); } }
+  if (AR.phase==='play'){
+    // waves and frenzy announcements
+    const w=waveAt(t); if (w>0 && !AR.beeps['w'+w]){ AR.beeps['w'+w]=1; arBanner(`WAVE ${w+1}: FASTER RIVALS`, '#5ad0ff'); sfxChime([392,523,659]); }
+    if (t>=FRENZY && !AR.beeps.fz){ AR.beeps.fz=1; arBanner('FRENZY! DOUBLE POINTS', '#ff5c8a'); sfxChime([659,784,988,1319]); }
+    if (t>=DUR()-5 && t<DUR()){ const s=Math.ceil(DUR()-t); if (!AR.beeps['e'+s]){ AR.beeps['e'+s]=1; sfxTone(660,0.08,'square',0.2); } }
+    // move
+    let mx=0, my=0; const K=AR.keys; if (K.has('left')) mx-=1; if (K.has('right')) mx+=1; if (K.has('up')) my-=1; if (K.has('down')) my+=1;
+    if (AR.stick.on){ mx=AR.stick.dx; my=AR.stick.dy; }
+    const len=Math.hypot(mx,my); if (len>1){ mx/=len; my/=len; }
+    const spd = P.stun>0 ? 0 : 92; P.vx=mx*spd; P.vy=my*spd; P.x=Math.max(AR_MINX,Math.min(AR_MAXX,P.x+P.vx*dt)); P.y=Math.max(AR_MINY,Math.min(AR_MAXY,P.y+P.vy*dt));
+    if (len>0.15 && P.stun<=0){ P.d=dirOf(mx,my,P.d); P.walk+=dt; }
+    P.cd=Math.max(0,P.cd-dt); P.stun=Math.max(0,P.stun-dt); P.inv=Math.max(0,P.inv-dt); P.rapid=Math.max(0,P.rapid-dt); P.triple=Math.max(0,P.triple-dt); P.shield=Math.max(0,P.shield-dt);
+    P.comboT-=dt; if (P.comboT<=0 && P.combo>0){ P.combo=0; P.mult=1; }
+    if (AR.fireHeld) myFire(AR.mouse?AR.mouse[0]:null, AR.mouse?AR.mouse[1]:null);
+    // power-ups
+    for (const U of AR.ups){ if (U.got || t<U.t0 || t>U.t1) continue; if (Math.hypot(U.x-P.x,U.y-P.y)<14){ U.got=true; AR.events.push({k:'u', n:U.n}); P[U.k]= U.k==='shield' ? 8 : 6; floatText(P.x,P.y-52,UP_INFO[U.k].n+'!',UP_INFO[U.k].c); sfxChime([523,784,1047]); } }
+    if (t>=DUR()) arenaFinish();
+  }
+  if (AR.phase==='play' || AR.phase==='count'){ botsTick(Math.max(0,t)); goldTick(Math.max(0,t)); }
+  spitsTick(dt, Math.max(0,t));
+  for (const o of AR.remote.values()){ if (o.tx!=null){ const k=Math.min(1,dt*12); const px=o.x, py=o.y; o.x+=(o.tx-o.x)*k; o.y+=(o.ty-o.y)*k; o.vx=(o.x-px)/Math.max(dt,0.001); o.vy=(o.y-py)/Math.max(dt,0.001); if (Math.hypot(o.vx,o.vy)>8) o.walk+=dt; } o.inv=Math.max(0,(o.inv||0)-dt); if (performance.now()-(o.seen||0)>4000) o.gone=true; }
+  for (let i=AR.parts.length-1;i>=0;i--){ const q=AR.parts[i]; q.x+=q.vx*dt; q.y+=q.vy*dt; q.vy+=160*dt; q.life-=dt; if (q.life<=0) AR.parts.splice(i,1); }
+  for (let i=AR.texts.length-1;i>=0;i--){ const q=AR.texts[i]; q.y-=22*dt; q.life-=dt; if (q.life<=0) AR.texts.splice(i,1); }
+  if (AR.banner){ AR.banner.t+=dt; if (AR.banner.t>1.8) AR.banner=null; }
+  AR.shake=Math.max(0, AR.shake-dt*14);
+  arSend(now); arDraw(Math.max(0,t)); arHud(t);
+}
+
+// ---- drawing ----
+const goldCache=new Map();
+function goldSprite(cid,dir,fr){ const k=cid+dir+fr; let c=goldCache.get(k); if (!c){ const s=sprite(cid,dir,fr,'stand'); c=document.createElement('canvas'); c.width=s.width; c.height=s.height; const x=c.getContext('2d'); x.drawImage(s,0,0); x.globalCompositeOperation='source-atop'; x.fillStyle='rgba(255,200,40,0.6)'; x.fillRect(0,0,c.width,c.height); goldCache.set(k,c); } return c; }
+function arText(c, str, x, y, col, sc, center){ const w=pfW(str,sc||1); const X=center?Math.round(x-w/2):x; pfDraw(c,str,X+1,y+1,'#181020',sc||1); pfDraw(c,str,X,y,col,sc||1); }
+function arLlama(c, cid, x, y, d, walk, opts){ const fr = walk>0 ? Math.floor(walk*8)%4 : 0; const im = opts&&opts.gold ? goldSprite(cid,d,fr) : sprite(cid, d, fr, 'stand');
+  c.fillStyle='rgba(40,20,10,0.25)'; c.fillRect(Math.round(x-8),Math.round(y-2),16,3); c.fillRect(Math.round(x-6),Math.round(y-3),12,5);
+  if (opts && opts.blink && Math.floor(performance.now()/80)%2) return; c.drawImage(im, Math.round(x-SW/2), Math.round(y-SH+2)); }
+function arDraw(t){
+  const c=arCx; c.imageSmoothingEnabled=false; const sx=AR.shake?Math.round((Math.random()-0.5)*AR.shake*2):0, sy=AR.shake?Math.round((Math.random()-0.5)*AR.shake*2):0;
+  c.setTransform(1,0,0,1,sx,sy); c.drawImage(arBG,0,0);
+  // crowd bobs, faster when you're on a combo
+  const hype = AR.p ? Math.min(5, AR.p.mult) : 1; for (const q of CROWD){ const b = Math.sin(AR.t*(2+hype*1.6)+q.p) > 0.3 ? 1 : 0; c.fillStyle=q.c; c.fillRect(q.x, q.y-b, 3, 3); c.fillStyle='#f0d0b0'; c.fillRect(q.x, q.y-2-b, 3, 2); if (hype>=4 && b && q.p>4.5){ c.fillStyle=q.c; c.fillRect(q.x-1,q.y-5,1,2); c.fillRect(q.x+3,q.y-5,1,2); } }
+  // power-ups on the ground
+  for (const U of AR.ups){ if (U.got || t<U.t0 || t>U.t1) continue; const bob=Math.round(Math.sin(AR.t*5+U.n)*2), I=UP_INFO[U.k]; const blink = U.t1-t<2 && Math.floor(AR.t*8)%2;
+    if (blink) continue; c.fillStyle='rgba(40,20,10,0.25)'; c.fillRect(U.x-6,U.y+2,12,3); c.fillStyle='#181020'; c.fillRect(U.x-7,U.y-12+bob,14,14); c.fillStyle=I.c; c.fillRect(U.x-6,U.y-11+bob,12,12); c.fillStyle='#ffffff'; c.fillRect(U.x-5,U.y-10+bob,3,2);
+    c.font='9px sans-serif'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(I.i, U.x, U.y-4+bob); }
+  // everyone, back to front
+  const ents=[];
+  for (const s of AR.bots) if (s.alive) ents.push({y:s.plan.y, f:()=>{ const b=s.plan; arLlama(c, b.cid, b.x, b.y, b.d, b.walk); arText(c, b.name, b.x, b.y-SH-6, '#ff9cb8', 1, true); if (b.tele){ c.fillStyle='#181020'; c.fillRect(b.x+8,b.y-SH-2,5,9); c.fillStyle='#ff3050'; c.fillRect(b.x+9,b.y-SH-1,3,5); c.fillRect(b.x+9,b.y-SH+5,3,2); } }});
+  for (const G of AR.gold) if (G.alive) ents.push({y:G.y, f:()=>{ arLlama(c, 'twotone', G.x, G.y, G.d, AR.t, {gold:true}); if (Math.floor(AR.t*10)%3===0){ c.fillStyle='#ffffff'; c.fillRect(G.x-12+Math.random()*24, G.y-40+Math.random()*30, 2, 2); } arText(c, 'GOLDEN', G.x, G.y-SH-6, '#ffd23f', 1, true); }});
+  for (const o of AR.remote.values()) if (!o.gone) ents.push({y:o.y, f:()=>{ arLlama(c, o.c, o.x, o.y, o.d, o.walk, {blink:o.inv>0}); if (o.sh) arRing(c,o.x,o.y,'#ffd23f'); arText(c, o.n, o.x, o.y-SH-6, '#e8ecff', 1, true); }});
+  if (AR.p && (AR.phase==='play'||AR.phase==='count'||AR.phase==='over')){ const P=AR.p; ents.push({y:P.y, f:()=>{ arLlama(c, me.c, P.x, P.y, P.d, P.vx||P.vy?P.walk:0, {blink:P.inv>0 && P.stun<=0}); if (P.shield>0) arRing(c,P.x,P.y,'#ffd23f');
+    if (P.stun>0){ for (let k=0;k<3;k++){ const a=AR.t*6+k*2.1; c.fillStyle='#ffd23f'; c.fillRect(Math.round(P.x+Math.cos(a)*9), Math.round(P.y-SH-2+Math.sin(a)*3), 2, 2); } }
+    arText(c, 'YOU', P.x, P.y-SH-6, '#ffd23f', 1, true); c.fillStyle='#ffd23f'; c.fillRect(P.x-1,P.y-SH+2,3,2); }}); }
+  ents.sort((a,b)=>a.y-b.y); for (const e of ents) e.f();
+  // spits: shadow on the ground, blob at mouth height
+  for (const s of AR.spits){ const [a,b]= s.own==='bot' ? ['#90c8e0','#e8f8ff'] : spitCol(s.col, AR.t, s.k); const X=Math.round(s.x), Y=Math.round(s.y);
+    c.fillStyle='rgba(40,20,10,0.22)'; c.fillRect(X-2,Y-1,4,2);
+    c.fillStyle='#181020'; c.fillRect(X-3,Y-21,6,5); c.fillStyle=a; c.fillRect(X-2,Y-20,4,3); c.fillStyle=b; c.fillRect(X-1,Y-20,2,1);
+    if (s.col==='fire' || s.col==='rainbow'){ c.fillStyle=a; c.fillRect(Math.round(X-s.vx*0.025)-1, Math.round(Y-18-s.vy*0.025), 2, 2); c.fillRect(Math.round(X-s.vx*0.05), Math.round(Y-18-s.vy*0.05), 1, 1); } }
+  for (const q of AR.parts){ c.fillStyle=q.col; c.fillRect(Math.round(q.x),Math.round(q.y),2,2); }
+  for (const q of AR.texts){ if (q.life<0.25 && Math.floor(AR.t*20)%2) continue; arText(c, q.txt, q.x, Math.round(q.y), q.col, 1, true); }
+  // countdown and banners
+  const tt=mtime();
+  if (AR.phase==='count'){ const n=Math.ceil(-tt); if (n>0){ const sc=6; arText(c, String(Math.min(n,9)), ARW/2, ARH/2-20, '#ffffff', sc, true); arText(c, AR.humans>1 ? `${AR.humans} LLAMAS IN THIS ROUND` : 'GET READY!', ARW/2, ARH/2+26, '#ffd23f', 1, true); } }
+  if (AR.banner){ const B=AR.banner, sc=B.txt.length>12?2:3, y=ARH/2-30; if (B.t<1.5 || Math.floor(B.t*10)%2){ const w=pfW(B.txt,sc)+16; c.fillStyle='rgba(16,10,32,0.75)'; c.fillRect(ARW/2-w/2, y-8, w, 5*sc+16); arText(c, B.txt, ARW/2, y, B.col, sc, true); } }
+  if (tt>=FRENZY && AR.phase==='play' && Math.floor(AR.t*4)%2){ c.fillStyle='rgba(255,92,138,0.5)'; c.fillRect(0,0,ARW,2); c.fillRect(0,ARH-2,ARW,2); c.fillRect(0,0,2,ARH); c.fillRect(ARW-2,0,2,ARH); }
+  c.setTransform(1,0,0,1,0,0);
+}
+function arRing(c,x,y,col){ c.fillStyle=col; for (let a=0;a<360;a+=20){ const r=a*Math.PI/180+AR.t*3; c.fillRect(Math.round(x+Math.cos(r)*13), Math.round(y-18+Math.sin(r)*16), 2, 2); } }
+function arHud(t){ const P=AR.p; if (!P) return;
+  document.getElementById('ar_score').textContent = P.score;
+  const left = AR.phase==='count' ? DUR() : Math.max(0, Math.ceil(DUR()-t)); const tm=document.getElementById('ar_time'); tm.textContent = `0:${String(Math.min(59,left)).padStart(2,'0')}`.replace('0:60','1:00'); tm.classList.toggle('low', AR.phase==='play' && left<=10);
+  const cb=document.getElementById('ar_combo'); cb.textContent = P.mult>1 ? `x${P.mult}${t>=FRENZY&&AR.phase==='play'?' ×2':''}` : (t>=FRENZY&&AR.phase==='play' ? '×2' : ''); cb.style.display = cb.textContent ? '' : 'none';
+  const pw=[]; if (P.rapid>0) pw.push('🌶 '+Math.ceil(P.rapid)); if (P.triple>0) pw.push('✳ '+Math.ceil(P.triple)); if (P.shield>0) pw.push('🛡'); document.getElementById('ar_pow').textContent=pw.join('  ');
+  const others=[...AR.remote.values()].filter(o=>!o.gone); const rk=document.getElementById('ar_rank');
+  if (others.length){ const all=[{n:'YOU',sc:P.score,me:1},...others.map(o=>({n:o.n,sc:o.sc}))].sort((a,b)=>b.sc-a.sc); rk.innerHTML=all.slice(0,4).map((q,i)=>`<div class="${q.me?'me':''}">${i+1}. ${esc(q.n)} <b>${q.sc}</b></div>`).join(''); rk.style.display=''; } else rk.style.display='none'; }
+
+// ---- input ----
+const AR_KEYS = { ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right', ArrowUp:'up', KeyW:'up', ArrowDown:'down', KeyS:'down' };
+addEventListener('keydown', e=>{ if (!AR.on) return; if (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  e.stopImmediatePropagation(); const k=AR_KEYS[e.code];
+  if (k){ e.preventDefault(); AR.keys.add(k); return; }
+  if (e.code==='Space' || e.code==='KeyJ' || e.code==='KeyQ'){ e.preventDefault(); if (AR.phase==='play'){ AR.mouse=null; AR.fireHeld=true; myFire(); } else if (!e.repeat && e.code==='Space' && (AR.phase==='lobby' && AR.me || (AR.phase==='over' && AR.result))){ arPlay(); } return; }
+  if (e.code==='Escape'){ e.preventDefault(); arenaClose(); return; } }, true);
+addEventListener('keyup', e=>{ if (!AR.on) return; const k=AR_KEYS[e.code]; if (k) AR.keys.delete(k); if (e.code==='Space'||e.code==='KeyJ'||e.code==='KeyQ') AR.fireHeld=false; }, true);
+const arToWorld = e => { const r=arCv.getBoundingClientRect(); return [(e.clientX-r.left)/AR.sc, (e.clientY-r.top)/AR.sc]; };
+arCv.addEventListener('pointerdown', e=>{ if (e.pointerType==='touch') return; e.preventDefault(); ensureAudio(); if (AR.phase!=='play') return; AR.mouse=arToWorld(e); AR.fireHeld=true; myFire(AR.mouse[0], AR.mouse[1]+14); });
+arCv.addEventListener('pointermove', e=>{ if (e.pointerType==='touch' || !AR.fireHeld) return; const w=arToWorld(e); AR.mouse=[w[0], w[1]+14]; });
+addEventListener('pointerup', e=>{ if (e.pointerType!=='touch'){ AR.fireHeld=false; AR.mouse=null; } });
+// touch: drag anywhere on the left half to move (a stick appears under your thumb), hold SPIT to fire
+const stickEl=document.getElementById('ar_stick'), knobEl=document.getElementById('ar_knob'), fireEl=document.getElementById('ar_fire');
+arEl.addEventListener('pointerdown', e=>{ if (!AR.on || e.pointerType!=='touch' || e.target===fireEl || fireEl.contains(e.target) || e.target.closest('#arbox,#ar_exit')) return; if (e.clientX > innerWidth*0.6 && e.target!==stickEl) return;
+  AR.stick={on:true,id:e.pointerId,x0:e.clientX,y0:e.clientY,dx:0,dy:0}; stickEl.style.display='block'; stickEl.style.left=(e.clientX-56)+'px'; stickEl.style.top=(e.clientY-56)+'px'; knobEl.style.transform='translate(0,0)'; e.preventDefault(); });
+arEl.addEventListener('pointermove', e=>{ const S2=AR.stick; if (!S2.on || e.pointerId!==S2.id) return; let dx=e.clientX-S2.x0, dy=e.clientY-S2.y0; const L=Math.hypot(dx,dy), R=44; if (L>R){ dx*=R/L; dy*=R/L; } S2.dx=dx/R; S2.dy=dy/R; knobEl.style.transform=`translate(${dx}px,${dy}px)`; });
+const stickEnd = e=>{ const S2=AR.stick; if (S2.on && e.pointerId===S2.id){ AR.stick={on:false,id:null,dx:0,dy:0}; stickEl.style.display='none'; } };
+arEl.addEventListener('pointerup', stickEnd); arEl.addEventListener('pointercancel', stickEnd);
+fireEl.addEventListener('pointerdown', e=>{ e.preventDefault(); e.stopPropagation(); ensureAudio(); AR.mouse=null; AR.fireHeld=true; myFire(); fireEl.classList.add('on'); });
+for (const ev of ['pointerup','pointercancel','pointerleave']) fireEl.addEventListener(ev, ()=>{ AR.fireHeld=false; fireEl.classList.remove('on'); });
+document.getElementById('ar_exit').addEventListener('click', ()=>arenaClose());
+
+// ---- lobby, joining, results ----
+function openArena(){ if (!joined) return; if (curRoom!=='arena'){ showSwap('arena'); return; } closeAll(); if (arcade.on) exitArcade();
+  AR.on=true; AR.phase='lobby'; AR.p=null; arEl.style.display='block'; document.body.classList.add('arena-on'); arSize(); if (!arBG.dataset.ok){ buildArBG(); arBG.dataset.ok=1; }
+  AR.remote.clear(); AR.spits.length=0; AR.parts.length=0; AR.texts.length=0; AR.bots=[]; AR.gold=[]; AR.ups=[]; AR.match=null;
+  arBody.innerHTML='<div class="arload">LOADING...</div>'; arBox.style.display='block'; sendPresence(true);
+  NET.act('arena_info').then(r=>{ if (!r.ok){ arBody.innerHTML=`<div class="arload">${esc(r.msg||'Could not load the arena.')}</div>`; return; } AR.me=r.me; AR.board=r.board; AR.live=r.match; if (!AR.colorSet){ AR.color=r.me.color; AR.colorSet=true; } arLobby(); }); }
+function arenaClose(silent){ if (!AR.on) return; AR.on=false; AR.phase='lobby'; arEl.style.display='none'; arBox.style.display='none'; document.body.classList.remove('arena-on'); AR.keys.clear(); AR.fireHeld=false; AR.stick.on=false; stickEl.style.display='none';
+  if (!silent) sendPresence(true); }
+function xpBar(M){ const pct=Math.max(0,Math.min(100,Math.round((M.xp-M.lo)/(M.hi-M.lo)*100))); return `<div class="xpw"><span class="lvl">LV ${M.lvl}</span><div class="xpb"><i style="width:${pct}%"></i></div><span class="xpn">${M.xp-M.lo}/${M.hi-M.lo} XP</span></div>`; }
+function colorPicker(M){ return `<div class="cols">${Object.keys(COLOR_LVL).map(k=>{ const ok=M.colors.includes(k); const [a,b]=spitCol(k,0.3,0); const bg = k==='rainbow' ? 'linear-gradient(135deg,#ff5050,#ffe040,#50d860,#50a8ff,#b060f0)' : k==='fire' ? 'linear-gradient(135deg,#e82818,#ff9030,#ffe080)' : `radial-gradient(circle at 35% 35%,${b},${a})`;
+  return `<button class="col ${AR.color===k?'on':''} ${ok?'':'lock'}" data-col="${k}" title="${COLOR_NAMES[k]}${ok?'':' (LEVEL '+COLOR_LVL[k]+')'}"><i style="background:${bg}"></i><small>${ok?COLOR_NAMES[k]:'LV '+COLOR_LVL[k]}</small></button>`; }).join('')}</div>`; }
+function boardHtml(B){ if (!B || !B.week.length) return '<div class="arnone">No scores this week yet. Be the first!</div>'; const meN=(me.n||'').toUpperCase();
+  return `<ol class="arlb">${B.week.map((q,i)=>`<li class="${q.n===meN?'me':''}"><span>${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span><b>${esc(q.n)}</b><em>${q.s}</em></li>`).join('')}</ol>`; }
+function liveLine(){ const L=AR.live; if (!L) return ''; const now=Date.now()+AR.off; if (now > L.t0+L.dur-25000) return '';
+  const n=L.players.length; return now < L.t0 ? `<div class="arlive">🔴 A round starts in ${Math.max(1,Math.ceil((L.t0-now)/1000))}s with ${n} llama${n>1?'s':''}. Press PLAY to jump in!</div>` : `<div class="arlive">🔴 ${n} llama${n>1?'s are':' is'} playing now, ${Math.ceil((L.t0+L.dur-now)/1000)}s left. Press PLAY to join!</div>`; }
+function arLobby(){ const M=AR.me; if (!M) return; AR.phase='lobby';
+  const nextBonus = M.playedToday ? 0 : Math.min(5, M.streak+1);
+  arBody.innerHTML = `<div class="arh"><div class="art">💦 SPIT ARENA</div><div class="ars">Spit rival llamas, dodge their spit, chain hits for combos. 60 seconds a round.</div></div>
+    ${xpBar(M)}
+    <div class="arstats"><div><b>${M.best}</b><small>BEST</small></div><div><b>${M.wkBest}</b><small>THIS WEEK</small></div><div><b>🔥 ${M.streak}</b><small>DAY STREAK</small></div><div><b>${M.earnedToday}/${M.cap}</b><small>TOKENS TODAY</small></div></div>
+    ${nextBonus ? `<div class="arbonus">🎁 First round today: <b>+${nextBonus} bonus token${nextBonus>1?'s':''}</b>${M.streak?' to keep your streak going':''}!</div>` : `<div class="arbonus done">✅ Daily bonus collected. Come back tomorrow to grow your streak.</div>`}
+    ${liveLine()}
+    <button class="gbbtn y arplay" id="ar_go">▶ PLAY</button>
+    <div class="arsec">SPIT COLOR</div>${colorPicker(M)}
+    <div class="arsec">THIS WEEK'S TOP SPITTERS</div>${boardHtml(AR.board)}
+    <div class="arhow"><b>HOW TO PLAY</b> ${matchMedia('(pointer:coarse)').matches ? 'Drag on the left side to run. Hold SPIT to fire (it aims for you).' : 'WASD or arrows to run. Click to spit where you aim, or hold SPACE to auto-aim.'} Rivals flash <b style="color:#e02848">!</b> before they spit. 🌶 rapid fire, ✳ triple spit, 🛡 shield. The golden llama is worth 5. Last 10 seconds: double points.</div>
+    <div class="srow"><button class="gbbtn" id="ar_leave">LEAVE</button></div>`;
+  arBox.style.display='block'; arWire(); }
+function arWire(){ const go=document.getElementById('ar_go'); if (go) go.addEventListener('click', arPlay);
+  const lv=document.getElementById('ar_leave'); if (lv) lv.addEventListener('click', ()=>arenaClose());
+  for (const b of arBody.querySelectorAll('[data-col]')) b.addEventListener('click', ()=>{ const k=b.dataset.col; if (!AR.me.colors.includes(k)){ localMsg(`Reach arena level ${COLOR_LVL[k]} to unlock ${COLOR_NAMES[k]} spit.`); return; } AR.color=k; for (const x of arBody.querySelectorAll('[data-col]')) x.classList.toggle('on', x.dataset.col===k); sfxSpit(0.6); }); }
+function arPlay(){ if (AR.joining) return; AR.joining=true; ensureAudio(); const go=document.getElementById('ar_go'); if (go){ go.disabled=true; go.textContent='JOINING...'; }
+  const sent=Date.now(); NET.act('arena_join',{color:AR.color}).then(r=>{ AR.joining=false;
+    if (!r.ok){ localMsg(r.msg||'Could not start a round.'); if (AR.me) arLobby(); return; }
+    const rtt=Date.now()-sent; AR.off = r.match.now - (sent + rtt/2);
+    AR.match=r.match; AR.color=r.color; AR.me=r.me; AR.humans=Math.max(1,r.match.players.length); AR.live=r.match;
+    AR.p=newMe(); { const r2=mulberry((Date.now()^ (me.n||'x').length*7919)>>>0); AR.p.x=AR_MINX+30+r2()*(AR_MAXX-AR_MINX-60); }
+    AR.remote.clear(); AR.spits.length=0; AR.parts.length=0; AR.texts.length=0; AR.fires.length=0; AR.events.length=0; AR.beeps={}; AR.banner=null; AR.result=null; AR.ending=false;
+    botsInit(); goldInit(); upsInit();
+    // anything that already happened in a round you joined late
+    const t=mtime(); for (const G of AR.gold) if (t>G.t1) G.done=true; for (const U of AR.ups) if (t>U.t1) U.got=true;
+    AR.phase = t<0 ? 'count' : 'play'; if (t>=0){ AR.beeps={1:1,2:1,3:1}; for (let w=1; w<=waveAt(t); w++) AR.beeps['w'+w]=1; if (t>=FRENZY) AR.beeps.fz=1; arBanner('JOINED! GO!', '#7ce07c'); }
+    arBox.style.display='none'; sendPresence(true); }); }
+function arenaFinish(){ if (AR.ending) return; AR.ending=true; AR.phase='over'; AR.fireHeld=false; const P=AR.p;
+  arBanner("TIME!", '#ffd23f'); sfxChime([784,659,523,784,1047]);
+  // give the last moves a moment to arrive, then ask the server to score the round
+  setTimeout(()=>{ NET.send({t:'ar', x:Math.round(P.x), y:Math.round(P.y), d:P.d, sc:P.score}); }, 50);
+  setTimeout(()=>{ NET.act('arena_end',{mid:AR.match.id, score:P.score}).then(r=>{ if (!AR.on) return; AR.result=r; if (r.ok){ AR.me=r.me; AR.board=r.board; if (Number.isFinite(r.tk)) tkSet(r.tk); } arResults(r); }); }, 900); }
+function arResults(r){ const P=AR.p;
+  if (!r.ok){ arBody.innerHTML=`<div class="arh"><div class="art">ROUND OVER</div></div><div class="arbig">${P.score}</div><div class="arload">${esc(r.msg||'')}</div><button class="gbbtn y arplay" id="ar_go">▶ PLAY AGAIN</button><div class="srow"><button class="gbbtn" id="ar_leave">LEAVE</button></div>`; arBox.style.display='block'; arWire(); return; }
+  const M=r.me, ord=n=>n+(['th','st','nd','rd'][(n%100-20)%10]||['th','st','nd','rd'][n%100]||'th');
+  const lines=[]; const base=r.earned-r.bonus.streak-r.bonus.place;
+  if (base>0) lines.push(`<li><span>Score</span><b>+${base}</b></li>`); if (r.bonus.streak) lines.push(`<li><span>🔥 Daily streak bonus</span><b>+${r.bonus.streak}</b></li>`); if (r.bonus.place) lines.push(`<li><span>${r.place===1?'🥇 Winner':'🥈 Runner-up'} bonus</span><b>+${r.bonus.place}</b></li>`);
+  arBody.innerHTML = `<div class="arh"><div class="art">${r.players>1 ? (r.place===1 ? '🏆 YOU WON!' : `${ord(r.place)} OF ${r.players}`) : 'ROUND OVER'}</div>
+      <div class="ars">${P.hits} hits · best combo ${P.bestCombo}</div></div>
+    <div class="arbig" id="ar_count">0</div>
+    <div class="arbadges">${r.best?'<span class="bdg gold">⭐ NEW PERSONAL BEST</span>':''}${r.wkBest?'<span class="bdg pink">📈 WEEKLY BEST</span>':''}${r.levelUp?`<span class="bdg blue">⬆ LEVEL ${r.levelUp}!</span>`:''}</div>
+    ${r.newColors.length?`<div class="arunlock">🎨 Unlocked <b>${r.newColors.map(c=>COLOR_NAMES[c]).join(', ')}</b> spit!</div>`:''}
+    <div class="artok"><div class="artk">+${r.earned} <span>TOKENS</span></div>${lines.length?`<ul>${lines.join('')}</ul>`:''}${r.capped?'<div class="arcap">You hit today\'s arena token limit. Points and XP still count!</div>':''}</div>
+    ${xpBar(M)}
+    <button class="gbbtn y arplay" id="ar_go">▶ PLAY AGAIN</button>
+    <div class="arsec">THIS WEEK'S TOP SPITTERS</div>${boardHtml(r.board)}
+    <div class="srow"><button class="gbbtn" id="ar_leave">LEAVE</button></div>`;
+  arBox.style.display='block'; arWire(); AR.phase='over';
+  // count the score up for a bit of drama
+  const el=document.getElementById('ar_count'), goal=r.score, t0=performance.now(); const step=()=>{ const u=Math.min(1,(performance.now()-t0)/900); el.textContent=Math.round(goal*(1-Math.pow(1-u,3))); if (u<1) requestAnimationFrame(step); else if (r.best) sfxChime([1047,1319,1568,2093]); }; step();
+  if (r.levelUp) setTimeout(()=>sfxChime([523,659,784,1047,1319]), 600);
+  if (r.place===1 && r.players>1) sfxChime([784,988,1175,1568]); }
+
 startGate();
 let last = performance.now();
 function loop(now){
@@ -3650,7 +4122,8 @@ function loop(now){
   updateOthers(dt); updateRope(dt); updateText(dt); updateBars(dt);
   if (pendingSend && performance.now()-lastSent>=90) sendPresence(true);
   scheduleMusic();
-  render(t); drawPreviews(t);
+  arenaTick(dt, now);
+  if (!AR.on) render(t); drawPreviews(t);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
