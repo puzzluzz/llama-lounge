@@ -361,13 +361,13 @@
   #wardbox .wdinfo .srow{justify-content:flex-start;margin-top:8px;gap:8px;flex-wrap:wrap} #wardbox .wdinfo .gbbtn{min-height:38px}
   #wd_msg{min-height:16px;font:600 13px var(--ui);color:#e02838;margin:0 0 4px} #wd_msg.good{color:#1f8a4c}
   #wd_body .wdh{font:800 12px var(--ui);letter-spacing:.06em;color:var(--sub);margin:12px 0 6px}
-  #wd_body .wdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+  #wd_body .wdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
   #wd_body .wi{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px;border:2px solid transparent;border-radius:14px;background:#f6f4fb;cursor:pointer;font-family:var(--ui)}
   #wd_body .wi.sel{border-color:var(--yel);background:#fffbe8} #wd_body .wi canvas{width:60px;height:48px;image-rendering:pixelated}
   #wd_body .wi b{font:800 11px/1.2 var(--ui);text-align:center;color:var(--ink)} #wd_body .wi small{font:700 11px var(--ui);color:#a06808} #wd_body .wi small.own{color:#1f8a4c} #wd_body .wi small.on{color:#5a48b0}
   #wd_body .fre{font:500 14px/1.45 var(--ui);color:var(--sub);padding:4px 2px}
   #wd_body .srow{margin-top:12px}
-  #wd_body .wi.fi{cursor:default} #wd_body .wi.fi canvas{width:72px;height:72px} #wd_body .wi.fi .gbbtn{min-height:32px;padding:0 14px;font-size:12px;margin-top:2px} #wd_body .wi small .own,#wd_body .wi small.own{color:#1f8a4c}
+  #wd_body .wi.fi{cursor:default} #wd_body .wi.fi canvas{width:88px;height:88px;image-rendering:auto} #wd_body .wi.fi .gbbtn{min-height:32px;padding:0 14px;font-size:12px;margin-top:2px} #wd_body .wi small .own,#wd_body .wi small.own{color:#1f8a4c}
   #wd_kind{margin:0 0 8px}
   #wd_body .wdstore{display:flex;flex-direction:column;align-items:center;gap:4px;padding:30px 10px;background:#f6f4fb;border-radius:18px;margin-top:6px} #wd_body .wdbox{font-size:40px} #wd_body .wdstore b{font:800 15px var(--ui)} #wd_body .wdstore small{font:600 13px var(--ui);color:var(--sub)}
   #roomsbox{width:min(calc(100% - 24px),460px)}
@@ -389,7 +389,7 @@
   #eb_items{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;max-width:min(560px,70vw)} #eb_items::-webkit-scrollbar{display:none}
   #wardbox .wi.drag{cursor:grab;touch-action:pan-y} #wardbox .wi.drag canvas{touch-action:none;cursor:grab;border-radius:8px;outline:2px dashed rgba(255,210,63,.7);outline-offset:1px} #wardbox .wi [data-placef]{margin-top:4px;min-height:30px;padding:0 10px;font-size:11px}
   #eb_items .ebi{touch-action:pan-x;position:relative;flex:none;width:58px;height:58px;border-radius:12px;border:2px solid transparent;background:rgba(255,255,255,.12);cursor:pointer;padding:0} #eb_items .ebi.on{border-color:var(--yel);background:rgba(255,210,63,.18)} #eb_items .ebi:disabled{opacity:.35}
-  #eb_items .ebi canvas{width:48px;height:48px;image-rendering:pixelated} #eb_items .ebi i{position:absolute;right:3px;bottom:2px;font:800 11px var(--ui);color:#fff;font-style:normal;text-shadow:0 1px 2px #000}
+  #eb_items .ebi canvas{width:48px;height:48px;image-rendering:auto} #eb_items .ebi i{position:absolute;right:3px;bottom:2px;font:800 11px var(--ui);color:#fff;font-style:normal;text-shadow:0 1px 2px #000}
   #eb_items .fre{color:#fff;font:600 13px var(--ui);padding:0 6px;white-space:nowrap}
   #eb_piece{display:none;gap:6px} #editbar.piece #eb_piece{display:flex} #editbar.piece #eb_items{display:none} #eb_piece .gbbtn,#eb_done{min-height:44px;padding:0 14px;white-space:nowrap}
   #frbox,#acctbox,#dmbox,#catbox,#wardbox,#roomsbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);max-height:86vh;z-index:6;animation:popIn .18s ease-out}
@@ -793,7 +793,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22q";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22r";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -3759,6 +3759,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__ward=(t,k)=>openWardrobe(t,null,k); window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__wear=(sl,id)=>wdWear(sl,id); window.__face=d=>{ me.d=d; }; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
@@ -3783,6 +3784,8 @@ cv.addEventListener('pointerdown', e => {
     if (boardHit && lx>=boardHit.x0 && lx<=boardHit.x1 && ly>=boardHit.y0 && ly<=boardHit.y1){ openBoard(); return; }
     for (const h of cupHits){ if (lx>=h.x0-2&&lx<=h.x1+2&&ly>=h.y0-3&&ly<=h.y1+2){ cupClick(h.gx); return; } }
     for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id) { openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } } }
+  /* the whole bar counter (top, front and a little margin) counts as tapping that spot's cup: walk to the stool and open the menu */
+  if (curRoom==='lounge'){ for (let dh=-4; dh<=28; dh+=2) for (const dx of [0,-4,4]){ const [bx,by]=toGrid(e.clientX+dx*S, e.clientY+dh*S); if (by===1 && bx>=0 && bx<=6){ cupClick(bx); return; } } }
   { const lx=e.clientX/S, ly=e.clientY/S; for (let i=0;i<TABLES.length;i++){ const [tx,ty]=P(TABLES[i].gx+0.5,TABLES[i].gy+0.5); if (Math.abs(lx-tx)<=14 && ly>=ty-24 && ly<=ty+5){ tableClick(i); return; } } }
   { const lx=e.clientX/S, ly=e.clientY/S; const [tx,ty]=P(0.5,6.5);
     if (Math.abs(lx-tx)<=10 && ly>=ty-34 && ly<=ty+4){ if(near(0,6)) doAction('lamp'); else { const t=nearestFree(0,6); if(t) walkTo(t[0],t[1],'lamp'); } return; } }
@@ -5307,8 +5310,8 @@ function wdDraw(){
   if (shop && WD.kind==='furn'){ const own=k=>{ const r=WD.furn.find(x=>x.item===k); return r?r.n:0; };
     h+='<div class="fre">Furniture goes into 🎒 INVENTORY > ITEMS. Take it out of there to place it in your own room.</div>';
     for (const [cat,label] of FURN_CATS){ if (cat==='staff' && !me.st) continue; const ORD=Object.keys(FURN_DEF), ks=ORD.filter(k=>FURN_DEF[k].cat===cat).sort((p,q)=>ORD.indexOf(furnBase(p))-ORD.indexOf(furnBase(q))); if (!ks.length) continue;   /* colours sit right after their base piece */ h+=`<div class="wdh">${label}</div><div class="wdg">`;
-    h+=ks.map(k=>`<div class="wi fi" data-f="${k}"><canvas width="48" height="48" data-fk="${k}"></canvas><b>${esc(FURN_DEF[k].n)}</b><small>${FURN_DEF[k].p} 🪙${own(k)?` · <span class="own">YOU HAVE ${own(k)}</span>`:''}</small><button class="gbbtn y" data-buyf="${k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button></div>`).join('')+'</div>'; }
-    const dcard=(kind,k,T)=>{ const have=!T.p||DECO_OWN.includes(kind+':'+k); return `<div class="wi fi"><canvas width="48" height="48" data-dsw="${kind}:${k}"></canvas><b>${esc(T.n)}</b><small>${T.p?T.p+' 🪙':'FREE'}${have&&T.p?' · <span class="own">YOURS</span>':''}</small>${have?'<button class="gbbtn" disabled>'+(T.p?'OWNED':'FREE')+'</button>':`<button class="gbbtn y" data-buyd="${kind}:${k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button>`}</div>`; };
+    h+=ks.map(k=>`<div class="wi fi" data-f="${k}"><canvas width="80" height="80" data-fk="${k}"></canvas><b>${esc(FURN_DEF[k].n)}</b><small>${FURN_DEF[k].p} 🪙${own(k)?` · <span class="own">YOU HAVE ${own(k)}</span>`:''}</small><button class="gbbtn y" data-buyf="${k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button></div>`).join('')+'</div>'; }
+    const dcard=(kind,k,T)=>{ const have=!T.p||DECO_OWN.includes(kind+':'+k); return `<div class="wi fi"><canvas width="88" height="88" data-dsw="${kind}:${k}"></canvas><b>${esc(T.n)}</b><small>${T.p?T.p+' 🪙':'FREE'}${have&&T.p?' · <span class="own">YOURS</span>':''}</small>${have?'<button class="gbbtn" disabled>'+(T.p?'OWNED':'FREE')+'</button>':`<button class="gbbtn y" data-buyd="${kind}:${k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button>`}</div>`; };
     h+='<div class="wdh">🎨 WALLPAPER</div><div class="fre">Buy it once, then put it up any time from 🏠 ROOMS > SETTINGS.</div><div class="wdg">'+Object.entries(DECO_WALL).map(([k,T])=>dcard('w',k,T)).join('')+'</div>';
     h+='<div class="wdh">🎨 FLOORS</div><div class="wdg">'+Object.entries(DECO_FLOOR).map(([k,T])=>dcard('f',k,T)).join('')+'</div>'; }
   else if (WD.tab==='shop'){ for (const s2 of WEAR_SLOTS){ h+=`<div class="wdh">${SLOT_NAMES[s2]}</div><div class="wdg">`+Object.keys(ITEMS).filter(k=>ITEMS[k].s===s2).map(wdCard).join('')+'</div>'; }
@@ -5316,7 +5319,7 @@ function wdDraw(){
     h+='<div class="srow"><button class="gbbtn" id="wd_toinv">🎒 MY INVENTORY</button></div>'; }
   else if (WD.tab==='storage'){ const list=WD.furn.filter(x=>FURN_DEF[x.item]&&x.n>0), inMine=isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine;
     if (!list.length) h='<div class="wdstore"><div class="wdbox">📦</div><b>NO ITEMS YET</b><small>Buy furniture at the 🛍️ LLAMA STORE, then place it in your room.</small></div>';
-    else { const card=x=>{ const left=x.n-x.placed; return `<div class="wi fi${inMine&&left>0?' drag':''}" data-pf="${x.item}"><canvas width="48" height="48" data-fk="${x.item}"></canvas><b>${esc(FURN_DEF[x.item].n)}</b><small class="own">${left} LEFT${x.placed?` · ${x.placed} PLACED`:''}</small>${inMine?`<button class="gbbtn y" data-placef="${x.item}" ${left<=0?'disabled':''}>PLACE</button>`:''}</div>`; };
+    else { const card=x=>{ const left=x.n-x.placed; return `<div class="wi fi${inMine&&left>0?' drag':''}" data-pf="${x.item}"><canvas width="80" height="80" data-fk="${x.item}"></canvas><b>${esc(FURN_DEF[x.item].n)}</b><small class="own">${left} LEFT${x.placed?` · ${x.placed} PLACED`:''}</small>${inMine?`<button class="gbbtn y" data-placef="${x.item}" ${left<=0?'disabled':''}>PLACE</button>`:''}</div>`; };
       h=`<div class="fre">${inMine ? 'Drag a picture into your room, or tap PLACE. Only you can place furniture, and only in your own room.' : 'Furniture you own. You can place it in your own room.'}</div>`;
       for (const [cat,label] of [...FURN_CATS,[null,'📦 OTHER']]){ const ls=list.filter(x=>(FURN_DEF[x.item].cat||null)===cat); if (ls.length) h+=`<div class="wdh">${label}</div><div class="wdg">${ls.map(card).join('')}</div>`; }
       h+=`<div class="srow"><button class="gbbtn y" id="wd_place">${inMine?'🛋️ ARRANGE MY ROOM':'🏠 GO TO MY ROOM'}</button></div>`; } }
@@ -5326,8 +5329,8 @@ function wdDraw(){
     for (const s2 of WEAR_SLOTS){ const list=mine.filter(k=>ITEMS[k].s===s2); if (list.length) h+=`<div class="wdh">${SLOT_NAMES[s2]}</div><div class="wdg">`+list.map(wdCard).join('')+'</div>'; } }
   const body=$id('wd_body'); body.innerHTML=h;
   { const ti=$id('wd_toinv'); if (ti) ti.onclick=()=>{ WD.tab='clothing'; WD.pick=null; wdDraw(); }; const ts=$id('wd_toshop'); if (ts) ts.onclick=()=>{ WD.tab='shop'; WD.pick=null; wdDraw(); }; }
-  for (const cv of body.querySelectorAll('canvas[data-fk]')) cv.getContext('2d').drawImage(furnIcon(cv.dataset.fk),0,0);
-  for (const cv of body.querySelectorAll('canvas[data-dsw]')){ const [kind,id]=cv.dataset.dsw.split(':'), m=cv.getContext('2d'); m.imageSmoothingEnabled=false; m.drawImage(decoSwatch(kind,id,48,48),0,0); m.strokeStyle=INK; m.lineWidth=2; m.strokeRect(1,1,46,46); }
+  for (const cv of body.querySelectorAll('canvas[data-fk]')){ const ic=furnIcon(cv.dataset.fk,88); cv.width=ic.width; cv.height=ic.height; cv.getContext('2d').drawImage(ic,0,0); }
+  for (const cv of body.querySelectorAll('canvas[data-dsw]')){ const [kind,id]=cv.dataset.dsw.split(':'), m=cv.getContext('2d'); m.imageSmoothingEnabled=false; m.drawImage(decoSwatch(kind,id,40,40),4,4,80,80); m.strokeStyle=INK; m.lineWidth=2; m.strokeRect(5,5,78,78); }
   { const kk=$id('wd_kind'); if (kk) for (const b of kk.children) b.onclick=()=>{ WD.kind=b.dataset.k; WD.pick=null; wdMsg(''); wdDraw(); }; }
   { const pl=$id('wd_place'); if (pl) pl.onclick=()=>{ if (isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine){ closeAll(); prEditStart(); } else { closeAll(); NET.act('pr_list').then(r=>{ if (r.ok && r.mine){ PRED.pending=true; prGo(r.mine.id); } else openRooms(); }); } }; }
   for (const cv of body.querySelectorAll('canvas[data-ic]')){ const id=cv.dataset.ic, ic=ITEMS[id].s==='shirt'?teeIcon(id):itemIcon(id), x=cv.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(ic, Math.floor((20-ic.width)/2), Math.floor((16-ic.height)/2)); }
@@ -5367,14 +5370,18 @@ $id('roomsbtn').addEventListener('click', ()=>{ ensureAudio(); if (joined) openR
 // one room per llama; only its owner can change it. Public rooms are open; private ones need an invite or a knock.
 const PRUI={view:'list', list:null, info:null, q:'', found:null};
 const furnIconCache=new Map(); let adminSignCv=null;
-function furnIcon(item){ let c=furnIconCache.get(item); if (c) return c; const D=FURN_DEF[item]; c=document.createElement('canvas'); c.width=48; c.height=48;
-  const sg=g, sOX=OX, sOY=OY; try { g=c.getContext('2d'); g.imageSmoothingEnabled=false; OX=24; OY=24; if (furnTiles(item,0,0,0).length>1){ const big=document.createElement('canvas'); big.width=160; big.height=110; g=big.getContext('2d'); g.imageSmoothingEnabled=false; OX=70; OY=50; drawFurn({...D.mk(D.iconRot||0), gx:0, gy:0}, 0);
-      const px=g.getImageData(0,0,160,110).data; let x0=160,y0=110,x1=0,y1=0; for (let yy=0;yy<110;yy++) for (let xx=0;xx<160;xx++) if (px[(yy*160+xx)*4+3]>0){ if(xx<x0)x0=xx; if(xx>x1)x1=xx; if(yy<y0)y0=yy; if(yy>y1)y1=yy; }
-      const bw=x1-x0+1, bh=y1-y0+1, k=Math.min(1,46/bw,46/bh), dw=Math.round(bw*k), dh=Math.round(bh*k);
-      g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.drawImage(big,x0,y0,bw,bh,Math.round((48-dw)/2),Math.round((48-dh)/2),dw,dh); }
-    else drawFurn({...D.mk(0), gx:0, gy:0}, 0);
-    if (D.wall && adminSignCv){ const x=c.getContext('2d'); x.clearRect(0,0,48,48); x.imageSmoothingEnabled=false; const k=Math.min(1,46/adminSignCv.width); x.drawImage(adminSignCv, Math.round((48-adminSignCv.width*k)/2), Math.round((48-adminSignCv.height*k)/2), Math.round(adminSignCv.width*k), Math.round(adminSignCv.height*k)); } } catch(e){} finally { g=sg; OX=sOX; OY=sOY; }
-  furnIconCache.set(item,c); return c; }
+function furnBox(item){ const D=FURN_DEF[item], big=document.createElement('canvas'); big.width=220; big.height=180; const sg=g, sOX=OX, sOY=OY;
+  try { g=big.getContext('2d'); g.imageSmoothingEnabled=false; OX=110; OY=90; drawFurn({...D.mk(D.iconRot||0), gx:0, gy:0}, 0); } catch(e){} finally { g=sg; OX=sOX; OY=sOY; }
+  let src=big; if (D.wall && adminSignCv) src=adminSignCv;
+  const W=src.width, H=src.height, px=src.getContext('2d').getImageData(0,0,W,H).data; let x0=W,y0=H,x1=-1,y1=-1;
+  for (let yy=0;yy<H;yy++) for (let xx=0;xx<W;xx++) if (px[(yy*W+xx)*4+3]>0){ if(xx<x0)x0=xx; if(xx>x1)x1=xx; if(yy<y0)y0=yy; if(yy>y1)y1=yy; }
+  return x1<0 ? null : {src, x0, y0, w:x1-x0+1, h:y1-y0+1}; }
+/* Shop and bag pictures: drawn once at 1x, then blown up by a WHOLE number so every art pixel stays square (no warped, uneven pixels). */
+function furnIcon(item, CS=88){ const R=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1))), S=CS*R, key=item+'@'+S; let c=furnIconCache.get(key); if (c) return c; c=document.createElement('canvas'); c.width=S; c.height=S;   /* sized in real screen pixels, so whole-number blow-ups stay crisp on phones too */
+  const b=furnBox(item); if (b){ const m=c.getContext('2d'), room=S-6*R, fit=Math.min(room/b.w, room/b.h), k=fit>=1 ? Math.floor(fit) : fit, dw=Math.round(b.w*k), dh=Math.round(b.h*k), dx=Math.round((S-dw)/2), dy=Math.round((S-dh)/2);
+    if (!FURN_DEF[item].wall && !FURN_DEF[item].rug){ m.fillStyle='rgba(40,20,70,.13)'; m.beginPath(); m.ellipse(S/2, Math.min(S-3*R, dy+dh-Math.max(2*R,dh*0.06)), Math.min(S/2-2*R, dw*0.48), Math.max(3*R, dw*0.12), 0, 0, Math.PI*2); m.fill(); }
+    m.imageSmoothingEnabled = k<1; m.imageSmoothingQuality='high'; m.drawImage(b.src, b.x0, b.y0, b.w, b.h, dx, dy, dw, dh); }
+  furnIconCache.set(key,c); return c; }
 function prMsg(t,good){ const el=document.querySelector('#pr_body .prmsg'); if (el){ el.textContent=t||''; el.classList.toggle('good',!!good); } }
 function openRooms(view){ closeAll(); PRUI.view=view||'list'; $id('roomsbox').style.display='block'; prDraw(); prRefresh(); }
 function prRefresh(){ NET.act('pr_list').then(r=>{ if (r.ok){ PRUI.list=r; if (r.mine) PRN['p:'+r.mine.id]=r.mine.name; for (const x of r.rooms) PRN['p:'+x.id]=x.name; if ($id('roomsbox').style.display==='block' && PRUI.view==='list') prDraw(); } });
@@ -5461,7 +5468,7 @@ function prEditBar(){ const el=$id('eb_items'), bar=$id('editbar'); bar.classLis
   const list=PRED.storage.filter(x=>FURN_DEF[x.item]);
   if (!list.length){ el.innerHTML='<div class="fre">No items yet. Buy furniture at the 🛍️ LLAMA STORE.</div>'; return; }
   el.innerHTML=list.map(x=>{ const left=x.n-x.placed; return `<button class="ebi${PRED.item===x.item?' on':''}" data-it="${x.item}" title="${esc(FURN_DEF[x.item].n)}" ${left<=0?'disabled':''}><canvas width="48" height="48" data-fi="${x.item}"></canvas><i>×${left}</i></button>`; }).join('');
-  for (const cv of el.querySelectorAll('canvas[data-fi]')) cv.getContext('2d').drawImage(furnIcon(cv.dataset.fi),0,0); }
+  for (const cv of el.querySelectorAll('canvas[data-fi]')){ const ic=furnIcon(cv.dataset.fi,48); cv.width=ic.width; cv.height=ic.height; cv.getContext('2d').drawImage(ic,0,0); } }
 $id('editbar').addEventListener('pointerdown', e=>{ e.stopPropagation(); const b=e.target.closest('.ebi'); if (b && !b.disabled && b.dataset.it) prDragStart(e, {item:b.dataset.it, rot:0, ox:0, oy:0, fromBar:true}); });
 // ---- drag and drop: press a piece (or an item in the bar), drag it, let go to drop it; a see-through copy shows where it lands ----
 const PDR={on:false, armed:false};
