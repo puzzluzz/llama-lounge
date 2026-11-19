@@ -758,7 +758,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-21r";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-21u";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -2110,8 +2110,8 @@ function drawFurn(f,t){
         for (const u of [0.3,0.5,0.7]){ const [bx,by]=along(u); box(bx-0.035,by-0.035,0.07,0.07,11,'#e0b070','#a86c3a','#86522a',0,11); }
         wbox(back[0]-0.01,back[1]-0.01,back[2]+0.02,back[3]+0.02,4,'#f0c890','#b07440','#8a5a30',0,23,'#7a4c26');
       };
-      for (const [u,v] of [[0.26,0.26],[0.74,0.26],[0.26,0.74],[0.74,0.74]]){ const [lx,ly]=P(x+u,y+v,0), [,ty]=P(x+u,y+v,9); g.fillStyle=INK; g.fillRect(Math.round(lx)-1,Math.round(ty),3,Math.round(ly-ty)+1); g.fillStyle='#8a5a30'; g.fillRect(Math.round(lx),Math.round(ty),1,Math.round(ly-ty)); }
       if (f.part==='front'){ if (!far) drawBack(); break; }
+      for (const [u,v] of [[0.26,0.26],[0.74,0.26],[0.26,0.74],[0.74,0.74]]){ const [lx,ly]=P(x+u,y+v,0), [,ty]=P(x+u,y+v,9); g.fillStyle=INK; g.fillRect(Math.round(lx)-1,Math.round(ty),3,Math.round(ly-ty)+1); g.fillStyle='#8a5a30'; g.fillRect(Math.round(lx),Math.round(ty),1,Math.round(ly-ty)); }
       if (far) drawBack();
       wbox(x+0.2,y+0.2,0.6,0.6,2,'#e8b878','#b07440','#8a5a30',0,9,'#b07440');
       if (!far) drawBack();
@@ -2123,11 +2123,11 @@ function drawFurn(f,t){
       const B=(q,h,lift,top)=>{ const k=R(...q); box(k[0],k[1],k[2],k[3],h,top||C[0],C[1],C[2],0,lift); return k; };
       const mid=(q,h)=>{ const k=R(...q); return P(k[0]+k[2]/2,k[1]+k[3]/2,h); };
       const U0=0.1, U1=n-0.1, V0=0.1, V1=0.9, BK=0.3, AW=0.2;   // every edge lands on a whole pixel, so both arms come out the same width
-      for (const [u,v] of [[U0+0.06,V0+0.06],[U1-0.06,V0+0.06],[U0+0.06,V1-0.06],[U1-0.06,V1-0.06]]){ const k=R(u,u,v,v); const [lx,ly]=P(k[0],k[1],0); g.fillStyle=INK; g.fillRect(Math.round(lx)-1,Math.round(ly)-3,3,4); g.fillStyle='#5a3418'; g.fillRect(Math.round(lx),Math.round(ly)-2,1,2); }
-      B([U0,U1,V0,V1],7,2);
       const back=()=>{ B([U0,U1,V0,BK],16,9); for (let i=0;i<n;i++){ const [bx,by]=mid([U0+AW+(i+0.5)*(U1-U0-2*AW)/n, U0+AW+(i+0.5)*(U1-U0-2*AW)/n, BK, BK],18); g.fillStyle=C[2]; g.fillRect(Math.round(bx),Math.round(by),1,1); } };
       const arm=(u0,u1)=>{ B([u0,u1,BK,V1],8,9); };
-      if (f.part==='front'){ arm(U1-AW,U1); if (r>=2) back(); break; }
+      if (f.part==='front'){ if (f.su===n-1 || n===1) arm(U1-AW,U1); if (r>=2) back(); break; }
+      for (const [u,v] of [[U0+0.06,V0+0.06],[U1-0.06,V0+0.06],[U0+0.06,V1-0.06],[U1-0.06,V1-0.06]]){ const k=R(u,u,v,v); const [lx,ly]=P(k[0],k[1],0); g.fillStyle=INK; g.fillRect(Math.round(lx)-1,Math.round(ly)-3,3,4); g.fillStyle='#5a3418'; g.fillRect(Math.round(lx),Math.round(ly)-2,1,2); }
+      B([U0,U1,V0,V1],7,2);
       if (r<2) back();
       arm(U0,U0+AW);
       for (let i=0;i<n;i++){ const s0=U0+AW+i*(U1-U0-2*AW)/n, s1=U0+AW+(i+1)*(U1-U0-2*AW)/n; B([s0+0.01,s1-0.01,BK,V1],3,9,HI); }
@@ -3438,7 +3438,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null];   // local test helper only
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
   return [Math.floor((wx/(TW/2) + wy/(TH/2))/2), Math.floor((wy/(TH/2) - wx/(TW/2))/2)];
@@ -3890,7 +3890,7 @@ function render(t){
   if (joined) items.push({d: me.x+me.y+0.02, l: me, me:true});
   // someone sitting in a chair or couch whose back or arm is on the camera side: draw those parts again over them
   if (isP(curRoom)){ const sitters=[]; if (joined && me.p==='sit') sitters.push([me.gx,me.gy,me.x+me.y+0.02]); for (const o of others.values()) if (sameRoom(o) && o.p==='sit') sitters.push([Math.floor(o.x),Math.floor(o.y),o.x+o.y+0.01]);
-    for (const [sx2,sy2,d] of sitters){ const f=FURN.find(q=>q.fid && (q.t==='couch'||q.t==='armchair'||q.t==='chair') && furnTiles(q.item,q.gx,q.gy,q.rot).some(([x,y])=>x===sx2&&y===sy2)); if (f) items.push({d:d+0.005, f:{...f, part:'front'}}); } }
+    for (const [sx2,sy2,d] of sitters){ const f=FURN.find(q=>q.fid && (q.t==='couch'||q.t==='armchair'||q.t==='chair') && furnTiles(q.item,q.gx,q.gy,q.rot).some(([x,y])=>x===sx2&&y===sy2)); if (f){ const su=furnTiles(f.item,f.gx,f.gy,f.rot).findIndex(([x,y])=>x===sx2&&y===sy2); items.push({d:d+0.005, f:{...f, part:'front', su}}); } } }
   for (const o of others.values()) if (sameRoom(o)) items.push({d: o.x+o.y+0.01, l: o});
   items.sort((a,b)=>a.d-b.d);
   overlayItems.length = 0; llamaHits.length = 0; cupHits.length = 0; itemHits.length = 0; vendHit = null; pvHits.length = 0;
@@ -5122,7 +5122,9 @@ function prEditBar(){ const el=$id('eb_items'), bar=$id('editbar'); bar.classLis
 $id('editbar').addEventListener('pointerdown', e=>{ e.stopPropagation(); const b=e.target.closest('.ebi'); if (b && !b.disabled && b.dataset.it) prDragStart(e, {item:b.dataset.it, rot:0, ox:0, oy:0, fromBar:true}); });
 // ---- drag and drop: press a piece (or an item in the bar), drag it, let go to drop it; a see-through copy shows where it lands ----
 const PDR={on:false, armed:false};
-function prDragStart(e, o){ Object.assign(PDR, {on:false, armed:true, auto:false, fromBar:false, id:e.pointerId, sx:e.clientX, sy:e.clientY, fid:null, gx:null, gy:null, ok:false, tapGx:null, tapGy:null}, o); PDR.hgx=null; }
+function prDragStart(e, o){ clearTimeout(PDR.lp); Object.assign(PDR, {on:false, armed:true, auto:false, fromBar:false, tapHit:null, longPress:false, id:e.pointerId, sx:e.clientX, sy:e.clientY, fid:null, gx:null, gy:null, ok:false, tapGx:null, tapGy:null}, o); PDR.hgx=null;
+  if (PDR.fid && prInMine()) PDR.lp=setTimeout(()=>{ if (!PDR.armed || PDR.on) return; PDR.on=true; PDR.longPress=true; if (!PRED.on) prEditStart(); PRED.item=null;
+    PRED.piece={fid:PDR.fid, item:PDR.item, gx:PDR.tapGx, gy:PDR.tapGy}; prEditBar(); PDR.gx=PDR.gx0; PDR.gy=PDR.gy0; PDR.ok=true; try{ navigator.vibrate && navigator.vibrate(25); }catch(_){} }, 450); }
 function prFits(item, gx, gy, rot, skip){ const D=FURN_DEF[item]; if (!D) return false; const wall=!!D.wall;
   if (wall && gx!==0 && gy!==0) return false; if (wall && gx===0 && gy>=9) return false;
   for (const [x,y] of furnTiles(item,gx,gy,rot)){ if (x<0||y<0||x>=N||y>=NY) return false; if (!wall && x<=3 && y===10) return false; }
@@ -5130,13 +5132,15 @@ function prFits(item, gx, gy, rot, skip){ const D=FURN_DEF[item]; if (!D) return
   return true; }
 // how tall each piece looks (game pixels), so a new piece hangs centred on the pointer instead of standing on it
 const FURN_VH={chair:26,armchair:24,couch:24,sofa:24,loveseat:24,bed:20,bookshelf:38,tv:30,bigtv:40,plant:30,lamp:30,table:16,vending:46,vendrink:46,snackvend:46,adminsign:0};
-function prCentreTile(item, rot, clientX, clientY){ const vh=FURN_VH[item]!==undefined ? FURN_VH[item] : 16;
+function prWallTile(lx){ const u=(lx-OX)/(TW/2); return u>=0 ? [Math.max(0,Math.min(N-1,Math.floor(u))), 0] : [0, Math.max(1,Math.min(8,Math.floor(-u)))]; }   // right wall, or left wall (above the door is off limits)
+function prCentreTile(item, rot, clientX, clientY){ if ((FURN_DEF[item]||{}).wall) return prWallTile(clientX/S); const vh=FURN_VH[item]!==undefined ? FURN_VH[item] : 16;
   const wx=clientX/S-OX, wy=clientY/S-OY+vh/2, fx=(wx/(TW/2)+wy/(TH/2))/2, fy=(wy/(TH/2)-wx/(TW/2))/2;
   const t=furnTiles(item,0,0,rot), w=Math.max(...t.map(q=>q[0]))+1, d=Math.max(...t.map(q=>q[1]))+1;   // footprint, centred on the pointer too
   return [Math.floor(fx-(w-1)/2), Math.floor(fy-(d-1)/2)]; }
 function prDragAim(e){ const bar=$id('editbar').getBoundingClientRect();
   if (e.clientY>=bar.top-4 && e.clientX>=bar.left && e.clientX<=bar.right){ PDR.gx=null; return; }   // over the bar: dropping here cancels
-  if (PDR.fid){ const [tx,ty]=toGrid(e.clientX, e.clientY); PDR.gx=tx-PDR.ox; PDR.gy=ty-PDR.oy; }   // moving a piece: it stays where you grabbed it
+  if (PDR.fid && (FURN_DEF[PDR.item]||{}).wall) [PDR.gx,PDR.gy]=prWallTile(e.clientX/S);
+  else if (PDR.fid){ const [tx,ty]=toGrid(e.clientX, e.clientY); PDR.gx=tx-PDR.ox; PDR.gy=ty-PDR.oy; }   // moving a piece: it stays where you grabbed it
   else [PDR.gx,PDR.gy]=prCentreTile(PDR.item, PDR.rot, e.clientX, e.clientY); PDR.ok=prFits(PDR.item, PDR.gx, PDR.gy, PDR.rot, PDR.fid); }
 addEventListener('pointermove', e=>{
   if (PDR.armed && e.pointerId===PDR.id){ if (!PDR.on){ const dx=e.clientX-PDR.sx, dy=e.clientY-PDR.sy;
@@ -5146,12 +5150,12 @@ addEventListener('pointermove', e=>{
   // mouse hover with an item picked: show where a tap would put it
   if (PRED.on && PRED.item && e.pointerType==='mouse' && e.target===cv){ const [tx,ty]=prCentreTile(PRED.item, 0, e.clientX, e.clientY); PDR.hgx=tx; PDR.hgy=ty; } else PDR.hgx=null;
 }, {passive:false});
-function prDragEnd(e, cancel){ if (!PDR.armed || e.pointerId!==PDR.id) return; const was=PDR.on; PDR.armed=false; PDR.on=false;
-  if (!was){ if (PDR.auto){ if (!cancel) prTapWalk(PDR.tapGx, PDR.tapGy); return; } if (PDR.fid && !cancel){ PRED.piece={fid:PDR.fid, item:PDR.item, gx:PDR.tapGx, gy:PDR.tapGy}; PRED.item=null; prEditBar(); } return; }   // just a tap: select it as before
+function prDragEnd(e, cancel){ if (!PDR.armed || e.pointerId!==PDR.id) return; clearTimeout(PDR.lp); const was=PDR.on; PDR.armed=false; PDR.on=false;
+  if (!was){ if (PDR.auto){ if (!cancel){ if (PDR.tapHit) prTapPiece(PDR.tapHit); else prTapWalk(PDR.tapGx, PDR.tapGy); } return; } if (PDR.fid && !cancel){ PRED.piece={fid:PDR.fid, item:PDR.item, gx:PDR.tapGx, gy:PDR.tapGy}; PRED.item=null; prEditBar(); } return; }   // just a tap: select it as before
   PDR.noClick=performance.now();
   if (cancel || PDR.gx===null) return;
   if (!PDR.ok){ localMsg(PDR.fid ? 'That piece doesn\'t fit there.' : 'That doesn\'t fit there.'); return; }
-  if (PDR.fid){ if (PDR.gx===PDR.gx0 && PDR.gy===PDR.gy0) return; NET.act('pr_move',{fid:PDR.fid, gx:PDR.gx, gy:PDR.gy}).then(r=>{ if (!r.ok) localMsg(r.msg||'Can\'t move that there.'); }); return; }
+  if (PDR.fid){ const fid=PDR.fid, item=PDR.item, nx=PDR.gx, ny=PDR.gy; if (PDR.longPress){ PRED.piece={fid, item, gx:nx, gy:ny}; prEditBar(); } if (nx===PDR.gx0 && ny===PDR.gy0) return; NET.act('pr_move',{fid, gx:nx, gy:ny}).then(r=>{ if (!r.ok) localMsg(r.msg||'Can\'t move that there.'); }); return; }
   const item=PDR.item; NET.act('pr_place',{item, gx:PDR.gx, gy:PDR.gy, rot:0}).then(r=>{ if (!r.ok) return localMsg(r.msg||'Can\'t put that there.'); if (r.storage){ PRED.storage=r.storage; const s2=r.storage.find(x=>x.item===PRED.item); if (PRED.item && (!s2 || s2.n-s2.placed<=0)) PRED.item=null; } prEditBar(); }); }
 addEventListener('pointerup', e=>prDragEnd(e,false)); addEventListener('pointercancel', e=>prDragEnd(e,true));
 // draw the piece see-through where it would land: green floor tiles if it fits, red if it doesn't
@@ -5180,15 +5184,35 @@ function playerPointer(e){
   if (!PRED.on && lx>=OX-222 && lx<=OX-198 && ly>=OY+100-50 && ly<=OY+111){ prLeave(); return; }
   if (!PRED.on) for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
   if (!PRED.on) for (let i=pvHits.length-1;i>=0;i--){ const h=pvHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ pvGo(h.f); return; } }
-  const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
-  if (PRED.on){ const f=prFurnAt(gx,gy);
-    if (f){ prDragStart(e, {fid:f.fid, item:f.item, rot:f.rot||0, gx0:f.gx, gy0:f.gy, ox:gx-f.gx, oy:gy-f.gy}); PDR.tapGx=gx; PDR.tapGy=gy; return; }
+  const [gx,gy]=toGrid(e.clientX, e.clientY);
+  // tapping a piece of furniture counts wherever you tap its picture (its back, its top), not just the floor under it
+  const hit = (PRED.on && PRED.item) ? null : prHit(lx, ly);
+  if (!hit && (gx<0||gy<0||gx>=N||gy>=NY)) return;
+  if (PRED.on){ const f=hit ? hit.f : prFurnAt(gx,gy), tx=hit?hit.tx:gx, ty=hit?hit.ty:gy;
+    if (f){ prDragStart(e, {fid:f.fid, item:f.item, rot:f.rot||0, gx0:f.gx, gy0:f.gy, ox:tx-f.gx, oy:ty-f.gy}); PDR.tapGx=tx; PDR.tapGy=ty; return; }
     if (PRED.item){ const rot=0, [cx2,cy2]=prCentreTile(PRED.item, 0, e.clientX, e.clientY); NET.act('pr_place',{item:PRED.item, gx:cx2, gy:cy2, rot}).then(r=>{ if (!r.ok) return localMsg(r.msg||'Can\'t put that there.'); if (r.storage){ PRED.storage=r.storage; const s2=r.storage.find(x=>x.item===PRED.item); if (!s2 || s2.n-s2.placed<=0) PRED.item=null; } prEditBar(); }); return; }
     PRED.piece=null; prEditBar(); return; }
   // in your own room you can grab any piece and drag it somewhere else; a plain tap still walks or sits as usual
-  if (prInMine()){ const f=prFurnAt(gx,gy); if (f && !(FURN_DEF[f.item]||{}).wall){ prDragStart(e, {fid:f.fid, item:f.item, rot:f.rot||0, gx0:f.gx, gy0:f.gy, ox:gx-f.gx, oy:gy-f.gy, auto:true}); PDR.tapGx=gx; PDR.tapGy=gy; return; } }
+  if (hit && prInMine()){ const f=hit.f; prDragStart(e, {fid:f.fid, item:f.item, rot:f.rot||0, gx0:f.gx, gy0:f.gy, ox:hit.tx-f.gx, oy:hit.ty-f.gy, auto:true}); PDR.tapGx=hit.tx; PDR.tapGy=hit.ty; PDR.tapHit=hit; return; }
+  if (hit){ prTapPiece(hit); return; }
   prTapWalk(gx,gy);
 }
+// which placed piece is drawn under this point (front-most wins), and which of its tiles is nearest the tap
+function prHit(lx, ly){ let best=null;
+  for (const f of FURN){ if (!f.fid) continue; const D=FURN_DEF[f.item]; if (!D) continue;
+    if (D.wall){ const r=f.gy===0, [cx,cy]=r ? P(f.gx+0.5,0,52) : P(0,f.gy+0.5,52); if (Math.abs(lx-cx)<=18 && Math.abs(ly-cy)<=14 && !best) best={f, tx:f.gx, ty:f.gy, depth:-1}; continue; }
+    const tl=furnTiles(f.item,f.gx,f.gy,f.rot), vh=FURN_VH[f.item]!==undefined?FURN_VH[f.item]:16; let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+    for (const [x,y] of tl) for (const [u,v] of [[0,0],[1,0],[0,1],[1,1]]){ const [px,py]=P(x+u,y+v,0); x0=Math.min(x0,px); x1=Math.max(x1,px); y0=Math.min(y0,py); y1=Math.max(y1,py); }
+    if (lx<x0+2 || lx>x1-2 || ly<y0-vh || ly>y1-2) continue;
+    const depth=Math.max(...tl.map(([x,y])=>x+y)); if (best && best.depth>=depth) continue;
+    let tx=tl[0][0], ty=tl[0][1], bd=1e9; for (const [x,y] of tl){ const [px,py]=P(x+0.5,y+0.5,vh/3); const d=Math.hypot(px-lx,py-ly); if (d<bd){ bd=d; tx=x; ty=y; } }
+    best={f, tx, ty, depth}; }
+  return best; }
+// tap a piece: sit on it if it's a seat (the seat you tapped, or the nearest one), otherwise walk up next to it
+function prTapPiece(hit){ if ((FURN_DEF[hit.f.item]||{}).wall) return; const f=hit.f, tl=furnTiles(f.item,f.gx,f.gy,f.rot);
+  const seats=SEATS.filter(q=>tl.some(([x,y])=>x===q.gx&&y===q.gy)); if (seats.length){ const q=seats.find(q=>q.gx===hit.tx&&q.gy===hit.ty) || seats[0]; walkTo(q.gx,q.gy); return; }
+  const near=[]; for (const [x,y] of tl) for (const [dx,dy] of [[0,1],[1,0],[-1,0],[0,-1]]){ const a=x+dx, b=y+dy; if (a>=0&&b>=0&&a<N&&b<NY&&walkable(a,b)&&!seatAt(a,b)) near.push([a,b]); }
+  near.sort((p,q)=>Math.hypot(p[0]-me.gx,p[1]-me.gy)-Math.hypot(q[0]-me.gx,q[1]-me.gy)); if (near.length) walkTo(near[0][0],near[0][1]); }
 function prTapWalk(gx,gy){
   if (walkable(gx,gy) && !seatAt(gx,gy)){ walkTo(gx,gy); return; }
   let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } }
