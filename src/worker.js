@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-22g";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-22h";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -85,7 +85,8 @@ const ITEMS = {
 // ---------- player rooms ----------
 // One room per player. Only the owner can change it. Public rooms are open to everyone; private ones let in the owner,
 // people on the owner's invite list, people the owner let in after they knocked (for a few hours), and staff.
-const PR = { w: 13, h: 12, maxFurn: 60, clear: ["0,10", "1,10", "2,10", "3,10"], knockGap: 20000, letInMs: 3 * 3600e3, nameMax: 24 };
+const PR = { w: 7, h: 11, maxFurn: 40,   // player rooms: 7 wide, 11 deep (the long wall is the left one, where the door is)
+  clear: ["0,10", "1,10", "2,10", "3,10"], knockGap: 20000, letInMs: 3 * 3600e3, nameMax: 24 };
 const PR_WALLS = ["lavender", "cream", "mint", "pink", "night", "wood"], PR_FLOORS = ["wood", "checker", "carpet", "marble", "grass"];
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
 const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30, rug_persian: 25, rug_round: 15, rug_stripe: 12, rug_shag: 18,

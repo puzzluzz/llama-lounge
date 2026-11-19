@@ -767,7 +767,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22g";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22h";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1576,7 +1576,7 @@ function buildPlayerBG(){
   // the room's name on a plaque on the right wall
   { const nm=(R.name||'').toUpperCase(), sc=1, tw=Math.max(20,pfW(nm,sc)), cv=document.createElement('canvas'); cv.width=tw+12; cv.height=13; const m=cv.getContext('2d');
     m.fillStyle=INK; m.fillRect(0,0,cv.width,13); m.fillStyle='#f8e8b0'; m.fillRect(1,1,cv.width-2,11); m.fillStyle='#c8a050'; m.fillRect(1,10,cv.width-2,2); pfDraw(m,nm,6,4,'#5a3418',sc);
-    const wx=Math.round(120-cv.width/2); for (let x=0;x<cv.width;x++){ const X=wx+x; g.drawImage(cv, x,0,1,13, ox+X, oy+Math.floor(X/2)-74, 1, 13); } }
+    const wx=Math.round(N*10-cv.width/2); for (let x=0;x<cv.width;x++){ const X=wx+x; g.drawImage(cv, x,0,1,13, ox+X, oy+Math.floor(X/2)-74, 1, 13); } }
 }
 
 // ======================= FURNITURE DRAW =======================
@@ -5332,7 +5332,7 @@ function prApplyRoom(room){ const key='p:'+room.id; PRN[key]=room.name; ROOM_NAM
 // going to a player room: ask the server first (it decides who gets in), then walk out the door
 function prGo(id){ NET.act('pr_enter',{rid:id}).then(r=>{
   if (!r.ok){ if (r.locked){ if ($id('roomsbox').style.display!=='block') openRooms(); prMsg(r.msg); } else localMsg(r.msg||'That room is closed.'); PRED.pending=false; return; }
-  const key='p:'+id; PRD[key]={...r.room, furn:r.furn, mine:r.mine}; PRN[key]=r.room.name; ROOM_NAMES[key]=r.room.name; ROOM_DIMS[key]=[13,12]; ENTRY[key]={any:{at:[1,10],to:[3,10]}}; DOORWAY[key]=[0,10]; ROOM_SHORT[key]='ROOM';
+  const key='p:'+id; PRD[key]={...r.room, furn:r.furn, mine:r.mine}; PRN[key]=r.room.name; ROOM_NAMES[key]=r.room.name; ROOM_DIMS[key]=[7,11]; ENTRY[key]={any:{at:[1,10],to:[3,10]}}; DOORWAY[key]=[0,10]; ROOM_SHORT[key]='ROOM';
   closeAll(); if (curRoom===key){ buildWorld(); if (PRED.pending){ PRED.pending=false; prEditStart(); } return; }
   if (arcade.on) exitArcade(); localMsg(`Heading to ${r.room.name}...`); goThroughDoor(key); }); }
 // ---- edit mode (owner only; the server checks every change) ----
