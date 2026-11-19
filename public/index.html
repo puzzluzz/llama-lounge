@@ -343,7 +343,7 @@
   .aulink{border:0;background:transparent;font:700 14px var(--ui);color:#5a48b0;text-decoration:underline;cursor:pointer;padding:6px}
   #au_err.good{color:#1f8a4c}
   #acctbox{width:min(calc(100% - 24px),400px)}
-  #frbox,#acctbox,#dmbox{display:none}
+  #frbox,#acctbox,#dmbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);max-height:86vh;z-index:6;animation:popIn .18s ease-out}
   #frbox{width:min(calc(100% - 24px),420px)}
   #dmbox{width:min(calc(100% - 24px),440px)}
   #dmbox .dmhead{display:flex;align-items:center;gap:6px;margin-bottom:8px} #dmbox .dmhead .slt{flex:1;text-align:left;margin:0}
@@ -409,8 +409,8 @@
     #roombar .cnt{position:absolute;top:2px;right:3px;margin:0;min-width:14px;padding:0 4px;font-size:9px;line-height:14px}
     #abtn{min-width:84px}
     .sheet{left:0!important;right:0!important;top:auto!important;bottom:0!important;transform:none!important;width:100%!important;max-width:none!important;min-width:0!important;
-           max-height:86vh!important;border-radius:26px 26px 0 0!important;padding:26px 18px calc(18px + var(--sab))!important;animation:sheetUp .24s cubic-bezier(.2,.9,.3,1)!important}
-    .sheet::before{content:'';position:absolute;top:9px;left:50%;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:#ddd6ea}
+           max-height:86vh!important;border-radius:26px 26px 0 0!important;padding:8px 18px calc(18px + var(--sab))!important;animation:sheetUp .24s cubic-bezier(.2,.9,.3,1)!important}
+
     #auth{animation:popIn .18s ease-out}
     .menu[style*="display: block"]{display:grid!important;grid-template-columns:repeat(3,1fr);gap:8px}
     .menu div{flex-direction:column;justify-content:center;gap:6px;height:auto;min-height:78px;padding:10px 4px;background:var(--soft);border-radius:16px;font-size:11px;text-align:center;white-space:normal;line-height:1.2}
@@ -525,12 +525,18 @@
   .job .jp{font-size:12px;font-weight:800;color:#a06808;white-space:nowrap} .job.risk .jp{color:#b0203a}
   .job .gbbtn{min-height:36px;padding:8px 12px;font-size:12px;flex:none}
   /* ✕ in the top-right corner of every pop-up; it stays put while a long pop-up scrolls */
-  .sheetx{position:sticky;top:0;float:right;z-index:3;width:34px;height:34px;margin:-8px -6px 0 8px;border:0;border-radius:50%;background:var(--soft);color:var(--ink);font-size:16px;font-weight:800;line-height:34px;text-align:center;cursor:pointer;font-family:var(--ui);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  /* every pop-up has a header strip: grab bar in the middle (drag it to move the pop-up), close button on the right */
+  .shead{position:sticky;top:0;z-index:4;display:flex;align-items:center;justify-content:flex-end;height:40px;margin:-6px -4px 6px;flex:none;align-self:stretch;
+    background:var(--card);box-shadow:0 -30px 0 var(--card);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;border-radius:14px 14px 0 0}
+  .shead.drag{cursor:grabbing}
+  .shead .sgrip{position:absolute;left:50%;top:50%;width:42px;height:5px;margin:-3px 0 0 -21px;border-radius:3px;background:#ddd6ea;pointer-events:none}
+  .shead:hover .sgrip{background:#c9c0dc}
+  .sheetx{width:34px;height:34px;border:0;border-radius:50%;background:var(--soft);color:var(--ink);font:800 16px/34px var(--ui);padding:0;cursor:pointer;flex:none;position:relative;z-index:1}
   .sheetx:hover{background:#e6e0f2} .sheetx:active{transform:scale(.92)}
-  #rules>.sheetx,#pick>.sheetx,#roompick>.sheetx{align-self:flex-end;margin:-8px -6px -34px 0;flex:none}
-  .menu>.sheetx{display:none}
-  @media (max-width:640px){ .menu>.sheetx{display:block;grid-column:1/-1;justify-self:end;float:none;margin:-12px -4px -4px 0;position:static} .sheetx{width:38px;height:38px;line-height:38px;font-size:17px} }
-  body:not(.joined) #rules>.sheetx,body:not(.joined) #pick>.sheetx,body:not(.joined) #roompick>.sheetx{display:none}
+  .menu>.shead{display:none}
+  @media (max-width:640px){ #screen .menu>div.shead{display:flex;flex-direction:row;justify-content:flex-end;align-items:center;grid-column:1/-1;margin:-8px 0 0;min-height:0;height:42px;padding:0;background:var(--card);border-radius:0;font-size:inherit;gap:0} .sheetx{width:38px;height:38px;line-height:38px;font-size:17px} .shead{height:42px} }
+  body:not(.joined) #rules>.shead .sheetx,body:not(.joined) #pick>.shead .sheetx,body:not(.joined) #roompick>.shead .sheetx{display:none}
+  #pmenu .pmn{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
   #logbox .x{display:none}
   /* rules: let the text take its full height so the pop-up scrolls and I AGREE stays at the bottom */
   #rules .rbody{flex:none!important}
@@ -680,7 +686,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19z";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-20a";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -2760,7 +2766,7 @@ document.getElementById('shopclose').addEventListener('click', ()=>closeAll());
 const menu=document.getElementById('menu'), emenu=document.getElementById('emenu'), logbox=document.getElementById('logbox'), pick=document.getElementById('pick');
 let curMenu=null, menuIdx=0;
 function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || (typeof tblEl!=='undefined' && tblEl.style.display==='block') || (typeof dashEl!=='undefined' && dashEl.style.display==='block') || (typeof sndEl!=='undefined' && sndEl.style.display==='block') || (typeof dkEl!=='undefined' && dkEl.style.display==='block') || (typeof jobsEl!=='undefined' && jobsEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
-function items(m){ return [...m.children].filter(c=>!c.classList.contains('sheetx')); }
+function items(m){ return [...m.children].filter(c=>!c.classList.contains('sheetx') && !c.classList.contains('shead')); }
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
@@ -5169,16 +5175,42 @@ function openJobs(){ closeAll(); const order=[curRoom, ...ROOMS.filter(r=>r!==cu
 document.getElementById('jobsbtn').addEventListener('click', ()=>{ ensureAudio(); openJobs(); });
 document.getElementById('jobs_close').addEventListener('click', ()=>{ jobsEl.style.display='none'; });
 
-// ======================= ✕ CLOSE BUTTON ON EVERY POP-UP =======================
-for (const el of document.querySelectorAll('.gb.sheet, #pmenu')){
-  const x=document.createElement('button'); x.className='sheetx'; x.type='button'; x.setAttribute('aria-label','Close'); x.textContent='✕';
-  x.addEventListener('pointerdown', e=>e.stopPropagation());
-  x.addEventListener('click', e=>{ e.stopPropagation(); ensureAudio();
-    if (el===arBox) arenaClose(); else if (el===bwBox) bowlClose();
-    else if (el===rulesEl){ if (joined) rulesEl.style.display='none'; }
-    else if (el===pick){ if (joined) pick.style.display='none'; }
-    else closeAll(); });
-  el.insertBefore(x, el.firstChild); }
+// ======================= POP-UP HEADER: ✕ CLOSE + DRAG TO MOVE =======================
+function closeSheet(el){ ensureAudio();
+  if (el===arBox) arenaClose(); else if (el===bwBox) bowlClose();
+  else if (el===rulesEl){ if (joined) rulesEl.style.display='none'; }
+  else if (el===pick){ if (joined) pick.style.display='none'; }
+  else closeAll(); }
+// drag a pop-up by its header; it always stays fully on screen, and goes back to its usual spot when it closes
+const POS=['left','top','right','bottom','transform','margin'];
+function sheetReset(el){ if (!el.dataset.moved) return; delete el.dataset.moved; for (const k of POS) el.style.removeProperty(k); }
+function sheetClamp(el){ if (!el.dataset.moved) return; const r=el.getBoundingClientRect();
+  const L=Math.max(0, Math.min(innerWidth-r.width, r.left)), T=Math.max(0, Math.min(innerHeight-r.height, r.top));
+  el.style.setProperty('left', L+'px', 'important'); el.style.setProperty('top', T+'px', 'important'); }
+function makeDraggable(el, handle){
+  let sx=0, sy=0, ox=0, oy=0, id=null, moved=false;
+  handle.addEventListener('pointerdown', e=>{ if (e.target.closest('button') || e.button>0) return; e.stopPropagation();
+    const r=el.getBoundingClientRect(); sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top; id=e.pointerId; moved=false;
+    try{ handle.setPointerCapture(id); }catch(_){} handle.classList.add('drag'); });
+  handle.addEventListener('pointermove', e=>{ if (e.pointerId!==id) return; const dx=e.clientX-sx, dy=e.clientY-sy;
+    if (!moved){ if (Math.hypot(dx,dy)<4) return; moved=true; const r=el.getBoundingClientRect();
+      el.dataset.moved='1'; el.style.setProperty('transform','none','important'); el.style.setProperty('right','auto','important'); el.style.setProperty('bottom','auto','important'); el.style.setProperty('margin','0','important');
+      el.style.setProperty('width', r.width+'px'); }
+    const r=el.getBoundingClientRect();
+    el.style.setProperty('left', Math.max(0, Math.min(innerWidth-r.width, ox+dx))+'px', 'important');
+    el.style.setProperty('top', Math.max(0, Math.min(innerHeight-r.height, oy+dy))+'px', 'important'); e.preventDefault(); });
+  const end=e=>{ if (e.pointerId!==id) return; id=null; handle.classList.remove('drag'); try{ handle.releasePointerCapture(e.pointerId); }catch(_){} };
+  handle.addEventListener('pointerup', end); handle.addEventListener('pointercancel', end);
+  new MutationObserver(()=>{ if (el.style.display==='none' && el.dataset.moved){ sheetReset(el); el.style.removeProperty('width'); } }).observe(el, {attributes:true, attributeFilter:['style']});
+}
+addEventListener('resize', ()=>{ for (const el of document.querySelectorAll('[data-moved]')) sheetClamp(el); });
+for (const el of document.querySelectorAll('.gb.sheet')){
+  const h=document.createElement('div'); h.className='shead';
+  h.innerHTML='<span class="sgrip"></span><button class="sheetx" type="button" aria-label="Close">✕</button>';
+  const x=h.querySelector('.sheetx'); x.addEventListener('pointerdown', e=>e.stopPropagation()); x.addEventListener('click', e=>{ e.stopPropagation(); closeSheet(el); });
+  el.insertBefore(h, el.firstChild); makeDraggable(el, h); }
+// the little pop-up you get by tapping a llama already has its own ✕; drag it by the name
+makeDraggable(pmenuEl, document.getElementById('pm_name'));
 
 startGate();
 let last = performance.now();

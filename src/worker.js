@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-19z";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-20a";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -15,8 +15,8 @@ const SIGNUPS_PER_IP_HOUR = 5;
 const WINDOW_MS = 15 * 60 * 1000;
 // email: reset links last 30 minutes and work once; confirm links last 2 days. Limits are per 15 minutes.
 const FRIENDS = { max: 100, inbox: 50 };
-const DM = { len: 300, burst: 8, keepDays: 90 };   // private messages: longest message, most per 10 seconds, days kept
-const CHAT_KEEP_DAYS = 30;                        // the staff chat log keeps a month
+const DM = { len: 300, burst: 8, perDay: 300 };   // private messages: longest message, most per 10 seconds, most a day (kept forever)
+// the staff chat log is kept forever too
 const ROOM_IDS = new Set(["lounge", "barn", "casino", "arena", "lanes"]);
 const SIPS = 5;                                   // sips or bites in every drink and snack   // friends plus sent requests per llama; requests waiting for one llama
 const RESET_MS = 30 * 60 * 1000, VERIFY_MS = 48 * 3600 * 1000;
@@ -545,7 +545,6 @@ export class Lounge extends DurableObject {
     await this.chatTable();
     const now = Date.now();
     await this.env.DB.prepare("INSERT INTO chatlog (t, uid, name, rm, text, mu) VALUES (?, ?, ?, ?, ?, ?)").bind(now, a.uid, a.name, ROOM_IDS.has(rm) ? rm : "lounge", text, muted ? 1 : 0).run();
-    if (rnd(200) === 0) await this.env.DB.prepare("DELETE FROM chatlog WHERE t < ?").bind(now - CHAT_KEEP_DAYS * 864e5).run();
   }
   async dashChat(a, m) {
     if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can see the chat log." };
@@ -558,7 +557,7 @@ export class Lounge extends DurableObject {
   }
 
   // ---------- private messages between friends ----------
-  async dmTable() { if (this.dmReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS dms (id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEGER NOT NULL, b INTEGER NOT NULL, t INTEGER NOT NULL, text TEXT NOT NULL, rd INTEGER NOT NULL DEFAULT 0)").run(); await this.env.DB.prepare("CREATE INDEX IF NOT EXISTS dms_ab ON dms (a, b, id)").run(); await this.env.DB.prepare("CREATE INDEX IF NOT EXISTS dms_b ON dms (b, rd)").run(); this.dmReady = true; }
+  async dmTable() { if (this.dmReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS dms (id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEGER NOT NULL, b INTEGER NOT NULL, t INTEGER NOT NULL, text TEXT NOT NULL, rd INTEGER NOT NULL DEFAULT 0)").run(); await this.env.DB.prepare("CREATE INDEX IF NOT EXISTS dms_ab ON dms (a, b, id)").run(); await this.env.DB.prepare("CREATE INDEX IF NOT EXISTS dms_b ON dms (b, rd)").run(); await this.env.DB.prepare("CREATE INDEX IF NOT EXISTS dms_at ON dms (a, t)").run(); this.dmReady = true; }
   async dmSend(ws, a, m) {
     await this.dmTable(); await this.frTable();
     const now = Date.now(); if (!a.dmr || now - a.dmr[0] > 10000) a.dmr = [now, 0]; if (++a.dmr[1] > DM.burst) { ws.serializeAttachment(a); return { ok: false, msg: "Slow down a little." }; } ws.serializeAttachment(a);
@@ -568,8 +567,10 @@ export class Lounge extends DurableObject {
     if (me.muted) return { ok: false, msg: "You're muted, so you can't send messages right now." };
     const T = await this.frTarget(a, m); if (T.err) return { ok: false, msg: T.err };
     if (!T.row || T.row.st !== "ok") return { ok: false, msg: "You can only message friends." };
+    const dayStart = Date.parse(etDay(now) + "T00:00:00Z") - 12 * 3600e3;   // a little before midnight Eastern, then counted exactly below
+    const sent = await this.env.DB.prepare("SELECT t FROM dms WHERE a = ? AND t > ? ORDER BY t DESC LIMIT ?").bind(a.uid, dayStart, DM.perDay + 1).all();
+    if ((sent.results || []).filter((r) => etDay(r.t) === etDay(now)).length >= DM.perDay) return { ok: false, msg: `You've sent ${DM.perDay} messages today. You can send more tomorrow.` };
     const r = await this.env.DB.prepare("INSERT INTO dms (a, b, t, text) VALUES (?, ?, ?, ?) RETURNING id").bind(a.uid, T.u.id, now, text).first();
-    if (rnd(200) === 0) await this.env.DB.prepare("DELETE FROM dms WHERE t < ?").bind(now - DM.keepDays * 864e5).run();
     const msg = { id: r.id, from: a.name, to: T.u.name.toUpperCase(), t: now, text };
     this.toUid(T.u.id, { t: "dm", m: msg });
     return { ok: true, m: msg };
