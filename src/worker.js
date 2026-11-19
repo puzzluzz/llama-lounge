@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-21f";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-21g";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -87,9 +87,11 @@ const ITEMS = {
 const PR = { w: 13, h: 12, maxFurn: 60, clear: ["0,10", "1,10", "2,10", "3,10"], knockGap: 20000, letInMs: 3 * 3600e3, nameMax: 24 };
 const PR_WALLS = ["lavender", "cream", "mint", "pink", "night", "wood"], PR_FLOORS = ["wood", "checker", "carpet", "marble", "grass"];
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
-const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7 };
+const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7 };
 // what the store sells right now: one piece per category (the rest stay placeable for anyone who already owns them)
-const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant"]);
+const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign"]);
+const FURN_STAFF = new Set(["adminsign"]);   // only mods and the owner can buy these
+const FURN_WALL = new Set(["adminsign"]);    // hang on a wall: placed on a tile along a wall, don't take up floor space
 const prId = (rm) => { const m = /^p:(\d{1,9})$/.exec(String(rm || "")); return m ? +m[1] : 0; };
 const cleanRoomName = (n) => String(n || "").replace(/[^A-Za-z0-9 '!?&.,:-]/g, "").replace(/\s+/g, " ").trim().slice(0, PR.nameMax);
 const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
@@ -688,6 +690,7 @@ export class Lounge extends DurableObject {
   async furnBuy(a, m) {
     await this.prTables();
     const k = String(m.item || ""); const price = Object.hasOwn(FURN_ITEMS, k) && FURN_SALE.has(k) ? FURN_ITEMS[k] : 0; if (!price) return { ok: false, msg: "The store doesn't sell that." };
+    if (FURN_STAFF.has(k) && !(await this.staffNow(a))) return { ok: false, msg: "Only staff can buy that." };
     if (!a.pres || a.pres.rm !== "store") return { ok: false, msg: "Visit the LLAMA STORE to buy furniture." };
     const have = await this.env.DB.prepare("SELECT n FROM finv WHERE uid = ? AND item = ?").bind(a.uid, k).first(); if (have && have.n >= 20) return { ok: false, msg: "You have plenty of those." };
     const tk = await this.debit(a.uid, price, "furniture " + k); if (tk === null) return { ok: false, msg: `That costs ${price} TOKENS. Play some games to earn more!` };
@@ -700,9 +703,13 @@ export class Lounge extends DurableObject {
     const r = await this.prOwnRoomHere(a); if (!r) return { ok: false, msg: "Go into your own room to place furniture." };
     const k = String(m.item || ""); if (!Object.hasOwn(FURN_ITEMS, k)) return { ok: false, msg: "That's not furniture." };
     const gx = Math.floor(+m.gx), gy = Math.floor(+m.gy), rot = ((Math.floor(+m.rot) || 0) % 4 + 4) % 4;
-    if (!(gx >= 0 && gy >= 0 && gx < PR.w && gy < PR.h) || PR.clear.includes(gx + "," + gy)) return { ok: false, msg: "Keep the doorway clear." };
+    if (!(gx >= 0 && gy >= 0 && gx < PR.w && gy < PR.h)) return { ok: false, msg: "That's outside the room." };
+    const wall = FURN_WALL.has(k);
+    if (wall && gx !== 0 && gy !== 0) return { ok: false, msg: "Wall items go on a wall. Tap a spot right next to a wall." };
+    if (wall && gx === 0 && gy >= 9) return { ok: false, msg: "That's where the door is." };
+    if (!wall && PR.clear.includes(gx + "," + gy)) return { ok: false, msg: "Keep the doorway clear." };
     const furn = await this.prFurn(r.id); if (furn.length >= PR.maxFurn) return { ok: false, msg: `Rooms hold up to ${PR.maxFurn} pieces.` };
-    if (furn.some((f) => f.gx === gx && f.gy === gy)) return { ok: false, msg: "Something is already there." };
+    if (furn.some((f) => f.gx === gx && f.gy === gy && FURN_WALL.has(f.item) === wall)) return { ok: false, msg: "Something is already there." };
     const own = await this.env.DB.prepare("SELECT n FROM finv WHERE uid = ? AND item = ?").bind(a.uid, k).first();
     if (!own || furn.filter((f) => f.item === k).length >= own.n) return { ok: false, msg: "You don't have one of those in storage." };
     await this.env.DB.prepare("INSERT INTO pfurn (room, item, gx, gy, rot) VALUES (?, ?, ?, ?, ?)").bind(r.id, k, gx, gy, rot).run();

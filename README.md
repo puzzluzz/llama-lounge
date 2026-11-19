@@ -215,3 +215,4 @@ No API keys or passwords are involved.
 - Every gift is written to the token ledger and listed in the dashboard's 🪙 TOKEN GIFTS section, with each mod's total for today. It also appears in the staff log.
 - **Furniture shop categories** (`FURN_CATS` in `public/index.html`; on sale = `FURN_SALE` in `src/worker.js`): Seating, Sofas & Armchairs, Beds, Tables, Lighting, Shelves, Electronics and Plants, one piece each for now. The Store's back wall has a showroom with one of each, and tapping one opens the furniture shop. Owned furniture lives in 🎒 INVENTORY > ITEMS, grouped by category.
 - **Leaving a player room:** tap the door to walk out, and the room selector pops up.
+- **Admin sign** (`adminsign`): a staff-only wall plaque. Only mods and the owner see the 🛡️ STAFF ONLY category or can buy it (the server checks). Wall items (`FURN_WALL`) go on a tile right next to a wall, hang flat on that wall, and don't take up floor space.
