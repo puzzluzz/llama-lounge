@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-20c";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-20d";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -503,14 +503,15 @@ export class Lounge extends DurableObject {
     if (a.nd) await this.needsTick(ws, a, now);
     if (m.t === "p") {
       // balance / mute / ban are cached for a few seconds so moving around doesn't hit the database every step
-      if (!a.uc || now - a.uc.t > 5000){ const u = await this.user(a.uid); if (!u || u.banned) { ws.close(4003, "banned"); return; } a.uc = { t: now, tk: u.tk, muted: u.muted }; a.staff = staffRole(this.env, u); }
+      if (!a.uc || now - a.uc.t > 5000){ const u = await this.user(a.uid); if (!u || u.banned) { ws.close(4003, "banned"); return; } a.uc = { t: now, tk: u.tk, muted: u.muted, c: u.c || null }; a.staff = staffRole(this.env, u); }
       const first = !a.pres;
       // chat log for staff: every new line, muted ones too (marked); action lines like "sat down" are marked as actions
       const rs = m.p && m.p.s;
       if (rs && typeof rs === "object" && rs.t && +rs.k !== a.ck) { const was = a.ck; a.ck = +rs.k; if (!first && was !== undefined) await this.chatLog(a, m.p.rm, (rs.f ? "* " : "") + String(rs.t).slice(0, 120), !!a.uc.muted); }
       else if (first && rs && typeof rs === "object") a.ck = +rs.k;
       if (first && a.ck === undefined) a.ck = 0;
-      a.pres = cleanPresence(m.p, a.name, a.uc.tk, !!a.uc.muted, a.staff); ws.serializeAttachment(a);
+      a.pres = cleanPresence(m.p, a.name, a.uc.tk, !!a.uc.muted, a.staff); if (a.uc.c) a.pres.c = a.uc.c;   // everyone sees the llama the account picked
+      ws.serializeAttachment(a);
       this.broadcast({ t: "peers", [first ? "joined" : "updated"]: [{ peer: a.peer, presence: a.pres }] }, ws);
       return;
     }
@@ -518,7 +519,7 @@ export class Lounge extends DurableObject {
     if (m.t === "act") {
       let res;
       try { res = await this.act(ws, a, String(m.a || ""), m); } catch (e) { console.error(e); res = { ok: false, msg: "Server hiccup, try again." }; }
-      if (res && Number.isFinite(res.tk)) { const a2 = ws.deserializeAttachment(); if (a2) { a2.uc = { t: Date.now(), tk: res.tk, muted: a2.uc ? a2.uc.muted : 0 }; ws.serializeAttachment(a2); } }
+      if (res && Number.isFinite(res.tk)) { const a2 = ws.deserializeAttachment(); if (a2) { a2.uc = { ...(a2.uc || {}), t: Date.now(), tk: res.tk, muted: a2.uc ? a2.uc.muted : 0 }; ws.serializeAttachment(a2); } }
       this.send(ws, { t: "res", id: m.id, ...res });
     }
   }
@@ -675,7 +676,8 @@ export class Lounge extends DurableObject {
       case "profile": {
         const c = ["twotone", "poophat", "tweed"].includes(m.c) ? m.c : null;
         const bet = Math.max(0, Math.min(10, Math.floor(+m.bet || 0)));
-        await this.env.DB.prepare("UPDATE users SET c = COALESCE(?, c), agreed = MAX(agreed, ?), bet = ? WHERE id = ?").bind(c, Math.max(0, Math.min(9, +m.agreed || 0)), bet, uid).run();
+        // the llama picked at sign-up is the account's llama for good: once it's set, it never changes
+        await this.env.DB.prepare("UPDATE users SET c = COALESCE(c, ?), agreed = MAX(agreed, ?), bet = ? WHERE id = ?").bind(c, Math.max(0, Math.min(9, +m.agreed || 0)), bet, uid).run();
         return { ok: true };
       }
       case "drink": {
