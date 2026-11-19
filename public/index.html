@@ -362,6 +362,8 @@
   #wd_body .wi.sel{border-color:var(--yel);background:#fffbe8} #wd_body .wi canvas{width:60px;height:48px;image-rendering:pixelated}
   #wd_body .wi b{font:800 11px/1.2 var(--ui);text-align:center;color:var(--ink)} #wd_body .wi small{font:700 11px var(--ui);color:#a06808} #wd_body .wi small.own{color:#1f8a4c} #wd_body .wi small.on{color:#5a48b0}
   #wd_body .fre{font:500 14px/1.45 var(--ui);color:var(--sub);padding:4px 2px}
+  #wd_body .srow{margin-top:12px}
+  #wd_body .wdstore{display:flex;flex-direction:column;align-items:center;gap:4px;padding:30px 10px;background:#f6f4fb;border-radius:18px;margin-top:6px} #wd_body .wdbox{font-size:40px} #wd_body .wdstore b{font:800 15px var(--ui)} #wd_body .wdstore small{font:600 13px var(--ui);color:var(--sub)}
   #frbox,#acctbox,#dmbox,#catbox,#wardbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);max-height:86vh;z-index:6;animation:popIn .18s ease-out}
   #frbox{width:min(calc(100% - 24px),420px)}
   #dmbox{width:min(calc(100% - 24px),440px)}
@@ -522,11 +524,11 @@
   /* wooden signs in the bottom-left corner: JOBS and FRIENDS */
   #signs{position:absolute;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(var(--dockh) + 18px + var(--sab));z-index:3;display:none;gap:10px;align-items:flex-end}
   body.joined #signs{display:flex} body.arena-on #signs{visibility:hidden}
-  #jobsbtn,#frbtn,#dmbtn{position:relative;display:flex;align-items:center;gap:6px;
+  #jobsbtn,#frbtn,#dmbtn,#invbtn{position:relative;display:flex;align-items:center;gap:6px;
     font-family:'Press Start 2P',monospace;font-size:13px;color:#fff4d8;letter-spacing:.04em;text-shadow:2px 2px 0 #4a2a10;
     padding:12px 16px 11px 12px;border:3px solid #2a1606;border-radius:10px;cursor:pointer;
     background:repeating-linear-gradient(180deg,#b8743a 0 7px,#a8662e 7px 8px);box-shadow:0 6px 16px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.25),inset 0 -3px 0 rgba(0,0,0,.18);transition:transform .1s}
-  #jobsbtn:active,#frbtn:active,#dmbtn:active{transform:scale(.95)} #jobsbtn:hover,#frbtn:hover,#dmbtn:hover{filter:brightness(1.08)}
+  #jobsbtn:active,#frbtn:active,#dmbtn:active,#invbtn:active{transform:scale(.95)} #jobsbtn:hover,#frbtn:hover,#dmbtn:hover,#invbtn:hover{filter:brightness(1.08)}
   #jobsbtn.isign,.isign{padding:8px 12px 7px!important;min-height:46px;box-sizing:border-box} .sico{width:32px;height:26px;flex:none;display:block}
   #frbtn .fr-on,#dmbtn .fr-on{display:none;align-items:center;gap:4px;margin-left:2px;padding:3px 6px 2px 5px;border-radius:999px;background:rgba(42,22,6,.55);font-size:10px;text-shadow:none;color:#fff}
   #frbtn .fr-on::before{content:'';width:7px;height:7px;border-radius:50%;background:#3ddc75;box-shadow:0 0 0 2px rgba(61,220,117,.3)} #frbtn .fr-on.on{display:inline-flex}
@@ -588,7 +590,7 @@
   <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button class="pbtn ic" id="zout" title="Zoom out" aria-label="Zoom out">−</button><button class="pbtn ic" id="zin" title="Zoom in" aria-label="Zoom in">+</button><button class="pbtn ic" id="musicbtn" title="Music" aria-label="Music">♪</button><button class="pbtn y" id="menubtn" aria-label="Menu"><span class="hamb"><i></i><i></i><i></i></span><span class="mtx">MENU</span></button></div>
   <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
   <div id="keys">ARROWS/WASD WALK · SPACE ACTION<br>ENTER TALK · M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
-  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">CHANGE ROOM</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="👕">WARDROBE</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
+  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">CHANGE ROOM</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
   <div id="emenu" class="gb menu sheet"><div data-e="heart">♥ HEART</div><div data-e="bang">! WOW</div><div data-e="huh">? HUH</div><div data-e="note">♪ SING</div><div data-e="lol">^^ LOL</div><div data-e="zzz">Z SLEEP</div><div data-e="wave">✋ WAVE</div><div data-e="flex">💪 FLEX</div><div data-e="palm">-_- FACEPALM</div></div>
   <div id="pmenu" class="gb"><div id="pm_name" class="pmn"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_close">✕</button></div></div>
   <div id="tmenu" class="gb sheet"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
@@ -604,7 +606,7 @@
   </div>
   </div>
   <div id="scrim"></div>
-  <div id="signs"><button id="jobsbtn" aria-label="Jobs: ways to earn coins"><span class="jb-nail l"></span><span class="jb-nail r"></span><span class="jb-coin"></span>JOBS</button><button id="frbtn" class="isign" aria-label="Friends"><span class="jb-nail l"></span><span class="jb-nail r"></span><svg class="sico" viewBox="0 0 32 26" aria-hidden="true"><g stroke="#2a1606" stroke-width="2.2" stroke-linejoin="round"><circle cx="21.5" cy="7.5" r="4.6" fill="#f2c27a"/><path d="M13.5 23.5c0-5 3.6-8.4 8-8.4s8 3.4 8 8.4z" fill="#3a8fd8"/><circle cx="11" cy="8.5" r="5.2" fill="#ffe0a8"/><path d="M2 24.5c0-5.6 4-9.4 9-9.4s9 3.8 9 9.4z" fill="#ffd23f"/></g></svg><span class="fr-on" id="fr_on"></span><span class="fr-req" id="fr_req"></span></button><button id="dmbtn" class="isign" aria-label="Messages"><span class="jb-nail l"></span><span class="jb-nail r"></span><svg class="sico" viewBox="0 0 32 26" aria-hidden="true"><g stroke="#2a1606" stroke-width="2.2" stroke-linejoin="round"><path d="M4 3.5h24a2.5 2.5 0 0 1 2.5 2.5v11.5a2.5 2.5 0 0 1-2.5 2.5H13l-6.5 5v-5H4a2.5 2.5 0 0 1-2.5-2.5V6A2.5 2.5 0 0 1 4 3.5z" fill="#fff4d8"/></g><circle cx="10" cy="11.7" r="1.9" fill="#2a1606"/><circle cx="16" cy="11.7" r="1.9" fill="#2a1606"/><circle cx="22" cy="11.7" r="1.9" fill="#2a1606"/></svg><span class="fr-req" id="dm_un"></span></button></div>
+  <div id="signs"><button id="jobsbtn" aria-label="Jobs: ways to earn coins"><span class="jb-nail l"></span><span class="jb-nail r"></span><span class="jb-coin"></span>JOBS</button><button id="frbtn" class="isign" aria-label="Friends"><span class="jb-nail l"></span><span class="jb-nail r"></span><svg class="sico" viewBox="0 0 32 26" aria-hidden="true"><g stroke="#2a1606" stroke-width="2.2" stroke-linejoin="round"><circle cx="21.5" cy="7.5" r="4.6" fill="#f2c27a"/><path d="M13.5 23.5c0-5 3.6-8.4 8-8.4s8 3.4 8 8.4z" fill="#3a8fd8"/><circle cx="11" cy="8.5" r="5.2" fill="#ffe0a8"/><path d="M2 24.5c0-5.6 4-9.4 9-9.4s9 3.8 9 9.4z" fill="#ffd23f"/></g></svg><span class="fr-on" id="fr_on"></span><span class="fr-req" id="fr_req"></span></button><button id="dmbtn" class="isign" aria-label="Messages"><span class="jb-nail l"></span><span class="jb-nail r"></span><svg class="sico" viewBox="0 0 32 26" aria-hidden="true"><g stroke="#2a1606" stroke-width="2.2" stroke-linejoin="round"><path d="M4 3.5h24a2.5 2.5 0 0 1 2.5 2.5v11.5a2.5 2.5 0 0 1-2.5 2.5H13l-6.5 5v-5H4a2.5 2.5 0 0 1-2.5-2.5V6A2.5 2.5 0 0 1 4 3.5z" fill="#fff4d8"/></g><circle cx="10" cy="11.7" r="1.9" fill="#2a1606"/><circle cx="16" cy="11.7" r="1.9" fill="#2a1606"/><circle cx="22" cy="11.7" r="1.9" fill="#2a1606"/></svg><span class="fr-req" id="dm_un"></span></button><button id="invbtn" class="isign" aria-label="Inventory (I)"><span class="jb-nail l"></span><span class="jb-nail r"></span><svg class="sico" viewBox="0 0 32 26" aria-hidden="true"><g stroke="#2a1606" stroke-width="2.2" stroke-linejoin="round"><path d="M12 5.5c0-2.5 1.8-4 4-4s4 1.5 4 4" fill="none"/><path d="M7 9.5c0-2.5 2-4.5 4.5-4.5h9c2.5 0 4.5 2 4.5 4.5v12.5a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z" fill="#d8833a"/><path d="M10 14h12v6.5H10z" fill="#b8642a"/><path d="M7 12.5h18" fill="none"/></g><rect x="14.5" y="15.5" width="3" height="2.4" rx=".6" fill="#ffd23f" stroke="#2a1606" stroke-width="1.2"/></svg></button></div>
   <div id="auth" class="gb">
     <div class="rt">🦙 <b>LLAMA LOUNGE</b></div>
     <div class="autabs" id="au_tabs"><button type="button" data-v="login">LOG IN</button><button type="button" data-v="signup">SIGN UP</button></div>
@@ -625,7 +627,7 @@
   <div id="catbox" class="gb sheet"><div class="slt">🛍️ LLAMA STORE</div><div class="jsub">La Llama P.I.C. shirts. Tap one to see it, or VIEW to open it on the store website.</div><div id="cat_body"></div><div class="srow"><button class="gbbtn y" id="cat_clothes">👕 IN-GAME CLOTHES</button><button class="gbbtn" id="cat_close">DONE</button></div></div>
   <div id="wardbox" class="gb sheet"><div class="slt" id="wd_title">👕 WARDROBE</div>
     <div class="wdtop"><canvas id="wd_prev" width="28" height="46" title="Tap to turn around"></canvas><div class="wdinfo"><b id="wd_name"></b><small id="wd_sub"></small><div class="srow" id="wd_acts"></div></div></div>
-    <div class="autabs" id="wd_tabs"><button type="button" data-t="shop">SHOP</button><button type="button" data-t="closet">MY CLOSET</button></div>
+    <div class="autabs" id="wd_tabs"><button type="button" data-t="clothing">👕 CLOTHING</button><button type="button" data-t="storage">📦 STORAGE</button></div>
     <div id="wd_msg"></div><div id="wd_body"></div></div>
   <div id="dmbox" class="gb sheet"><div class="dmhead"><button class="dmback" id="dm_back" aria-label="Back">‹</button><div class="slt" id="dm_title">💬 MESSAGES</div></div>
     <div id="dm_list"></div>
@@ -720,7 +722,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-20h";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-20i";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -829,18 +831,26 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
   }
   // arms
   const swing = sit ? 0 : (frame===1?-1:frame===3?1:0);
-  const armFn = TEE ? ((x,y)=> y<31+oy ? teeFn(13.5,32+oy,7,6)(x,y) : fur(13.5,32+oy,7,6)(x,y)) : bodyFn(13.5,32+oy,7,6);   // short sleeves
+  const armFn = TEE ? fur(13.5,32+oy,7,6) : bodyFn(13.5,32+oy,7,6);   // a shirt's sleeves are drawn with the shirt
   const arm = (cx,dy) => { oell(cx,31+oy+dy,1.8,4,armFn); put(cx-1,35+oy+dy,HOOF); put(cx,35+oy+dy,HOOF); put(cx+1,35+oy+dy,HOOF); };
   if (L || TEE){ arm(5.5,swing); arm(21.5,-swing); }
   // neck
   if (L){ rect(10,18+oy,8,9,OUT); rect(11,18+oy,6,9,fur(13.5,22+oy,3,5)); }
   // torso
   if (L || TEE) oell(13.5,31.5+oy,6.8,5.6,bodyFn(13.5,31.5+oy,6.8,5.6));
-  if (TEE){   // neckline and a little version of the real shirt's print
-    rect(11,26+oy,6,1,TEE.c[1]);
-    if (front){ const P2={ smile:['.ab.','aaaa','.cc.'], cancelled:['.bb.','bbbb','dddd'], wild:['.e..','efe.','ffff'], cancel:['gggg','....','gggg'], woke:['hhh.','....','hhhh'] }[TEE.pr];
-      const PC={a:'#d8b07a',b:'#6fd0ff',c:'#f4efdc',d:'#d8b07a',e:'#ff8a30',f:'#e03048',g:'#ffffff',h:'#1a1626'};
-      if (P2) P2.forEach((row,j)=>{ for (let i=0;i<4;i++) if (row[i]!=='.') put(12+i,29+j+oy,PC[row[i]]); }); } }
+  if (TEE){   // a proper T-shirt over the torso: short sleeves over the front legs, crew collar, hem, shading and the shirt's print
+    const C=TEE.c, span={25:[10,17],26:[6,21],27:[4,23],28:[4,23],29:[4,23]}, sp=y=>span[y]||[8,19];
+    for (let y=25;y<=37;y++){ const [x0,x1]=sp(y);
+      for (let x=x0;x<=x1;x++){ let c=C[0]; if (x>=17) c=C[1]; if (x<=9 && y>=26 && y<=33) c=C[2];
+        if ((x<8||x>19) && y===29) c=C[1]; if (y===37) c=C[1]; if (y===25 && x>=11 && x<=16) c=C[1]; put(x,y+oy,c); }
+      put(x0-1,y+oy,OUT); put(x1+1,y+oy,OUT); }
+    for (let x=10;x<=17;x++) put(x,24+oy,OUT); for (let x=6;x<=9;x++) put(x,25+oy,OUT); for (let x=18;x<=21;x++) put(x,25+oy,OUT); put(5,26+oy,OUT); put(22,26+oy,OUT);
+    for (let x=3;x<=7;x++) put(x,30+oy,OUT); for (let x=20;x<=24;x++) put(x,30+oy,OUT); for (let x=8;x<=19;x++) put(x,38+oy,OUT);
+    if (front){ for (let x=12;x<=15;x++) put(x,25+oy,fur(13.5,22+oy,3,5)(x,25+oy));   // the neck shows through the collar
+      const P2={ smile:['..aa..','.abba.','.aaaa.','..cc..'], cancelled:['.bbbb.','bbccbb','.bbbb.','dddddd'], wild:['..e...','.efe.e','efffef','ffffff'], cancel:['gggggg','......','gggggg','gggg..'], woke:['hhhhh.','......','hhhhhh','hh....'] }[TEE.pr];
+      const PC={a:'#d8b07a',b:'#6fd0ff',c:'#1a1626',d:'#d8b07a',e:'#ffb030',f:'#e03048',g:'#ffffff',h:'#1a1626'};
+      if (P2) P2.forEach((row,j)=>{ for (let i=0;i<6;i++) if (row[i]!=='.') put(11+i,30+j+oy,PC[row[i]]); }); }
+    else { for (let x=11;x<=16;x++) put(x,25+oy,C[1]); } }
   // tail (back)
   if (L && !front) oell(13.5,37.5+oy,1.6,1.3,fur(13.5,37.5+oy,1.6,1.3));
   // outfit details (a worn shirt covers the character's own outfit)
@@ -901,28 +911,42 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
   }
   // neckwear
   if (W.neck){ const C=ITEMS[W.neck].c;
-    if (W.neck==='bandana'){ if (front){ for (let y=23;y<=28;y++){ const a=Math.max(0,y-23); const x0=9+a, x1=18-a; if (x1<x0) break; put(x0-1,y+oy,OUT); put(x1+1,y+oy,OUT); for (let x=x0;x<=x1;x++) put(x,y+oy,((x+y)%3===0)?C[2]:C[0]); } put(13,29+oy,OUT); put(14,29+oy,OUT); }
-      else { rect(10,24+oy,8,1,OUT); rect(10,25+oy,8,1,C[0]); } }
-    else if (W.neck==='bowtie'){ if (front){ rect(9,23+oy,10,5,OUT); rect(10,24+oy,3,3,C[0]); rect(15,24+oy,3,3,C[0]); put(10,24+oy,C[2]); put(15,24+oy,C[2]); rect(13,24+oy,2,3,C[1]); put(9,23+oy,null); for (const [x,y] of [[9,23],[9,27],[18,23],[18,27]]) put(x,y+oy,null); } }
-    else if (W.neck==='scarf'){ rect(9,22+oy,10,4,OUT); for (let x=10;x<=17;x++) for (let y=23;y<=24;y++) put(x,y+oy,(x%3===0)?C[1]:C[0]);
-      if (front){ rect(15,25+oy,4,7,OUT); for (let y=26;y<=30;y++) for (let x=16;x<=17;x++) put(x,y+oy,(y%3===0)?C[1]:C[0]); put(16,31+oy,C[2]); put(17,31+oy,C[2]); } }
-    else if (W.neck==='lei'){ for (let x=8;x<=19;x++){ const t2=(x-13.5)/5.5; const y=Math.round(23+(front?5:1)*(1-t2*t2)); put(x,y+oy,C[(x>>1)%3]); put(x,y+1+oy,(x%2)?OUT:C[(x+1>>1)%3]); } } }
-  // eyewear (only seen from the front)
-  if (W.eyes && front){ const C=ITEMS[W.eyes].c;
-    if (W.eyes==='shades'){ rect(7,11+oy,5,3,OUT); rect(14,11+oy,5,3,OUT); rect(12,11+oy,2,1,OUT); rect(8,12+oy,3,1,C[1]); rect(15,12+oy,3,1,C[1]); put(8,12+oy,C[2]); put(15,12+oy,C[2]); }
-    else { const shape = W.eyes==='hearts' ? ['#.#.','####','.##.'] : ['.#.','###','.#.'];
-      for (const x0 of [8,14]){ shape.forEach((row,j)=>{ for (let i=0;i<row.length;i++) if (row[i]==='#'){ put(x0+i,11+j+oy,C[0]); } }); put(x0,11+oy,W.eyes==='hearts'?C[2]:null); }
-      rect(12,12+oy,2,1,OUT); } }
+    if (W.neck==='bandana'){
+      if (front){ for (let y=23;y<=29;y++){ const a2=y-23; const x0=8+a2, x1=19-a2; if (x1<x0) break; put(x0-1,y+oy,OUT); put(x1+1,y+oy,OUT); for (let x=x0;x<=x1;x++) put(x,y+oy,(y===23)?C[1]:((x*2+y)%5===0)?C[2]:(x>=15?C[1]:C[0])); } put(13,30+oy,OUT); put(14,30+oy,OUT); for (let x=8;x<=19;x++) put(x,22+oy,OUT); put(17,24+oy,C[1]); put(18,23+oy,C[1]); }
+      else { for (let x=9;x<=18;x++){ put(x,23+oy,OUT); put(x,24+oy,C[0]); put(x,25+oy,OUT); } rect(12,26+oy,4,2,OUT); put(13,26+oy,C[0]); put(14,26+oy,C[1]); } }
+    else if (W.neck==='bowtie'){
+      if (front){ const wing=(xs,dir)=>{ for (let k=0;k<4;k++){ const x=xs+dir*k, h=1+k; for (let y=24-h;y<=24+h;y++) put(x,y+oy,(k===3||y===24-h||y===24+h)?OUT:(y===24?C[1]:C[0])); } };
+        wing(12,-1); wing(15,1); rect(13,22+oy,2,5,OUT); put(13,23+oy,C[1]); put(14,23+oy,C[1]); put(13,24+oy,C[0]); put(14,24+oy,C[0]); put(13,25+oy,C[1]); put(14,25+oy,C[1]); put(10,22+oy,C[2]); put(17,22+oy,C[2]); }
+      else { for (let x=10;x<=17;x++) put(x,23+oy,C[1]); } }
+    else if (W.neck==='scarf'){
+      for (let x=8;x<=19;x++){ put(x,21+oy,OUT); for (let y=22;y<=25;y++) put(x,y+oy,((x+y)%4<2)?C[0]:C[1]); put(x,26+oy,OUT); } put(7,22+oy,OUT); put(7,23+oy,OUT); put(7,24+oy,OUT); put(7,25+oy,OUT); put(20,22+oy,OUT); put(20,23+oy,OUT); put(20,24+oy,OUT); put(20,25+oy,OUT);
+      if (front){ for (let y=26;y<=33;y++){ put(15,y+oy,OUT); put(19,y+oy,OUT); for (let x=16;x<=18;x++) put(x,y+oy,(y%3===0)?C[1]:C[0]); } for (let x=16;x<=18;x++){ put(x,34+oy,C[2]); put(x,35+oy,(x%2)?C[2]:null); } put(15,34+oy,OUT); put(19,34+oy,OUT); }
+      else { for (let y=26;y<=29;y++){ put(10,y+oy,OUT); put(13,y+oy,OUT); put(11,y+oy,C[0]); put(12,y+oy,C[1]); } } }
+    else if (W.neck==='lei'){ const fl=['#f85888','#f8d030','#ffffff','#ff8a30'];
+      const pts=[]; for (let x=8;x<=19;x+=2){ const t2=(x-13.5)/5.5; pts.push([x, Math.round(23+(front?4.5:1)*(1-t2*t2))]); }
+      pts.forEach(([x,y],k)=>{ const c=fl[k%fl.length]; put(x,y-1+oy,c); put(x-1,y+oy,c); put(x+1,y+oy,c); put(x,y+1+oy,c); put(x,y+oy,'#f8d030'); if (k%2) put(x+1,y+1+oy,'#4aa04a'); }); } }
+  // eyewear (only seen from the front; a strap from the back)
+  if (W.eyes){ const C=ITEMS[W.eyes].c;
+    if (!front){ for (let x=7;x<=20;x++) put(x,11+oy,OUT); }
+    else if (W.eyes==='shades'){ rect(7,10+oy,12,1,OUT); rect(7,11+oy,5,3,OUT); rect(14,11+oy,5,3,OUT); rect(12,11+oy,2,1,OUT); rect(8,11+oy,3,2,C[1]); rect(15,11+oy,3,2,C[1]); put(8,11+oy,C[2]); put(15,11+oy,C[2]); put(9,11+oy,'#ffffff'); put(16,11+oy,'#ffffff'); put(6,11+oy,OUT); put(19,11+oy,OUT); }
+    else { const shape = W.eyes==='hearts' ? ['.#.#.','#####','#####','.###.','..#..'] : ['..#..','.###.','#####','.#.#.','#...#'];
+      for (const x0 of [6,13]){ shape.forEach((row,j)=>{ for (let i=0;i<5;i++) if (row[i]==='#'){ for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const ii=i+dx, jj=j+dy; if (ii<0||ii>4||jj<0||jj>4||shape[jj][ii]!=='#') put(x0+ii,9+jj+oy,OUT); } } });
+        shape.forEach((row,j)=>{ for (let i=0;i<5;i++) if (row[i]==='#') put(x0+i,9+j+oy,(j<=1&&i<=1)?C[2]:(i>=3?C[1]:C[0])); }); }
+      put(11,11+oy,OUT); put(12,11+oy,OUT); put(5,11+oy,OUT); put(18,11+oy,OUT); } }
   // hats sit on the head (a hat replaces a character's own hat)
-  if (W.hat){ const C=ITEMS[W.hat].c, hf=(cx,cy,rx,ry)=>shadeFn(cx,cy,rx,ry,()=>C), bx=front?1:-1;
-    if (W.hat==='cap'){ oell(13.5,7.4+oy,6.4,2.8,hf(13.5,7.4+oy,6.4,2.8)); put(13,4+oy,C[2]); for (let x=17;x<=23;x++){ put(x,8+oy,OUT); put(x,9+oy,C[1]); put(x,10+oy,OUT); } put(24,9+oy,OUT); }
-    else if (W.hat==='cowboy'){ oell(13.5,8.8+oy,10.2,1.5,hf(13.5,8.8+oy,10.2,1.5)); oell(13.5,5.4+oy,5,3,hf(13.5,5.4+oy,5,3)); rect(9,7+oy,10,1,'#5a3418'); put(13,2+oy,C[1]); put(14,2+oy,C[1]); }
-    else if (W.hat==='beanie'){ oell(13.5,7+oy,6.6,3.6,(x,y)=>((y+oy)%2)?C[0]:C[1]); rect(6,9+oy,16,3,OUT); for (let x=7;x<=20;x++) put(x,10+oy,(x%2)?C[2]:C[0]); oell(13.5,2.6+oy,1.8,1.6,'#ffffff'); }
-    else if (W.hat==='party'){ for (let y=0;y<=9;y++){ const hw=Math.round(0.6+y*0.62); for (let x=Math.round(13.5-hw);x<=Math.round(13.5+hw);x++){ const edge=x===Math.round(13.5-hw)||x===Math.round(13.5+hw); put(x,y+oy,edge?OUT:(((x+y)>>1)%2?C[0]:C[1])); } }
-      rect(7,10+oy,14,1,OUT); put(13,0+oy,C[2]); put(14,0+oy,C[2]); put(13,-1+oy,C[2]); }
-    else if (W.hat==='tophat'){ oell(13.5,9+oy,8.4,1.3,hf(13.5,9+oy,8.4,1.3)); rect(8,0+oy,11,9,OUT); rect(9,1+oy,9,8,C[0]); rect(9,6+oy,9,2,'#e03048'); rect(10,1+oy,1,5,C[2]); }
-    else if (W.hat==='flowers'){ for (let x=7;x<=20;x++){ const y=Math.round(8+oy-Math.abs(x-13.5)*0.12); put(x,y,C[0]); put(x,y+1,C[1]); }
-      [[8,'#f85888'],[11,'#f8d030'],[14,'#ffffff'],[17,'#8ad0ff'],[20,'#f85888']].forEach(([x,c])=>{ const y=7+oy; put(x,y,c); put(x-1,y+1,c); put(x+1,y+1,c); put(x,y+2,c); put(x,y+1,'#f8d030'); }); } }
+  if (W.hat){ const C=ITEMS[W.hat].c, hf=(cx,cy,rx,ry)=>shadeFn(cx,cy,rx,ry,()=>C);
+    if (W.hat==='cap'){ oell(13.5,6.8+oy,6.4,3.2,hf(13.5,6.8+oy,6.4,3.2)); for (let x=9;x<=18;x++) put(x,9+oy,C[1]); put(13,3+oy,C[2]); put(14,3+oy,C[1]); for (let y=5;y<=8;y++) put(13,y+oy,C[1]);
+      if (front){ for (let x=16;x<=24;x++){ put(x,9+oy,OUT); put(x,10+oy,x>=22?C[1]:C[0]); put(x,11+oy,OUT); } put(25,10+oy,OUT); put(17,10+oy,C[2]); }
+      else { rect(12,8+oy,4,2,OUT); put(13,8+oy,'#ffffff'); put(14,8+oy,'#ffffff'); } }
+    else if (W.hat==='cowboy'){ oell(13.5,8.8+oy,10.4,1.6,hf(13.5,8.8+oy,10.4,1.6)); for (let x=4;x<=7;x++) put(x,7+oy,C[0]); for (let x=20;x<=23;x++) put(x,7+oy,C[0]); put(3,7+oy,OUT); put(24,7+oy,OUT);
+      oell(13.5,5+oy,5,3.2,hf(13.5,5+oy,5,3.2)); for (let x=9;x<=18;x++){ put(x,7+oy,'#3a2010'); put(x,6+oy,(x%3===0)?'#f8d030':'#5a3418'); } put(13,2+oy,C[1]); put(14,2+oy,C[1]); put(11,3+oy,C[2]); }
+    else if (W.hat==='beanie'){ oell(13.5,6.6+oy,6.6,3.8,(x,y)=>((x+Math.round(y))%3===0)?C[1]:(x>=16?C[1]:C[0])); for (let x=7;x<=20;x++){ put(x,9+oy,(x%2)?C[1]:C[0]); put(x,10+oy,(x%2)?C[1]:C[2]); put(x,11+oy,OUT); } put(6,9+oy,OUT); put(6,10+oy,OUT); put(21,9+oy,OUT); put(21,10+oy,OUT);
+      oell(13.5,2.4+oy,2.2,1.9,(x,y)=>((x+y)%2)?'#ffffff':'#e8e8f0'); }
+    else if (W.hat==='party'){ for (let y=0;y<=9;y++){ const hw=Math.round(0.6+y*0.62); const xa=Math.round(13.5-hw), xb=Math.round(13.5+hw); for (let x=xa;x<=xb;x++) put(x,y+oy,(x===xa||x===xb)?OUT:(((x+y*2)>>1)%3===0?C[1]:(((x+y*2)>>1)%3===1?C[0]:'#58c8f0'))); }
+      rect(7,10+oy,14,1,OUT); oell(13.5,0+oy,1.4,1.2,'#ffffff'); for (let y=10;y<=15;y++) put(front?7:20,y+oy,'#d8d8e8'); }
+    else if (W.hat==='tophat'){ oell(13.5,9+oy,8.6,1.4,hf(13.5,9+oy,8.6,1.4)); rect(8,-1+oy,12,10,OUT); rect(9,0+oy,10,9,C[0]); rect(16,0+oy,3,9,C[1]); rect(9,6+oy,10,2,'#e03048'); rect(16,6+oy,3,2,'#a81830'); rect(10,1+oy,1,4,C[2]); }
+    else if (W.hat==='flowers'){ for (let x=6;x<=21;x++){ const y=Math.round(8+oy-Math.abs(x-13.5)*0.1); put(x,y,C[0]); put(x,y+1,C[1]); if (x%3===0) put(x,y-1,'#6ac06a'); }
+      [[7,'#f85888'],[10,'#f8d030'],[13.5,'#ffffff'],[17,'#8ad0ff'],[20,'#f85888']].forEach(([x,c])=>{ x=Math.round(x); const y=6+oy; put(x,y-1,c); put(x-1,y,c); put(x+1,y,c); put(x,y+1,c); put(x-1,y-1,OUT); put(x+1,y-1,OUT); put(x,y,'#f8d030'); }); } }
   // poop hat
   if (L && ch.hat==='poop' && !W.hat) {
     const hf = (cx,cy,rx,ry) => shadeFn(cx,cy,rx,ry,()=>HAT);
@@ -949,11 +973,14 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
 const spriteCache = new Map();
 function sprite(cid,dir,frame,pose,wear){ const k=cid+'|'+dir+'|'+frame+'|'+pose+'|'+wearKey(wear); let s=spriteCache.get(k); if(!s){ s=buildSprite(cid,dir,frame,pose,wear); spriteCache.set(k,s);} return s; }
 function teeIcon(id){ const k='tee:'+id; let c=itemIconCache.get(k); if (c) return c; const it=ITEMS[id], C=it.c;
-  c=document.createElement('canvas'); c.width=15; c.height=13; const x=c.getContext('2d'); const R=(a,b,w,h,col)=>{ x.fillStyle=col; x.fillRect(a,b,w,h); };
-  R(0,0,15,5,OUT); R(3,0,9,13,OUT); R(1,1,13,3,C[0]); R(4,1,7,11,C[0]); R(11,1,2,3,C[1]); R(9,4,2,8,C[1]); R(6,0,3,1,C[1]); R(4,1,1,1,C[2]);
-  const P2={ smile:['.ab.','aaaa','.cc.'], cancelled:['.bb.','bbbb','dddd'], wild:['.e..','efe.','ffff'], cancel:['gggg','....','gggg'], woke:['hhh.','....','hhhh'] }[it.pr];
-  const PC={a:'#d8b07a',b:'#6fd0ff',c:'#f4efdc',d:'#d8b07a',e:'#ff8a30',f:'#e03048',g:'#ffffff',h:'#1a1626'};
-  if (P2) P2.forEach((row,j)=>{ for (let i=0;i<4;i++) if (row[i]!=='.') R(5+i,4+j,1,1,PC[row[i]]); });
+  c=document.createElement('canvas'); c.width=17; c.height=16; const x=c.getContext('2d'); const R=(a,b,w,h,col)=>{ x.fillStyle=col; x.fillRect(a,b,w,h); };
+  // same shape as the worn shirt: sleeves, crew collar, hem, shading, then the print
+  R(5,0,7,1,OUT); R(1,1,15,1,OUT); R(0,2,17,4,OUT); R(0,6,4,1,OUT); R(13,6,4,1,OUT); R(3,6,11,9,OUT); R(4,15,9,1,OUT);
+  R(2,1,13,1,C[0]); R(1,2,15,3,C[0]); R(1,5,3,1,C[1]); R(13,5,3,1,C[1]); R(4,5,9,9,C[0]); R(4,14,9,1,C[1]);
+  R(11,2,4,3,C[1]); R(10,5,3,9,C[1]); R(4,2,2,7,C[2]); R(6,1,5,1,C[1]); R(7,1,3,1,OUT);
+  const P2={ smile:['..aa..','.abba.','.aaaa.','..cc..'], cancelled:['.bbbb.','bbccbb','.bbbb.','dddddd'], wild:['..e...','.efe.e','efffef','ffffff'], cancel:['gggggg','......','gggggg','gggg..'], woke:['hhhhh.','......','hhhhhh','hh....'] }[it.pr];
+  const PC={a:'#d8b07a',b:'#6fd0ff',c:'#1a1626',d:'#d8b07a',e:'#ffb030',f:'#e03048',g:'#ffffff',h:'#1a1626'};
+  if (P2) P2.forEach((row,j)=>{ for (let i=0;i<6;i++) if (row[i]!=='.') R(5+i,6+j,1,1,PC[row[i]]); });
   itemIconCache.set(k,c); return c; }
 // one item on its own, cropped to its pixels (store racks)
 const itemIconCache=new Map();
@@ -1902,13 +1929,29 @@ function drawFurn(f,t){
         g.fillStyle=INK; g.fillRect(X-1,Math.round(y1),3,Math.round(y0-y1)+1); g.fillStyle='#e0e0f0'; g.fillRect(X,Math.round(y1),1,Math.round(y0-y1)); ellPx(x0,y0,4,1.6,'#585870'); };
       if (f.end===-1) post(0.08); if (f.end===1) post(0.92);
       { const a=P(f.gx+(f.end===-1?0.08:0),f.gy+0.5,z), b=P(f.gx+(f.end===1?0.92:1),f.gy+0.5,z); linePx(a[0],a[1]-1,b[0],b[1]-1,INK); linePx(a[0],a[1],b[0],b[1],'#f0f0ff'); linePx(a[0],a[1]+1,b[0],b[1]+1,INK); }
-      const [hx,hy]=P(f.gx+0.5,f.gy+0.5,z); const HX=Math.round(hx), HY=Math.round(hy);
-      g.fillStyle=INK; g.fillRect(HX,HY+1,1,3);   // hook
-      const ic = ITEMS[f.item].s==='shirt' ? teeIcon(f.item) : itemIcon(f.item);
-      const yTop = HY+4, xL = HX-Math.floor(ic.width/2);
-      g.drawImage(ic, xL, yTop);
-      // price tag
-      g.fillStyle=INK; g.fillRect(HX+Math.ceil(ic.width/2)-1,yTop+1,5,4); g.fillStyle=(INV.owned.includes(f.item))?'#7fe0a0':'#ffffff'; g.fillRect(HX+Math.ceil(ic.width/2),yTop+2,3,2);
+      const [hx,hy]=P(f.gx+0.5,f.gy+0.5,z); const HX=Math.round(hx), HY=Math.round(hy), it=ITEMS[f.item];
+      const ic = it.s==='shirt' ? teeIcon(f.item) : itemIcon(f.item), W2=ic.width;
+      const wire=(x0,y0,x1,y1)=>linePx(x0,y0,x1,y1,'#b8b8cc');
+      let tagX, tagY;
+      if (it.s==='shirt' || it.s==='neck'){   // wire hanger: hook over the rail, triangle, bar at the shoulders
+        g.fillStyle='#b8b8cc'; g.fillRect(HX,HY-2,1,4); g.fillRect(HX+1,HY-2,1,1);
+        wire(HX,HY+2,HX-7,HY+6); wire(HX,HY+2,HX+7,HY+6); wire(HX-7,HY+6,HX+7,HY+6);
+        const top = it.s==='shirt' ? HY+5 : HY+6; g.drawImage(ic, HX-Math.floor(W2/2), top);
+        if (it.s==='neck'){ g.fillStyle='#d8d8e8'; g.fillRect(HX-7,HY+6,15,1); }
+        tagX=HX+Math.ceil(W2/2)-2; tagY=top+3; }
+      else if (it.s==='eyes'){   // a little display card hanging on the hook
+        g.fillStyle='#b8b8cc'; g.fillRect(HX,HY+1,1,2);
+        const cw=Math.max(15,W2+4), cx0=HX-Math.floor(cw/2), cy0=HY+3;
+        g.fillStyle=OUT; g.fillRect(cx0,cy0,cw,11); g.fillStyle='#ffffff'; g.fillRect(cx0+1,cy0+1,cw-2,9); g.fillStyle='#e8e2f6'; g.fillRect(cx0+1,cy0+8,cw-2,2);
+        g.fillStyle=OUT; g.fillRect(HX-1,cy0+1,3,1);
+        g.drawImage(ic, HX-Math.floor(W2/2), cy0+3); tagX=cx0+cw-2; tagY=cy0+7; }
+      else {   // hats hang from a peg by a little loop
+        g.fillStyle=INK; g.fillRect(HX,HY+1,1,3); g.fillStyle='#b8b8cc'; g.fillRect(HX-1,HY+3,3,1);
+        g.drawImage(ic, HX-Math.floor(W2/2), HY+4); tagX=HX+Math.ceil(W2/2)-1; tagY=HY+7; }
+      // price tag on a string (green once you own it)
+      const own=INV.owned.includes(f.item);
+      g.fillStyle='#8a8aa0'; g.fillRect(tagX,tagY,2,1);
+      g.fillStyle=OUT; g.fillRect(tagX+2,tagY-1,6,5); g.fillStyle=own?'#7fe0a0':'#fff8e0'; g.fillRect(tagX+3,tagY,4,3); g.fillStyle=own?'#1f8a4c':'#c89818'; g.fillRect(tagX+4,tagY+1,2,1);
       break; }
     case 'vending': { // drinks machine against the back wall: red cabinet, lit sign, a window full of bottles
       const a=f.gx+0.12, b=f.gy+0.12, c=f.gx+0.88, e=f.gy+0.86, H=46;
@@ -3025,7 +3068,7 @@ function menuAct(el){
   else if (a==='dash') openDash();
   else if (a==='account'){ openAccount(); }
   else if (a==='friends'){ openFriends(); }
-  else if (a==='wardrobe'){ openWardrobe('closet'); }
+  else if (a==='wardrobe'){ openWardrobe('clothing'); }
   else if (a==='logout'){ apiPost('/api/logout').then(()=>{ NET.closedForGood=true; location.reload(); }); }
   else if (a==='sit') toggleSit();
   else if (a==='tips'){ tipsOff=!tipsOff; if(!tipsOff){ tipHidden={}; store.tipHidden={}; } store.tipsOff=tipsOff; saveStore(); mtips.textContent=tipsOff?'TIPS: OFF':'TIPS: ON'; localMsg(tipsOff?'Tips are off.':'Tips are back on!'); }
@@ -3181,6 +3224,7 @@ addEventListener('keydown', e => {
   if (e.code==='Space'||e.code==='KeyZ'){ e.preventDefault(); if(!e.repeat) pressA(); return; }
   if (e.code==='KeyX'||e.key==='Escape'){ e.preventDefault(); if(arcade.on) arcadeBack(); else if(uiOpen()&&pick.style.display!=='flex') closeAll(); return; }
   if (e.code==='KeyM'){ e.preventDefault(); openMenu(); return; }
+  if (e.code==='KeyI' && joined){ e.preventDefault(); if ($id('wardbox').style.display==='block') closeAll(); else openWardrobe('clothing'); return; }
   const n = parseInt(e.key,10); if (n>=1 && n<=9 && joined && !arcade.on){ emote(EMOTES[n-1]); return; }
   if (e.code==='KeyQ' && joined && !arcade.on){ e.preventDefault(); spitAuto(); return; }
   if (e.code==='KeyF' && joined && !arcade.on){ e.preventDefault(); doAction('flip'); return; }
@@ -4582,26 +4626,33 @@ function wdInfo(){
 function wdCard(id){ const it=ITEMS[id], own=INV.owned.includes(id), on=me.w[it.s]===id;
   return `<div class="wi${WD.pick===id?' sel':''}" data-id="${id}"><canvas width="20" height="16" data-ic="${id}"></canvas><b>${esc(it.n)}</b>${on?'<small class="on">WEARING</small>':own?'<small class="own">OWNED ✓</small>':`<small>${it.p} 🪙</small>`}</div>`; }
 function wdDraw(){
+  const shop=WD.tab==='shop';
   for (const b of $id('wd_tabs').children) b.classList.toggle('on', b.dataset.t===WD.tab);
-  $id('wd_title').textContent = curRoom==='store' ? '🛍️ LLAMA STORE CLOTHES' : '👕 WARDROBE';
+  $id('wd_tabs').style.display = shop ? 'none' : ''; $id('wardbox').querySelector('.wdtop').style.display = WD.tab==='storage' ? 'none' : '';
+  $id('wd_title').textContent = shop ? '🛍️ LLAMA STORE CLOTHES' : '🎒 INVENTORY';
   let h='';
   if (WD.tab==='shop'){ for (const s2 of WEAR_SLOTS){ h+=`<div class="wdh">${SLOT_NAMES[s2]}</div><div class="wdg">`+Object.keys(ITEMS).filter(k=>ITEMS[k].s===s2).map(wdCard).join('')+'</div>'; }
-    if (curRoom!=='store') h='<div class="fre">Browse and try things on here. To buy, visit the 🛍️ LLAMA STORE.</div>'+h; }
+    if (curRoom!=='store') h='<div class="fre">Browse and try things on here. To buy, visit the 🛍️ LLAMA STORE.</div>'+h;
+    h+='<div class="srow"><button class="gbbtn" id="wd_toinv">🎒 MY INVENTORY</button></div>'; }
+  else if (WD.tab==='storage'){ h='<div class="wdstore"><div class="wdbox">📦</div><b>STORAGE</b><small>Coming soon.</small></div>'; }
   else { const mine=INV.owned.filter(k=>ITEMS[k]);
-    if (!mine.length) h='<div class="fre">Your closet is empty. Buy clothes at the 🛍️ LLAMA STORE, then wear them anywhere.</div>';
+    if (!mine.length) h='<div class="fre">No clothes yet. Buy some at the 🛍️ LLAMA STORE, then wear them anywhere.</div>';
+    h+='<div class="srow"><button class="gbbtn" id="wd_toshop">🛍️ BROWSE THE STORE</button></div>';
     for (const s2 of WEAR_SLOTS){ const list=mine.filter(k=>ITEMS[k].s===s2); if (list.length) h+=`<div class="wdh">${SLOT_NAMES[s2]}</div><div class="wdg">`+list.map(wdCard).join('')+'</div>'; } }
   const body=$id('wd_body'); body.innerHTML=h;
+  { const ti=$id('wd_toinv'); if (ti) ti.onclick=()=>{ WD.tab='clothing'; WD.pick=null; wdDraw(); }; const ts=$id('wd_toshop'); if (ts) ts.onclick=()=>{ WD.tab='shop'; WD.pick=null; wdDraw(); }; }
   for (const cv of body.querySelectorAll('canvas[data-ic]')){ const id=cv.dataset.ic, ic=ITEMS[id].s==='shirt'?teeIcon(id):itemIcon(id), x=cv.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(ic, Math.floor((20-ic.width)/2), Math.floor((16-ic.height)/2)); }
   wdPreview(); wdInfo();
 }
 $id('wd_body').addEventListener('click', e=>{ const c=e.target.closest('.wi'); if (!c) return; ensureAudio(); WD.pick = WD.pick===c.dataset.id ? null : c.dataset.id; wdMsg(''); wdDraw(); });
 for (const b of $id('wd_tabs').children) b.addEventListener('click', ()=>{ WD.tab=b.dataset.t; wdDraw(); });
 $id('wd_prev').addEventListener('click', ()=>{ WD.dir=(WD.dir+1)%4; wdPreview(); });
-function openWardrobe(tab, pick){ closeAll(); WD.tab=tab||'closet'; WD.pick=pick||null; WD.dir=0; wdMsg(''); $id('wardbox').style.display='block'; wdDraw(); wdLoad(); }
+function openWardrobe(tab, pick){ closeAll(); WD.tab = tab==='closet' ? 'clothing' : (tab||'clothing'); WD.pick=pick||null; WD.dir=0; wdMsg(''); $id('wardbox').style.display='block'; wdDraw(); wdLoad(); }
 function wdBuy(id){ wdMsg('BUYING...'); NET.act('inv_buy',{item:id}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.');
   INV.owned=r.owned||INV.owned; tkSet(r.tk, `You bought the ${ITEMS[id].n}!`); wdWear(ITEMS[id].s, id, `Bought the ${ITEMS[id].n} and put it on!`); }); }
 function wdWear(slot, id, msg){ NET.act('inv_wear',{slot, item:id}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); me.w=cleanWear(r.w); sendPresence(true); wdMsg(msg || (id ? `You put on the ${ITEMS[id].n}.` : 'Taken off.'), true); wdDraw(); }); }
 $id('cat_clothes').addEventListener('click', ()=>openWardrobe('shop'));
+$id('invbtn').addEventListener('click', ()=>{ ensureAudio(); openWardrobe('clothing'); });
 
 // ---- private messages between friends ----
 const DMS = { inbox:[], with:null, unread:0 }; const dmEl=$id('dmbox'), dmMsgs=$id('dm_msgs');
