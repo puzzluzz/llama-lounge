@@ -441,6 +441,23 @@
   #dkbox{display:none;left:50%;top:46%;transform:translate(-50%,-50%);text-align:center;width:min(calc(100% - 24px),360px);animation:popIn .18s ease-out}
   #dkbox .slt{color:#1c6ad8;margin-bottom:8px} #dkcv{display:block;margin:0 auto;width:min(100%,320px);aspect-ratio:4/3;image-rendering:pixelated;border-radius:14px;touch-action:manipulation;cursor:crosshair}
   #dk_msg{font-size:14px;font-weight:800;margin:10px 0 4px;min-height:40px;line-height:1.4} .dkn{font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.03em;margin-bottom:6px}
+  /* ---------- JOBS sign (bottom-left, above the room tabs) and the job board ---------- */
+  #jobsbtn{position:absolute;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(var(--dockh) + 18px + var(--sab));z-index:3;display:none;align-items:center;gap:6px;
+    font-family:'Press Start 2P',monospace;font-size:13px;color:#fff4d8;letter-spacing:.04em;text-shadow:2px 2px 0 #4a2a10;
+    padding:12px 16px 11px 12px;border:3px solid #2a1606;border-radius:10px;cursor:pointer;
+    background:repeating-linear-gradient(180deg,#b8743a 0 7px,#a8662e 7px 8px);box-shadow:0 6px 16px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.25),inset 0 -3px 0 rgba(0,0,0,.18);transition:transform .1s}
+  #jobsbtn:active{transform:scale(.95)} #jobsbtn:hover{filter:brightness(1.08)}
+  body.joined #jobsbtn{display:flex} body.arena-on #jobsbtn{visibility:hidden}
+  .jb-nail{position:absolute;top:5px;width:4px;height:4px;border-radius:50%;background:#2a1606;box-shadow:inset 1px 1px 0 #8a6a4a} .jb-nail.l{left:5px} .jb-nail.r{right:5px}
+  .jb-coin{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0 0 18%,#ffd23f 20% 62%,#d79a12 64%);box-shadow:0 0 0 2px #2a1606;flex:none}
+  @media (max-width:640px){ #jobsbtn{font-size:11px;padding:10px 12px 9px 10px} .jb-coin{width:13px;height:13px} }
+  #jobsbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:min(480px,calc(100% - 24px));max-height:86vh;animation:popIn .18s ease-out}
+  #jobsbox .slt{text-align:center;color:#a06808} .jsub{font-size:13px;color:var(--sub);text-align:center;margin:4px 0 10px;line-height:1.4}
+  .jroom{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--sub);margin:14px 0 6px} .jroom.here{color:#1e8a3a}
+  .job{display:flex;align-items:center;gap:12px;background:var(--soft);border-radius:14px;padding:10px 12px;margin-bottom:6px}
+  .job .ji{font-size:24px;width:30px;text-align:center;flex:none} .job .jt{flex:1;min-width:0} .job b{display:block;font-size:14px} .job small{display:block;font-size:12px;color:var(--sub);line-height:1.35;margin-top:2px}
+  .job .jp{font-size:12px;font-weight:800;color:#a06808;white-space:nowrap} .job.risk .jp{color:#b0203a}
+  .job .gbbtn{min-height:36px;padding:8px 12px;font-size:12px;flex:none}
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
   @media (max-height:520px) and (min-width:641px){ #dock{bottom:6px;padding:6px} .pbtn{height:38px} #chatin{height:38px} #saybtn{width:30px;height:30px} }
 </style>
@@ -469,6 +486,7 @@
   </div>
   </div>
   <div id="scrim"></div>
+  <button id="jobsbtn" aria-label="Jobs: ways to earn coins"><span class="jb-nail l"></span><span class="jb-nail r"></span><span class="jb-coin"></span>JOBS</button>
   <div id="auth" class="gb">
     <div class="rt">🦙 <b>LLAMA LOUNGE</b></div>
     <div id="au_sub">LOG IN OR MAKE A NEW LLAMA ACCOUNT</div>
@@ -499,6 +517,7 @@
   <div id="dkbox" class="gb sheet"><div class="slt">💦 DUNK TANK</div><canvas id="dkcv" width="160" height="120"></canvas><div id="dk_msg"></div>
     <div class="dkn">1 COIN A THROW · A DUNK PAYS 3 · SIT ON THE TANK AND EARN 1 EVERY TIME YOU GET DUNKED</div>
     <div class="srow"><button class="gbbtn y" id="dk_throw">THROW ⚾</button><button class="gbbtn" id="dk_close">CLOSE</button></div></div>
+  <div id="jobsbox" class="gb sheet"><div class="slt">💰 JOB BOARD</div><div class="jsub">Ways to earn coins. Keep your 🍔 and 💧 up, or most jobs pay half.</div><div id="jobs_body"></div><div class="srow"><button class="gbbtn" id="jobs_close">CLOSE</button></div></div>
   <div id="dashbox" class="gb sheet"><div class="slt" id="ds_title">STAFF DASHBOARD</div><div id="ds_body"></div><div class="srow"><button class="gbbtn" id="ds_refresh">REFRESH</button><button class="gbbtn" id="ds_close">CLOSE</button></div></div>
   <div id="tblbox" class="gb sheet"><div class="slt" id="tb_title"></div><canvas id="tbcv" width="150" height="66"></canvas><div id="tb_msg"></div>
     <div class="tbopts" id="tb_opts"></div>
@@ -567,7 +586,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19l";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19n";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1512,21 +1531,21 @@ function drawFurn(f,t){
         if (dp>0) dunkSplash(Math.round(px), Math.round(py)-18, t); else pfDraw(g,'DUNKY',x0+3,y0-7,'#ffd23f'); }
       break; }
     case 'dunksign': { // carnival sign on two posts: striped border, chasing bulbs, big DUNK!
-      const W=60, H=36, cv=dunkSignCv; if (cv.width!==W){ cv.width=W; cv.height=H; }
+      const tw=pfW('DUNK!',2), W=tw+10, H=29, cv=dunkSignCv; if (cv.width!==W){ cv.width=W; cv.height=H; }
       const m=cv.getContext('2d'); m.clearRect(0,0,W,H);
       m.fillStyle=INK; m.fillRect(1,0,W-2,H); m.fillRect(0,1,W,H-2);
       for (let x=1;x<W-1;x++) for (let y=1;y<H-1;y++){ if (x>3&&x<W-4&&y>3&&y<H-4) continue; m.fillStyle=(Math.floor((x+y)/3)%2)?'#e03048':'#f8f8f0'; m.fillRect(x,y,1,1); }
       m.fillStyle=INK; m.fillRect(4,4,W-8,H-8); m.fillStyle='#fff4d8'; m.fillRect(5,5,W-10,H-10);
       const lit=Math.floor(t*6); let k=0; const bulb=(x,y)=>{ m.fillStyle=((k++)+lit)%3===0?'#ffffff':'#ffd23f'; m.fillRect(x,y,1,1); };
       for (let x=3;x<W-3;x+=4) bulb(x,1); for (let y=4;y<H-3;y+=4) bulb(W-2,y); for (let x=W-4;x>=3;x-=4) bulb(x,H-2); for (let y=H-4;y>=4;y-=4) bulb(1,y);
-      const tw=pfW('DUNK!',2); pfDraw(m,'DUNK!',Math.round(W/2-tw/2),8,'#8a1424',2); pfDraw(m,'DUNK!',Math.round(W/2-tw/2),7,(Math.floor(t*2)%3===0)?'#ff5c8a':'#e03048',2);
+      pfDraw(m,'DUNK!',Math.round(W/2-tw/2),6,'#8a1424',2); pfDraw(m,'DUNK!',Math.round(W/2-tw/2),5,(Math.floor(t*2)%3===0)?'#ff5c8a':'#e03048',2);
       // little target and "1 COIN"
-      { const tx=Math.round(W/2-(pfW('1 COIN')+9)/2)+3; for (const [r,c] of [[3,'#e03048'],[2,'#f8f8f0'],[1,'#e03048']]){ m.fillStyle=c; m.fillRect(tx-r,24-r,r*2+1,r*2+1); }
-        pfDraw(m,'1 COIN',tx+6,22,'#1c4aa8'); }
-      const [px,py]=P(f.gx+0.5,f.gy+0.55,0), X=Math.round(px)+10, Y=Math.round(py);
-      ellPx(X,Y+1,14,3,'rgba(40,80,20,0.3)');
-      for (const dx of [-17,16]){ g.fillStyle=INK; g.fillRect(X+dx-1,Y-26,4,27); g.fillStyle='#a86a34'; g.fillRect(X+dx,Y-26,2,26); g.fillStyle='#c88a50'; g.fillRect(X+dx,Y-26,1,26); }
-      g.drawImage(cv, X-W/2, Y-26-H+4);
+      { const tx=Math.round(W/2-(pfW('1 COIN')+8)/2)+2; for (const [r,c] of [[2,'#e03048'],[1,'#f8f8f0'],[0,'#e03048']]){ m.fillStyle=c; m.fillRect(tx-r,19-r,r*2+1,r*2+1); }
+        pfDraw(m,'1 COIN',tx+5,17,'#1c4aa8'); }
+      const [px,py]=P(f.gx+0.5,f.gy+0.55,0), X=Math.round(px)+4, Y=Math.round(py);
+      ellPx(X,Y+1,11,3,'rgba(40,80,20,0.3)');
+      for (const dx of [-13,12]){ g.fillStyle=INK; g.fillRect(X+dx-1,Y-18,4,19); g.fillStyle='#a86a34'; g.fillRect(X+dx,Y-18,2,18); g.fillStyle='#c88a50'; g.fillRect(X+dx,Y-18,1,18); }
+      g.drawImage(cv, Math.round(X-W/2), Y-18-H+4);
       break; }
     case 'dunktarget': {
       const [px,py]=P(f.gx+0.5,f.gy+0.5,0), X=Math.round(px), Y=Math.round(py);
@@ -1719,13 +1738,13 @@ function drawFurn(f,t){
       if (X){ for (const u of along) for (const v of [0.3,0.7]) box(f.gx+u-0.03,f.gy+v-0.03,0.06,0.06,7,W3,W3,'#5e3418');
         box(f.gx+0.08,f.gy+0.22,L-0.16,0.56,2,W1,W2,W3,0,7);
         for (const v of [0.4,0.6]) linePx(...P(f.gx+0.1,f.gy+v,9),...P(f.gx+L-0.1,f.gy+v,9),W2);
-        for (const u of along) box(f.gx+u-0.03,f.gy+0.16,0.06,0.06,10,W3,W3,'#5e3418',0,7);
-        box(f.gx+0.08,f.gy+0.14,L-0.16,0.08,4,W1,W2,W3,0,13); }
+        for (const u of along) box(f.gx+u-0.03,f.gy+0.16,0.06,0.06,15,W3,W3,'#5e3418',0,7);
+        box(f.gx+0.08,f.gy+0.14,L-0.16,0.08,3,W1,W2,W3,0,12); box(f.gx+0.08,f.gy+0.14,L-0.16,0.08,4,W1,W2,W3,0,18); }
       else { for (const v of along) for (const u of [0.3,0.7]) box(f.gx+u-0.03,f.gy+v-0.03,0.06,0.06,7,W3,W3,'#5e3418');
         box(f.gx+0.22,f.gy+0.08,0.56,L-0.16,2,W1,W2,W3,0,7);
         for (const u of [0.4,0.6]) linePx(...P(f.gx+u,f.gy+0.1,9),...P(f.gx+u,f.gy+L-0.1,9),W2);
-        for (const v of along) box(f.gx+0.16,f.gy+v-0.03,0.06,0.06,10,W3,W3,'#5e3418',0,7);
-        box(f.gx+0.14,f.gy+0.08,0.08,L-0.16,4,W1,W2,W3,0,13); }
+        for (const v of along) box(f.gx+0.16,f.gy+v-0.03,0.06,0.06,15,W3,W3,'#5e3418',0,7);
+        box(f.gx+0.14,f.gy+0.08,0.08,L-0.16,3,W1,W2,W3,0,12); box(f.gx+0.14,f.gy+0.08,0.08,L-0.16,4,W1,W2,W3,0,18); }
       break; }
     case 'hayseat': box(f.gx+0.1,f.gy+0.15,0.8,0.7,10,'#f8d030','#e0b020','#b88818');
       { g.fillStyle='#c09018'; for (let k=0;k<6;k++) g.fillRect(sx-10+k*4,sy-6-((k*3)%3),1,2); g.fillStyle='#f8e888'; g.fillRect(sx-6,sy-12,5,1); g.fillStyle='#884020'; g.fillRect(sx-1,sy-10,1,9); } break;
@@ -2606,12 +2625,12 @@ function openLogo(){ closeAll(); shopImgEl.src=LOGO.src; shopImgEl.style.backgro
 document.getElementById('shopclose').addEventListener('click', ()=>closeAll());
 const menu=document.getElementById('menu'), emenu=document.getElementById('emenu'), logbox=document.getElementById('logbox'), pick=document.getElementById('pick');
 let curMenu=null, menuIdx=0;
-function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || (typeof tblEl!=='undefined' && tblEl.style.display==='block') || (typeof dashEl!=='undefined' && dashEl.style.display==='block') || (typeof sndEl!=='undefined' && sndEl.style.display==='block') || (typeof dkEl!=='undefined' && dkEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
+function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || (typeof tblEl!=='undefined' && tblEl.style.display==='block') || (typeof dashEl!=='undefined' && dashEl.style.display==='block') || (typeof sndEl!=='undefined' && sndEl.style.display==='block') || (typeof dkEl!=='undefined' && dkEl.style.display==='block') || (typeof jobsEl!=='undefined' && jobsEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
 function items(m){ return [...m.children]; }
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
   const a=el.dataset.a;
@@ -4709,6 +4728,36 @@ dkCv.addEventListener('pointerdown', e=>{ e.preventDefault(); dunkTap(); });
 document.getElementById('dk_throw').addEventListener('click', dunkTap);
 document.getElementById('dk_close').addEventListener('click', ()=>{ dkEl.style.display='none'; });
 addEventListener('keydown', e=>{ if (dkEl.style.display==='block' && (e.code==='Space'||e.code==='Enter')){ e.preventDefault(); e.stopImmediatePropagation(); dunkTap(); } }, true);
+
+// ======================= JOB BOARD: ways to earn coins in every room =======================
+// Numbers match the server's payouts. GO walks you to the job (or takes you to its room first).
+const JOBS = {
+  lounge: [
+    {i:'🍸', t:'Work the bar', h:'Tap the velvet rope by the bar and pour drinks.', p:'1 coin / 30 sec', go:()=>ropeClick()},
+    {i:'🕹️', t:'Arcade high scores', h:'Hay Catch or Llama Dash at the arcade cabinet.', p:'up to 10 + 3 for a best', go:()=>walkTo(ARC_X,1,'arcade')},
+    {i:'🎲', t:'Table games', h:'Sit at a lounge table and bet against THE HOUSE (or play free).', p:'win your bet', risk:true, go:()=>walkTo(2,8)} ],
+  barn: [
+    {i:'🥕', t:'Harvest carrots', h:'Tap a ripe carrot in the farm patch. They grow back in 90 seconds.', p:'1 coin each', go:()=>walkTo(3,12)},
+    {i:'🎣', t:'Go fishing', h:'Stand by the pond and press FISH.', p:'1, 2 or 5 a fish', go:()=>walkTo(14,5,'fish')},
+    {i:'⚾', t:'Dunk tank', h:'Throw at the target by the barn. A bullseye dunks the llama on the seat.', p:'1 a throw, 3 a dunk', risk:true, go:()=>walkTo(DUNK_TGT[0],DUNK_TGT[1]+2,'dunk')},
+    {i:'💦', t:'Sit on the dunk tank', h:'Be the llama on the seat. Get paid every time someone dunks you.', p:'1 coin a dunk', go:()=>walkTo(DUNK_SEAT[0],DUNK_SEAT[1])} ],
+  arena: [ {i:'💦', t:'Spit Arena rounds', h:'60-second spit-ball rounds. Bonus for your first round each day and for winning.', p:'up to 6 + bonuses', go:()=>openArena()} ],
+  lanes: [ {i:'🎳', t:'Hay bale bowling', h:'5-frame games. Turkeys and a perfect game pay extra.', p:'up to 15 + bonuses', go:()=>openBowl()} ],
+  casino: [
+    {i:'🎰', t:'Slot machines', h:'Three kinds of slots along the back wall. Pick your bet.', p:'games of chance', risk:true, go:()=>walkTo(5,1)},
+    {i:'🎡', t:'Roulette', h:'Sit at the wheel in the middle and place a bet.', p:'games of chance', risk:true, go:()=>walkTo(5,5)},
+    {i:'🃏', t:'Blackjack', h:'Sit at a blackjack table and beat the dealer.', p:'games of chance', risk:true, go:()=>walkTo(10,5)} ] };
+const jobsEl=document.getElementById('jobsbox');
+function openJobs(){ closeAll(); const order=[curRoom, ...ROOMS.filter(r=>r!==curRoom)]; let h='';
+  for (const r of order){ const list=JOBS[r]||[]; if (!list.length) continue;
+    h+=`<div class="jroom ${r===curRoom?'here':''}">${r===curRoom?'📍 HERE IN ':''}${ROOM_NAMES[r]}</div>`;
+    list.forEach((j,k)=>{ h+=`<div class="job ${j.risk?'risk':''}"><span class="ji">${j.i}</span><span class="jt"><b>${j.t}</b><small>${j.h}</small><span class="jp">${j.p}${j.risk?' · you can lose coins':''}</span></span><button class="gbbtn y" data-r="${r}" data-k="${k}">${r===curRoom?'GO':'GO ▶'}</button></div>`; }); }
+  document.getElementById('jobs_body').innerHTML=h;
+  for (const b of jobsEl.querySelectorAll('[data-r]')) b.addEventListener('click', ()=>{ const r=b.dataset.r, j=JOBS[r][+b.dataset.k]; jobsEl.style.display='none';
+    if (r!==curRoom){ showSwap(r); return; } if (me.p==='sit' && !(j.t==='Sit on the dunk tank')) { me.p='stand'; sendPresence(true); } j.go(); });
+  jobsEl.style.display='block'; }
+document.getElementById('jobsbtn').addEventListener('click', ()=>{ ensureAudio(); openJobs(); });
+document.getElementById('jobs_close').addEventListener('click', ()=>{ jobsEl.style.display='none'; });
 
 startGate();
 let last = performance.now();
