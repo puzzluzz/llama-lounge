@@ -758,7 +758,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22a";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22b";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -2176,7 +2176,7 @@ function drawFurn(f,t){
       const quilt=()=>{ B([0.66,1.9,0.08,0.92],2,'#f878a8','#d85888','#b84070',10); B([0.58,0.72,0.08,0.92],2,'#ffffff','#e8e4ee','#d0cad8',10.5);
         // patchwork squares on top of the quilt
         for (let i=0;i<4;i++) for (let j=0;j<3;j++){ if ((i+j)%2) continue; const k=R(0.78+i*0.27,0.78+i*0.27+0.2,0.16+j*0.26,0.16+j*0.26+0.18); polyPx([P(k[0],k[1],12),P(k[0]+k[2],k[1],12),P(k[0]+k[2],k[1]+k[3],12),P(k[0],k[1]+k[3],12)],'#ffa8c8'); } };
-      if (f.part==='front'){ quilt(); break; }
+      if (f.part==='front'){ quilt(); B([0.7,1.75,0.24,0.76],2,'#f878a8','#d85888','#b84070',12); B([0.82,1.5,0.32,0.68],1,'#ff9ac0','#e070a0','#c85888',14); break; }
       if (headFar){ pillow(); quilt(); } else { quilt(); pillow(); }
       if (headFar) foot(); else head();
       break; }
@@ -3598,11 +3598,11 @@ function drawLlama(o, t, isMe){
   else {
     if (fe>=FLIP_T && fe<FLIP_T+350){ const k=(fe-FLIP_T)/350; g.fillStyle=k<0.5?'#f8f070':'#f8f8f8'; for(let a=0;a<6;a++){ const r=4+k*10; g.fillRect(x0+14+Math.round(Math.cos(a*1.05)*r), y0+44+Math.round(Math.sin(a*1.05)*r*0.4), 2, 1); } }
     if (seat && seat.dunk){ const dp=dunkDepth(); dunkClip(sy-21, ()=>g.drawImage(sprite(o.c, dir, fr, pose, WR), x0+jit, y0-gulp+dp)); if (dp>0) dunkSplash(sx, sy-21, t); }
-    else if (seat && seat.bed){ const B2=seat.bed, [bx,by]=P(B2.cx+B2.hx*0.12, B2.cy+B2.hy*0.12, 15); const X=Math.round(bx), Y=Math.round(by);   // lying down: the llama on its side, head on the pillow
-      g.save(); g.translate(X, Y); g.rotate(B2.headLeft ? -Math.PI/2 : Math.PI/2); g.drawImage(sprite(o.c, B2.headLeft?'fr':'fl', 0, 'stand', WR), -14, -23); g.restore();
-      if (!o.leaving) llamaHits.push({id: isMe?null:o.id, x0:X-23, x1:X+23, y0:Y-14, y1:Y+14});
-      if (Math.floor(t*0.8)%3===0){ g.fillStyle='#e8ecff'; pfDraw(g,'z',X+(B2.headLeft?-22:18),Y-20-Math.floor(t*2)%3,'#e8ecff',1); }
-      return [X, Y-16]; }
+    else if (seat && seat.bed){ const B2=seat.bed, [bx,by]=P(B2.cx+B2.hx*0.62, B2.cy+B2.hy*0.62, 12); const X=Math.round(bx), Y=Math.round(by);   // in bed: tucked under the quilt, just the head resting on the pillow
+      const spr=sprite(o.c, B2.headLeft?'fr':'fl', 0, 'stand', WR), HH=25; g.drawImage(spr, 0, 0, 28, HH, X-14, Y-HH, 28, HH);
+      if (!o.leaving) llamaHits.push({id: isMe?null:o.id, x0:X-12, x1:X+12, y0:Y-HH, y1:Y});
+      if (Math.floor(t*0.8)%3===0) pfDraw(g,'z',X+(B2.headLeft?12:-16),Y-HH-2-Math.floor(t*2)%3,'#e8ecff',1);
+      return [X, Y-HH-2]; }
     else g.drawImage(sprite(o.c, dir, fr, pose, WR), x0+jit, y0-gulp); }
   if (jit){ g.fillStyle='#a8e0f8'; g.fillRect(x0+22,y0+6,2,3); g.fillStyle='#f8f8f8'; g.fillRect(x0+22,y0+6,1,1); }
   if (!o.leaving) llamaHits.push({id: isMe?null:o.id, x0:x0+4, x1:x0+24, y0:y0, y1:y0+46});
