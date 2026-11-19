@@ -758,7 +758,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-21u";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-21v";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1512,7 +1512,7 @@ const PR_WALL={ lavender:['#b8a0f0','#d0b8f8','#7860c8','#8870d8'], cream:['#f2e
 const PR_FLOOR={ wood:['#d8a468','#cf9a5e','#a87440'], checker:['#f4f0f8','#3a3458','#d8d0e8'], carpet:['#4a64c8','#3a54b0','#6a84e0'], marble:['#ece8f0','#d8d2e2','#b8b0c8'], grass:['#6ab04a','#5aa040','#88c860'] };
 function buildPlayerWorld(){
   clearWorld(); const R=PRD[curRoom]; if (!R) return;
-  for (const f of R.furn||[]){ const D=FURN_DEF[f.item]; if (!D) continue; FURN.push({...D.mk(f.rot||0), gx:f.gx, gy:f.gy, fid:f.id, item:f.item, rot:f.rot||0}); if (D.wall) continue; const tl=furnTiles(f.item,f.gx,f.gy,f.rot); if (D.seat) SEATS.push({gx:f.gx,gy:f.gy,dir:SEAT_DIRS[f.rot||0],lift:D.seat}); else block(f.gx,f.gy); for (const [tx,ty] of tl.slice(1)){ if (D.seatAll) SEATS.push({gx:tx,gy:ty,dir:SEAT_DIRS[f.rot||0],lift:D.seat}); else block(tx,ty); } }
+  for (const f of R.furn||[]){ const D=FURN_DEF[f.item]; if (!D) continue; FURN.push({...D.mk(f.rot||0), gx:f.gx, gy:f.gy, fid:f.id, item:f.item, rot:f.rot||0, off:!!f.off}); if (D.wall) continue; const tl=furnTiles(f.item,f.gx,f.gy,f.rot); if (D.seat) SEATS.push({gx:f.gx,gy:f.gy,dir:SEAT_DIRS[f.rot||0],lift:D.seat}); else block(f.gx,f.gy); for (const [tx,ty] of tl.slice(1)){ if (D.seatAll) SEATS.push({gx:tx,gy:ty,dir:SEAT_DIRS[f.rot||0],lift:D.seat}); else block(tx,ty); } }
 }
 function buildPlayerBG(){
   g = bg.getContext('2d'); g.clearRect(0,0,bg.width,bg.height);
@@ -2145,6 +2145,7 @@ function drawFurn(f,t){
       { const k=R(0.88,1.12,0.42,0.6); box(k[0],k[1],k[2],k[3],3,'#2a2a3a','#1a1a26','#121220',0,10); }
       { const k=R(0.62,1.38,0.62,0.76); box(k[0],k[1],k[2],k[3],2,'#3a3a4a','#22222e','#1a1a26',0,10); }
       { const k=R(0.1,1.9,0.46,0.56); box(k[0],k[1],k[2],k[3],27,'#2a2a3a','#1a1a26','#121220',0,13); }
+      if (f.off){ const vs=0.56; polyPx([FL(0.17,vs,15),FL(1.83,vs,15),FL(1.83,vs,38),FL(0.17,vs,38)], '#141822'); { const a2=FL(0.3,34), b2=FL(0.7,22); linePx(a2[0],a2[1],b2[0],b2[1],'rgba(255,255,255,0.16)'); } const k2=FL(1.84,vs,14); g.fillStyle='#a02030'; g.fillRect(Math.round(k2[0]),Math.round(k2[1]),1,1); break; }
       const ph=Math.floor(t*0.8)%4, SC=[['#58c8f0','#3aa860','#2a8048'],['#f8a060','#f878a8','#c05888'],['#1a2a60','#f8e070','#3a4a90'],['#a8e0f8','#f8f8f8','#c8d8e8']][ph], vs=0.56;
       polyPx([FL(0.17,vs,22),FL(1.83,vs,22),FL(1.83,vs,38),FL(0.17,vs,38)], SC[0]);
       polyPx([FL(0.17,vs,15),FL(1.83,vs,15),FL(1.83,vs,23),FL(0.17,vs,23)], SC[1]);
@@ -2192,6 +2193,7 @@ function drawFurn(f,t){
       box(x+0.42,y+0.42,0.16,0.16,2,'#2a2a3a','#1a1a26','#121220',0,10);
       box(x+0.12,y+0.44,0.76,0.1,19,'#2a2a3a','#1a1a26','#121220',0,12);
       const FL=(u,v)=>P(x+0.12+0.76*u, y+0.54, v), ph=Math.floor(t*1.3)%4, sc=[['#58c8f0','#3a9ad0'],['#f878a8','#d05888'],['#7fe0a0','#4ab070'],['#f8d030','#d0a018']][ph];
+      if (f.off){ polyPx([FL(0.07,14),FL(0.93,14),FL(0.93,29),FL(0.07,29)], '#141822'); { const a2=FL(0.18,27), b2=FL(0.4,22); linePx(a2[0],a2[1],b2[0],b2[1],'rgba(255,255,255,0.18)'); } const k2=FL(0.88,13); g.fillStyle='#a02030'; g.fillRect(Math.round(k2[0]),Math.round(k2[1]),1,1); break; }
       polyPx([FL(0.07,14),FL(0.93,14),FL(0.93,29),FL(0.07,29)], sc[0]);
       for (let v=15; v<29; v+=3){ const a2=FL(0.08,v), b2=FL(0.92,v); g.globalAlpha=0.35; linePx(a2[0],a2[1],b2[0],b2[1],sc[1]); g.globalAlpha=1; }
       { const a2=FL(0.14,27), b2=FL(0.34,27); linePx(a2[0],a2[1],b2[0],b2[1],'rgba(255,255,255,0.7)'); const c2=FL(0.14,25); g.fillStyle='rgba(255,255,255,0.5)'; g.fillRect(Math.round(c2[0]),Math.round(c2[1]),1,1); }
@@ -2306,7 +2308,7 @@ function drawFurn(f,t){
       wbox(f.gx+0.12,f.gy+0.12,0.76,0.76,3,'#f0a050','#c86828','#984818',0,13,'#c06020','t');
       // little lamp
       g.fillStyle=INK; g.fillRect(sx-2,sy-22,4,7); g.fillStyle='#f8d030'; g.fillRect(sx-1,sy-21,2,5);
-      const lit=lampOn();
+      const lit = f.fid ? !f.off : lampOn();   // a lamp in someone's room has its own switch
       if (lit){ g.fillStyle='rgba(248,232,120,0.28)'; ellPx(sx,sy-24,16,11,'rgba(248,232,120,0.22)'); ellPx(sx,sy-24,10,7,'rgba(248,240,160,0.3)'); }
       g.fillStyle=INK; g.fillRect(sx-5,sy-29,10,8); g.fillStyle=lit?'#f8e870':'#a8a090'; g.fillRect(sx-4,sy-28,8,6); g.fillStyle=lit?'#f8f8f8':'#c8c0b0'; g.fillRect(sx-3,sy-27,2,4);
       if (lit){ g.fillStyle='#f8e870'; g.fillRect(sx-7,sy-25,1,1); g.fillRect(sx+6,sy-25,1,1); g.fillRect(sx,sy-32,1,1); }
@@ -5209,7 +5211,10 @@ function prHit(lx, ly){ let best=null;
     best={f, tx, ty, depth}; }
   return best; }
 // tap a piece: sit on it if it's a seat (the seat you tapped, or the nearest one), otherwise walk up next to it
-function prTapPiece(hit){ if ((FURN_DEF[hit.f.item]||{}).wall) return; const f=hit.f, tl=furnTiles(f.item,f.gx,f.gy,f.rot);
+const FURN_SWITCH=new Set(['tv','bigtv','lamp']);
+function prTapPiece(hit){ if ((FURN_DEF[hit.f.item]||{}).wall) return;
+  if (FURN_SWITCH.has(hit.f.item)){ const f=hit.f; f.off=!f.off; try{ ensureAudio(); if (actx){ const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.value=f.off?320:640; gn.gain.value=0.05*(svol/100); o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime+0.05); } }catch(_){}
+    NET.act('pr_toggle',{fid:f.fid}).then(r=>{ if (!r.ok){ f.off=!f.off; localMsg(r.msg||'That switch is stuck.'); } }); return; } const f=hit.f, tl=furnTiles(f.item,f.gx,f.gy,f.rot);
   const seats=SEATS.filter(q=>tl.some(([x,y])=>x===q.gx&&y===q.gy)); if (seats.length){ const q=seats.find(q=>q.gx===hit.tx&&q.gy===hit.ty) || seats[0]; walkTo(q.gx,q.gy); return; }
   const near=[]; for (const [x,y] of tl) for (const [dx,dy] of [[0,1],[1,0],[-1,0],[0,-1]]){ const a=x+dx, b=y+dy; if (a>=0&&b>=0&&a<N&&b<NY&&walkable(a,b)&&!seatAt(a,b)) near.push([a,b]); }
   near.sort((p,q)=>Math.hypot(p[0]-me.gx,p[1]-me.gy)-Math.hypot(q[0]-me.gx,q[1]-me.gy)); if (near.length) walkTo(near[0][0],near[0][1]); }

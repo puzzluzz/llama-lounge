@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-21u";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-21v";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -92,6 +92,7 @@ const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6
 // what the store sells right now: one piece per category (the rest stay placeable for anyone who already owns them)
 // vending machines players can put in their rooms, and what each one sells
 const PV_ITEMS = { vending: { soda: 1, juice: 1, shake: 2 }, snackvend: { chips: 1, candy: 1, cookie: 2 } };
+const FURN_SWITCH = new Set(["tv", "bigtv", "lamp"]);   // things you can tap to switch on or off
 const FURN_SIZE = { bed: 2, loveseat: 2, sofa: 3, bigtv: 2 };   // pieces bigger than one tile
 const FURN_SIDEWAYS = new Set(["loveseat", "sofa"]);   // couches run along their back, so they turn the other way
 const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend"]);
@@ -580,6 +581,7 @@ export class Lounge extends DurableObject {
       "CREATE TABLE IF NOT EXISTS pfurn (id INTEGER PRIMARY KEY AUTOINCREMENT, room INTEGER NOT NULL, item TEXT NOT NULL, gx INTEGER NOT NULL, gy INTEGER NOT NULL, rot INTEGER NOT NULL DEFAULT 0)",
       "CREATE INDEX IF NOT EXISTS pfurn_room ON pfurn (room)",
       "CREATE TABLE IF NOT EXISTS finv (uid INTEGER NOT NULL, item TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (uid, item))"]) await this.env.DB.prepare(q).run();
+    try { await this.env.DB.prepare("ALTER TABLE pfurn ADD COLUMN off INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {}   // TVs and lamps can be switched off (already there after the first time)
     this.prReady = true; this.prPriv = this.prPriv || new Map(); this.letIn = this.letIn || new Map(); this.knocks = this.knocks || new Map(); }
   async prRoom(id) { await this.prTables(); const r = await this.env.DB.prepare("SELECT r.*, u.name AS oname FROM prooms r JOIN users u ON u.id = r.owner WHERE r.id = ?").bind(id).first(); if (r) this.prPriv.set(r.id, !!r.priv); return r; }
   async prCanEnter(a, r) {
@@ -591,7 +593,7 @@ export class Lounge extends DurableObject {
   prOut(r) { return { id: r.id, name: r.name, owner: r.oname.toUpperCase(), priv: !!r.priv, wall: r.wall, floor: r.floor }; }
   prCount(id) { const rm = "p:" + id, seen = new Set(); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === rm) seen.add(x.uid); } return seen.size; }
   toRoom(rm, obj) { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === rm) { try { w.send(s); } catch (e) {} } } }
-  async prFurn(id) { return ((await this.env.DB.prepare("SELECT id, item, gx, gy, rot FROM pfurn WHERE room = ? ORDER BY id").bind(id).all()).results || []).filter((f) => FURN_ITEMS[f.item]); }
+  async prFurn(id) { return ((await this.env.DB.prepare("SELECT id, item, gx, gy, rot, off FROM pfurn WHERE room = ? ORDER BY id").bind(id).all()).results || []).filter((f) => FURN_ITEMS[f.item]); }
   async prList(a) {
     await this.prTables(); await this.frTable();
     const mine = await this.env.DB.prepare("SELECT r.*, u.name AS oname FROM prooms r JOIN users u ON u.id = r.owner WHERE r.owner = ?").bind(a.uid).first();
@@ -734,6 +736,17 @@ export class Lounge extends DurableObject {
     await this.env.DB.prepare("INSERT INTO pfurn (room, item, gx, gy, rot) VALUES (?, ?, ?, ?, ?)").bind(r.id, k, gx, gy, rot).run();
     const nf = await this.prFurn(r.id); this.toRoom("p:" + r.id, { t: "prf", room: r.id, furn: nf });
     return { ok: true, furn: nf, storage: await this.furnStorage(a.uid) };
+  }
+  async prToggle(ws, a, m) {   // switch a TV or lamp on or off: anyone in the room can, a couple of times a second at most
+    const rm = a.pres && a.pres.rm, rid = rm && rm.startsWith("p:") ? Math.floor(+rm.slice(2) || 0) : 0;
+    if (!rid || a.proom !== rid) return { ok: false, msg: "Walk into the room first." };
+    const now = Date.now(); if (!a.tg || now - a.tg[0] > 10000) a.tg = [now, 0]; if (++a.tg[1] > 20) { ws.serializeAttachment(a); return { ok: false, msg: "Easy on the switch!" }; } ws.serializeAttachment(a);
+    await this.prTables();
+    const f = await this.env.DB.prepare("SELECT id, item FROM pfurn WHERE id = ? AND room = ?").bind(Math.floor(+m.fid || 0), rid).first();
+    if (!f || !FURN_SWITCH.has(f.item)) return { ok: false, msg: "That doesn't switch on or off." };
+    await this.env.DB.prepare("UPDATE pfurn SET off = 1 - off WHERE id = ?").bind(f.id).run();
+    const nf = await this.prFurn(rid); this.toRoom("p:" + rid, { t: "prf", room: rid, furn: nf });
+    return { ok: true };
   }
   async prMove(a, m) {   // drag a placed piece to another tile (same checks as placing it)
     const r = await this.prOwnRoomHere(a); if (!r) return { ok: false, msg: "Go into your own room to move furniture." };
@@ -1101,6 +1114,7 @@ export class Lounge extends DurableObject {
       case "pr_kick": return this.prKick(a, m);
       case "pr_place": return this.prPlace(a, m);
       case "pr_move": return this.prMove(a, m);
+      case "pr_toggle": return this.prToggle(ws, a, m);
       case "pr_rot": return this.prEditPiece(a, m, "rot");
       case "pr_pick": return this.prEditPiece(a, m, "pick");
       case "pr_staff": return this.prStaff(a, m);
