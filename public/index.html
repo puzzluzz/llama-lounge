@@ -753,7 +753,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-21b";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-21d";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -2071,6 +2071,7 @@ function drawFurn(f,t){
     case 'vending': { // drinks machine against the back wall: red cabinet, lit sign, a window full of bottles
       const a=f.gx+0.12, b=f.gy+0.12, c=f.gx+0.88, e=f.gy+0.86, H=46;
       box(a,b,c-a,e-b,H,'#f0f0f8','#e03048','#b0203a');
+      if (curRoom==='store'){ const q=[P(a,e,0),P(c,e,0),P(c,b,0),P(a,b,H),P(c,e,H)]; vendHit={x0:Math.min(...q.map(v=>v[0]))-2, x1:Math.max(...q.map(v=>v[0]))+2, y0:Math.min(...q.map(v=>v[1]))-2, y1:Math.max(...q.map(v=>v[1]))+2}; }
       const FL=(u,v)=>P(a+(c-a)*u, e, v), quad=(u0,u1,v0,v1,col)=>polyPx([FL(u0,v0),FL(u1,v0),FL(u1,v1),FL(u0,v1)],col);
       quad(0.08,0.66,12,40,INK); quad(0.11,0.63,13,39,'#1e2a40');
       const cols=['#f84848','#48c048','#f878b8','#f8d030'];
@@ -2661,7 +2662,7 @@ function doAction(a){
   else if (a==='juke'){ if(!near(JUKE_X,0)) return; face(JUKE_X,0); nextSong(); sendPresence(true); }
   else if (a==='order'){ const id = BAR_IDS[Math.floor(Math.random()*BAR_IDS.length)]; me.h=id; localMsg(`You ordered a ${DRINKS[id].label}!`); sendPresence(true); }
   else if (a==='grab'){ const st=(me.p==='sit')?seatAt(me.gx,me.gy):null; if(!st||st.gy!==2) return; openFw('bar'); return; const gx=me.gx;
-    NET.act('drink').then(r=>{ if (!r.ok){ localMsg(r.msg||'Could not buy a drink.'); return; } tkSet(r.tk); me.h=BAR_IDS[gx%BAR_IDS.length]; me.hl=5; localMsg(`You bought a ${DRINKS[me.h].label} for 1 TOKEN!`); sendPresence(true); }); }
+    NET.act('drink').then(r=>{ if (!r.ok){ localMsg(r.msg||'Could not buy a drink.'); return; } tkSet(r.tk); me.h=BAR_IDS[gx%BAR_IDS.length]; me.hl=5; me.autoEat=true; localMsg(`You bought a ${DRINKS[me.h].label} for 1 TOKEN!`); sendPresence(true); }); }
   else if (a==='sip'||a==='bite'){ if(!me.h) return; const now=performance.now(); if (now-me.sipStart<SIP_T) return; me.sipStart=now; me.sipK=(me.sipK+1)%10000;
     setTimeout(()=>{ if(!me.h) return; NET.act('sip').then(r=>{ if (r && r.nd) ndSet(r.nd); }); me.hl=Math.max(0,(me.hl||5)-1); if(me.hl===0){ localMsg(DRINKS[me.h].food ? `Yum! You ate the whole ${DRINKS[me.h].label}.` : `You finished your ${DRINKS[me.h].label}!`); me.h=null; } sendPresence(true); }, SIP_T);
     sendPresence(true); }
@@ -3722,7 +3723,7 @@ function render(t){
   if (joined) items.push({d: me.x+me.y+0.02, l: me, me:true});
   for (const o of others.values()) if (sameRoom(o)) items.push({d: o.x+o.y+0.01, l: o});
   items.sort((a,b)=>a.d-b.d);
-  overlayItems.length = 0; llamaHits.length = 0; cupHits.length = 0; itemHits.length = 0;
+  overlayItems.length = 0; llamaHits.length = 0; cupHits.length = 0; itemHits.length = 0; vendHit = null;
   for (const it of items){
     if (it.f) drawFurn(it.f, t);
     else { const fa = (!it.me && it.l.leaving) ? Math.max(0, Math.min(1, 1-(performance.now()-it.l.leaving)/LEAVE_T)) : 1; g.globalAlpha=fa; const pos = drawLlama(it.l, t, it.me); g.globalAlpha=1; overlayItems.push({l:it.l, x:pos[0], y:pos[1], me:it.me, balloon:pos[2], fa}); }
@@ -3866,7 +3867,7 @@ document.getElementById('pm_close').addEventListener('click', ()=>closeAll());
 
 // ======================= SPIT =======================
 const llamaHits=[]; const spits=[];
-const itemHits=[];   // where each store item was drawn this frame, so tapping the item itself opens it
+const itemHits=[]; let vendHit=null;   // the vending machine, so tapping anywhere on it works   // where each store item was drawn this frame, so tapping the item itself opens it
 function llamaWorld(l){ const seat=(l.p==='sit')?seatAt(Math.floor(l.x),Math.floor(l.y)):null; const [wx,wy]=proj(l.x,l.y); return [wx, wy-45-(seat?seat.lift:0)+(l.p==='sit'?6:0)]; }
 function launchSpit(from, to, dir){
   const [fx,fy]=llamaWorld(from); const fdir=dir||from.d||'fr';
@@ -4090,16 +4091,19 @@ function switchRoom(r){
   localMsg(r==='barn' ? 'You stepped outside to LLAMA ACRES!' : r==='casino' ? 'Welcome to the LLAMA CASINO! Feeling lucky?' : r==='arena' ? 'Welcome to the SPIT ARENA! Press PLAY to start a round.' : r==='lanes' ? 'Welcome to LLAMA LANES! Press BOWL to roll a game.' : r==='store' ? 'Welcome to the LLAMA STORE! Tap a shirt on the wall, or the counter to see them all.' : 'You headed back into the LLAMA LOUNGE!');
   setTimeout(()=>walkTo(...spawnSpot(r)), 400);
 }
+// tap the vending machine: open it if you're next to it, otherwise walk over and open it when you get there
+function vendGo(){ if (me.p!=='sit' && nearStand(STANDS.vend)){ openFw('vend'); return; } if (me.p==='sit') doAction('stand'); if (!walkTo(STORE_VEND[0],STORE_VEND[1]+1,'vend')) localMsg('Walk up to the vending machine.'); }
 function storePointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
   for (let i=itemHits.length-1;i>=0;i--){ const h=itemHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ openWardrobe('shop', h.id); return; } }
+  if (vendHit && lx>=vendHit.x0&&lx<=vendHit.x1&&ly>=vendHit.y0&&ly<=vendHit.y1){ vendGo(); return; }
   for (const h of shopHit){ if (lx>=h.x0&&lx<h.x1&&ly>=h.y0&&ly<=h.y1){ openShop(h.i); return; } }
   { const lcx=OX-210, lcy=OY+105-75.5; if (Math.abs(lx-lcx)<=13 && Math.abs(ly-lcy)<=13){ openLogo(); return; } }
   for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
   const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
   { const it=rackItemAt(gx,gy); if (it){ openWardrobe('shop', it); return; } }
   if (STORE_CASE.some(([x,y])=>x===gx&&y===gy)){ openWardrobe('shop', gx===7 ? 'stars' : 'shades'); return; }
-  if (gx===STORE_VEND[0] && gy===STORE_VEND[1]){ if (nearStand(STANDS.vend)) openFw('vend'); else { walkTo(STORE_VEND[0],STORE_VEND[1]+1); localMsg('Walk up to the vending machine and press DRINKS.'); } return; }
+  if (gx===STORE_VEND[0] && gy===STORE_VEND[1]){ vendGo(); return; }
   if (STORE_COUNTER.some(([x,y])=>x===gx&&y===gy)){ openCatalog(); return; }
   if (walkable(gx,gy)){ walkTo(gx,gy); return; }
   let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } }
@@ -4185,8 +4189,8 @@ document.getElementById('fw_close').addEventListener('click', ()=>{ fwEl.style.d
 const FOOD_FILL = { soda:{th:30}, juice:{th:35,hu:5}, shake:{th:25,hu:20}, cider:{th:40}, caramel:{th:40,hu:8}, capple:{hu:30}, corn:{hu:35}, pie:{hu:45}, nachos:{hu:35,th:-5}, fries:{hu:35,th:-5}, burger:{hu:55} };   // same as the server
 function buyAt(k,id){ ensureAudio(); document.getElementById('fw_msg').textContent = DRINKS[id] && !DRINKS[id].food ? 'POURING...' : 'WRAPPING IT UP...';
   NET.act('buy',{s:k, k:id}).then(r=>{ if (!r.ok){ document.getElementById('fw_msg').textContent=(r.msg||'TRY AGAIN.').toUpperCase(); return; }
-    me.h = DRINKS[r.k] ? r.k : id; me.hl=5; if (r.nd) ndSet(r.nd); if (k!=='bar') face(STANDS[k].gx+(me.gx>STANDS[k].gx?1:0),STANDS[k].gy);
-    tkSet(r.tk, `You bought ${DRINKS[me.h].food?'a':'a cup of'} ${DRINKS[me.h].label}! Tap yourself to ${DRINKS[me.h].food?'take a bite':'sip'}.`); sendPresence(true); fwEl.style.display='none'; }); }
+    me.h = DRINKS[r.k] ? r.k : id; me.hl=5; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; if (r.nd) ndSet(r.nd); if (k!=='bar') face(STANDS[k].gx+(me.gx>STANDS[k].gx?1:0),STANDS[k].gy);
+    tkSet(r.tk, `You bought ${DRINKS[me.h].food?'a':'a cup of'} ${DRINKS[me.h].label}! Your llama ${DRINKS[me.h].food?'is eating':'is drinking'} it now.`); sendPresence(true); fwEl.style.display='none'; }); }
 // ---- carrot patch: harvest ripe plots for tokens (timers kept per player) ----
 const REGROW_MS = 90000;
 const cropState = (store.crops && typeof store.crops==='object') ? store.crops : {};
@@ -4436,8 +4440,11 @@ function updateFish(){
 function startRecast(F){ NET.act('fish_cast').then(r=>{ if (me.fish!==F) return; if (!r.ok){ me.fish=null; sendPresence(true); if (r.afk) afkAsk(); return; } F.st='cast'; F.biteAt=performance.now()+r.bite; sendPresence(true); }); }
 // Browsers slow down timers in background tabs (to about once a minute after 5 minutes), which would make fishing
 // miss its bites. A tiny worker keeps a steady tick going, so fishing carries on while you're in another tab.
-const BG_TICK = (()=>{ try { const w=new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},250)'],{type:'text/javascript'}))); w.onmessage=()=>{ updateFish(); afkTick(); }; return w; } catch(e){ return null; } })();
-if (!BG_TICK) setInterval(()=>{ updateFish(); afkTick(); }, 250);
+// food and drink you buy get eaten or drunk on their own: a sip or bite every couple of seconds until it's gone
+function autoEatTick(){ if (!me.autoEat) return; if (!me.h){ me.autoEat=false; return; } if (me.bar || arcade.on) return;
+  if (performance.now()-me.sipStart > SIP_T+700) doAction(DRINKS[me.h].food ? 'bite' : 'sip'); }
+const BG_TICK = (()=>{ try { const w=new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},250)'],{type:'text/javascript'}))); w.onmessage=()=>{ updateFish(); afkTick(); autoEatTick(); }; return w; } catch(e){ return null; } })();
+if (!BG_TICK) setInterval(()=>{ updateFish(); afkTick(); autoEatTick(); }, 250);
 // ---- "Are you still there?": after 10 minutes with no input, ask; after 2 more minutes with no answer, log out of the room ----
 const AFK_ASK=10*60000, AFK_GRACE=2*60000; let lastInput=Date.now(), afkShownAt=0, afkPing=0, afkTitle=null, afkBlink=0;
 for (const ev of ['pointerdown','keydown','wheel','touchstart']) addEventListener(ev, ()=>{ if (!afkShownAt) lastInput=Date.now(); }, {passive:true, capture:true});
@@ -4484,7 +4491,7 @@ const TIPS = {
   juke:'<b>JUKEBOX</b> Tap it to change the song. Everyone hears it. The ♪ button mutes it for you.',
   lamp:'<b>LAMP</b> Tap the lamp to switch it on and off for everyone.',
   bar:'<b>BAR</b> Tap the cup in front of you to pick it up.',
-  bar2:'<b>DRINK</b> Tap your llama to take a sip. Each cup has 5 sips. MENU > DROP DRINK puts it down.',
+  bar2:'<b>DRINK</b> Your llama drinks it on its own, a sip at a time (5 sips a cup). MENU > DROP DRINK puts it down.',
   table:'<b>TABLE GAMES</b> Tap the table to start HIGH ROLL or HIGH CARD. Anyone sitting here joins in!',
   dance: (matchMedia && matchMedia('(pointer: coarse)').matches) ? '<b>DANCE FLOOR</b> Your llama dances while the jukebox plays. Tap the pink FLIP button to do a FLIP!' : '<b>DANCE FLOOR</b> Your llama dances while the jukebox plays. Press F to do a FLIP!',
   merch:'<b>MERCH WALL</b> Tap a framed shirt to see it in the shop, or the logo over the door to visit the site.',
