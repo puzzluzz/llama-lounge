@@ -217,3 +217,5 @@ No API keys or passwords are involved.
 - **Leaving a player room:** tap the door to walk out, and the room selector pops up.
 - **Admin sign** (`adminsign`): a staff-only wall plaque. Only mods and the owner see the 🛡️ STAFF ONLY category or can buy it (the server checks). Wall items (`FURN_WALL`) go on a tile right next to a wall, hang flat on that wall, and don't take up floor space.
 - **Bigger furniture:** the bed and love seat take 2 tiles, the sofa 3, the big-screen TV 2 (`FURN_SIZE`, same list on the server and the game). The server checks every tile a piece covers when you place or turn it. Couches have a seat on every tile. Wooden pieces get a wood-grain texture (`grain`/`wbox`).
+- **Store halves:** the LLAMA STORE is split. The left half is a furniture showroom (living room, bedroom and a dining set; tap any piece to shop). The right half has the clothing: three racks on a pink rug, the glasses case and the counter. Plates on the back wall read FURNITURE and CLOTHING.
+- **ROOMS sign:** 🏠 ROOMS is now a sign by Friends and Messages (not in the room bar). It shows how many llamas are in player rooms.
