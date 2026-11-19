@@ -371,6 +371,7 @@
   #wd_kind{margin:0 0 8px}
   #wd_body .wdstore{display:flex;flex-direction:column;align-items:center;gap:4px;padding:30px 10px;background:#f6f4fb;border-radius:18px;margin-top:6px} #wd_body .wdbox{font-size:40px} #wd_body .wdstore b{font:800 15px var(--ui)} #wd_body .wdstore small{font:600 13px var(--ui);color:var(--sub)}
   #roomsbox{width:min(calc(100% - 24px),460px)}
+  #pr_body .prq{margin:2px 0 4px}
   #pr_body .prsec{font:800 12px var(--ui);letter-spacing:.06em;color:var(--sub);margin:14px 0 6px}
   #pr_body .prr{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:#f6f4fb;margin-bottom:6px}
   #pr_body .prr .prn{flex:1;min-width:0} #pr_body .prr b{display:block;font:800 14px var(--ui);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis} #pr_body .prr small{font:600 12px var(--ui);color:var(--sub)}
@@ -753,7 +754,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-21d";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-21e";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -4821,7 +4822,7 @@ $id('invbtn').addEventListener('click', ()=>{ ensureAudio(); openWardrobe('cloth
 
 // ======================= PLAYER ROOMS (UI) =======================
 // one room per llama; only its owner can change it. Public rooms are open; private ones need an invite or a knock.
-const PRUI={view:'list', list:null, info:null};
+const PRUI={view:'list', list:null, info:null, q:'', found:null};
 const furnIconCache=new Map();
 function furnIcon(item){ let c=furnIconCache.get(item); if (c) return c; const D=FURN_DEF[item]; c=document.createElement('canvas'); c.width=48; c.height=48;
   const sg=g, sOX=OX, sOY=OY; try { g=c.getContext('2d'); g.imageSmoothingEnabled=false; OX=24; OY=24; drawFurn({...D.mk(0), gx:0, gy:0}, 0); } catch(e){} finally { g=sg; OX=sOX; OY=sOY; }
@@ -4837,6 +4838,15 @@ function prDraw(){
   if (PRUI.view==='settings') return prDrawSettings();
   $id('pr_title').textContent='🏠 ROOMS';
   const L=PRUI.list; if (!L){ B.innerHTML='<div class="fre">Loading...</div>'; return; }
+  const keepFocus = document.activeElement && document.activeElement.id==='pr_q';
+  h+=`<input id="pr_q" class="prq" type="search" maxlength="24" placeholder="🔍 Search rooms or owners" value="${esc(PRUI.q)}" autocapitalize="off" spellcheck="false">`;
+  if (PRUI.q.trim().length>=2){
+    const btn2=x=> curRoom==='p:'+x.id ? '<span class="prcnt">YOU\'RE HERE</span>' : x.can ? `<button class="gbbtn y" data-go="${x.id}">GO ▶</button>` : `<button class="gbbtn" data-knock="${x.id}">🚪 KNOCK</button>`;
+    h+='<div class="prsec">SEARCH RESULTS</div>';
+    if (!PRUI.found) h+='<div class="fre">Searching...</div>';
+    else if (!PRUI.found.length) h+=`<div class="fre">No rooms match "${esc(PRUI.q.trim())}".</div>`;
+    else for (const x of PRUI.found) h+=prRow(x, btn2(x));
+    h+='<div class="prmsg"></div>'; B.innerHTML=h; prSearchWire(keepFocus); return; }
   h+='<div class="prsec">YOUR ROOM</div>';
   if (L.mine){ const here=curRoom==='p:'+L.mine.id; h+=prRow(L.mine, (here?'':`<button class="gbbtn y" data-go="${L.mine.id}">GO ▶</button>`)+`<button class="gbbtn" data-set="1">SETTINGS</button>`); }
   else h+=`<div class="fre">Make a room of your own! Fill it with furniture from the LLAMA STORE and invite your friends.</div><input id="pr_newname" maxlength="24" placeholder="${esc((me.n||'').toUpperCase())}'S ROOM"><div class="srow"><button class="gbbtn y" id="pr_create">CREATE MY ROOM</button></div>`;
@@ -4846,8 +4856,12 @@ function prDraw(){
   if (fr.length){ h+='<div class="prsec">FRIENDS\' ROOMS</div>'; for (const x of fr) h+=prRow(x, btn(x)+staffBtn(x)); }
   h+='<div class="prsec">OPEN ROOMS</div>'; if (!open.length) h+='<div class="fre">No other rooms yet.</div>'; for (const x of open) h+=prRow(x, btn(x)+staffBtn(x));
   h+='<div class="prmsg"></div>';
-  B.innerHTML=h;
+  B.innerHTML=h; prSearchWire(keepFocus);
 }
+let prQT=null;
+function prSearchWire(keepFocus){ const q=$id('pr_q'); if (!q) return; if (keepFocus){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+  q.addEventListener('input', ()=>{ PRUI.q=q.value; clearTimeout(prQT); if (q.value.trim().length<2){ PRUI.found=null; prDraw(); return; }
+    PRUI.found=null; prQT=setTimeout(()=>{ const asked=q.value.trim(); NET.act('pr_search',{q:asked}).then(r=>{ if (PRUI.q.trim()!==asked) return; PRUI.found = r.ok ? r.rooms : []; if (PRUI.view==='list') prDraw(); }); }, 300); }); }
 $id('pr_body').addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; ensureAudio();
   if (b.dataset.go){ prGo(+b.dataset.go); return; }
   if (b.dataset.knock){ prMsg('KNOCKING...'); NET.act('pr_knock',{rid:+b.dataset.knock}).then(r=>{ if (r.open){ prGo(+b.dataset.knock); return; } prMsg(r.msg||'', r.ok); }); return; }

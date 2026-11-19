@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-21d";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-21e";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -597,6 +597,20 @@ export class Lounge extends DurableObject {
     out.sort((x, y) => (y.friend - x.friend) || (y.n - x.n));
     return { ok: true, mine: mine ? { ...this.prOut(mine), n: this.prCount(mine.id) } : null, rooms: out.slice(0, 60), staff: a.staff === "owner" || a.staff === "mod" };
   }
+  // search rooms by room name or owner name (private rooms show up too, with a lock, so people can knock)
+  async prSearch(a, m) {
+    await this.prTables(); await this.frTable();
+    const q = String(m.q || "").replace(/[^A-Za-z0-9 '!?&.,:_-]/g, "").trim().slice(0, 24); if (q.length < 2) return { ok: true, rooms: [] };
+    const like = "%" + q.replace(/[%_]/g, "") + "%";
+    const rows = (await this.env.DB.prepare(`SELECT r.*, u.name AS oname,
+        EXISTS(SELECT 1 FROM friends f WHERE f.st = 'ok' AND ((f.a = ? AND f.b = r.owner) OR (f.b = ? AND f.a = r.owner))) AS fr,
+        EXISTS(SELECT 1 FROM pinv i WHERE i.room = r.id AND i.uid = ?) AS inv
+      FROM prooms r JOIN users u ON u.id = r.owner WHERE u.banned = 0 AND (r.name LIKE ? OR u.name LIKE ?) ORDER BY r.t DESC LIMIT 30`).bind(a.uid, a.uid, a.uid, like, like).all()).results || [];
+    const out = rows.map((r) => { this.prPriv.set(r.id, !!r.priv); const li = this.letIn.get(r.id);
+      const can = r.owner === a.uid || !r.priv || !!r.inv || (li && (li.get(a.uid) || 0) > Date.now()) || a.staff === "owner" || a.staff === "mod";
+      return { ...this.prOut(r), n: this.prCount(r.id), friend: !!r.fr, invited: !!r.inv, can: !!can, mine: r.owner === a.uid }; });
+    return { ok: true, rooms: out };
+  }
   async prCreate(a, m) {
     await this.prTables();
     const have = await this.env.DB.prepare("SELECT id FROM prooms WHERE owner = ?").bind(a.uid).first(); if (have) return { ok: false, msg: "You already have a room. One per llama for now." };
@@ -1003,6 +1017,7 @@ export class Lounge extends DurableObject {
       case "dash_chat": return this.dashChat(a, m);
       case "pr_list": return this.prList(a);
       case "pr_create": return this.prCreate(a, m);
+      case "pr_search": return this.prSearch(a, m);
       case "pr_info": return this.prInfo(a);
       case "pr_set": return this.prSet(a, m);
       case "pr_enter": return this.prEnter(ws, a, m);
