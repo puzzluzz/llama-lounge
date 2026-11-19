@@ -616,6 +616,13 @@
   .rbarrow{display:none;flex:none;width:26px;height:38px;border:0;border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font:800 20px/1 var(--ui);cursor:pointer;padding:0}
   .rbarrow:hover{background:rgba(255,255,255,.2)} .rbarrow:disabled{opacity:.25;cursor:default}
   #rbwrap.over .rbarrow{display:block}
+  /* phones: every room fits across the screen (buttons share the width), so no sideways scrolling or arrows */
+  @media (max-width:640px){
+    #roombar{max-width:none!important;width:100%;overflow:visible!important}
+    #roombar .pbtn{flex:1 1 0!important;min-width:0!important;height:42px;font-size:8.5px;padding:3px 1px 2px;letter-spacing:0}
+    #roombar .ri{font-size:15px} #rbwrap .rbarrow{display:none!important}
+    #tip{font-size:12px;padding:8px 10px;line-height:1.35}
+  }
   @media (min-width:641px){ #roombar .pbtn{padding:0 9px} #roombar.fl,#roombar.fr,#roombar.fl.fr{-webkit-mask-image:none;mask-image:none} }
   @media (max-width:640px){ #rbwrap{width:100%;max-width:none} #rbwrap #roombar{flex:1 1 auto} .rbarrow,#rbwrap.over .rbarrow{display:none} }
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -767,7 +774,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22m";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22n";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -4332,7 +4339,7 @@ function drawOverlay(t){
       const cid = it.me ? me.c : (it.l && it.l.c); const tag = (CHARS[cid]||{}).tag || '#f8d030';
       const st = staffOf(it.me, it.l), icon = (st==='owner' ? '👑 ' : st==='mod' ? '💛 ' : '') + (!it.me && isFriend(name) ? '⭐ ' : '');
       c.font = `800 ${10.5*u}px Inter, system-ui, sans-serif`; const tw = c.measureText(icon+name).width;
-      const h = 18*u, w = tw + 22*u, nx = it.x - w/2, ny = it.y - h - 5*u;
+      const h = 18*u, w = tw + 22*u, nx = it.x - w/2, ny = (it.balloon ? it.y - 27 : it.y) - h - 5*u;   // with an emote bubble showing, the name sits above it
       c.globalAlpha = fa;
       c.shadowColor='rgba(0,0,0,0.35)'; c.shadowBlur=6*u*S*DPR; c.shadowOffsetY=1.5*u*S*DPR;
       c.fillStyle = it.me ? '#ffd23f' : 'rgba(22,15,40,0.78)'; pill(nx, ny, w, h, h/2); c.fill();
