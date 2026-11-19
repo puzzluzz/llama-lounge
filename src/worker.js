@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-19n";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-19q";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -14,14 +14,19 @@ const IP_MAX_FAILS = 30;                  // per IP per 15 minutes
 const SIGNUPS_PER_IP_HOUR = 5;
 const WINDOW_MS = 15 * 60 * 1000;
 
-// three kinds of slot machine along the casino's back wall (x 0-3 FRUIT, 4-8 CLASSIC, 9-12 GOLD); stools are at y 1
-// symbols: cherry, lemon, carrot, bell, seven, llama. Three of a kind pays SLOT_PAY x the bet.
+// six slot machines on the casino's back wall with a gap between each, two of each kind; stools are one tile in front (y 1)
+// symbols: cherry, lemon, carrot, bell, seven, llama.
+//   FRUIT FRENZY: three reels, one line; three of a kind pays pay x the bet (wins about 1 spin in 10, pays back about 89%)
+//   LUCKY LINES:  a 3 x 3 grid with 5 lines (3 rows, 2 diagonals); each line of three pays pay x the bet (about 1 in 5, 89%)
+//   PRIZE WHEEL:  16 slices; the slice it stops on is the prize x the bet (pays back about 88%, 100x jackpot about 1 in 667)
+const SLOT_X = [1, 3, 5, 7, 9, 11];
 const SLOTS = {
-  fruit:   { w: [40, 30, 15, 8, 5, 2],   pay: [6, 13, 30, 60, 150, 500] },     // wins about 1 spin in 10, pays back about 89%
-  classic: { w: [28, 24, 19, 14, 9, 6],  pay: [8, 15, 25, 50, 120, 500] },     // about 1 in 22, about 89%
-  gold:    { w: [24, 22, 20, 16, 11, 7], pay: [4, 8, 15, 30, 100, 1000] },     // about 1 in 26, about 86%, llama jackpot 1 in ~2,900
+  fruit:   { w: [40, 30, 15, 8, 5, 2],   pay: [6, 13, 30, 60, 150, 500] },
+  classic: { w: [28, 24, 19, 14, 9, 6],  pay: [2, 3, 5, 8, 20, 100] },
 };
-const slotKind = (x) => (x <= 3 ? "fruit" : x <= 8 ? "classic" : "gold");
+const SLOT_LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 4, 8], [6, 4, 2]];   // cells are row by row
+const WHEEL = { slices: [0, 1, 0, 2, 0, 1, 0, 5, 0, 1, 0, 3, 0, 1, 0, 100], weight: { 0: 6856, 1: 7500, 2: 8000, 3: 4000, 5: 3000, 100: 150 } };
+const slotKind = (x) => (x <= 3 ? "fruit" : x <= 7 ? "classic" : "gold");
 const SLOT_BETS = [1, 2, 5, 10];
 // casino tables (seats are where players sit; the server checks them)
 const TABLE_BETS = [1, 2, 5, 10];
@@ -432,15 +437,18 @@ export class Lounge extends DurableObject {
         return { ok: true, tk, nd: this.needsOut(a) };
       }
       case "slot": {
-        let sx = -1; if (!this.near(a, "casino", (x, y, p) => { sx = Math.round(x); return p.p === "sit" && Math.round(y) === 1 && sx >= 0 && sx <= 12; })) return { ok: false, msg: "Sit at a slot machine first." };
-        const bet = SLOT_BETS.includes(+m.bet) ? +m.bet : 1, M = SLOTS[slotKind(sx)];
+        let sx = -1; if (!this.near(a, "casino", (x, y, p) => { sx = Math.round(x); return p.p === "sit" && Math.round(y) === 1 && SLOT_X.includes(sx); })) return { ok: false, msg: "Sit at a slot machine first." };
+        const bet = SLOT_BETS.includes(+m.bet) ? +m.bet : 1, kind = slotKind(sx);
         if (now - (await this.timer(uid, "slot")) < 1300) return { ok: false, msg: "The reels are still spinning." };
         await this.setTimer(uid, "slot", now);
         let tk = await this.debit(uid, bet, "slot spin"); if (tk === null) return { ok: false, msg: `YOU NEED ${bet} TOKEN${bet > 1 ? "S" : ""} TO SPIN.` };
-        const r = [pickW(M.w), pickW(M.w), pickW(M.w)];
-        const pay = r[0] === r[1] && r[1] === r[2] ? M.pay[r[0]] * bet : 0;
+        let r, pay = 0, lines = [];
+        if (kind === "fruit") { const M = SLOTS.fruit; r = [pickW(M.w), pickW(M.w), pickW(M.w)]; if (r[0] === r[1] && r[1] === r[2]) pay = M.pay[r[0]] * bet; }
+        else if (kind === "classic") { const M = SLOTS.classic; r = Array.from({ length: 9 }, () => pickW(M.w));
+          SLOT_LINES.forEach((L, i) => { if (r[L[0]] === r[L[1]] && r[L[1]] === r[L[2]]) { lines.push(i); pay += M.pay[r[L[0]]] * bet; } }); }
+        else { const seg = pickW(WHEEL.slices.map((v) => WHEEL.weight[v])); r = [seg]; pay = WHEEL.slices[seg] * bet; }
         if (pay) tk = await this.credit(uid, pay, "slot win");
-        return { ok: true, r, pay, bet, tk };
+        return { ok: true, kind, r, lines, pay, bet, tk };
       }
       case "harvest": {
         const k = String(m.k || ""); if (!CROP_KEYS.has(k)) return { ok: false };

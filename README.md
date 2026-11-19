@@ -31,6 +31,16 @@ Each release bumps `VERSION` in `src/worker.js` and `GAME_VERSION` in `public/in
 
 After any change, run `npx wrangler deploy` again from this folder. Accounts and tokens stay in the database.
 
+## Casino slot machines
+
+Six machines along the back wall with a gap between each, two of each kind. The server decides every spin.
+
+| Machine | Game | Payback |
+|---|---|---|
+| Fruit Frenzy (green) | 3 reels, 1 line, three of a kind wins | about 89%, wins about 1 spin in 10 |
+| Lucky Lines (red) | 3 x 3 grid, 5 lines (3 rows, 2 diagonals); every line of three pays | about 89%, wins about 1 spin in 5 |
+| Prize Wheel (purple) | 16-slice wheel: blank, x1, x2, x3, x5 or the x100 jackpot | about 88%, odds shown on the machine (jackpot 1 in 667) |
+
 ## Dunk tank (Llama Acres)
 
 Left of the barn. Stand on the grass in front of the target and press THROW (or tap the target). Stop the crosshair across, then up and down; a bullseye dunks whoever is on the seat. A throw costs 1 coin and a dunk pays 3 (up to 30 a day). Any llama can sit on the plank and earns 1 coin each time someone dunks them (up to 15 a day). When nobody is sitting, DUNKY takes the seat. Everyone in Llama Acres sees the ball fly and the splash.

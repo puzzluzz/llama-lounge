@@ -586,7 +586,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19n";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19q";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -763,14 +763,18 @@ const block = (x,y) => { BLOCK[y*N+x] = 1; };
 let curRoom = 'lounge';
 const ROOM_NAMES = { lounge:'LLAMA LOUNGE', barn:'LLAMA ACRES', casino:'LLAMA CASINO', arena:'SPIT ARENA', lanes:'LLAMA LANES' };
 const ROOMS = ['lounge','barn','casino','arena','lanes'];
-const CASINO_SLOT_X = [0,1,2,3,4,5,6,7,8,9,10,11,12];   // a full row of slot machines on the casino's back wall; stools one tile in front (the server checks the same spots)
-const slotKind = x => x<=3 ? 'fruit' : x<=8 ? 'classic' : 'gold';
+const CASINO_SLOT_X = [1,3,5,7,9,11];   // six machines on the casino's back wall with a gap between each, two of each kind; stools one tile in front (the server checks the same spots)
+const slotKind = x => x<=3 ? 'fruit' : x<=7 ? 'classic' : 'gold';
 // what each kind looks like and pays (three of a kind, times the bet); the server holds the same table and decides every spin
 const SLOT_KINDS = {
   fruit:   { name:'FRUIT FRENZY',   note:'WINS OFTEN',        pay:[6,13,30,60,150,500],   cab:['#38a048','#38a048','#207030','#185828'], lite:'#78e078', top:['#f8d030','#e8b820','#b88818'] },
-  classic: { name:'LLAMA CLASSIC',  note:'THE ORIGINAL',      pay:[8,15,25,50,120,500],   cab:['#d03040','#d03040','#981c2c','#5a1020'], lite:'#e86070', top:['#f8d030','#e8b820','#b88818'] },
-  gold:    { name:'GOLDEN JACKPOT', note:'RARE BUT HUGE',     pay:[4,8,15,30,100,1000],   cab:['#7838c0','#7838c0','#502088','#301060'], lite:'#b080f0', top:['#fff0a0','#f8d030','#c09018'] } };
+  classic: { name:'LUCKY LINES',    note:'5 WAYS TO WIN',     pay:[2,3,5,8,20,100],   cab:['#d03040','#d03040','#981c2c','#5a1020'], lite:'#e86070', top:['#f8d030','#e8b820','#b88818'] },
+  gold:    { name:'PRIZE WHEEL',    note:'UP TO 100X',        pay:[0,0,0,0,0,0],   cab:['#7838c0','#7838c0','#502088','#301060'], lite:'#b080f0', top:['#fff0a0','#f8d030','#c09018'] } };
 const SLOT_BETS = [1,2,5,10];
+const SLOT_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,4,8],[6,4,2]];   // LUCKY LINES: cells are row by row (same as the server)
+const WHEEL_SLICES = [0,1,0,2,0,1,0,5,0,1,0,3,0,1,0,100];        // PRIZE WHEEL (same as the server)
+const WHEEL_ODDS = {1:'3 IN 10', 2:'1 IN 12', 3:'1 IN 25', 5:'1 IN 33', 100:'1 IN 667'};
+const WHEEL_COL = {0:['#3a3050','#4a4068'], 1:['#3878d0','#58a0f0'], 2:['#28a048','#58d070'], 3:['#d07818','#f8a038'], 5:['#c02860','#f05890'], 100:['#c09018','#f8d030']};
 const ROUL_SEATS = [[5,5],[5,6],[8,5],[8,6],[6,7],[7,7]], BJ_SEATS = [[10,5],[11,5],[10,9],[11,9]];   // the server checks the same seats
 const seatIn = (list,x,y) => curRoom==='casino' && list.some(([a,b])=>a===x&&b===y);
 const isSlotSeat = (x,y) => curRoom==='casino' && y===1 && CASINO_SLOT_X.includes(x);
@@ -817,10 +821,10 @@ function buildBarnWorld(){
   for (const x of [5,6]){ SEATS.push({gx:x,gy:0,dir:'fr',lift:10}); FURN.push({t:'hayseat',gx:x,gy:0}); }
   for (const y of [5,6]){ SEATS.push({gx:0,gy:y,dir:'fr',lift:10}); FURN.push({t:'hayseat',gx:0,gy:y}); }
   FURN.push({t:'gate',gx:14,gy:0}); block(14,0);
-  // campfire: four logs set a step back from the fire, with room to walk between them
-  const FX=10, FY=11;
-  FURN.push({t:'campfire',gx:FX,gy:FY}); block(FX,FY);
-  for (const [dx,dy,d,ax] of [[-2,0,'fr','y'],[2,0,'bl','y'],[0,-2,'fl','x'],[0,2,'br','x']]){ SEATS.push({gx:FX+dx,gy:FY+dy,dir:d,lift:6}); FURN.push({t:'log',gx:FX+dx,gy:FY+dy,ax}); }
+  // two campfires, each with four log seats right up against the fire pit
+  for (const [FX,FY] of [[10,11],[11,16]]){
+    FURN.push({t:'campfire',gx:FX,gy:FY}); block(FX,FY);
+    for (const [dx,dy,d,ax] of [[-1,0,'fr','y'],[1,0,'bl','y'],[0,-1,'fl','x'],[0,1,'br','x']]){ SEATS.push({gx:FX+dx,gy:FY+dy,dir:d,lift:6}); FURN.push({t:'log',gx:FX+dx,gy:FY+dy,ax}); } }
   // big pond (6 x 5) with open bank all round (the server checks the same bounds for fishing)
   FURN.push({t:'pond',gx:15,gy:3,w:6,h:5,dz:-40}); for (let x=15;x<=20;x++) for (let y=3;y<=7;y++){ block(x,y); POND.push([x,y]); }
   // dirt footpath the whole way round the pond
@@ -1531,20 +1535,20 @@ function drawFurn(f,t){
         if (dp>0) dunkSplash(Math.round(px), Math.round(py)-18, t); else pfDraw(g,'DUNKY',x0+3,y0-7,'#ffd23f'); }
       break; }
     case 'dunksign': { // carnival sign on two posts: striped border, chasing bulbs, big DUNK!
-      const tw=pfW('DUNK!',2), W=tw+10, H=29, cv=dunkSignCv; if (cv.width!==W){ cv.width=W; cv.height=H; }
+      const tw=pfW('1 COIN')+8, W=tw+12, H=23, cv=dunkSignCv; if (cv.width!==W){ cv.width=W; cv.height=H; }
       const m=cv.getContext('2d'); m.clearRect(0,0,W,H);
       m.fillStyle=INK; m.fillRect(1,0,W-2,H); m.fillRect(0,1,W,H-2);
       for (let x=1;x<W-1;x++) for (let y=1;y<H-1;y++){ if (x>3&&x<W-4&&y>3&&y<H-4) continue; m.fillStyle=(Math.floor((x+y)/3)%2)?'#e03048':'#f8f8f0'; m.fillRect(x,y,1,1); }
       m.fillStyle=INK; m.fillRect(4,4,W-8,H-8); m.fillStyle='#fff4d8'; m.fillRect(5,5,W-10,H-10);
       const lit=Math.floor(t*6); let k=0; const bulb=(x,y)=>{ m.fillStyle=((k++)+lit)%3===0?'#ffffff':'#ffd23f'; m.fillRect(x,y,1,1); };
       for (let x=3;x<W-3;x+=4) bulb(x,1); for (let y=4;y<H-3;y+=4) bulb(W-2,y); for (let x=W-4;x>=3;x-=4) bulb(x,H-2); for (let y=H-4;y>=4;y-=4) bulb(1,y);
-      pfDraw(m,'DUNK!',Math.round(W/2-tw/2),6,'#8a1424',2); pfDraw(m,'DUNK!',Math.round(W/2-tw/2),5,(Math.floor(t*2)%3===0)?'#ff5c8a':'#e03048',2);
+      { const dw=pfW('DUNK!'); pfDraw(m,'DUNK!',Math.round(W/2-dw/2),6,'#8a1424'); pfDraw(m,'DUNK!',Math.round(W/2-dw/2),5,(Math.floor(t*2)%3===0)?'#ff5c8a':'#e03048'); }
       // little target and "1 COIN"
-      { const tx=Math.round(W/2-(pfW('1 COIN')+8)/2)+2; for (const [r,c] of [[2,'#e03048'],[1,'#f8f8f0'],[0,'#e03048']]){ m.fillStyle=c; m.fillRect(tx-r,19-r,r*2+1,r*2+1); }
-        pfDraw(m,'1 COIN',tx+5,17,'#1c4aa8'); }
+      { const tx=Math.round(W/2-tw/2)+2; for (const [r,c] of [[2,'#e03048'],[1,'#f8f8f0'],[0,'#e03048']]){ m.fillStyle=c; m.fillRect(tx-r,14-r,r*2+1,r*2+1); }
+        pfDraw(m,'1 COIN',tx+5,12,'#1c4aa8'); }
       const [px,py]=P(f.gx+0.5,f.gy+0.55,0), X=Math.round(px)+4, Y=Math.round(py);
       ellPx(X,Y+1,11,3,'rgba(40,80,20,0.3)');
-      for (const dx of [-13,12]){ g.fillStyle=INK; g.fillRect(X+dx-1,Y-18,4,19); g.fillStyle='#a86a34'; g.fillRect(X+dx,Y-18,2,18); g.fillStyle='#c88a50'; g.fillRect(X+dx,Y-18,1,18); }
+      for (const dx of [-10,9]){ g.fillStyle=INK; g.fillRect(X+dx-1,Y-18,4,19); g.fillStyle='#a86a34'; g.fillRect(X+dx,Y-18,2,18); g.fillStyle='#c88a50'; g.fillRect(X+dx,Y-18,1,18); }
       g.drawImage(cv, Math.round(X-W/2), Y-18-H+4);
       break; }
     case 'dunktarget': {
@@ -1667,8 +1671,13 @@ function drawFurn(f,t){
       const wu0=0, wu1=Math.min(W,18), vT=H-8, vB=vT-12;
       for (let u=wu0; u<=wu1; u++) for (let v=vB; v<=vT; v++){ const side=u===wu0||u===wu1, tb=v===vB||v===vT, rim=v===vT-1||v===vB+1;
         px(u,v, side||tb ? INK : rim ? (v===vT-1 ? '#f0f0f8' : '#a8a8b8') : ((u-wu0)%6===0 ? '#181020' : '#f8f4e8')); }
-      for (let k=0;k<3;k++){ const u0=wu0+1+k*6; const spinning = sv.spin && now<sv.stopAt[k];
-        const S=SLOT_SYMS[spinning ? (Math.floor(t*18)+k*2)%SLOT_SYMS.length : sv.r[k]]; const off = spinning ? (Math.floor(t*40)+k)%3-1 : 0;
+      if (slotKind(f.gx)==='gold'){ // prize wheel machine: a little wheel in the window instead of reels
+        const vm=(vT+vB)/2, spinA = sv.spin && now<sv.stopAt[2] ? (now-sv.t0)/90 : (sv.r.length===1 ? -(sv.r[0]+0.5)*Math.PI/8-Math.PI/2 : 0);
+        for (let u=wu0+3; u<=wu1-3; u++) for (let v=vB+1; v<=vT-1; v++){ const dx=u-9, dy=v-vm, d=Math.sqrt(dx*dx+dy*dy*1.4); if (d>5.6) continue;
+          let a=Math.atan2(-dy,dx)-spinA; a=((a%(Math.PI*2))+Math.PI*2)%(Math.PI*2); const sl=WHEEL_SLICES[Math.floor(a/(Math.PI/8))%16]; px(u,v, d>4.8 ? '#f8d030' : WHEEL_COL[sl][1]); }
+        px(9,vT,'#f84848'); }
+      else for (let k=0;k<3;k++){ const u0=wu0+1+k*6; const spinning = sv.spin && now<sv.stopAt[k];
+        const rr = sv.r.length===9 ? sv.r[3+k] : sv.r.length===1 ? (sv.r[0]+k*5)%6 : sv.r[k]; const S=SLOT_SYMS[spinning ? (Math.floor(t*18)+k*2)%SLOT_SYMS.length : (rr||0)%SLOT_SYMS.length]; const off = spinning ? (Math.floor(t*40)+k)%3-1 : 0;
         if (win && flash%2) for (let i=0;i<5;i++) for (let v=vB+2; v<=vT-2; v++) px(u0+i, v, '#fff4b0');
         for (let i=0;i<5;i++){ px(u0+i, vB+2, '#d8ccb0'); px(u0+i, vT-2, '#d8ccb0'); }
         S.r.forEach((row,j)=>{ const v=vT-3-j-off; if (v<vB+2||v>vT-2) return; for (let i=0;i<5;i++) if (row[i]==='#') px(u0+i, v, spinning ? '#a8a0b8' : S.c); }); }
@@ -2856,7 +2865,7 @@ function drawLlama(o, t, isMe){
   const lift = seat ? seat.lift : 0;
   const walking = isMe ? me.moving : o.walking;
   const dancing = o.p==='dance' && !walking;
-  if (!seat && !DANCE.has(Math.floor(o.y)*N+Math.floor(o.x))) ellPx(sx, sy, 8, 3, '#c89050');
+  if (!seat) ellPx(sx, sy, 8, 3, 'rgba(24,16,40,0.28)');   // soft see-through shadow on any floor
   let fr = walking ? Math.floor((o.anim||0)*6.5)%4 : 0, dir=o.d;
   let hop = 0;
   if (dancing){ const a=(o.anim||0); dir = DANCE_DIRS[Math.floor(a*2.5)%4]; fr = Math.floor(a*8)%4; hop = (Math.floor(a*5)%2)?2:0; }
@@ -3595,7 +3604,9 @@ const slotBet = () => SLOT_BETS.includes(store.slotBet) ? store.slotBet : 1;
 const myKind = () => SLOT_KINDS[slotKind(me.gx)];
 let slot={r:[4,3,2], spin:false, t0:0, stopAt:[0,0,0], win:false, winUntil:0};
 function slotView(){ if (slot.spin && performance.now()>slot.stopAt[2]) slot.spin=false; slot.win = performance.now()<slot.winUntil; return slot; }
-function slotAnimate(r){ const now=performance.now(); slot={r, spin:true, t0:now, stopAt:[now+700,now+1000,now+1300], win:false, winUntil:0}; }
+function slotAnimate(r, lines){ const now=performance.now(); const wheel=myKind()===SLOT_KINDS.gold; slot={r, lines:lines||[], spin:true, t0:now, stopAt: wheel ? [now+2600,now+2600,now+2600] : [now+700,now+1000,now+1300], win:false, winUntil:0, a0:slot.aEnd||0, aEnd:wheel ? wheelAngle(r[0], slot.aEnd||0) : (slot.aEnd||0)}; }
+// the wheel turns several times, then lands with the chosen slice under the pointer at the top
+function wheelAngle(seg, from){ const per=Math.PI*2/16, target=-(seg+0.5)*per - Math.PI/2; let a=target; while (a < from + Math.PI*2*4) a += Math.PI*2; return a; }
 // big slot machine popup in the middle of the screen
 const slotEl=document.getElementById('slotbox'), slotCv=document.getElementById('slotcv'), slotCx=slotCv.getContext('2d');
 function slotMsg(t){ document.getElementById('sl_msg').textContent=t; }
@@ -3612,12 +3623,16 @@ const slotPayCv=document.getElementById('slpaycv'), slotPayCx=slotPayCv.getConte
 function drawSlotPay(){
   // paytable for this machine at the current bet: each symbol x3 and what it pays, in the game's pixel art and font
   const c=slotPayCx; c.clearRect(0,0,130,40); const K=myKind(), bet=slotBet();
+  if (K===SLOT_KINDS.gold){ const odds={0:'1/2',1:'3/10',2:'1/12',3:'1/25',5:'1/33',100:'1/667'};
+    [1,2,3,5,100,0].forEach((v,i)=>{ const col=i%3, row=Math.floor(i/3), x=4+col*43, y=2+row*19; c.fillStyle='#f8f4e8'; c.fillRect(x,y,40,18);
+      c.fillStyle=WHEEL_COL[v][1]; c.fillRect(x+2,y+2,5,5); pfDraw(c, v===100?'J '+(v*bet):v?('X'+v+' '+(v*bet)):'BLANK', x+9, y+2, v===100?'#c03070':v?INK:'#8a7aa8'); pfDraw(c, odds[v], x+9, y+10, '#1e8a3a'); }); return; }
   SLOT_BIG.forEach((S,i)=>{ const col=i%3, row=Math.floor(i/3), x=4+col*43, y=2+row*19;
     c.fillStyle='#f8f4e8'; c.fillRect(x,y,40,18); c.fillStyle='#d8ccb0'; c.fillRect(x,y+17,40,1);
-    c.drawImage(S.img, x+1, y+1); pfDraw(c,'X3',x+18,y+2,'#8a7aa8'); pfDraw(c,String(K.pay[i]*bet),x+18,y+10,i===5?'#c03070':INK); });
+    c.drawImage(S.img, x+1, y+1); pfDraw(c,K===SLOT_KINDS.classic?'LINE':'X3',x+18,y+2,'#8a7aa8'); pfDraw(c,String(K.pay[i]*bet),x+18,y+10,i===5?'#c03070':INK); });
 }
 function drawSlotPopup(t){
   if (slotEl.style.display!=='block') return;
+  { const kk=slotKind(me.gx); if (kk==='classic'){ drawLinesPopup(t); return; } if (kk==='gold'){ drawWheelPopup(t); return; } }
   const c=slotCx, now=performance.now(), n=SLOT_BIG.length; c.imageSmoothingEnabled=false;
   c.fillStyle='#181020'; c.fillRect(0,0,130,70);
   const win = now<slot.winUntil, blink = win && Math.floor(t*8)%2;
@@ -3637,6 +3652,47 @@ function drawSlotPopup(t){
   // payline arrows
   c.fillStyle = blink ? '#f8d030' : '#e02838';
   for (let i=0;i<3;i++){ c.fillRect(1+i,35-2+i,1,5-2*i); c.fillRect(128-i,35-2+i,1,5-2*i); }
+  document.getElementById('sl_spin').disabled = slot.spin && now<slot.stopAt[2];
+}
+// LUCKY LINES: a 3 x 3 grid of symbols; each column stops in turn, then winning lines light up
+function drawLinesPopup(t){
+  const c=slotCx, now=performance.now(), n=SLOT_BIG.length; c.imageSmoothingEnabled=false;
+  c.fillStyle='#2a0818'; c.fillRect(0,0,130,70);
+  const r = slot.r && slot.r.length===9 ? slot.r : [0,1,2,3,4,5,1,2,3];
+  const done = !slot.spin || now>=slot.stopAt[2], win = now<slot.winUntil, blink = win && Math.floor(t*6)%2;
+  for (let col=0; col<3; col++){ const x0=17+col*33, spinning = slot.spin && now<slot.stopAt[col];
+    c.fillStyle='#f8f4e8'; c.fillRect(x0-2, 2, 28, 66); c.fillStyle='#c09018'; c.fillRect(x0-3,2,1,66); c.fillRect(x0+26,2,1,66);
+    c.save(); c.beginPath(); c.rect(x0-2,2,28,66); c.clip();
+    for (let row=0; row<3; row++){ const y=5+row*21;
+      if (spinning){ const off=Math.floor(t*150+col*7)%21, k=(Math.floor(t*8)+row+col*2)%n; c.drawImage(SLOT_BIG[k].blur, x0+4, y+off-10); c.drawImage(SLOT_BIG[(k+1)%n].blur, x0+4, y+off+11); }
+      else c.drawImage(SLOT_BIG[r[row*3+col]].img, x0+4, y); }
+    c.restore(); }
+  // the five lines: arrows on both sides, and the winners drawn across
+  const cell=(i)=>[17+(i%3)*33+12, 5+Math.floor(i/3)*21+8];
+  if (done) for (const li of (slot.lines||[])){ const L=SLOT_LINES[li]; c.strokeStyle = blink ? '#ffffff' : ['#f8d030','#f84848','#48c048','#58b8f8','#f878b8'][li]; c.lineWidth=2;
+    c.beginPath(); const a=cell(L[0]), b=cell(L[2]); c.moveTo(a[0]-12,a[1]); c.lineTo(b[0]+12,b[1]); c.stroke(); }
+  ['#f8d030','#f84848','#48c048'].forEach((col,i)=>{ c.fillStyle=col; c.fillRect(2,11+i*21,6,5); c.fillRect(122,11+i*21,6,5); });
+  c.fillStyle='#58b8f8'; c.fillRect(2,2,6,4); c.fillRect(122,62,6,4); c.fillStyle='#f878b8'; c.fillRect(2,62,6,4); c.fillRect(122,2,6,4);
+  document.getElementById('sl_spin').disabled = slot.spin && now<slot.stopAt[2];
+}
+// PRIZE WHEEL: 16 slices; it spins several turns and slows to a stop under the pointer
+function drawWheelPopup(t){
+  const c=slotCx, now=performance.now(); c.imageSmoothingEnabled=false; c.fillStyle='#1c0c30'; c.fillRect(0,0,130,70);
+  const u = slot.spin ? Math.min(1,(now-slot.t0)/(slot.stopAt[2]-slot.t0)) : 1, e=1-Math.pow(1-u,3);
+  const ang = (slot.a0||0) + ((slot.aEnd||0)-(slot.a0||0))*e, cx=65, cy=36, R=31, per=Math.PI*2/16;
+  const win = now<slot.winUntil, blink = win && Math.floor(t*6)%2;
+  // slices, pixel by pixel so it stays crisp
+  for (let y=-R; y<=R; y++) for (let x=-R; x<=R; x++){ const d=Math.sqrt(x*x+y*y); if (d>R) continue;
+    let a=Math.atan2(y,x)-ang; a=((a%(Math.PI*2))+Math.PI*2)%(Math.PI*2); const i=Math.floor(a/per)%16, v=WHEEL_SLICES[i], C=WHEEL_COL[v];
+    c.fillStyle = d>R-1.2 ? '#181020' : d>R-3 ? '#f8d030' : d<5 ? '#f8f4e8' : (Math.abs((a%per)-0.0)<0.04 ? '#181020' : (d>R*0.62 ? C[1] : C[0]));
+    c.fillRect(cx+x, cy+y, 1, 1); }
+  // labels upright at each slice
+  for (let i=0;i<16;i++){ const v=WHEEL_SLICES[i]; if (!v) continue; const a=ang+(i+0.5)*per, lx=cx+Math.cos(a)*R*0.68, ly=cy+Math.sin(a)*R*0.68; const s2=v===100?'J':String(v); pfDraw(c, s2, Math.round(lx-pfW(s2)/2), Math.round(ly-2), '#ffffff'); }
+  // pointer at the top and hub
+  c.fillStyle='#181020'; c.fillRect(cx-4,0,9,3); c.fillRect(cx-3,3,7,2); c.fillRect(cx-2,5,5,2); c.fillStyle=blink?'#ffffff':'#f84848'; c.fillRect(cx-3,0,7,2); c.fillRect(cx-2,2,5,2); c.fillRect(cx-1,4,3,2);
+  c.fillStyle='#c09018'; c.fillRect(cx-2,cy-2,5,5);
+  // bulbs around the edge of the screen
+  const lit=Math.floor(t*8); for (let k=0;k<12;k++){ const x=k<6?6:123, y=8+(k%6)*11; c.fillStyle=((k+lit)%3===0)?'#ffffff':'#f8a830'; c.fillRect(x,y,2,2); }
   document.getElementById('sl_spin').disabled = slot.spin && now<slot.stopAt[2];
 }
 // ======================= CASINO TABLES: roulette and blackjack (the server spins, deals and pays) =======================
@@ -3735,10 +3791,11 @@ function slotSpin(){
   NET.act('slot',{bet}).then(r=>{
     if (!r.ok){ slotMsg((r.msg||'TRY AGAIN.').toUpperCase()); return; }
     store.tk = r.tk + 0 - (r.pay||0); tokUI(-1); slotTok();
-    slotAnimate(r.r); me.slK=(me.slK||0)+1; me.lastSlot={k:me.slK, r:r.r}; sendPresence(true);
-    setTimeout(()=>{ const nm=r.r.map(v=>SLOT_SYMS[v].n).join(' · ');
+    slotAnimate(r.r, r.lines); me.slK=(me.slK||0)+1; me.lastSlot={k:me.slK, r:r.r}; sendPresence(true);
+    const wait = r.kind==='gold' ? 2650 : 1350;
+    setTimeout(()=>{ const nm = r.kind==='gold' ? (WHEEL_SLICES[r.r[0]]===100 ? 'JACKPOT' : WHEEL_SLICES[r.r[0]] ? 'X'+WHEEL_SLICES[r.r[0]] : 'BLANK') : r.kind==='classic' ? ((r.lines||[]).length ? (r.lines.length+' LINE'+(r.lines.length>1?'S':'')) : 'NO LINES') : r.r.map(v=>SLOT_SYMS[v].n).join(' · ');
       if (r.pay){ store.tk = r.tk; slot.winUntil=performance.now()+1800; tokUI(1); slotMsg(`${nm}! YOU WIN ${r.pay} TOKENS!`); slotEl.classList.add('win'); if (r.pay>=50) action(`hit ${r.pay} TOKENS on ${myKind().name}!`); }
-      else slotMsg(`${nm}. NO LUCK THIS TIME.`); slotTok(); }, 1350);
+      else slotMsg(`${nm}. NO LUCK THIS TIME.`); slotTok(); }, wait);
   });
 }
 
