@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-22i";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-22j";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -87,7 +87,10 @@ const ITEMS = {
 // people on the owner's invite list, people the owner let in after they knocked (for a few hours), and staff.
 const PR = { w: 11, h: 7, maxFurn: 40,   // player rooms: 11 wide, 7 deep (the long wall is the right one; the door is at the front of the left wall)
   clear: ["0,6", "1,6", "2,6", "3,6"], knockGap: 20000, letInMs: 3 * 3600e3, nameMax: 24 };
-const PR_WALLS = ["lavender", "cream", "mint", "pink", "night", "wood"], PR_FLOORS = ["wood", "checker", "carpet", "marble", "grass"];
+// wallpaper and flooring for player rooms: price in TOKENS (0 = free for everyone); you buy one once and can use it any time
+const DECO_WALL = { lavender: 0, cream: 15, mint: 15, pink: 15, night: 15, wood: 25, stripes: 30, damask: 35, brick: 35, stars: 40, floral: 30 };
+const DECO_FLOOR = { wood: 0, checker: 20, carpet: 20, marble: 25, grass: 20, parquet: 30, tiles: 30, cobble: 25, plaid: 25 };
+const PR_WALLS = Object.keys(DECO_WALL), PR_FLOORS = Object.keys(DECO_FLOOR);
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
 const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30, rug_persian: 25, rug_round: 15, rug_stripe: 12, rug_shag: 18,
   beanbag: 10, barstool: 7, dbed: 40, coffeetable: 14, roundtable: 16, floorlamp: 16, lavalamp: 12, cubeshelf: 14, dresser: 20, cactus: 5, flowers: 6, boombox: 18 };
@@ -596,7 +599,8 @@ export class Lounge extends DurableObject {
       "CREATE TABLE IF NOT EXISTS pinv (room INTEGER NOT NULL, uid INTEGER NOT NULL, PRIMARY KEY (room, uid))",
       "CREATE TABLE IF NOT EXISTS pfurn (id INTEGER PRIMARY KEY AUTOINCREMENT, room INTEGER NOT NULL, item TEXT NOT NULL, gx INTEGER NOT NULL, gy INTEGER NOT NULL, rot INTEGER NOT NULL DEFAULT 0)",
       "CREATE INDEX IF NOT EXISTS pfurn_room ON pfurn (room)",
-      "CREATE TABLE IF NOT EXISTS finv (uid INTEGER NOT NULL, item TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (uid, item))"]) await this.env.DB.prepare(q).run();
+      "CREATE TABLE IF NOT EXISTS finv (uid INTEGER NOT NULL, item TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (uid, item))",
+      "CREATE TABLE IF NOT EXISTS deco (uid INTEGER NOT NULL, k TEXT NOT NULL, PRIMARY KEY (uid, k))"]) await this.env.DB.prepare(q).run();
     try { await this.env.DB.prepare("ALTER TABLE pfurn ADD COLUMN off INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {}   // TVs and lamps can be switched off (already there after the first time)
     this.prReady = true; this.prPriv = this.prPriv || new Map(); this.letIn = this.letIn || new Map(); this.knocks = this.knocks || new Map(); }
   async prRoom(id) { await this.prTables(); const r = await this.env.DB.prepare("SELECT r.*, u.name AS oname FROM prooms r JOIN users u ON u.id = r.owner WHERE r.id = ?").bind(id).first(); if (r) this.prPriv.set(r.id, !!r.priv); return r; }
@@ -654,6 +658,10 @@ export class Lounge extends DurableObject {
     const r = await this.prMine(a); if (!r) return { ok: false, msg: "You don't have a room yet." };
     const name = m.name !== undefined ? cleanRoomName(m.name) : r.name; if (!name) return { ok: false, msg: "Give your room a name." };
     const priv = m.priv !== undefined ? (m.priv ? 1 : 0) : r.priv, wall = PR_WALLS.includes(m.wall) ? m.wall : r.wall, floor = PR_FLOORS.includes(m.floor) ? m.floor : r.floor;
+    // a wallpaper or floor you haven't bought can't be put up (free ones, and whatever the room already has, are fine)
+    const own = await this.decoOwned(a.uid);
+    if (wall !== r.wall && DECO_WALL[wall] && !own.includes("w:" + wall)) return { ok: false, msg: "Buy that wallpaper at the LLAMA STORE first." };
+    if (floor !== r.floor && DECO_FLOOR[floor] && !own.includes("f:" + floor)) return { ok: false, msg: "Buy that floor at the LLAMA STORE first." };
     await this.env.DB.prepare("UPDATE prooms SET name = ?, priv = ?, wall = ?, floor = ? WHERE id = ?").bind(name, priv, wall, floor, r.id).run();
     const nr = await this.prRoom(r.id); this.toRoom("p:" + r.id, { t: "prr", room: this.prOut(nr) });
     if (priv) await this.prKickUnwelcome(nr);
@@ -709,6 +717,17 @@ export class Lounge extends DurableObject {
     const mine = await this.env.DB.prepare("SELECT id FROM prooms WHERE owner = ?").bind(uid).first();
     const placed = new Map(); if (mine) for (const f of await this.prFurn(mine.id)) placed.set(f.item, (placed.get(f.item) || 0) + 1);
     return own.filter((r) => FURN_ITEMS[r.item]).map((r) => ({ item: r.item, n: r.n, placed: placed.get(r.item) || 0 }));
+  }
+  async decoOwned(uid) { await this.prTables(); return ((await this.env.DB.prepare("SELECT k FROM deco WHERE uid = ?").bind(uid).all()).results || []).map((r) => r.k); }
+  async decoBuy(a, m) {   // k is "w:<wallpaper>" or "f:<floor>"
+    await this.prTables();
+    const k = String(m.k || ""), [kind, id] = k.split(":"), table = kind === "w" ? DECO_WALL : kind === "f" ? DECO_FLOOR : null;
+    const price = table && Object.hasOwn(table, id) ? table[id] : 0; if (!price) return { ok: false, msg: "The store doesn't sell that." };
+    if (!a.pres || a.pres.rm !== "store") return { ok: false, msg: "Visit the LLAMA STORE to buy wallpaper and floors." };
+    if ((await this.decoOwned(a.uid)).includes(k)) return { ok: false, msg: "You already have that one." };
+    const tk = await this.debit(a.uid, price, "deco " + k); if (tk === null) return { ok: false, msg: `That costs ${price} TOKENS. Play some games to earn more!` };
+    await this.env.DB.prepare("INSERT OR IGNORE INTO deco (uid, k) VALUES (?, ?)").bind(a.uid, k).run();
+    return { ok: true, tk, deco: await this.decoOwned(a.uid) };
   }
   async furnBuy(a, m) {
     await this.prTables();
@@ -1136,7 +1155,8 @@ export class Lounge extends DurableObject {
       case "pr_rot": return this.prEditPiece(a, m, "rot");
       case "pr_pick": return this.prEditPiece(a, m, "pick");
       case "pr_staff": return this.prStaff(a, m);
-      case "furn_info": return { ok: true, furn: await this.furnStorage(uid) };
+      case "furn_info": return { ok: true, furn: await this.furnStorage(uid), deco: await this.decoOwned(uid) };
+      case "deco_buy": return this.decoBuy(a, m);
       case "furn_buy": return this.furnBuy(a, m);
       case "inv_info": return { ok: true, ...(await this.invInfo(uid)), w: a.wear || {} };
       case "inv_buy": return this.invBuy(ws, a, m);
