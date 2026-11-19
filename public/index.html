@@ -478,16 +478,23 @@
   #dkbox .slt{color:#1c6ad8;margin-bottom:8px} #dkcv{display:block;margin:0 auto;width:min(100%,320px);aspect-ratio:4/3;image-rendering:pixelated;border-radius:14px;touch-action:manipulation;cursor:crosshair}
   #dk_msg{font-size:14px;font-weight:800;margin:10px 0 4px;min-height:40px;line-height:1.4} .dkn{font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.03em;margin-bottom:6px}
   /* ---------- JOBS sign (bottom-left, above the room tabs) and the job board ---------- */
-  #jobsbtn{position:absolute;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(var(--dockh) + 18px + var(--sab));z-index:3;display:none;align-items:center;gap:6px;
+  /* wooden signs in the bottom-left corner: JOBS and FRIENDS */
+  #signs{position:absolute;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(var(--dockh) + 18px + var(--sab));z-index:3;display:none;gap:10px;align-items:flex-end}
+  body.joined #signs{display:flex} body.arena-on #signs{visibility:hidden}
+  #jobsbtn,#frbtn{position:relative;display:flex;align-items:center;gap:6px;
     font-family:'Press Start 2P',monospace;font-size:13px;color:#fff4d8;letter-spacing:.04em;text-shadow:2px 2px 0 #4a2a10;
     padding:12px 16px 11px 12px;border:3px solid #2a1606;border-radius:10px;cursor:pointer;
     background:repeating-linear-gradient(180deg,#b8743a 0 7px,#a8662e 7px 8px);box-shadow:0 6px 16px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.25),inset 0 -3px 0 rgba(0,0,0,.18);transition:transform .1s}
-  #jobsbtn:active{transform:scale(.95)} #jobsbtn:hover{filter:brightness(1.08)}
-  body.joined #jobsbtn{display:flex} body.arena-on #jobsbtn{visibility:hidden}
+  #jobsbtn:active,#frbtn:active{transform:scale(.95)} #jobsbtn:hover,#frbtn:hover{filter:brightness(1.08)}
+  .fr-star{width:16px;height:16px;flex:none;filter:drop-shadow(0 0 0 #2a1606) drop-shadow(1px 1px 0 #2a1606) drop-shadow(-1px -1px 0 #2a1606)}
+  #frbtn .fr-on{display:none;align-items:center;gap:4px;margin-left:2px;padding:3px 6px 2px 5px;border-radius:999px;background:rgba(42,22,6,.55);font-size:10px;text-shadow:none;color:#fff}
+  #frbtn .fr-on::before{content:'';width:7px;height:7px;border-radius:50%;background:#3ddc75;box-shadow:0 0 0 2px rgba(61,220,117,.3)} #frbtn .fr-on.on{display:inline-flex}
+  #frbtn .fr-req{display:none;position:absolute;top:-9px;right:-9px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--pink);border:2px solid #2a1606;color:#fff;font:800 11px/16px var(--ui);text-shadow:none;text-align:center;letter-spacing:0} #frbtn .fr-req.on{display:block;animation:frPop .25s ease-out}
+  @keyframes frPop{from{transform:scale(.4)}to{transform:scale(1)}}
   .jb-nail{position:absolute;top:5px;width:4px;height:4px;border-radius:50%;background:#2a1606;box-shadow:inset 1px 1px 0 #8a6a4a} .jb-nail.l{left:5px} .jb-nail.r{right:5px}
   .jb-coin{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0 0 18%,#ffd23f 20% 62%,#d79a12 64%);box-shadow:0 0 0 2px #2a1606;flex:none}
-  @media (max-width:640px){ #jobsbtn{font-size:11px;padding:10px 12px 9px 10px} .jb-coin{width:13px;height:13px} }
-  @media (max-width:640px){ body.joined:not(.arena-on) #tbox{bottom:calc(var(--dockh) + 66px + var(--sab))!important} }   /* messages sit above the JOBS sign on phones */
+  @media (max-width:640px){ #jobsbtn,#frbtn{font-size:11px;padding:10px 12px 9px 10px} .jb-coin,.fr-star{width:13px;height:13px} #signs{gap:8px} }
+  @media (max-width:640px){ body.joined:not(.arena-on) #tbox{bottom:calc(var(--dockh) + 66px + var(--sab))!important} }   /* messages sit above the JOBS and FRIENDS signs on phones */
   #jobsbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:min(480px,calc(100% - 24px));max-height:86vh;animation:popIn .18s ease-out}
   #jobsbox .slt{text-align:center;color:#a06808} .jsub{font-size:13px;color:var(--sub);text-align:center;margin:4px 0 10px;line-height:1.4}
   .jroom{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--sub);margin:14px 0 6px} .jroom.here{color:#1e8a3a}
@@ -541,7 +548,7 @@
   </div>
   </div>
   <div id="scrim"></div>
-  <button id="jobsbtn" aria-label="Jobs: ways to earn coins"><span class="jb-nail l"></span><span class="jb-nail r"></span><span class="jb-coin"></span>JOBS</button>
+  <div id="signs"><button id="jobsbtn" aria-label="Jobs: ways to earn coins"><span class="jb-nail l"></span><span class="jb-nail r"></span><span class="jb-coin"></span>JOBS</button><button id="frbtn" aria-label="Friends"><span class="jb-nail l"></span><span class="jb-nail r"></span><svg class="fr-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l3.1 6.4 7 1-5.1 4.9 1.2 7-6.2-3.3-6.2 3.3 1.2-7L1.9 9.2l7-1z" fill="#ffd23f"/></svg>FRIENDS<span class="fr-on" id="fr_on"></span><span class="fr-req" id="fr_req"></span></button></div>
   <div id="auth" class="gb">
     <div class="rt">🦙 <b>LLAMA LOUNGE</b></div>
     <div class="autabs" id="au_tabs"><button type="button" data-v="login">LOG IN</button><button type="button" data-v="signup">SIGN UP</button></div>
@@ -648,7 +655,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19x";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19y";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -4169,7 +4176,13 @@ const isFriend = n => FR.friends.includes(String(n||'').toUpperCase());
 function frWhere(n){ for (const o of others.values()) if (!o.leaving && o.n && o.n.toUpperCase()===n) return o.rm||'lounge'; return null; }
 function frSet(fr){ if (!fr) return; FR.friends=fr.friends||[]; FR.inc=fr.inc||[]; FR.out=fr.out||[];
   const b=$id('fr_badge'); b.textContent=FR.inc.length; b.classList.toggle('on', FR.inc.length>0); $id('menubtn').classList.toggle('frdot', FR.inc.length>0);
+  const q=$id('fr_req'); q.textContent=FR.inc.length; q.classList.toggle('on', FR.inc.length>0); frSign();
   if (frEl.style.display==='block') frDraw(); pmFriendBtn(); }
+// the FRIENDS sign: green pill = friends online now, pink badge = requests waiting
+function frSign(){ const n=FR.friends.filter(f=>frWhere(f)).length, el=$id('fr_on'); el.textContent=n; el.classList.toggle('on', n>0);
+  $id('frbtn').setAttribute('aria-label', `Friends: ${n} online` + (FR.inc.length ? `, ${FR.inc.length} request${FR.inc.length>1?'s':''}` : '')); }
+setInterval(()=>{ if (joined) frSign(); }, 2000);
+$id('frbtn').addEventListener('click', ()=>{ ensureAudio(); openFriends(); });
 function frMsg(t, good){ const el=$id('fr_msg'); el.textContent=t||''; el.classList.toggle('good', !!good); }
 function frLoad(){ NET.act('fr_list').then(r=>{ if (r.ok) frSet(r.fr); }); }
 function frDo(a, n){ return NET.act(a, {n}).then(r=>{ if (r.fr) frSet(r.fr); if (r.msg) frMsg(r.msg, r.ok); return r; }); }
