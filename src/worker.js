@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-19r";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-19s";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -57,7 +57,7 @@ const STANDS = {
 // ---------- hunger and thirst ----------
 // Meters go from 100 (full) to 0. They only drain while you're online: thirst empties in about an hour, hunger in 75 minutes.
 // Everything you buy fills them right away. When either is empty, the mini-games pay half.
-const NEEDS = { thirstMs: 60 * 60000, hungerMs: 75 * 60000, maxStep: 10 * 60000, saveMs: 60000, apple: 8, appleGap: 45000 };
+const NEEDS = { thirstMs: 60 * 60000, hungerMs: 75 * 60000, maxStep: 10 * 60000, saveMs: 60000, apple: 15, appleGap: 20000 };
 const FOOD = { soda: { th: 30 }, juice: { th: 35, hu: 5 }, shake: { th: 25, hu: 20 }, cider: { th: 40 }, caramel: { th: 40, hu: 8 },
   capple: { hu: 30 }, corn: { hu: 35 }, pie: { hu: 45 }, nachos: { hu: 35, th: -5 }, fries: { hu: 35, th: -5 }, burger: { hu: 55 } };
 const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
@@ -497,9 +497,9 @@ export class Lounge extends DurableObject {
       }
       case "apple": {
         if (!this.near(a, "barn", () => true)) return { ok: false };
-        if (now - (a.nd && a.nd.apple || 0) < NEEDS.appleGap) return { ok: true, nd: this.needsOut(a) };
+        if (now - (a.nd && a.nd.apple || 0) < NEEDS.appleGap) return { ok: true, full: 0, nd: this.needsOut(a) };
         a.nd.apple = now; await this.needsEat(ws, a, { hu: NEEDS.apple }, now);
-        return { ok: true, nd: this.needsOut(a) };
+        return { ok: true, full: NEEDS.apple, nd: this.needsOut(a) };
       }
       case "buy": {
         const S = Object.hasOwn(STANDS, m.s) ? STANDS[m.s] : null, k = String(m.k || ""), cost = S && Object.hasOwn(S.items, k) ? S.items[k] : 0;

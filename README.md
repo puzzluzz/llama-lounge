@@ -55,7 +55,7 @@ Every llama has a 🍔 hunger and 💧 thirst meter (0 to 100) in the top bar. T
 | Bar | Hay Nachos / Alfalfa Fries / Clover Burger | 2 / 2 / 3 | hunger 35 / 35 / 55 (salty snacks cost 5 thirst) |
 | Llama Acres cider stand | Hot Cider / Caramel Cider | 2 / 3 | thirst 40 / 40 (+8 hunger) |
 | Llama Acres snack stand | Caramel Apple / Corn / Apple Pie | 2 / 2 / 3 | hunger 30 / 35 / 45 |
-| Llama Acres apple trees | apple | free | hunger 8 (once every 45 seconds) |
+| Llama Acres apples on the ground | apple | free | hunger 15 (once every 20 seconds) |
 
 When either meter is empty, your llama walks slower and the arcade, arena, bowling and fishing pay half until it eats or drinks. Casino winnings are not affected.
 

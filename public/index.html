@@ -538,7 +538,7 @@
       <li>Tap things to use them: the arcade, jukebox, lamp, bar cups, tables and shirt frames. Tap the rope to work the bar.</li>
       <li>Tap another llama to wave or spit. Use MENU for emotes and more.</li>
       <li>The pink button does the action for wherever you are. On the dance floor it does a FLIP (or press F).</li>
-      <li>Keep your llama fed and watered! The 🍔 and 💧 meters at the top go down while you play. Order food and drinks at the bar (sit on a bar stool and press ORDER), buy cider and snacks in LLAMA ACRES, or nibble an apple off the trees. If a meter runs empty your llama walks slower and games pay half.</li>
+      <li>Keep your llama fed and watered! The 🍔 and 💧 meters at the top go down while you play. Order food and drinks at the bar (sit on a bar stool and press ORDER), buy cider and snacks in LLAMA ACRES, or eat apples off the ground in LLAMA ACRES (+15 🍔). If a meter runs empty your llama walks slower and games pay half.</li>
       <li>Earn LLAMA TOKENS by hitting arcade milestones and working the bar. Spend them on drinks (1 token), or bet up to 10 against THE HOUSE at the table games. Table games can also be played for free.</li>
       <li>Five rooms: the LLAMA LOUNGE, LLAMA ACRES outside, the LLAMA CASINO, the SPIT ARENA and LLAMA LANES. Tap a room in the bar at the bottom to walk there. Harvest the carrot patch in LLAMA ACRES for tokens.</li>
       <li>Try the DUNK TANK in LLAMA ACRES: stand on the grass in front of the target (left of the barn) and press THROW. Hit the bullseye to dunk whoever is on the seat (1 coin a throw, a dunk pays 3). Brave llamas can sit on the tank and earn a coin every time they get dunked.</li>
@@ -586,7 +586,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19r";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19s";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -3588,7 +3588,7 @@ function eatApple(k){
   if (curRoom!=='barn' || me.p==='sit' || me.moving) return;
   const ap = FURN.find(f=>f.t==='apple' && f.k===k); if (!ap || !near(ap.gx,ap.gy)) return;
   if (!appleReady(k)){ localMsg('Someone already ate that one. It will grow back soon!'); return; }
-  appleState[k]={back:Date.now()+APPLE_MS, at:Date.now()}; NET.act('apple').then(r=>{ if (r && r.nd) ndSet(r.nd); });
+  appleState[k]={back:Date.now()+APPLE_MS, at:Date.now()}; NET.act('apple').then(r=>{ if (r && r.nd) ndSet(r.nd); if (r && r.full) setTimeout(()=>localMsg(`+${r.full} 🍔 That hit the spot!`), 900); });
   face(ap.gx,ap.gy); me.eaK=(me.eaK||0)+1; me.lastEat={k:me.eaK, a:k}; sendPresence(true);
   localMsg(['CRUNCH! A juicy red apple.','Mmm, sweet and crisp!','Apple a day keeps the vet away!'][me.eaK%3]); try { if (actx && actx.state==='running'){ const t0=actx.currentTime; noise(t0,0.07,0.6,1800,sfxBus); noise(t0+0.09,0.06,0.45,2200,sfxBus); } } catch(_){}
 }
