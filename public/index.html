@@ -414,6 +414,8 @@
   #frbox .frr{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:14px;background:#f6f4fb;margin-bottom:6px;text-align:left}
   #frbox .frd{width:10px;height:10px;border-radius:50%;background:#c9c3d8;flex:none} #frbox .frd.on{background:#2fbf63;box-shadow:0 0 0 3px rgba(47,191,99,.2)}
   #frbox .frn{flex:1;min-width:0;font:800 14px var(--ui);overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #frbox .frn small{display:block;font:600 12px var(--ui);color:var(--sub);letter-spacing:.02em}
+  @media (max-width:640px){ #frbox .frr .frinv .ilb{display:none} }
+  #frbox .frr .frinv{background:#e6f4ff!important;color:var(--ink)!important;padding:0 10px!important;font-size:12px!important}
   #frbox .frr .gbbtn{min-height:36px;padding:0 12px;font-size:13px;flex:none} #frbox .frx{background:transparent!important;color:var(--sub)!important;min-width:36px;padding:0!important}
   #frbox .fre{font:500 14px/1.45 var(--ui);color:var(--sub);text-align:left;padding:4px 2px}
   .mbadge{display:none;margin-left:8px;min-width:18px;padding:0 6px;border-radius:999px;background:var(--pink);color:#fff;font:800 11px/18px var(--ui);text-align:center} .mbadge.on{display:inline-block}
@@ -755,7 +757,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-21k";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-21l";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -4216,7 +4218,7 @@ function setRoom(r){ if (me.fish) stopFish(true); if (typeof AR!=='undefined' &&
 const swapEl=document.getElementById('swapbox'), roombarEl=document.getElementById('roombar'); let swapTo=null;
 const DOORWAY = { lounge:[0,10], barn:[14,1], casino:[0,10], arena:[0,10], lanes:[0,10], store:[0,10] };   // each room has one door; you walk to it whichever room you're going to
 function showSwap(r){ if (!joined || r===curRoom || !validRoom(r)) return; if (isP(r) && !PRD[r]){ prGo(+r.slice(2)); return; } closeAll(); swapTo=r; document.getElementById('sw_text').textContent=`GO TO ${roomName(r)}?`; swapEl.style.display='block'; }
-document.getElementById('sw_go').addEventListener('click', ()=>{ swapEl.style.display='none'; const r=swapTo; swapTo=null; if (!r) return; if (arcade.on) exitArcade(); localMsg(`Heading to ${roomName(r)}...`); goThroughDoor(r); });
+document.getElementById('sw_go').addEventListener('click', ()=>{ swapEl.style.display='none'; const r=swapTo; swapTo=null; if (!r) return; if (isP(r)){ prGo(+r.slice(2)); return; } if (arcade.on) exitArcade(); localMsg(`Heading to ${roomName(r)}...`); goThroughDoor(r); });
 function goThroughDoor(r){ const [dx,dy]=DOORWAY[curRoom]||[0,10]; if (me.gx===dx && me.gy===dy && !me.moving && !me.bar){ switchRoom(r); return; } me.travelTo=r; if (!walkTo(dx,dy,'travel')){ me.travelTo=null; switchRoom(r); } }
 document.getElementById('sw_stay').addEventListener('click', ()=>{ swapEl.style.display='none'; swapTo=null; });
 function updateRoomsSign(){ const el=$id('rooms_on'), btn=$id('roomsbtn'); if (!el) return; const n=[...others.values()].filter(o=>!o.leaving && isP(o.rm)).length + (isP(curRoom)?1:0); el.textContent=n||''; el.classList.toggle('on', n>0); btn.classList.toggle('here', isP(curRoom)); }
@@ -4882,15 +4884,17 @@ function frDraw(){
   if (FR.inc.length){ h+='<div class="frh">FRIEND REQUESTS</div>'; for (const n of FR.inc) h+=row(n, 'wants to be friends', !!frWhere(n), `<button class="gbbtn y" data-fa="fr_accept" data-n="${esc(n)}">ACCEPT</button><button class="gbbtn frx" data-fa="fr_decline" data-n="${esc(n)}" aria-label="Decline">✕</button>`); }
   const list=[...FR.friends].sort((a,b)=>(!!frWhere(b))-(!!frWhere(a)) || a.localeCompare(b));
   h+=`<div class="frh">FRIENDS · ${FR.friends.filter(n=>frWhere(n)).length} ONLINE</div>`;
+  if (list.some(n=>{ const r2=frWhere(n); return r2 && r2!==curRoom; })) h+=`<div class="fre">Tap 📨 INVITE to ask a friend over to ${esc(roomName(curRoom))}.</div>`;
   if (!list.length) h+='<div class="fre">No friends yet. Tap another llama and press ⭐ ADD, or type their name above.</div>';
   for (const n of list){ const rm=frWhere(n);
-    h+=row(n, rm ? (rm===curRoom ? 'Here with you' : 'In '+roomName(rm)) : 'Offline', !!rm, `<button class="gbbtn frm" data-dm="${esc(n)}" aria-label="Message ${esc(n)}">💬</button>` + (rm && rm!==curRoom ? `<button class="gbbtn y" data-go2="${rm}">GO ▶</button>` : '') + `<button class="gbbtn frx" data-fa="fr_remove" data-n="${esc(n)}" aria-label="Remove friend">✕</button>`); }
+    h+=row(n, rm ? (rm===curRoom ? 'Here with you' : 'In '+roomName(rm)) : 'Offline', !!rm, `<button class="gbbtn frm" data-dm="${esc(n)}" aria-label="Message ${esc(n)}">💬</button>` + (rm && rm!==curRoom ? `<button class="gbbtn frinv" data-inv="${esc(n)}" aria-label="Invite ${esc(n)} to this room">📨<span class="ilb"> INVITE</span></button><button class="gbbtn y" data-go2="${rm}">GO ▶</button>` : '') + `<button class="gbbtn frx" data-fa="fr_remove" data-n="${esc(n)}" aria-label="Remove friend">✕</button>`); }
   if (FR.out.length){ h+='<div class="frh">SENT</div>'; for (const n of FR.out) h+=row(n, 'waiting for them to accept', !!frWhere(n), `<button class="gbbtn" data-fa="fr_remove" data-n="${esc(n)}">CANCEL</button>`); }
   frBody.innerHTML=h;
 }
 frBody.addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; ensureAudio();
   if (b.dataset.go2){ closeAll(); showSwap(b.dataset.go2); return; }
   if (b.dataset.dm){ openDM(b.dataset.dm); return; }
+  if (b.dataset.inv){ b.disabled=true; NET.act('room_invite',{n:b.dataset.inv}).then(r=>{ frMsg(r.msg||(r.ok?'Invite sent!':'Could not send that invite.'), r.ok); if (r.ok){ b.textContent='✓ SENT'; } else b.disabled=false; }); return; }
   const a=b.dataset.fa, n=b.dataset.n; if (!a) return;
   if (a==='fr_remove' && FR.friends.includes(n) && !confirm(`Remove ${n} from your friends?`)) return;
   frDo(a, n); });
@@ -5116,6 +5120,14 @@ NET.handlers.prf = m => { const key='p:'+m.room; if (!PRD[key]) return; PRD[key]
 NET.handlers.prr = m => prApplyRoom(m.room);
 NET.handlers.prkick = m => { localMsg(m.msg||'You left the room.'); if (isP(curRoom)){ setRoom('lounge'); flash(); sendPresence(true); setTimeout(()=>walkTo(...spawnSpot('lounge')), 400); } };
 NET.handlers.knockans = m => { if (m.yes){ localMsg(`You were let into ${m.name}!`); prGo(m.room); } else localMsg(`Nobody let you into ${m.name} this time.`); };
+// a friend invited you to the room they're in: offer to go there
+NET.handlers.rinv = m => { const rm=String(m.rm||''), by=String(m.by||'').toUpperCase(); if (!joined || rm===curRoom) return;
+  if (isP(rm) && m.name) PRN[rm]=String(m.name);
+  if (!validRoom(rm) && !isP(rm)) return;
+  const nm = isP(rm) ? (m.name ? String(m.name) : 'their room') : roomName(rm);
+  try{ ensureAudio(); if (actx){ const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.value=660; gn.gain.value=0.06*(svol/100); o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime+0.12); } }catch(_){}
+  if (isP(rm)){ closeAll(); swapTo=rm; } else { showSwap(rm); }
+  document.getElementById('sw_text').textContent=`📨 ${by} invited you to ${nm}. GO?`; swapEl.style.display='block'; };
 NET.handlers.prinvited = m => localMsg(`🏠 ${String(m.by).toUpperCase()} invited you to ${m.name}! Find it in 🏠 ROOMS.`);
 const KNQ=[];   // knocks waiting for the owner to answer
 NET.handlers.knock = m => { KNQ.push(m); knShow(); try{ ensureAudio(); if (actx){ const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.value=520; gn.gain.value=0.06*(svol/100); o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime+0.12); } }catch(_){} };

@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-21k";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-21l";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -862,6 +862,29 @@ export class Lounge extends DurableObject {
     const row = await this.env.DB.prepare("SELECT a, b, st FROM friends WHERE (a = ? AND b = ?) OR (a = ? AND b = ?)").bind(a.uid, u.id, u.id, a.uid).first();
     return { u, row };
   }
+  // invite a friend to whatever room you're in right now (they get a pop-up to come over)
+  async roomInvite(ws, a, m) {
+    await this.frTable();
+    const now = Date.now(); if (!a.ri || now - a.ri[0] > 60000) a.ri = [now, 0]; if (++a.ri[1] > 12) { ws.serializeAttachment(a); return { ok: false, msg: "Slow down on the invites. Try again in a minute." }; } ws.serializeAttachment(a);
+    const T = await this.frTarget(a, m); if (T.err) return { ok: false, msg: T.err };
+    const { u, row } = T, them = u.name.toUpperCase();
+    if (!row || row.st !== "ok") return { ok: false, msg: `You can only invite friends. Add ${them} first.` };
+    const rm = a.pres && a.pres.rm; if (!rm) return { ok: false, msg: "Walk into a room first." };
+    let online = false, here = false;
+    for (const w2 of this.sockets()) { const x = w2.deserializeAttachment(); if (x && x.uid === u.id) { online = true; if (x.pres && x.pres.rm === rm) here = true; } }
+    if (!online) return { ok: false, msg: `${them} isn't online right now.` };
+    if (here) return { ok: false, msg: `${them} is already here with you.` };
+    if (!this.rinv) this.rinv = new Map(); const k = a.uid + ":" + u.id; if (now - (this.rinv.get(k) || 0) < 30000) return { ok: false, msg: `You just invited ${them}. Give them a moment.` }; this.rinv.set(k, now);
+    let name = null;
+    if (rm.startsWith("p:")) {
+      const r = await this.prRoom(Math.floor(+rm.slice(2) || 0)); if (!r) return { ok: false, msg: "This room is gone." };
+      if (r.priv) { if (r.owner !== a.uid) return { ok: false, msg: "This room is private. Only its owner can invite people." };
+        await this.env.DB.prepare("INSERT OR IGNORE INTO pinv (room, uid) VALUES (?, ?)").bind(r.id, u.id).run(); }
+      name = r.name;
+    }
+    this.toUid(u.id, { t: "rinv", by: a.name, rm, name });
+    return { ok: true, msg: `Invite sent to ${them}!` };
+  }
   async frAdd(ws, a, m) {
     await this.frTable();
     const now = Date.now(); if (!a.fr || now - a.fr[0] > 60000) a.fr = [now, 0]; if (++a.fr[1] > 10) { ws.serializeAttachment(a); return { ok: false, msg: "Slow down on the friend requests. Try again in a minute." }; } ws.serializeAttachment(a);
@@ -1067,6 +1090,7 @@ export class Lounge extends DurableObject {
       case "sip": return this.sipHeld(ws, a, now);
       case "fr_list": return { ok: true, fr: await this.frList(uid) };
       case "fr_add": return this.frAdd(ws, a, m);
+      case "room_invite": return this.roomInvite(ws, a, m);
       case "fr_accept": return this.frAccept(a, m);
       case "fr_decline": return this.frDrop(a, m, "decline");
       case "fr_remove": return this.frDrop(a, m, "remove");
