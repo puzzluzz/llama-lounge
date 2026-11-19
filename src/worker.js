@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-22j";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-22k";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -1492,7 +1492,7 @@ export class Lounge extends DurableObject {
     if (!/^[A-Za-z0-9_]{3,12}$/.test(target)) return { ok: false, msg: "No player with that name." };
     const u = await this.env.DB.prepare("SELECT id, name, banned FROM users WHERE name = ?").bind(target).first();
     if (!u || u.banned) return { ok: false, msg: "No player named " + target.toUpperCase() };
-    if (a.staff !== "owner" && u.id === a.uid) return { ok: false, msg: "Mods can't give tokens to themselves." };
+    // mods may give tokens to themselves too; it counts toward the same daily limit and is recorded like any other gift
     if (a.staff !== "owner") {
       const since = Date.parse(etDay(Date.now()) + "T00:00:00Z") - 12 * 3600e3;
       const rows = (await this.env.DB.prepare("SELECT delta, t FROM ledger WHERE reason = ? AND t > ?").bind("staff gift by " + a.name, since).all()).results || [];

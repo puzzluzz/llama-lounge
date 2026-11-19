@@ -767,7 +767,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22j";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22k";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -5714,8 +5714,8 @@ function loadDash(){
     h+=`<h4>BANNED (${r.banned.length})</h4>`;
     for (const p of r.banned) h+=`<div class="dr">${badgeHtml('')}<span class="nm">${esc(p.n)}</span>${owner?btn('UNBAN','unban',p.n):''}</div>`;
     if (!r.banned.length) h+='<div class="dl">NOBODY IS BANNED.</div>';
-    h+='<h4>🪙 TOKEN GIFTS</h4>';
-    { const td=Object.entries(r.giftsToday||{}); h+=`<div class="dl">TODAY: ${td.length ? td.map(([by,n])=>`${esc(by)} gave ${n}`).join(' · ') : 'no gifts yet'}. Mods can give up to ${r.giftCap||500} a day.</div>`; }
+    h+='<h4>🪙 TOKEN GIFTS</h4>'+`<div class="dl">${btn('🪙 GIVE MYSELF TOKENS','give',me.n,'gd')}</div>`;
+    { const td=Object.entries(r.giftsToday||{}); h+=`<div class="dl">TODAY: ${td.length ? td.map(([by,n])=>`${esc(by)} gave ${n}`).join(' · ') : 'no gifts yet'}. Mods can give up to ${r.giftCap||500} a day (gifts to themselves count too).</div>`; }
     for (const gf of (r.gifts||[]).slice(0,30)){ const d=new Date(gf.t), mine=gf.by===(me.n||'').toUpperCase(); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(gf.by)} gave ${esc(gf.to)} <b>${gf.n}</b> 🪙 ${gf.undo ? `<s>UNDONE</s> <small>by ${esc(gf.undo.by)} (${gf.undo.n} taken back)</small>` : ((owner||mine) && gf.id ? `<button class="gbbtn s" data-undo="${gf.id}" data-to="${esc(gf.to)}" data-n="${gf.n}">↩ UNDO</button>` : '')}</div>`; }
     if (!(r.gifts||[]).length) h+='<div class="dl">NO TOKEN GIFTS YET.</div>';
     h+='<h4>STAFF LOG</h4>';
