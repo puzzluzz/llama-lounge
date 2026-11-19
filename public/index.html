@@ -387,7 +387,7 @@
   body.editing #editbar{display:flex} body.editing #signs{visibility:hidden}
   body.editing #tbox{bottom:calc(var(--dockh) + 100px + var(--sab))!important}
   #eb_items{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;max-width:min(560px,70vw)} #eb_items::-webkit-scrollbar{display:none}
-  #wardbox .wi.drag{cursor:grab;touch-action:pan-y} #wardbox .wi [data-placef]{margin-top:4px;min-height:30px;padding:0 10px;font-size:11px}
+  #wardbox .wi.drag{cursor:grab;touch-action:pan-y} #wardbox .wi.drag canvas{touch-action:none;cursor:grab;border-radius:8px;outline:2px dashed rgba(255,210,63,.7);outline-offset:1px} #wardbox .wi [data-placef]{margin-top:4px;min-height:30px;padding:0 10px;font-size:11px}
   #eb_items .ebi{touch-action:pan-x;position:relative;flex:none;width:58px;height:58px;border-radius:12px;border:2px solid transparent;background:rgba(255,255,255,.12);cursor:pointer;padding:0} #eb_items .ebi.on{border-color:var(--yel);background:rgba(255,210,63,.18)} #eb_items .ebi:disabled{opacity:.35}
   #eb_items .ebi canvas{width:48px;height:48px;image-rendering:pixelated} #eb_items .ebi i{position:absolute;right:3px;bottom:2px;font:800 11px var(--ui);color:#fff;font-style:normal;text-shadow:0 1px 2px #000}
   #eb_items .fre{color:#fff;font:600 13px var(--ui);padding:0 6px;white-space:nowrap}
@@ -758,7 +758,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-21o";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-21r";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -4670,7 +4670,7 @@ function drawFishing(t){
 
 // ======================= CONTEXT TIPS =======================
 const TIPS = {
-  myroom:'<b>YOUR ROOM</b> Place furniture from 🎒 INVENTORY > ITEMS (drag it in). Open 🏠 ROOMS > SETTINGS to name it, change the walls and floor, make it private or invite friends.',
+  myroom:'<b>YOUR ROOM</b> Drag any piece to move it. Add more from 🎒 INVENTORY > ITEMS. Open 🏠 ROOMS > SETTINGS to name it, change the walls and floor, make it private or invite friends.',
   counter:'<b>CHECKOUT</b> Press SHOP or tap the counter to see the real La Llama P.I.C. shirts.',
   racks:'<b>CLOTHES</b> Tap anything on the racks or in the glass case to try it on and buy it with tokens. Change outfits any time in MENU > WARDROBE.',
   arcade:'<b>ARCADE</b> Tap the cabinet to play HAY CATCH or LLAMA DASH.',
@@ -4980,7 +4980,7 @@ function wdDraw(){
   else if (WD.tab==='storage'){ const list=WD.furn.filter(x=>FURN_DEF[x.item]&&x.n>0), inMine=isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine;
     if (!list.length) h='<div class="wdstore"><div class="wdbox">📦</div><b>NO ITEMS YET</b><small>Buy furniture at the 🛍️ LLAMA STORE, then place it in your room.</small></div>';
     else { const card=x=>{ const left=x.n-x.placed; return `<div class="wi fi${inMine&&left>0?' drag':''}" data-pf="${x.item}"><canvas width="48" height="48" data-fk="${x.item}"></canvas><b>${esc(FURN_DEF[x.item].n)}</b><small class="own">${left} LEFT${x.placed?` · ${x.placed} PLACED`:''}</small>${inMine?`<button class="gbbtn y" data-placef="${x.item}" ${left<=0?'disabled':''}>PLACE</button>`:''}</div>`; };
-      h=`<div class="fre">${inMine ? 'Drag a piece into your room, or tap PLACE. Only you can place furniture, and only in your own room.' : 'Furniture you own. You can place it in your own room.'}</div>`;
+      h=`<div class="fre">${inMine ? 'Drag a picture into your room, or tap PLACE. Only you can place furniture, and only in your own room.' : 'Furniture you own. You can place it in your own room.'}</div>`;
       for (const [cat,label] of [...FURN_CATS,[null,'📦 OTHER']]){ const ls=list.filter(x=>(FURN_DEF[x.item].cat||null)===cat); if (ls.length) h+=`<div class="wdh">${label}</div><div class="wdg">${ls.map(card).join('')}</div>`; }
       h+=`<div class="srow"><button class="gbbtn y" id="wd_place">${inMine?'🛋️ ARRANGE MY ROOM':'🏠 GO TO MY ROOM'}</button></div>`; } }
   else { const mine=INV.owned.filter(k=>ITEMS[k]);
@@ -5005,9 +5005,11 @@ function prInMine(){ return isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine; }
 function prTakeOut(item){ if (!prInMine()) return; closeAll(); if (!PRED.on) prEditStart(); PRED.item=item; PRED.piece=null; prEditBar(); localMsg(`Tap or drag on the floor to place your ${FURN_DEF[item].n}. Press DONE when you're finished.`); }
 $id('wardbox').addEventListener('click', e=>{ const b=e.target.closest('[data-placef]'); if (!b || b.disabled) return; e.stopPropagation(); ensureAudio(); prTakeOut(b.dataset.placef); });
 $id('wardbox').addEventListener('pointerdown', e=>{ const c=e.target.closest('.wi.drag[data-pf]'); if (!c || e.target.closest('button') || !prInMine()) return;
+  if (e.pointerType!=='mouse' && e.target.tagName!=='CANVAS') return;   // on touch, grab the picture; swiping elsewhere scrolls the list
+  e.preventDefault(); try{ e.target.setPointerCapture && e.target.releasePointerCapture(e.pointerId); }catch(_){}
   const item=c.dataset.pf; const sx=e.clientX, sy=e.clientY, id=e.pointerId;
   const mv=ev=>{ if (ev.pointerId!==id) return; const box=$id('wardbox').getBoundingClientRect(); const out = ev.clientX<box.left || ev.clientX>box.right || ev.clientY<box.top || ev.clientY>box.bottom;
-    if (out || Math.hypot(ev.clientX-sx, ev.clientY-sy)>40){ off(); closeAll(); if (!PRED.on) prEditStart(); PRED.item=null; PRED.piece=null; prEditBar();
+    if (out || Math.hypot(ev.clientX-sx, ev.clientY-sy)>12){ off(); closeAll(); if (!PRED.on) prEditStart(); PRED.item=null; PRED.piece=null; prEditBar();
       prDragStart(ev, {item, rot:0, ox:0, oy:0}); PDR.on=true; prDragAim(ev); } };
   const up=ev=>{ if (ev.pointerId===id) off(); }; const off=()=>{ removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); };
   addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up); });
@@ -5120,25 +5122,32 @@ function prEditBar(){ const el=$id('eb_items'), bar=$id('editbar'); bar.classLis
 $id('editbar').addEventListener('pointerdown', e=>{ e.stopPropagation(); const b=e.target.closest('.ebi'); if (b && !b.disabled && b.dataset.it) prDragStart(e, {item:b.dataset.it, rot:0, ox:0, oy:0, fromBar:true}); });
 // ---- drag and drop: press a piece (or an item in the bar), drag it, let go to drop it; a see-through copy shows where it lands ----
 const PDR={on:false, armed:false};
-function prDragStart(e, o){ Object.assign(PDR, {on:false, armed:true, id:e.pointerId, sx:e.clientX, sy:e.clientY, fid:null, gx:null, gy:null, ok:false, tapGx:null, tapGy:null}, o); PDR.hgx=null; }
+function prDragStart(e, o){ Object.assign(PDR, {on:false, armed:true, auto:false, fromBar:false, id:e.pointerId, sx:e.clientX, sy:e.clientY, fid:null, gx:null, gy:null, ok:false, tapGx:null, tapGy:null}, o); PDR.hgx=null; }
 function prFits(item, gx, gy, rot, skip){ const D=FURN_DEF[item]; if (!D) return false; const wall=!!D.wall;
   if (wall && gx!==0 && gy!==0) return false; if (wall && gx===0 && gy>=9) return false;
   for (const [x,y] of furnTiles(item,gx,gy,rot)){ if (x<0||y<0||x>=N||y>=NY) return false; if (!wall && x<=3 && y===10) return false; }
   for (const f of FURN){ if (!f.fid || f.fid===skip || !!(FURN_DEF[f.item]||{}).wall!==wall) continue; const ft=furnTiles(f.item,f.gx,f.gy,f.rot); if (ft.some(([x,y])=>furnTiles(item,gx,gy,rot).some(([u,v])=>u===x&&v===y))) return false; }
   return true; }
-function prDragAim(e){ const [tx,ty]=toGrid(e.clientX, e.clientY); const bar=$id('editbar').getBoundingClientRect();
+// how tall each piece looks (game pixels), so a new piece hangs centred on the pointer instead of standing on it
+const FURN_VH={chair:26,armchair:24,couch:24,sofa:24,loveseat:24,bed:20,bookshelf:38,tv:30,bigtv:40,plant:30,lamp:30,table:16,vending:46,vendrink:46,snackvend:46,adminsign:0};
+function prCentreTile(item, rot, clientX, clientY){ const vh=FURN_VH[item]!==undefined ? FURN_VH[item] : 16;
+  const wx=clientX/S-OX, wy=clientY/S-OY+vh/2, fx=(wx/(TW/2)+wy/(TH/2))/2, fy=(wy/(TH/2)-wx/(TW/2))/2;
+  const t=furnTiles(item,0,0,rot), w=Math.max(...t.map(q=>q[0]))+1, d=Math.max(...t.map(q=>q[1]))+1;   // footprint, centred on the pointer too
+  return [Math.floor(fx-(w-1)/2), Math.floor(fy-(d-1)/2)]; }
+function prDragAim(e){ const bar=$id('editbar').getBoundingClientRect();
   if (e.clientY>=bar.top-4 && e.clientX>=bar.left && e.clientX<=bar.right){ PDR.gx=null; return; }   // over the bar: dropping here cancels
-  PDR.gx=tx-PDR.ox; PDR.gy=ty-PDR.oy; PDR.ok=prFits(PDR.item, PDR.gx, PDR.gy, PDR.rot, PDR.fid); }
+  if (PDR.fid){ const [tx,ty]=toGrid(e.clientX, e.clientY); PDR.gx=tx-PDR.ox; PDR.gy=ty-PDR.oy; }   // moving a piece: it stays where you grabbed it
+  else [PDR.gx,PDR.gy]=prCentreTile(PDR.item, PDR.rot, e.clientX, e.clientY); PDR.ok=prFits(PDR.item, PDR.gx, PDR.gy, PDR.rot, PDR.fid); }
 addEventListener('pointermove', e=>{
   if (PDR.armed && e.pointerId===PDR.id){ if (!PDR.on){ const dx=e.clientX-PDR.sx, dy=e.clientY-PDR.sy;
       // from the bar, a sideways swipe still scrolls the bar; pull up (or press a piece and move) to start dragging
-      if (PDR.fromBar ? (dy<-14 && Math.abs(dy)>Math.abs(dx)) : Math.hypot(dx,dy)>8){ PDR.on=true; PRED.piece=null; prEditBar(); } }
+      if (PDR.fromBar ? (dy<-14 && Math.abs(dy)>Math.abs(dx)) : Math.hypot(dx,dy)>8){ PDR.on=true; if (!PRED.on && prInMine()) prEditStart(); PRED.piece=null; PRED.item=null; prEditBar(); } }
     if (PDR.on){ prDragAim(e); e.preventDefault(); } return; }
   // mouse hover with an item picked: show where a tap would put it
-  if (PRED.on && PRED.item && e.pointerType==='mouse' && e.target===cv){ const [tx,ty]=toGrid(e.clientX, e.clientY); PDR.hgx=tx; PDR.hgy=ty; } else PDR.hgx=null;
+  if (PRED.on && PRED.item && e.pointerType==='mouse' && e.target===cv){ const [tx,ty]=prCentreTile(PRED.item, 0, e.clientX, e.clientY); PDR.hgx=tx; PDR.hgy=ty; } else PDR.hgx=null;
 }, {passive:false});
 function prDragEnd(e, cancel){ if (!PDR.armed || e.pointerId!==PDR.id) return; const was=PDR.on; PDR.armed=false; PDR.on=false;
-  if (!was){ if (PDR.fid && !cancel){ PRED.piece={fid:PDR.fid, item:PDR.item, gx:PDR.tapGx, gy:PDR.tapGy}; PRED.item=null; prEditBar(); } return; }   // just a tap: select it as before
+  if (!was){ if (PDR.auto){ if (!cancel) prTapWalk(PDR.tapGx, PDR.tapGy); return; } if (PDR.fid && !cancel){ PRED.piece={fid:PDR.fid, item:PDR.item, gx:PDR.tapGx, gy:PDR.tapGy}; PRED.item=null; prEditBar(); } return; }   // just a tap: select it as before
   PDR.noClick=performance.now();
   if (cancel || PDR.gx===null) return;
   if (!PDR.ok){ localMsg(PDR.fid ? 'That piece doesn\'t fit there.' : 'That doesn\'t fit there.'); return; }
@@ -5174,8 +5183,13 @@ function playerPointer(e){
   const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
   if (PRED.on){ const f=prFurnAt(gx,gy);
     if (f){ prDragStart(e, {fid:f.fid, item:f.item, rot:f.rot||0, gx0:f.gx, gy0:f.gy, ox:gx-f.gx, oy:gy-f.gy}); PDR.tapGx=gx; PDR.tapGy=gy; return; }
-    if (PRED.item){ const rot=0; NET.act('pr_place',{item:PRED.item, gx, gy, rot}).then(r=>{ if (!r.ok) return localMsg(r.msg||'Can\'t put that there.'); if (r.storage){ PRED.storage=r.storage; const s2=r.storage.find(x=>x.item===PRED.item); if (!s2 || s2.n-s2.placed<=0) PRED.item=null; } prEditBar(); }); return; }
+    if (PRED.item){ const rot=0, [cx2,cy2]=prCentreTile(PRED.item, 0, e.clientX, e.clientY); NET.act('pr_place',{item:PRED.item, gx:cx2, gy:cy2, rot}).then(r=>{ if (!r.ok) return localMsg(r.msg||'Can\'t put that there.'); if (r.storage){ PRED.storage=r.storage; const s2=r.storage.find(x=>x.item===PRED.item); if (!s2 || s2.n-s2.placed<=0) PRED.item=null; } prEditBar(); }); return; }
     PRED.piece=null; prEditBar(); return; }
+  // in your own room you can grab any piece and drag it somewhere else; a plain tap still walks or sits as usual
+  if (prInMine()){ const f=prFurnAt(gx,gy); if (f && !(FURN_DEF[f.item]||{}).wall){ prDragStart(e, {fid:f.fid, item:f.item, rot:f.rot||0, gx0:f.gx, gy0:f.gy, ox:gx-f.gx, oy:gy-f.gy, auto:true}); PDR.tapGx=gx; PDR.tapGy=gy; return; } }
+  prTapWalk(gx,gy);
+}
+function prTapWalk(gx,gy){
   if (walkable(gx,gy) && !seatAt(gx,gy)){ walkTo(gx,gy); return; }
   let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } }
   if (best) walkTo(best.gx,best.gy);
