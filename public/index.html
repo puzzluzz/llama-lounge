@@ -567,7 +567,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19k";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19l";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -2479,10 +2479,24 @@ function upsertPeer(peer){
   if (Math.hypot(o.tx-o.x,o.ty-o.y)>3){ o.x=o.tx; o.y=o.ty; }
 }
 const LEAVE_T=1200;
+// someone logged off: in your room they walk to the door, then fade out; anywhere else they just go
+function walkOut(o){
+  o.leaving = Infinity; o.tx=o.x; o.ty=o.y;   // already not counted or tappable, but not fading yet
+  const door = DOORWAY[curRoom];
+  if (!joined || !sameRoom(o) || !door){ o.leaving=performance.now(); return; }
+  const path = findPath(Math.floor(o.x), Math.floor(o.y), door[0], door[1]);
+  if (!path || !path.length){ o.leaving=performance.now(); return; }
+  if (o.p==='sit' || o.p==='bar') o.p='stand'; o.fs=null; o.bubble=null; o.emote=null;
+  o.exitPath = path; o.exitBy = performance.now()+12000;
+}
 function updateOthers(dt){
   for (const [id,o] of others){ if (o.leaving && performance.now()-o.leaving>LEAVE_T) others.delete(id); }
   const sp = 1.6/STEP, now=performance.now();
   for (const o of others.values()){
+    if (o.exitPath){ // walking out: next tile of the path, then start fading at the door
+      if (Math.hypot(o.tx-o.x, o.ty-o.y)<0.02){ const nx=o.exitPath.shift();
+        if (nx && now<o.exitBy){ o.d=dirFrom(nx[0]-Math.floor(o.tx), nx[1]-Math.floor(o.ty), o.d); o.tx=nx[0]+0.5; o.ty=nx[1]+0.5; }
+        else { o.exitPath=null; o.leaving=now; } } }
     const dx=o.tx-o.x, dy=o.ty-o.y, dist=Math.hypot(dx,dy);
     if (dist>0.01){ const L=stepLen(dx,dy); const f = L>0 ? Math.min(1, (WALK_PX*1.15*dt)/L) : 1; o.x+=dx*f; o.y+=dy*f; o.anim+=dt; o.walking=true; }
     else { o.x=o.tx; o.y=o.ty; o.walking=false; if(o.p==='dance') o.anim+=dt; else o.anim=0; }
@@ -2504,7 +2518,7 @@ async function initRoom(){
     for (const p of ch.peers) if (p.isMe && p.sameTab) myPeer = p.peer;
     for (const p of ch.joined) upsertPeer(p);
     for (const p of ch.updated) upsertPeer(p);
-    for (const p of ch.left){ const o=others.get(p.peer); if(o && !o.leaving){ sysMsg(`${o.n.toUpperCase()} left.`); o.leaving=performance.now(); o.tx=o.x; o.ty=o.y; } }
+    for (const p of ch.left){ const o=others.get(p.peer); if(o && !o.leaving){ sysMsg(`${o.n.toUpperCase()} left.`); walkOut(o); } }
     updateStatus();
   }, () => { room=null; updateStatus(); });
   room.onConnection(() => updateStatus(), () => { room=null; updateStatus(); });
@@ -3115,7 +3129,7 @@ function render(t){
   overlayItems.length = 0; llamaHits.length = 0; cupHits.length = 0;
   for (const it of items){
     if (it.f) drawFurn(it.f, t);
-    else { const fa = (!it.me && it.l.leaving) ? Math.max(0, 1-(performance.now()-it.l.leaving)/LEAVE_T) : 1; g.globalAlpha=fa; const pos = drawLlama(it.l, t, it.me); g.globalAlpha=1; overlayItems.push({l:it.l, x:pos[0], y:pos[1], me:it.me, balloon:pos[2], fa}); }
+    else { const fa = (!it.me && it.l.leaving) ? Math.max(0, Math.min(1, 1-(performance.now()-it.l.leaving)/LEAVE_T)) : 1; g.globalAlpha=fa; const pos = drawLlama(it.l, t, it.me); g.globalAlpha=1; overlayItems.push({l:it.l, x:pos[0], y:pos[1], me:it.me, balloon:pos[2], fa}); }
   }
   drawSpits(t); drawDunk(t);
   drawFishing(t);
