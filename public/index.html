@@ -263,7 +263,7 @@
   #roombar{position:static;display:flex;gap:4px;padding:3px;border-radius:14px;background:rgba(255,255,255,.07);flex:none}
   #roombar .pbtn{height:38px;padding:0 11px;font-size:12px;background:transparent;border:0;box-shadow:none;border-radius:11px;color:#d9d2ee;-webkit-backdrop-filter:none;backdrop-filter:none;white-space:nowrap}
   #roombar .pbtn.here{background:#fff;color:var(--ink)}
-  #roombar .cnt{display:inline-block;min-width:16px;padding:1px 5px;margin-left:3px;border-radius:999px;background:var(--pink);color:#fff;font-size:10px;line-height:14px}
+  #roombar .ri{margin-right:4px} #roombar .cnt{display:inline-block;min-width:16px;padding:1px 5px;margin-left:3px;border-radius:999px;background:var(--pink);color:#fff;font-size:10px;line-height:14px}
   #bottom{position:static;padding:0;flex:1;min-width:0;gap:8px}
   #chatrow{position:relative;max-width:none;gap:0}
   #chatin{height:44px;box-sizing:border-box;font-size:16px;font-weight:500;padding:0 52px 0 16px;background:rgba(255,255,255,.95);color:var(--ink);border:0;border-radius:14px;outline:none;letter-spacing:0}
@@ -348,7 +348,9 @@
     #tip{top:calc(66px + var(--sat));left:10px;right:10px;transform:none;width:auto;max-width:none;font-size:13px}
     #dock{flex-wrap:wrap;width:calc(100% - 16px);bottom:calc(8px + var(--sab));padding:8px;gap:8px;border-radius:22px}
     #roombar{width:100%;box-sizing:border-box}
-    #roombar .pbtn{flex:1;padding:0 4px;font-size:12px;height:36px}
+    #roombar .pbtn{flex:1 1 0;min-width:0;padding:4px 2px 3px;height:46px;font-size:10px;letter-spacing:.02em;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;overflow:visible}
+    #roombar .ri{font-size:17px;line-height:1} #roombar .rl{line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    #roombar .cnt{position:absolute;top:2px;right:3px;margin:0;min-width:14px;padding:0 4px;font-size:9px;line-height:14px}
     #abtn{min-width:84px}
     .sheet{left:0!important;right:0!important;top:auto!important;bottom:0!important;transform:none!important;width:100%!important;max-width:none!important;min-width:0!important;
            max-height:86vh!important;border-radius:26px 26px 0 0!important;padding:26px 18px calc(18px + var(--sab))!important;animation:sheetUp .24s cubic-bezier(.2,.9,.3,1)!important}
@@ -586,7 +588,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19s";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19t";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -3520,7 +3522,7 @@ function showSwap(r){ if (!joined || r===curRoom || !ROOMS.includes(r)) return; 
 document.getElementById('sw_go').addEventListener('click', ()=>{ swapEl.style.display='none'; const r=swapTo; swapTo=null; if (!r) return; if (arcade.on) exitArcade(); localMsg(`Heading to ${ROOM_NAMES[r]}...`); goThroughDoor(r); });
 function goThroughDoor(r){ const [dx,dy]=DOORWAY[curRoom]; if (me.gx===dx && me.gy===dy && !me.moving && !me.bar){ switchRoom(r); return; } me.travelTo=r; if (!walkTo(dx,dy,'travel')){ me.travelTo=null; switchRoom(r); } }
 document.getElementById('sw_stay').addEventListener('click', ()=>{ swapEl.style.display='none'; swapTo=null; });
-function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; document.getElementById('dock').classList.toggle('on', !!joined); document.body.classList.toggle('joined', !!joined); for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n=roomCount(r); b.innerHTML = ({lounge:'🍸 LOUNGE', barn:'🌾 ACRES', casino:'🎰 CASINO', arena:'💦 ARENA', lanes:'🎳 LANES'})[r] + (n ? ` <span class="cnt">${n}</span>` : ''); } }
+function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; document.getElementById('dock').classList.toggle('on', !!joined); document.body.classList.toggle('joined', !!joined); for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n=roomCount(r); const [ic,lb]=({lounge:['🍸','LOUNGE'], barn:['🌾','ACRES'], casino:['🎰','CASINO'], arena:['💦','ARENA'], lanes:['🎳','LANES']})[r]; b.innerHTML = `<span class="ri">${ic}</span><span class="rl">${lb}</span>` + (n ? `<span class="cnt">${n}</span>` : ''); } }
 for (const b of roombarEl.querySelectorAll('[data-go]')) b.addEventListener('click', ()=>{ ensureAudio(); const r=b.dataset.go;
   if (!joined) return; if (r===curRoom){ localMsg(`You're already in ${ROOM_NAMES[r]}.`); return; }
   showSwap(r); });
