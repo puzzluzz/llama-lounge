@@ -411,6 +411,26 @@
   .artok ul{list-style:none;margin:8px 0 0;padding:0} .artok li{display:flex;justify-content:space-between;font-size:13px;padding:3px 0} .arcap{font-size:12px;color:var(--sub);text-align:center;margin-top:6px}
   #arbox .srow{display:flex;justify-content:center;margin-top:10px}
   @media (max-width:640px){ #arbox{max-height:88vh!important} .cols{grid-template-columns:repeat(3,1fr)} .arbig{font-size:36px} #ar_score{font-size:16px} #ar_time{font-size:13px;padding:9px 10px} }
+  /* ---------- LLAMA LANES bowling overlay ---------- */
+  #bowl{position:absolute;inset:0;display:none;z-index:7;background:radial-gradient(ellipse at 50% 30%,#2e1a48,#0e0a1c 72%);touch-action:none;-webkit-user-select:none;user-select:none}
+  #bwcv{position:absolute;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.55),0 0 0 2px rgba(255,255,255,.08);touch-action:none}
+  #bw_top{position:absolute;left:0;right:0;top:calc(8px + var(--sat));display:flex;gap:8px;padding:0 10px;align-items:flex-start}
+  #bw_exit{width:44px;height:44px;border-radius:14px;border:1px solid var(--gline);background:var(--glass);color:#fff;font-size:18px;font-weight:700;cursor:pointer;flex:none}
+  #bw_card{flex:1;display:flex;gap:3px;max-width:520px;margin:0 auto;background:var(--glass);border:1px solid var(--gline);border-radius:12px;padding:5px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+  #bw_card .fr{flex:1;background:#fff;border-radius:7px;text-align:center;min-width:0;overflow:hidden} #bw_card .fr.cur{box-shadow:0 0 0 2px var(--yel)} #bw_card .fr.tot{flex:1.3;background:var(--yel)}
+  #bw_card .fn{font-size:9px;font-weight:800;color:var(--sub);background:#f3f0f9;padding:2px 0} #bw_card .tot .fn{background:rgba(0,0,0,.08);color:#2a1d00}
+  #bw_card .mk{display:flex;justify-content:flex-end;gap:1px;font-size:12px;font-weight:800;min-height:17px;padding:1px 3px} #bw_card .mk span{min-width:11px} #bw_card .mk .x{color:#d62d6a} #bw_card .mk .sp{color:#1c6ad8}
+  #bw_card .fs{font-size:14px;font-weight:800;min-height:18px;color:var(--ink)} #bw_card .fs.big{font-size:22px;line-height:40px}
+  #bw_alley{position:absolute;right:10px;top:calc(76px + var(--sat));background:var(--glass);border:1px solid var(--gline);border-radius:12px;padding:6px 10px;color:#d9d2ee;font-size:12px;font-weight:700;line-height:1.6;min-width:120px;z-index:1}
+  #bw_alley .aht{font-size:10px;letter-spacing:.08em;color:#ff9a48} #bw_alley b{color:#7ce07c} #bw_alley small{color:#8d84a8}
+  #bw_toast{position:absolute;left:50%;top:calc(80px + var(--sat));transform:translate(-50%,-10px);background:var(--pink);color:#fff;font-weight:800;font-size:14px;border-radius:999px;padding:8px 16px;opacity:0;pointer-events:none;white-space:nowrap}
+  #bw_toast.show{animation:bwToast 2.6s ease-out}
+  @keyframes bwToast{0%{opacity:0;transform:translate(-50%,-10px)}10%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,0)}}
+  #bw_bottom{position:absolute;left:0;right:0;bottom:calc(10px + var(--sab));display:flex;align-items:center;justify-content:center;gap:10px;padding:0 10px}
+  #bw_hint{color:#d9d2ee;font-size:12px;line-height:1.45;text-align:center;max-width:430px} #bw_hint b{color:#ffd23f}
+  .bwlr{width:52px;height:52px;flex:none;border-radius:16px;border:1px solid var(--gline);background:var(--glass);color:#fff;font-size:18px;cursor:pointer}
+  #bwbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:min(460px,calc(100% - 24px));max-height:90vh;z-index:9!important;animation:popIn .18s ease-out}
+  #bw_resume{margin-bottom:8px}
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
   @media (max-height:520px) and (min-width:641px){ #dock{bottom:6px;padding:6px} .pbtn{height:38px} #chatin{height:38px} #saybtn{width:30px;height:30px} }
 </style>
@@ -432,7 +452,7 @@
   <div id="logbox" class="gb sheet"><span class="x" id="logx">✕</span><div id="loglines"></div></div>
   <div id="tbox" class="gb"><span id="ttext"></span><span id="tarrow">▼</span></div>
   <div id="dock">
-  <div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button><button class="pbtn" data-go="arena">💦 ARENA</button></div>
+  <div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button><button class="pbtn" data-go="arena">💦 ARENA</button><button class="pbtn" data-go="lanes">🎳 LANES</button></div>
   <div id="bottom">
     <form id="chatrow" autocomplete="off"><input id="chatin" maxlength="120" placeholder="Say something..." enterkeyhint="send"><button class="pbtn y" id="saybtn" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10 15 12 3.4 14z" fill="currentColor"/></svg></button></form>
     <button class="pbtn" id="abtn" title="Action (Space)"><b id="alabel">SIT</b></button>
@@ -455,6 +475,7 @@
     <button class="rpb" data-r="lounge"><span class="rpi">🍸</span><span class="rpx"><b>LLAMA LOUNGE</b><small>BAR · ARCADE · JUKEBOX · DANCE FLOOR · TABLE GAMES</small><i id="rp_n_lounge"></i></span></button>
     <button class="rpb" data-r="casino"><span class="rpi">🎰</span><span class="rpx"><b>LLAMA CASINO</b><small>SLOTS · ROULETTE · BLACKJACK TABLES</small><i id="rp_n_casino"></i></span></button>
     <button class="rpb" data-r="arena"><span class="rpi">💦</span><span class="rpx"><b>SPIT ARENA</b><small>60-SECOND SPIT-BALL ROUNDS · SOLO OR FREE-FOR-ALL · WEEKLY LEADERBOARD</small><i id="rp_n_arena"></i></span></button>
+    <button class="rpb" data-r="lanes"><span class="rpi">🎳</span><span class="rpx"><b>LLAMA LANES</b><small>HAY BALE BOWLING · 5-FRAME GAMES · STRIKES PAY COINS</small><i id="rp_n_lanes"></i></span></button>
     <button class="rpb" data-r="barn"><span class="rpi">🌾</span><span class="rpx"><b>LLAMA ACRES</b><small>BARN · CAMPFIRE · CARROT PATCH (EARN TOKENS)</small><i id="rp_n_barn"></i></span></button>
     <div class="srow"><button class="gbbtn" id="rp_llama">CHANGE LLAMA</button><button class="gbbtn" id="rp_close">CLOSE</button></div></div>
   <div id="slotbox" class="gb sheet"><div class="slt" id="sl_title">🎰 LLAMA SLOTS</div><canvas id="slotcv" width="130" height="70"></canvas><div id="sl_msg">1 TOKEN A SPIN. GOOD LUCK!</div>
@@ -486,8 +507,9 @@
       <li>Tap another llama to wave or spit. Use MENU for emotes and more.</li>
       <li>The pink button does the action for wherever you are. On the dance floor it does a FLIP (or press F).</li>
       <li>Earn LLAMA TOKENS by hitting arcade milestones and working the bar. Spend them on drinks (1 token), or bet up to 10 against THE HOUSE at the table games. Table games can also be played for free.</li>
-      <li>Four rooms: the LLAMA LOUNGE, LLAMA ACRES outside, the LLAMA CASINO and the SPIT ARENA. Tap a room in the bar at the bottom to walk there. Harvest the carrot patch in LLAMA ACRES for tokens.</li>
+      <li>Five rooms: the LLAMA LOUNGE, LLAMA ACRES outside, the LLAMA CASINO, the SPIT ARENA and LLAMA LANES. Tap a room in the bar at the bottom to walk there. Harvest the carrot patch in LLAMA ACRES for tokens.</li>
       <li>In the SPIT ARENA, press PLAY for a 60-second spit-ball round. Play solo against rival llamas, or with everyone who joins. Earn tokens, level up to unlock spit colors, and keep a daily streak.</li>
+      <li>At LLAMA LANES, press BOWL for a 5-frame game of hay bale bowling. Swipe up to roll. Strikes, spares and high scores win coins.</li>
       <li>Scroll, pinch, or use + and − to zoom.</li>
     </ul>
     <div class="rsec">LOUNGE RULES</div>
@@ -515,6 +537,14 @@
     <button id="ar_fire" aria-label="Spit">SPIT</button>
     <div id="arbox" class="gb sheet"><div id="ar_body"></div></div>
   </div>
+  <div id="bowl">
+    <canvas id="bwcv"></canvas>
+    <div id="bw_top"><button id="bw_exit" aria-label="Leave the lanes">✕</button><div id="bw_card"></div></div>
+    <div id="bw_alley" style="display:none"></div>
+    <div id="bw_toast"></div>
+    <div id="bw_bottom"><button class="bwlr" id="bw_l" aria-label="Move left">◀</button><div id="bw_hint"></div><button class="bwlr" id="bw_r" aria-label="Move right">▶</button></div>
+    <div id="bwbox" class="gb sheet"><div id="bw_body"></div></div>
+  </div>
   <div id="flash"></div>
 </div>
 
@@ -522,7 +552,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19d";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19e";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -689,7 +719,7 @@ function sprite(cid,dir,frame,pose){ const k=cid+'|'+dir+'|'+frame+'|'+pose; let
 // ======================= WORLD =======================
 const ARC_X = 9, JUKE_X = 12;   // arcade cabinet and jukebox spots on the lounge's back wall
 const TW = 40, TH = 20, WH = 96;
-const ROOM_DIMS = { lounge:[13,12], barn:[22,20], casino:[13,12], arena:[13,12] };
+const ROOM_DIMS = { lounge:[13,12], barn:[22,20], casino:[13,12], arena:[13,12], lanes:[13,12] };
 let N = 13, NY = 12;   // current room: N = width (gx) and row stride, NY = depth (gy)
 const proj = (gx,gy) => [(gx-gy)*TW/2, (gx+gy)*TH/2];
 let BLOCK = new Uint8Array(N*NY);
@@ -697,8 +727,8 @@ const FURN = [], SEATS = [];
 const block = (x,y) => { BLOCK[y*N+x] = 1; };
 // two rooms share one grid; each build function lays out its own furniture
 let curRoom = 'lounge';
-const ROOM_NAMES = { lounge:'LLAMA LOUNGE', barn:'LLAMA ACRES', casino:'LLAMA CASINO', arena:'SPIT ARENA' };
-const ROOMS = ['lounge','barn','casino','arena'];
+const ROOM_NAMES = { lounge:'LLAMA LOUNGE', barn:'LLAMA ACRES', casino:'LLAMA CASINO', arena:'SPIT ARENA', lanes:'LLAMA LANES' };
+const ROOMS = ['lounge','barn','casino','arena','lanes'];
 const CASINO_SLOT_X = [0,1,2,3,4,5,6,7,8,9,10,11,12];   // a full row of slot machines on the casino's back wall; stools one tile in front (the server checks the same spots)
 const slotKind = x => x<=3 ? 'fruit' : x<=8 ? 'classic' : 'gold';
 // what each kind looks like and pays (three of a kind, times the bet); the server holds the same table and decides every spin
@@ -795,7 +825,18 @@ function buildArenaWorld(){
   for (let x=1; x<=11; x+=2){ SEATS.push({gx:x,gy:1,dir:'br',lift:9}); FURN.push({t:'stool',gx:x,gy:1,c:'casino'}); }
   FURN.push({t:'fern',gx:12,gy:11,flip:true}); block(12,11); FURN.push({t:'fern',gx:0,gy:0}); block(0,0);
 }
-function buildWorld(){ if (curRoom==='barn') buildBarnWorld(); else if (curRoom==='casino') buildCasinoWorld(); else if (curRoom==='arena') buildArenaWorld(); else buildLoungeWorld(); }
+// LLAMA LANES: four lanes running toward the back wall, pins at the far end, an approach area by the door
+const LANE_GX = [1,4,7,10];   // each lane is two tiles wide starting here
+const laneAt = (gx,gy) => gy>=0 && gy<=7 ? LANE_GX.findIndex(L=>gx===L||gx===L+1) : -1;
+function buildLanesWorld(){
+  clearWorld();
+  for (const L of LANE_GX) for (let gy=0; gy<=7; gy++){ block(L,gy); block(L+1,gy); }
+  for (const L of LANE_GX) FURN.push({t:'lanepins', gx:L, gy:0});
+  for (const [x,y] of [[3,8],[9,8]]){ FURN.push({t:'balerack',gx:x,gy:y}); block(x,y); }
+  for (const x of [2,5,8,11]){ SEATS.push({gx:x,gy:11,dir:'bl',lift:9}); FURN.push({t:'stool',gx:x,gy:11,c:'casino'}); }
+  FURN.push({t:'fern',gx:12,gy:9,flip:true}); block(12,9);
+}
+function buildWorld(){ if (curRoom==='barn') buildBarnWorld(); else if (curRoom==='casino') buildCasinoWorld(); else if (curRoom==='arena') buildArenaWorld(); else if (curRoom==='lanes') buildLanesWorld(); else buildLoungeWorld(); }
 buildLoungeWorld();
 const seatAt = (x,y) => SEATS.find(s=>s.gx===x&&s.gy===y);
 const walkable = (x,y) => x>=0&&y>=0&&x<N&&y<NY&&!BLOCK[y*N+x];
@@ -1004,6 +1045,43 @@ function buildArenaBG(){
   { const R=(x0,y0,x1,y1,c)=>polyPx([T(x0,y0),T(x1,y0),T(x1,y1),T(x0,y1)],c); R(0,9.85,2.6,11.15,'#f8f0e0'); R(0,9.95,2.5,11.05,'#2a3270'); }
 }
 
+// ======================= LLAMA LANES ROOM BACKGROUND =======================
+function buildLanesBG(){
+  g = bg.getContext('2d'); g.clearRect(0,0,bg.width,bg.height);
+  const ox=BGX, oy=BGY;
+  for (let x=-NY*20; x<N*20; x++){
+    const left=x<0, ax=left?-x:x, base=Math.floor(ax/2), top=base-WH;
+    g.fillStyle = left ? '#2a1640' : '#321a4c'; g.fillRect(ox+x, oy+top, 1, WH+2);
+    // retro wallpaper: little stars and swooshes
+    if ((ax*7)%23===0){ g.fillStyle = left ? '#5a3a80' : '#6a4890'; g.fillRect(ox+x, oy+top+14+((ax*3)%30), 1, 1); }
+    g.fillStyle = left ? '#ff8a3a' : '#ff9a48'; g.fillRect(ox+x, oy+base-44, 1, 3);
+    g.fillStyle = left ? '#5ad0ff' : '#68dcff'; g.fillRect(ox+x, oy+base-40, 1, 2);
+    g.fillStyle = left ? '#1a0c28' : '#200f30'; g.fillRect(ox+x, oy+base-22, 1, 22);
+    g.fillStyle=INK; g.fillRect(ox+x, oy+top-1, 1, 1); g.fillRect(ox+x, oy+base, 1, 1);
+  }
+  g.fillStyle=INK; g.fillRect(ox-1, oy-WH-5, 2, WH+6); g.fillRect(ox-NY*20-1, oy+NY*10-WH-5, 1, WH+6); g.fillRect(ox+N*20, oy+N*10-WH-5, 1, WH+6);
+  drawDoor(ox, oy, -220, -200, -1, -205);
+  const T=(gx,gy)=>{ const p=proj(gx,gy); return [ox+p[0], oy+p[1]]; };
+  { const x0=ox-NY*20, x1=ox+N*20, y0=oy, y1=oy+(N+NY)*10; const img=g.getImageData(x0,y0,x1-x0,y1-y0), D=img.data, W=x1-x0;
+    const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+    const C={m1:hex('#ecc890'),m2:hex('#e2bc80'),seam:hex('#caa068'),gut:hex('#3a3448'),gut2:hex('#4a4458'),cap:hex('#7a5a9a'),foul:hex('#d83048'),arrow:hex('#9a6a38'),deck:hex('#f4dcaa'),
+             cp1:hex('#2a2470'),cp2:hex('#352e86'),dot1:hex('#ffd23f'),dot2:hex('#ff6e96'),dot3:hex('#5ad0ff')};
+    for (let py=0; py<y1-y0; py++) for (let px=0; px<W; px++){ const wx=px+x0-ox, wy=py+y0-oy; const gx=(wx/20+wy/10)/2, gy=(wy/10-wx/20)/2;
+      if (gx<0||gy<0||gx>=N||gy>=NY) continue;
+      let c=null; const li=LANE_GX.findIndex(L=>gx>=L && gx<L+2);
+      if (li>=0 && gy<8){ const u=gx-LANE_GX[li];
+        if (u<0.16 || u>1.84) c=(u<0.08||u>1.92)?C.gut2:C.gut;
+        else { const b=Math.floor((u-0.16)*12); c = b%2 ? C.m1 : C.m2; if (((u-0.16)*12)%1<0.08) c=C.seam;
+          if (gy<1.3) c=C.deck; if (gy>7.85) c=C.foul;
+          const ar=[0.5,0.83,1.17,1.5]; for (const a of ar){ if (gy>5.4 && gy<5.9 && Math.abs(u-a)<(gy-5.4)*0.12) c=C.arrow; } } }
+      else if (li<0 && gy<8) c = C.cap;
+      if (!c){ // retro carpet on the approach and the lounge area
+        const k=(Math.floor(gx*3)+Math.floor(gy*3))%7; c = ((Math.floor(gx*1.5)+Math.floor(gy*1.5))%2) ? C.cp1 : C.cp2;
+        if (k===0 && ((gx*3)%1)<0.3 && ((gy*3)%1)<0.3) c=[C.dot1,C.dot2,C.dot3][Math.floor(gx+gy)%3]; }
+      const i=(py*W+px)*4; D[i]=c[0]; D[i+1]=c[1]; D[i+2]=c[2]; D[i+3]=255; }
+    g.putImageData(img,x0,y0); }
+}
+
 // ======================= FURNITURE DRAW =======================
 let OX=0, OY=0;
 
@@ -1074,7 +1152,7 @@ function buildBarnBG(){
   g = null;
 }
 function barnSky(){ const per=(typeof period==='string')?period:'day'; return per==='day' ? ['#78b8f0','#98ccf8','#b8e0f8'] : per==='dusk' ? ['#d86858','#f09868','#f8c890'] : ['#181c50','#222a68','#2c3a80']; }
-function rebuildBG(){ sizeBG(); if (curRoom==='barn') buildBarnBG(); else if (curRoom==='casino') buildCasinoBG(); else if (curRoom==='arena') buildArenaBG(); else buildBG(); }
+function rebuildBG(){ sizeBG(); if (curRoom==='barn') buildBarnBG(); else if (curRoom==='casino') buildCasinoBG(); else if (curRoom==='arena') buildArenaBG(); else if (curRoom==='lanes') buildLanesBG(); else buildBG(); }
 
 function P(gx,gy,h=0){ const [x,y]=proj(gx,gy); return [OX+x, OY+y-h]; }
 function box(gx,gy,w,d,h,top,lf,rf,inset=0,lift=0){
@@ -1393,6 +1471,17 @@ const pondCache = {};
 function drawFurn(f,t){
   const cx=f.gx+0.5, cy=f.gy+0.5; const [sx,sy]=P(cx,cy);
   switch(f.t){
+    case 'lanepins': { // ten llama pins in a triangle at the far end of the lane (hidden while someone bowls there, so it looks reset)
+      
+      const pts=[]; for (let r=0;r<4;r++) for (let j=0;j<=r;j++) pts.push([f.gx+1+(j-r/2)*0.28, 1.15-r*0.24]);
+      pts.sort((a,b)=>(a[0]+a[1])-(b[0]+b[1]));
+      for (const [px,py] of pts){ const [x,y]=P(px,py); const X=Math.round(x), Y=Math.round(y);
+        g.fillStyle=INK; g.fillRect(X-2,Y-8,4,9); g.fillStyle='#f8f8f0'; g.fillRect(X-1,Y-7,2,7); g.fillStyle='#e03048'; g.fillRect(X-1,Y-5,2,1); g.fillStyle=INK; g.fillRect(X-2,Y-9,1,1); g.fillRect(X+1,Y-9,1,1); }
+      break; }
+    case 'balerack': { box(f.gx,f.gy,1,1,8,'#6a4a8a','#4a3068','#3a2050',0.1);
+      for (const [dx,dy,c] of [[0.3,0.35,'#e8b838'],[0.7,0.35,'#d8a028'],[0.5,0.7,'#f0c848']]){ const [x,y]=P(f.gx+dx,f.gy+dy,8); const X=Math.round(x),Y=Math.round(y);
+        g.fillStyle=INK; g.fillRect(X-4,Y-7,9,8); g.fillStyle=c; g.fillRect(X-3,Y-6,7,6); g.fillStyle='#a87818'; g.fillRect(X-3,Y-4,7,1); g.fillRect(X-3,Y-2,7,1); g.fillStyle='#fff0a0'; g.fillRect(X-2,Y-6,2,1); }
+      break; }
     case 'cabinet': box(f.gx,f.gy,1,1,20,'#a85830','#884020','#682818',0.05);
       if (f.gx%2===0){ g.fillStyle=INK; g.fillRect(sx-4,sy-26,4,6); g.fillRect(sx+1,sy-27,4,7); g.fillStyle='#c8f0f8'; g.fillRect(sx-3,sy-25,2,4); g.fillRect(sx+2,sy-26,2,5); } break;
     case 'bar': box(f.gx,f.gy,1,1,24,'#f0a050','#c86828','#984818');
@@ -1869,6 +1958,7 @@ function context(){
     return me.p==='sit' ? 'stand' : 'sit';
   }
   if (curRoom==='arena') return me.h ? (DRINKS[me.h].food ? 'bite' : 'sip') : 'arena';
+  if (curRoom==='lanes') return me.h ? (DRINKS[me.h].food ? 'bite' : 'sip') : 'bowl';
   if (curRoom==='casino'){
     if (me.p==='sit' && isSlotSeat(me.gx,me.gy)) return 'spin';
     if (me.p==='sit' && seatIn(ROUL_SEATS,me.gx,me.gy)) return 'roul';
@@ -1886,7 +1976,7 @@ function context(){
   if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
   return me.p==='sit' ? 'stand' : 'sit';
 }
-const ALABEL = {arena:'PLAY', fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
+const ALABEL = {arena:'PLAY', bowl:'BOWL', fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
 const alabel=document.getElementById('alabel'); let lastLabel='';
 function updateALabel(){ const c=context(); const l = arcade.on ? (arcade.mode==='menu'?'SELECT':arcade.over?'RETRY':arcade.mode==='dash'?'JUMP':'---') : (c?ALABEL[c]:'SIT'); if(l!==lastLabel){ alabel.textContent=l; lastLabel=l; } }
 // ---- bartending: slip past the rope, pace behind the bar pouring drinks ----
@@ -1924,6 +2014,7 @@ function doAction(a){
   if (a==='goBarn'){ if (!me.moving) showSwap('barn'); return; }
   if (a==='roul'||a==='bj'){ openTable(a); return; }
   if (a==='arena'){ openArena(); return; }
+  if (a==='bowl'){ openBowl(); return; }
   if (a==='goCasino'){ if (!me.moving) showSwap('casino'); return; }
   if (a==='goLoungeC'){ if (!me.moving) showSwap('lounge'); return; }
   if (a==='goLounge'){ if (!me.moving && near(14,0)) showSwap('lounge'); return; }
@@ -2249,7 +2340,7 @@ function presencePayload(){
   o.hl = me.h ? (me.hl||5) : null;
   o.sk = me.sipK || null;
   o.e = me.lastEm || null;
-  o.a = arcade.on ? 'arcade' : (typeof AR!=='undefined' && AR.on) ? 'arena' : null;
+  o.a = arcade.on ? 'arcade' : (typeof AR!=='undefined' && AR.on) ? 'arena' : (typeof BW!=='undefined' && BW.on) ? 'bowl' : null;
   o.sp = me.lastSpit || null;
   o.td = me.lastTable || null;
   o.g = me.lastScore || null;
@@ -2553,6 +2644,7 @@ cv.addEventListener('pointerdown', e => {
   if (curRoom==='barn'){ barnPointer(e); return; }
   if (curRoom==='casino'){ casinoPointer(e); return; }
   if (curRoom==='arena'){ arenaPointer(e); return; }
+  if (curRoom==='lanes'){ lanesPointer(e); return; }
   { const lx=e.clientX/S, ly=e.clientY/S; for (const h of shopHit){ if(lx>=h.x0&&lx<h.x1&&ly>=h.y0&&ly<=h.y1){ openShop(h.i); return; } }
     const lcx=OX-210, lcy=OY+105-75.5; if (Math.abs(lx-lcx)<=13 && Math.abs(ly-lcy)<=13){ openLogo(); return; } }
   { const lx=e.clientX/S, ly=e.clientY/S;
@@ -2721,7 +2813,7 @@ function drawLlama(o, t, isMe){
     }
   }
   // balloon: emote beats chat dots
-  const em = isMe ? me.emote : o.emote, playing = isMe ? (arcade.on || (typeof AR!=='undefined' && AR.on)) : (o.a==='arcade' || o.a==='arena');
+  const em = isMe ? me.emote : o.emote, playing = isMe ? (arcade.on || (typeof AR!=='undefined' && AR.on) || (typeof BW!=='undefined' && BW.on)) : (o.a==='arcade' || o.a==='arena' || o.a==='bowl');
   if (em || playing){ const bx=sx-7, by=y0+oy-28; g.fillStyle=INK; g.fillRect(bx,by,15,11); g.fillRect(bx+2,by+11,3,2); g.fillStyle='#f8f8f8'; g.fillRect(bx+1,by+1,13,9); g.fillRect(bx+3,by+10,1,1);
     if (em && em.t==='wave') drawWaveIcon(bx+1, by+1, t);
     else if (em){ const E=EMO_BMP[em.t]; const bounce=(Math.floor(t*6)%2); bmp(E.r, bx+4, by+2+bounce*0, E.c); }
@@ -2769,6 +2861,21 @@ function plateImg(text, fg, bgc, rim){ const k=text+fg+bgc+rim; if (plateCache[k
 function wallPlate(img, cx, h, sg){ const wx=Math.round(cx-img.width/2); const wy = sg>0 ? Math.round(wx/2-h) : Math.round(-wx/2-h); wallText(img, wx, wy, sg*0.5); }
 const marquee = document.createElement('canvas');
 const arenaBoardCv = document.createElement('canvas'), arenaTitleCv = document.createElement('canvas');
+const laneMonCv = [0,1,2,3].map(()=>document.createElement('canvas')), lanesTitleCv=document.createElement('canvas');
+let laneMonHit = [];
+function drawLanesSigns(t){
+  { const sc=2, txt='LLAMA LANES', tw=pfW(txt,sc), W=tw+16, H=5*sc+12; if (lanesTitleCv.width!==W){ lanesTitleCv.width=W; lanesTitleCv.height=H; }
+    const m=lanesTitleCv.getContext('2d'); m.clearRect(0,0,W,H); m.fillStyle=INK; m.fillRect(0,0,W,H); m.fillStyle='#ff9a48'; m.fillRect(1,1,W-2,H-2); m.fillStyle='#2a1640'; m.fillRect(3,3,W-6,H-6);
+    pfDraw(m,txt,9,7,'#7a3a10',sc); pfDraw(m,txt,8,6,(Math.floor(t*2)%5===0)?'#ffffff':'#ffd23f',sc); wallPlate(lanesTitleCv, -110, 92, -1); }
+  laneMonHit = [];
+  LANE_GX.forEach((L,i)=>{ const cv=laneMonCv[i], W=46, H=26; if (cv.width!==W){ cv.width=W; cv.height=H; }
+    const m=cv.getContext('2d'); m.fillStyle=INK; m.fillRect(0,0,W,H); m.fillStyle='#4a4058'; m.fillRect(1,1,W-2,H-2); m.fillStyle='#0a0c18'; m.fillRect(2,2,W-4,H-4);
+    const who=(typeof BW!=='undefined') ? BW.live.find(q=>q.lane===i) : null;
+    pfDraw(m, 'LANE '+(i+1), 4, 4, '#ff9a48');
+    if (who){ pfDraw(m, who.n.slice(0,8), 4, 12, '#e8ecff'); const sc=String(who.sc); pfDraw(m, sc, W-4-pfW(sc), 4, '#7ce07c'); pfDraw(m, 'F'+who.f, W-4-pfW('F'+who.f), 12, '#ffd23f'); }
+    else pfDraw(m, Math.floor(t*1.5+i)%2 ? 'OPEN' : 'BOWL!', 4, 13, '#5ad0ff');
+    const cx=(L+1)*20; wallPlate(cv, cx, 70, 1); const wx=Math.round(cx-W/2), wy=Math.round(wx/2-70); laneMonHit.push({x0:OX+wx, x1:OX+wx+W, y0:OY+wy, y1:OY+wy+H+W/2}); });
+}
 let arenaBoardHit = null;
 function drawArenaSigns(t){
   // title on the left wall
@@ -2932,7 +3039,7 @@ function render(t){
   if (curRoom==='barn'){ const sk=barnSky(); const top=OY-BGY; ctx.fillStyle=sk[2]; ctx.fillRect(0,0,LW,LH); ctx.fillStyle=sk[1]; ctx.fillRect(0,0,LW,top+140); ctx.fillStyle=sk[0]; ctx.fillRect(0,0,LW,top+70); }
   else { ctx.fillStyle='#100c1c'; ctx.fillRect(0,0,LW,LH); }
   ctx.drawImage(bg, OX-BGX, OY-BGY);
-  if (curRoom==='lounge'){ drawSkySign(t); drawSigns(t); drawBoardWall(t); drawDanceFloor(t); } else { shopHit=[]; boardHit=null; if (curRoom==='casino') drawCasinoSigns(t); else if (curRoom==='arena') drawArenaSigns(t); }
+  if (curRoom==='lounge'){ drawSkySign(t); drawSigns(t); drawBoardWall(t); drawDanceFloor(t); } else { shopHit=[]; boardHit=null; if (curRoom==='casino') drawCasinoSigns(t); else if (curRoom==='arena') drawArenaSigns(t); else if (curRoom==='lanes') drawLanesSigns(t); }
   const items = [];
   for (const f of FURN) items.push({d: f.gx+f.gy+1+(f.dz||0), f});
   if (joined) items.push({d: me.x+me.y+0.02, l: me, me:true});
@@ -3233,7 +3340,7 @@ function drawTableGames(c, t){
 // ======================= ROOMS: LLAMA LOUNGE <-> LLAMA ACRES =======================
 const roomPickEl=document.getElementById('roompick'), loadingEl=document.getElementById('loading');
 // where you appear in a room, by the room you came from
-const ENTRY = { lounge:{ any:{at:[1,10], to:[3,10]} }, barn:{ any:{at:[14,1], to:[13,3]} }, casino:{ any:{at:[1,10], to:[3,10]} }, arena:{ any:{at:[1,10], to:[3,10]} } };
+const ENTRY = { lounge:{ any:{at:[1,10], to:[3,10]} }, barn:{ any:{at:[14,1], to:[13,3]} }, casino:{ any:{at:[1,10], to:[3,10]} }, arena:{ any:{at:[1,10], to:[3,10]} }, lanes:{ any:{at:[1,10], to:[3,10]} } };
 let entryFrom = null;
 const entryFor = r => { const E=ENTRY[r]; return (entryFrom && E[entryFrom]) || E.any || E[Object.keys(E)[0]]; };
 // pick a free tile near the room's entrance so new arrivals don't stand on top of each other
@@ -3253,7 +3360,7 @@ for (const b of document.querySelectorAll('#roompick [data-r]')) b.addEventListe
   else switchRoom(r); });
 document.getElementById('rp_close').addEventListener('click', ()=>{ roomPickEl.style.display='none'; });
 document.getElementById('rp_llama').addEventListener('click', ()=>{ roomPickEl.style.display='none'; pick.style.display='flex'; });
-function setRoom(r){ if (me.fish) stopFish(true); if (typeof AR!=='undefined' && AR.on) arenaClose(true);
+function setRoom(r){ if (me.fish) stopFish(true); if (typeof AR!=='undefined' && AR.on) arenaClose(true); if (typeof BW!=='undefined' && BW.on) bowlClose(true);
   curRoom = ROOMS.includes(r) ? r : 'lounge'; store.room=curRoom; saveStore();
   buildWorld(); rebuildBG();
   me.bar=false; me.path=[]; me.moving=false; me.p='stand'; me.pending=null; me.after=null; me.prog=0;
@@ -3263,12 +3370,12 @@ function setRoom(r){ if (me.fish) stopFish(true); if (typeof AR!=='undefined' &&
 }
 // ---- bottom-left room selector: walk to the doorway, then confirm the swap ----
 const swapEl=document.getElementById('swapbox'), roombarEl=document.getElementById('roombar'); let swapTo=null;
-const DOORWAY = { lounge:[0,10], barn:[14,1], casino:[0,10], arena:[0,10] };   // each room has one door; you walk to it whichever room you're going to
+const DOORWAY = { lounge:[0,10], barn:[14,1], casino:[0,10], arena:[0,10], lanes:[0,10] };   // each room has one door; you walk to it whichever room you're going to
 function showSwap(r){ if (!joined || r===curRoom || !ROOMS.includes(r)) return; closeAll(); swapTo=r; document.getElementById('sw_text').textContent=`GO TO ${ROOM_NAMES[r]}?`; swapEl.style.display='block'; }
 document.getElementById('sw_go').addEventListener('click', ()=>{ swapEl.style.display='none'; const r=swapTo; swapTo=null; if (!r) return; if (arcade.on) exitArcade(); localMsg(`Heading to ${ROOM_NAMES[r]}...`); goThroughDoor(r); });
 function goThroughDoor(r){ const [dx,dy]=DOORWAY[curRoom]; if (me.gx===dx && me.gy===dy && !me.moving && !me.bar){ switchRoom(r); return; } me.travelTo=r; if (!walkTo(dx,dy,'travel')){ me.travelTo=null; switchRoom(r); } }
 document.getElementById('sw_stay').addEventListener('click', ()=>{ swapEl.style.display='none'; swapTo=null; });
-function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; document.getElementById('dock').classList.toggle('on', !!joined); document.body.classList.toggle('joined', !!joined); for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n=roomCount(r); b.innerHTML = ({lounge:'🍸 LOUNGE', barn:'🌾 ACRES', casino:'🎰 CASINO', arena:'💦 ARENA'})[r] + (n ? ` <span class="cnt">${n}</span>` : ''); } }
+function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; document.getElementById('dock').classList.toggle('on', !!joined); document.body.classList.toggle('joined', !!joined); for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n=roomCount(r); b.innerHTML = ({lounge:'🍸 LOUNGE', barn:'🌾 ACRES', casino:'🎰 CASINO', arena:'💦 ARENA', lanes:'🎳 LANES'})[r] + (n ? ` <span class="cnt">${n}</span>` : ''); } }
 for (const b of roombarEl.querySelectorAll('[data-go]')) b.addEventListener('click', ()=>{ ensureAudio(); const r=b.dataset.go;
   if (!joined) return; if (r===curRoom){ localMsg(`You're already in ${ROOM_NAMES[r]}.`); return; }
   showSwap(r); });
@@ -3276,8 +3383,18 @@ function switchRoom(r){
   if (r===curRoom){ localMsg(`You're already in ${ROOM_NAMES[r]}.`); return; }
   if (arcade.on) exitArcade();
   entryFrom = curRoom; setRoom(r); flash(); sendPresence(true);
-  localMsg(r==='barn' ? 'You stepped outside to LLAMA ACRES!' : r==='casino' ? 'Welcome to the LLAMA CASINO! Feeling lucky?' : r==='arena' ? 'Welcome to the SPIT ARENA! Press PLAY to start a round.' : 'You headed back into the LLAMA LOUNGE!');
+  localMsg(r==='barn' ? 'You stepped outside to LLAMA ACRES!' : r==='casino' ? 'Welcome to the LLAMA CASINO! Feeling lucky?' : r==='arena' ? 'Welcome to the SPIT ARENA! Press PLAY to start a round.' : r==='lanes' ? 'Welcome to LLAMA LANES! Press BOWL to roll a game.' : 'You headed back into the LLAMA LOUNGE!');
   setTimeout(()=>walkTo(...spawnSpot(r)), 400);
+}
+function lanesPointer(e){
+  const lx=e.clientX/S, ly=e.clientY/S;
+  for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
+  for (const h of laneMonHit) if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ openBowl(); return; }
+  const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
+  if (laneAt(gx,gy)>=0){ openBowl(); return; }
+  if (walkable(gx,gy)){ walkTo(gx,gy); return; }
+  let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } }
+  if (best) walkTo(best.gx,best.gy);
 }
 function arenaPointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
@@ -3739,7 +3856,7 @@ NET.handlers.tk = m => tkSet(m.tk, m.msg);
 // ======================= STAFF DASHBOARD (owner and mods; the server checks every action) =======================
 const dashEl=document.getElementById('dashbox'), dsBody=document.getElementById('ds_body');
 function dashMenu(){ const el=document.getElementById('mdash'); if (el) el.style.display = me.st ? '' : 'none'; }
-const ROOM_SHORT={lounge:'LOUNGE', barn:'ACRES', casino:'CASINO', arena:'ARENA'};
+const ROOM_SHORT={lounge:'LOUNGE', barn:'ACRES', casino:'CASINO', arena:'ARENA', lanes:'LANES'};
 const esc = s => String(s).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const badgeHtml = st => st==='owner' ? '<span class="badge" title="Owner">👑</span>' : st==='mod' ? '<span class="badge" title="Mod">🛡</span>' : '<span class="badge"></span>';
 function openDash(){ if (!me.st) return; closeAll(); dsBody.innerHTML='<div class="dl">LOADING...</div>'; dashEl.style.display='block'; loadDash(); }
@@ -3781,6 +3898,114 @@ NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.boar
 NET.handlers.hello = m => { if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true); };
 NET.handlers.kick = m => showKicked(m.msg);
 NET.handlers.staff = m => { me.st = ['owner','mod'].includes(m.st) ? m.st : ''; dashMenu(); if (m.msg) localMsg(m.msg); };
+// BOWL-PHYSICS-START (generated from tools/bowl_physics.js by tools/sync_bowl.py; edit that file, not this copy)
+// ---- BOWLING PHYSICS (shared: the server runs this exact code to decide which pins fall) ----
+// Units are inches and seconds. Only + - * / and Math.sqrt are used, so every browser and the server get the same answer.
+const BOWL = { HW: 20.75, BR: 4.3, PR: 2.4, HEAD: 720, WALL: 27, PIT: 772, DT: 1 / 480, MB: 4.3,
+  MINX: -16, MAXX: 16, MINV: 230, MAXV: 330, MAXANG: 0.035, HOOK: 16 };
+function bowlPins() { const p = []; for (let r = 0; r < 4; r++) for (let j = 0; j <= r; j++) p.push([(j - r / 2) * 12, BOWL.HEAD + r * 10.392]); return p; }
+// clean up a throw so it is inside the rules (the server does this too)
+function bowlClamp(s) {
+  const n = (v, lo, hi) => Math.max(lo, Math.min(hi, Number.isFinite(+v) ? +v : 0));
+  const vy = Math.round(n(s.vy, BOWL.MINV, BOWL.MAXV) * 1000) / 1000;
+  const vx = Math.round(n(s.vx, -vy * BOWL.MAXANG, vy * BOWL.MAXANG) * 1000) / 1000;
+  return { x: Math.round(n(s.x, BOWL.MINX, BOWL.MAXX) * 1000) / 1000, vx, vy, spin: Math.round(n(s.spin, -1, 1) * 1000) / 1000 };
+}
+// standing: 10 flags (1 = pin is up). rec: optional array that gets a snapshot every 4 steps for the animation.
+function bowlSim(start, standing, rec) {
+  const B = BOWL, dt = B.DT, home = bowlPins();
+  const ball = { x: start.x, y: 0, vx: start.vx, vy: start.vy, gut: false };
+  const pins = [];
+  for (let i = 0; i < 10; i++) if (standing[i]) pins.push({ i, x: home[i][0], y: home[i][1], vx: 0, vy: 0, hit: false, pit: false });
+  const R1 = B.BR + B.PR, R2 = B.PR * 2;
+  let still = 0, steps = 0;
+  for (; steps < 480 * 8; steps++) {
+    // the ball: straight on the oily front, hooks on the dry back end, drops in the gutter if it rolls off the lane
+    if (ball.y > 280 && ball.y < B.HEAD - 10 && !ball.gut) ball.vx += start.spin * B.HOOK * dt;
+    ball.x += ball.vx * dt; ball.y += ball.vy * dt;
+    if (!ball.gut && ball.y < B.HEAD - 14 && (ball.x > B.HW || ball.x < -B.HW)) { ball.gut = true; ball.vx = 0; ball.x = ball.x > 0 ? B.HW + 4.5 : -B.HW - 4.5; }
+    if (ball.y > B.PIT + 30) { ball.vx = 0; ball.vy = 0; }
+    // ball hits pins
+    if (!ball.gut) for (const p of pins) {
+      if (p.pit) continue; const dx = p.x - ball.x, dy = p.y - ball.y, d2 = dx * dx + dy * dy;
+      if (d2 < R1 * R1) { const d = Math.sqrt(d2) || 0.0001, nx = dx / d, ny = dy / d;
+        const rv = (ball.vx - p.vx) * nx + (ball.vy - p.vy) * ny;
+        if (rv > 0) { const j = 1.55 * rv / (1 / B.MB + 1); ball.vx -= j / B.MB * nx; ball.vy -= j / B.MB * ny; p.vx += j * nx; p.vy += j * ny; p.hit = true; }
+        const o = R1 - d; p.x += nx * o; p.y += ny * o; }
+    }
+    // pins hit each other (a flying pin knocks over a standing one)
+    for (let a = 0; a < pins.length; a++) { const p = pins[a]; if (p.pit) continue;
+      for (let b = a + 1; b < pins.length; b++) { const q = pins[b]; if (q.pit) continue;
+        const dx = q.x - p.x, dy = q.y - p.y, d2 = dx * dx + dy * dy;
+        if (d2 < R2 * R2) { const d = Math.sqrt(d2) || 0.0001, nx = dx / d, ny = dy / d;
+          const rv = (p.vx - q.vx) * nx + (p.vy - q.vy) * ny;
+          if (rv > 0) { const j = 1.8 * rv / 2; p.vx -= j * nx; p.vy -= j * ny; q.vx += j * nx; q.vy += j * ny; if (j > 5) { p.hit = true; q.hit = true; } }
+          const o = (R2 - d) / 2; p.x -= nx * o; p.y -= ny * o; q.x += nx * o; q.y += ny * o; }
+      } }
+    // pins slide, bounce off the side walls, and drop into the pit
+    let moving = ball.vy > 0 && ball.y < B.PIT + 30 ? 1 : 0;
+    for (const p of pins) { if (p.pit) continue;
+      p.x += p.vx * dt; p.y += p.vy * dt; const f = 1 - 2.2 * dt; p.vx *= f; p.vy *= f;
+      if (p.x > B.WALL) { p.x = B.WALL; p.vx = -p.vx * 0.55; } if (p.x < -B.WALL) { p.x = -B.WALL; p.vx = -p.vx * 0.55; }
+      if (p.y < B.HEAD - 40) { p.y = B.HEAD - 40; p.vy = -p.vy * 0.3; }
+      if (p.y > B.PIT) { p.pit = true; p.hit = true; p.vx = 0; p.vy = 0; }
+      if (p.vx * p.vx + p.vy * p.vy > 4) moving = 1; }
+    if (rec && steps % 4 === 0) rec.push([Math.round(ball.x * 100) / 100, Math.round(ball.y * 100) / 100, ball.gut ? 1 : 0, pins.map((p) => [p.i, Math.round(p.x * 100) / 100, Math.round(p.y * 100) / 100, p.hit ? 1 : 0, p.pit ? 1 : 0])]);
+    still = moving ? 0 : still + 1;
+    if (still > 120 && ball.y > B.HEAD) break;
+  }
+  const home2 = bowlPins();
+  const down = pins.filter((p) => p.hit || (p.x - home2[p.i][0]) * (p.x - home2[p.i][0]) + (p.y - home2[p.i][1]) * (p.y - home2[p.i][1]) > 6.25).map((p) => p.i);
+  return { down, gutter: ball.gut, steps };
+}
+// ---- 5-frame scoring (the last frame gets bonus balls after a strike or spare) ----
+const BOWL_FRAMES = 5;
+function bowlScore(rolls) {
+  const frames = []; let i = 0, total = 0;
+  for (let f = 0; f < BOWL_FRAMES; f++) {
+    const last = f === BOWL_FRAMES - 1, a = rolls[i], b = rolls[i + 1], c = rolls[i + 2];
+    if (a === undefined) { frames.push({ marks: [], score: null }); continue; }
+    if (!last) {
+      if (a === 10) { const ok = b !== undefined && c !== undefined; if (ok) total += 10 + b + c; frames.push({ marks: ['X'], score: ok ? total : null }); i += 1; continue; }
+      if (b === undefined) { frames.push({ marks: [mk(a)], score: null }); i += 1; continue; }
+      if (a + b === 10) { const ok = c !== undefined; if (ok) total += 10 + c; frames.push({ marks: [mk(a), '/'], score: ok ? total : null }); i += 2; continue; }
+      total += a + b; frames.push({ marks: [mk(a), mk(b)], score: total }); i += 2; continue;
+    }
+    // last frame: up to three balls
+    const m = [a === 10 ? 'X' : mk(a)];
+    if (b !== undefined) m.push(a === 10 ? (b === 10 ? 'X' : mk(b)) : (a + b === 10 ? '/' : mk(b)));
+    if (c !== undefined) m.push(a === 10 && b !== 10 ? (b + c === 10 ? '/' : mk(c)) : (c === 10 ? 'X' : mk(c)));
+    const needs = (a === 10 || (b !== undefined && a + b === 10)) ? 3 : 2;
+    const have = [a, b, c].filter((v) => v !== undefined).length;
+    if (have >= needs) total += a + (b || 0) + (needs === 3 ? (c || 0) : 0);
+    frames.push({ marks: m, score: have >= needs ? total : null }); i += have;
+  }
+  return { frames, total };
+  function mk(v) { return v === 0 ? '-' : String(v); }
+}
+// where the game is: which frame, which ball, which pins are standing, and whether it's over
+function bowlState(rolls) {
+  let i = 0, standing = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+  for (let f = 0; f < BOWL_FRAMES; f++) {
+    const last = f === BOWL_FRAMES - 1;
+    if (!last) {
+      if (rolls[i] === undefined) return { frame: f, ball: 0, done: false };
+      if (rolls[i] === 10) { i += 1; continue; }
+      if (rolls[i + 1] === undefined) return { frame: f, ball: 1, done: false };
+      i += 2; continue;
+    }
+    const a = rolls[i], b = rolls[i + 1], c = rolls[i + 2];
+    if (a === undefined) return { frame: f, ball: 0, done: false };
+    if (b === undefined) return { frame: f, ball: 1, done: false, fresh: a === 10 };
+    const extra = a === 10 || a + b === 10;
+    if (!extra) return { frame: f, ball: 2, done: true };
+    if (c === undefined) return { frame: f, ball: 2, done: false, fresh: (a === 10 && b === 10) || (a !== 10 && a + b === 10) };
+    return { frame: f, ball: 3, done: true };
+  }
+  return { frame: BOWL_FRAMES, ball: 0, done: true };
+}
+// BOWL-PHYSICS-END
+
 // ======================= SPIT ARENA: 60-second spit-ball rounds =======================
 // Solo you face rival llamas that spit back. Everyone who presses PLAY together shares the round and can spit at each other.
 // Rival llamas, the golden llama and power-ups all come from the round's seed, so every player sees the same ones.
@@ -4118,6 +4343,213 @@ function arResults(r){ const P=AR.p;
   if (r.levelUp) setTimeout(()=>sfxChime([523,659,784,1047,1319]), 600);
   if (r.place===1 && r.players>1) sfxChime([784,988,1175,1568]); }
 
+// ======================= HAY BALE BOWLING (LLAMA LANES) =======================
+// You line up, swipe up to bowl (swipe speed = power, curve = hook), and watch it roll in a lane view from behind your llama.
+// The page runs the same physics as the server to animate the roll; the server's answer is the one that counts.
+const BW = { on:false, phase:'lobby', me:null, board:null, live:[], game:null, x:0, aim:0, spin:0, meter:0, meterOn:false,
+  rec:null, recT:0, serverRes:null, standing:[1,1,1,1,1,1,1,1,1,1], camY:-70, swipe:null, toast:null, call:null, pending:false, crashed:false, rolling:0, result:null };
+const BWW = 240, BWH = 320, BW_HOR = 70, BW_F = 250, BW_CAMH = 30;
+const bwEl=document.getElementById('bowl'), bwCv=document.getElementById('bwcv'), bwCx=bwCv.getContext('2d');
+const bwBox=document.getElementById('bwbox'), bwBody=document.getElementById('bw_body');
+bwCv.width=BWW; bwCv.height=BWH; const bwImg=bwCx.createImageData(BWW, BWH);
+function bwSize(){ const W=innerWidth, H=innerHeight, top=124, bot=matchMedia('(pointer:coarse)').matches?96:56; const dpr=devicePixelRatio||1;
+  let sc=Math.min((W-12)/BWW, (H-top-bot)/BWH); sc=Math.max(1, Math.floor(sc*dpr*4)/4)/dpr; BW.sc=sc;
+  bwCv.style.width=(BWW*sc)+'px'; bwCv.style.height=(BWH*sc)+'px'; bwCv.style.left=Math.round((W-BWW*sc)/2)+'px'; bwCv.style.top=Math.round(top+Math.max(0,(H-top-bot-BWH*sc)/2))+'px'; }
+addEventListener('resize', ()=>{ if (BW.on) bwSize(); });
+
+// ---- the lane, drawn row by row in perspective ----
+const hexRGB=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+const BWC = { m1:hexRGB('#ecc890'), m2:hexRGB('#e0b878'), seam:hexRGB('#c8a068'), deck:hexRGB('#f6e0b0'), gut:hexRGB('#3a3448'), gut2:hexRGB('#2a2438'), cap:hexRGB('#5a3a7a'), cap2:hexRGB('#4a2c68'),
+  foul:hexRGB('#d83048'), arrow:hexRGB('#8a5a28'), dot:hexRGB('#8a5a28'), pit:hexRGB('#120a1c'), app:hexRGB('#d8b47a'), app2:hexRGB('#cca86c'), sky:hexRGB('#1a0f2a') };
+function bwFloor(){ const D=bwImg.data, camY=BW.camY, B=BOWL;
+  for (let sy=0; sy<BWH; sy++){ const row=sy*BWW*4;
+    if (sy<=BW_HOR){ for (let sx=0; sx<BWW; sx++){ const i=row+sx*4; D[i]=BWC.sky[0]; D[i+1]=BWC.sky[1]; D[i+2]=BWC.sky[2]; D[i+3]=255; } continue; }
+    const d=BW_CAMH*BW_F/(sy-BW_HOR), y=camY+d, k=d/BW_F;
+    for (let sx=0; sx<BWW; sx++){ const x=(sx-BWW/2)*k, ax=x<0?-x:x; let c;
+      if (y>B.PIT+18) c=BWC.pit;
+      else if (ax<=B.HW){ if (y<0){ c = ((Math.floor(y/30)+100)%2) ? BWC.app : BWC.app2; if (y>-2) c=BWC.foul; }
+        else { const bd=(x+B.HW)/1.064, bi=Math.floor(bd); c = bi%2 ? BWC.m1 : BWC.m2; if (bd-bi<0.07) c=BWC.seam;
+          if (y<1.4) c=BWC.foul;
+          else if (y>B.HEAD-16) c = y>B.PIT ? BWC.pit : BWC.deck;
+          else if (y>186 && y<200){ for (const b of [5,10,15,20,25,30,35]){ const bx=-B.HW+(b+0.5)*1.064; if (Math.abs(x-bx) < (200-y)*0.045+0.15){ c=BWC.arrow; break; } } }
+          else if (y>82 && y<86){ for (const b of [3,5,8,11,14,25,28,31,34,36]){ const bx=-B.HW+(b+0.5)*1.064; if (Math.abs(x-bx)<0.55){ c=BWC.dot; break; } } } } }
+      else if (ax<=B.HW+9.2){ c = ax<B.HW+1 || ax>B.HW+8.2 ? BWC.gut2 : BWC.gut; if (y<0) c=BWC.app2; }
+      else { c = (Math.floor(y/48)%2) ? BWC.cap : BWC.cap2; }
+      const i=row+sx*4; D[i]=c[0]; D[i+1]=c[1]; D[i+2]=c[2]; D[i+3]=255; } }
+  bwCx.putImageData(bwImg,0,0); }
+const bwProj = (x,y,z) => { const d=y-BW.camY; if (d<4) return null; return [BWW/2 + x*BW_F/d, BW_HOR + (BW_CAMH-(z||0))*BW_F/d, BW_F/d]; };
+// back wall over the pit, with the LLAMA LANES masking panel
+function bwBackWall(t){ const p0=bwProj(-34, BOWL.PIT+18, 0), p1=bwProj(34, BOWL.PIT+18, 46); if (!p0||!p1) return; const c=bwCx;
+  const x0=Math.round(p0[0]), x1=Math.round(p1[0]), yb=Math.round(p0[1]), yt=Math.round(p1[1]);
+  c.fillStyle='#2a1640'; c.fillRect(x0, yt, x1-x0, yb-yt); c.fillStyle='#ff9a48'; c.fillRect(x0, yt, x1-x0, Math.max(1,Math.round((yb-yt)*0.08)));
+  const s=p0[2]; if (s>0.45){ const sc=s>1.2?2:1, txt='LLAMA LANES'; const w=pfW(txt,sc); pfDraw(c, txt, Math.round((x0+x1)/2-w/2), Math.round(yt+(yb-yt)*0.35), (Math.floor(t*2)%4)?'#ffd23f':'#ffffff', sc); } }
+
+// ---- llama pins (white, red neck stripe, little ears) ----
+// pin width (inches) at a height z: base, belly, neck, head
+const PIN_PROFILE = [[0,2.0],[1,3.4],[4.5,4.7],[8,2.4],[10.5,1.8],[13,2.6],[15,0.8]];
+const PIN_W = z => { for (let i=1;i<PIN_PROFILE.length;i++){ const [z1,w1]=PIN_PROFILE[i], [z0,w0]=PIN_PROFILE[i-1]; if (z<=z1) return w0+(w1-w0)*(z-z0)/(z1-z0); } return 0.8; };
+function bwPin(c, p, t){ const pr=bwProj(p.x, p.y, 0); if (!pr) return; const [sx,sy,s]=pr; const H=15*s;
+  if (!p.down){ const h=Math.max(3, Math.round(H)); c.fillStyle='rgba(30,20,40,0.25)'; c.fillRect(Math.round(sx-2.4*s), Math.round(sy-1), Math.round(4.8*s)+1, 2);
+    for (let k=0;k<h;k++){ const z=(k/h)*15, w=Math.max(1, Math.round(PIN_W(z)*s)), yy=Math.round(sy-k-1); c.fillStyle = (z>9.3 && z<10.6) ? '#e03048' : (z>8.3 && z<8.9) ? '#e03048' : '#f8f6ee'; c.fillRect(Math.round(sx-w/2), yy, w, 1);
+      if (k===0 || k===h-1){ c.fillStyle='#181020'; c.fillRect(Math.round(sx-w/2), yy, w, 1); } }
+    // ears
+    c.fillStyle='#181020'; const e=Math.max(1,Math.round(s*0.8)); c.fillRect(Math.round(sx-1.4*s), Math.round(sy-h-e), e, e); c.fillRect(Math.round(sx+0.6*s), Math.round(sy-h-e), e, e);
+    if (s>0.9){ c.fillStyle='#181020'; c.fillRect(Math.round(sx-0.8*s), Math.round(sy-h+2.2*s), Math.max(1,Math.round(s*0.5)), Math.max(1,Math.round(s*0.5))); c.fillRect(Math.round(sx+0.4*s), Math.round(sy-h+2.2*s), Math.max(1,Math.round(s*0.5)), Math.max(1,Math.round(s*0.5))); }
+    return; }
+  // knocked down: lying along the way it was knocked
+  const dx=p.fx||0, dy=p.fy||1; const L=Math.sqrt(dx*dx+dy*dy)||1, ux=dx/L, uy=dy/L;
+  for (let k=0;k<=12;k++){ const u=k/12, z=u*15; const q=bwProj(p.x+ux*z, p.y+uy*z, 2.2); if (!q) continue; const w=Math.max(1,Math.round(PIN_W(z)*q[2]));
+    c.fillStyle=(z>8.3&&z<10.6)?'#e03048':'#e8e4d8'; c.fillRect(Math.round(q[0]-w/2), Math.round(q[1]-w/2), w, w); } }
+// the hay bale ball
+function bwBall(c, x, y, roll, t){ const pr=bwProj(x, y, BOWL.BR); if (!pr) return; const [sx,sy,s]=pr; const r=Math.max(2, BOWL.BR*s);
+  const g0=bwProj(x,y,0); if (g0){ c.fillStyle='rgba(30,20,40,0.3)'; c.fillRect(Math.round(sx-r), Math.round(g0[1]-1), Math.round(r*2), 2); }
+  for (let yy=-Math.ceil(r); yy<=Math.ceil(r); yy++){ const w=Math.sqrt(Math.max(0,r*r-yy*yy)); if (w<0.5) continue;
+    const band = Math.floor((yy/r*3 + roll*0.35)%2+2)%2; c.fillStyle = band ? '#e8b838' : '#d8a028'; c.fillRect(Math.round(sx-w), Math.round(sy+yy), Math.round(w*2), 1);
+    c.fillStyle='#a87818'; if (((yy+Math.floor(roll*3))%4+4)%4===0) c.fillRect(Math.round(sx-w), Math.round(sy+yy), Math.round(w*2), 1); }
+  c.fillStyle='#fff0a0'; c.fillRect(Math.round(sx-r*0.5), Math.round(sy-r*0.6), Math.max(1,Math.round(r*0.35)), Math.max(1,Math.round(r*0.25)));
+  c.strokeStyle='#181020'; c.lineWidth=1; c.beginPath(); c.arc(Math.round(sx)+0.5, Math.round(sy)+0.5, r, 0, Math.PI*2); c.stroke(); }
+
+// ---- per-frame draw ----
+function bwPinsNow(){ // standing set, or a frame of the roll's recording
+  const home=bowlPins();
+  if (BW.rec){ const f=BW.rec[Math.min(BW.rec.length-1, Math.floor(BW.recT*120))]; const out=f[3].map(([i,x,y,hit,pit])=>{ const h=home[i]; return {x,y,down:!!hit||pit, pit:!!pit, fx:x-h[0], fy:y-h[1]}; }); return {pins:out, ball:{x:f[0], y:f[1], gut:f[2]}}; }
+  return { pins: home.map((h,i)=>BW.standing[i]?{x:h[0],y:h[1],down:false}:null).filter(Boolean), ball:null }; }
+function bwDraw(t){ const c=bwCx; c.imageSmoothingEnabled=false;
+  const now=bwPinsNow();
+  // camera follows the ball down the lane, then holds on the pins
+  let want = -62; if (now.ball) want = Math.max(-62, Math.min(BOWL.HEAD-92, now.ball.y-75)); else if (BW.phase==='roll' || BW.call) want = BW.camY; BW.camY += (want-BW.camY)*Math.min(1, frameDt*5);
+  bwFloor(); bwBackWall(t);
+  const items=[]; for (const p of now.pins) if (!p.pit) items.push({d:p.y, f:()=>bwPin(c,p,t)});
+  const ballXY = now.ball ? now.ball : (BW.phase==='aim' ? {x:BW.x, y:6} : null);
+  if (ballXY && ballXY.y < BOWL.PIT+20) items.push({d:ballXY.y+0.1, f:()=>bwBall(c, ballXY.x, ballXY.y, (ballXY.y||0)/27, t)});
+  items.sort((a,b)=>b.d-a.d); for (const it of items) it.f();
+  // aim guide: dotted line straight up the lane from the ball, bent by the aim and spin you've set with the keys
+  if (BW.phase==='aim'){ c.fillStyle='rgba(255,255,255,0.55)'; let x=BW.x, vx=BW.aim*280; for (let y=20;y<520;y+=28){ x+=vx*(28/280); if (y>280) vx+=BW.spin*BOWL.HOOK*(28/280)*(28/280)*12; const q=bwProj(x,y,0.2); if (q) c.fillRect(Math.round(q[0]), Math.round(q[1]), q[2]>1?2:1, 1); } }
+  // your llama from behind, holding the bale
+  if (BW.phase==='aim' || (BW.rec && BW.recT<0.5)){ const q=bwProj(BW.x+9, BW.phase==='aim'?-6:-6, 0); if (q){ const im=sprite(me.c, 'bl', BW.phase==='aim'?0:Math.floor(t*8)%4, 'stand'); const sc=2;
+      c.drawImage(im, Math.round(q[0]-SW*sc/2), Math.round(q[1]-SH*sc+6), SW*sc, SH*sc); } }
+  // swipe trail
+  if (BW.swipe && BW.swipe.pts.length>1){ const r=bwCv.getBoundingClientRect(); c.fillStyle='rgba(255,210,63,0.85)'; for (const [px,py] of BW.swipe.pts){ c.fillRect(Math.round((px-r.left)/BW.sc)-1, Math.round((py-r.top)/BW.sc)-1, 3, 3); } }
+  // power meter (keyboard)
+  if (BW.meterOn){ const h=90, x=BWW-16, y=BWH-30-h; c.fillStyle='#181020'; c.fillRect(x-1,y-1,10,h+2); c.fillStyle='#3a3448'; c.fillRect(x,y,8,h); const v=Math.round(BW.meter*h); c.fillStyle= BW.meter>0.85?'#ff5c8a':BW.meter>0.5?'#ffd23f':'#7ce07c'; c.fillRect(x, y+h-v, 8, v); }
+  // big call: STRIKE / SPARE / GUTTER
+  if (BW.call){ const C=BW.call; C.t+=frameDt; const sc=C.txt.length>8?2:3; const y=Math.round(BWH*0.6)-Math.max(0,(0.25-C.t))*80; if (C.t<2.2){ const w=pfW(C.txt,sc)+16; c.fillStyle='rgba(16,10,32,0.78)'; c.fillRect(BWW/2-w/2, y-8, w, 5*sc+16); pfDraw(c,C.txt,Math.round(BWW/2-pfW(C.txt,sc)/2)+1,y+1,'#181020',sc); pfDraw(c,C.txt,Math.round(BWW/2-pfW(C.txt,sc)/2),y,C.col,sc);
+      if (C.txt==='STRIKE!'||C.txt==='TURKEY!'){ for (let k=0;k<14;k++){ const a=k*0.45+C.t*3, r=30+C.t*40; c.fillStyle=['#ffd23f','#ff5c8a','#5ad0ff','#7ce07c'][k%4]; c.fillRect(Math.round(BWW/2+Math.cos(a)*r), Math.round(y+8+Math.sin(a)*r*0.6), 2, 2); } } } else BW.call=null; }
+}
+// ---- scorecard (HTML, top of the screen) ----
+function bwCard(card){ const el=document.getElementById('bw_card'); const cur = BW.game ? BW.game.frame : -1;
+  el.innerHTML = card.frames.map((f,i)=>`<div class="fr ${i===cur&&BW.phase!=='over'?'cur':''}"><div class="fn">${i+1}</div><div class="mk">${(f.marks.length?f.marks:['']).map(m=>`<span class="${m==='X'?'x':m==='/'?'sp':''}">${m}</span>`).join('')}</div><div class="fs">${f.score==null?'':f.score}</div></div>`).join('') + `<div class="fr tot"><div class="fn">TOTAL</div><div class="fs big">${card.total}</div></div>`; }
+
+// ---- the loop ----
+function bowlTick(dt, nowMs){ if (!BW.on) return; const t=nowMs/1000;
+  if (BW.phase==='aim'){ const K=BW.keys||(BW.keys=new Set()); if (K.has('left')) BW.x=Math.max(BOWL.MINX, BW.x-30*dt); if (K.has('right')) BW.x=Math.min(BOWL.MAXX, BW.x+30*dt);
+    if (BW.meterOn){ BW.meterT=(BW.meterT||0)+dt; BW.meter=0.5-0.5*Math.cos(BW.meterT*3.2); } }
+  if (BW.rec){ BW.recT += dt*1.35; const idx=Math.floor(BW.recT*120), f=BW.rec[Math.min(BW.rec.length-1, idx)];
+    // sounds: rolling rumble, then the crash when the ball reaches the pins
+    if (!BW.crashed && f[3].some(q=>q[3])){ BW.crashed=true; bwCrash(f[3].filter(q=>q[3]).length); }
+    if ((BW.rolling+=dt) > 0.14 && f[1] < BOWL.HEAD && !f[2]){ BW.rolling=0; try { if (sfxReady()) wetNoise(actx.currentTime+0.01, 0.16, 0.18, 'lowpass', 260, 180, 0.7); } catch(e){} }
+    if (idx >= BW.rec.length-1 && BW.serverRes) bwAfterRoll(); }
+  bwDraw(t); }
+function bwCrash(n){ try { if (!sfxReady()) return; const t=actx.currentTime+0.005; const v=Math.min(1, 0.35+n*0.08);
+  for (let k=0;k<Math.min(8,2+n);k++){ wetNoise(t+k*0.035, 0.12, 0.7*v, 'bandpass', 2600-k*150, 1400, 2.5); pop(t+k*0.035, 900-k*60, 300, 0.06, 0.35*v); } wetNoise(t, 0.35, 0.6*v, 'lowpass', 1200, 200, 0.7); } catch(e){} }
+
+// ---- throwing ----
+function bwThrow(raw){ if (BW.phase!=='aim' || BW.pending) return; const th=bowlClamp(raw); BW.phase='roll'; BW.pending=true; BW.crashed=false; BW.serverRes=null;
+  // play it out locally right away; the server runs the same thing and its answer counts
+  const rec=[]; const local=bowlSim(th, BW.standing, rec); BW.rec=rec; BW.recT=0; BW.localDown=local.down;
+  sfxTone(180,0.12,'triangle',0.3); bwHint();
+  NET.act('bowl_roll', th).then(r=>{ if (!r.ok){ BW.rec=null; BW.pending=false; BW.phase='aim'; localMsg(r.msg||'That roll did not go through. Try again.'); return; } BW.serverRes=r; }); }
+function bwAfterRoll(){ const r=BW.serverRes; BW.serverRes=null; BW.rec=null; BW.pending=false;
+  if (JSON.stringify((BW.localDown||[]).slice().sort())!==JSON.stringify(r.down.slice().sort())) console.warn('BOWL MISMATCH', BW.localDown, r.down);
+  const calls = { STRIKE:['STRIKE!','#ffd23f'], TURKEY:['TURKEY!','#ff9a48'], SPARE:['SPARE!','#5ad0ff'], GUTTER:['GUTTER BALL','#ff8080'], MISS:['MISS','#c0b8d8'] };
+  let cl = calls[r.call] || (/IN A ROW/.test(r.call) ? [r.call+'!','#ff5c8a'] : null); if (!cl && r.n) cl=[`${r.n} PIN${r.n>1?'S':''}`, '#e8ecff'];
+  if (cl) BW.call={txt:cl[0], col:cl[1], t:0};
+  if (r.call==='STRIKE'||r.call==='TURKEY'||/IN A ROW/.test(r.call)) sfxChime([784,988,1175,1568,2093]); else if (r.call==='SPARE') sfxChime([659,880,1175]); else if (r.call==='GUTTER') { sfxTone(220,0.25,'sawtooth',0.25); sfxTone(165,0.35,'sawtooth',0.25,0.2); }
+  BW.game={...BW.game, frame:r.frame, ball:r.ball, done:r.done}; bwCard(r.card); bwHint();
+  // show what fell for a moment, then reset to the standing pins (or a fresh rack)
+  BW.standing = r.before.map((v,i)=>v && !r.down.includes(i) ? 1 : 0);
+  setTimeout(()=>{ if (!BW.on) return; BW.standing=r.standing; if (r.done){ BW.phase='over'; bwResults(r); } else { BW.phase='aim'; bwHint(); } }, 1500); }
+
+// ---- input ----
+const BW_KEYS = { ArrowLeft:'left', ArrowRight:'right' };
+addEventListener('keydown', e=>{ if (!BW.on) return; if (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return; e.stopImmediatePropagation(); const K=BW.keys||(BW.keys=new Set());
+  if (BW_KEYS[e.code]){ e.preventDefault(); K.add(BW_KEYS[e.code]); return; }
+  if (e.code==='KeyA'){ BW.aim=Math.max(-BOWL.MAXANG, BW.aim-0.005); return; } if (e.code==='KeyD'){ BW.aim=Math.min(BOWL.MAXANG, BW.aim+0.005); return; }
+  if (e.code==='KeyQ'){ BW.spin=Math.max(-1, Math.round((BW.spin-0.25)*100)/100); bwHint(); return; } if (e.code==='KeyE'){ BW.spin=Math.min(1, Math.round((BW.spin+0.25)*100)/100); bwHint(); return; }
+  if (e.code==='Space'){ e.preventDefault(); if (e.repeat) return; if (BW.phase==='aim' && !BW.meterOn){ BW.meterOn=true; BW.meterT=0; } else if ((BW.phase==='lobby' && BW.me) || (BW.phase==='over' && BW.result)) bwStart(); return; }
+  if (e.code==='Escape'){ e.preventDefault(); bowlClose(); } }, true);
+addEventListener('keyup', e=>{ if (!BW.on) return; const K=BW.keys||(BW.keys=new Set()); if (BW_KEYS[e.code]) K.delete(BW_KEYS[e.code]);
+  if (e.code==='Space' && BW.meterOn){ BW.meterOn=false; const v=BOWL.MINV+(BOWL.MAXV-BOWL.MINV)*BW.meter; bwThrow({x:BW.x, vx:BW.aim*v, vy:v, spin:BW.spin}); } }, true);
+// swipe up to bowl: drag sideways near the bottom first to line up
+bwCv.addEventListener('pointerdown', e=>{ e.preventDefault(); ensureAudio(); if (BW.phase!=='aim') return; try{ bwCv.setPointerCapture(e.pointerId); }catch(_){}
+  BW.swipe={pts:[[e.clientX,e.clientY]], t:[performance.now()], mode:null, x0:BW.x}; });
+bwCv.addEventListener('pointermove', e=>{ const S2=BW.swipe; if (!S2) return; S2.pts.push([e.clientX,e.clientY]); S2.t.push(performance.now()); if (S2.pts.length>80){ S2.pts.shift(); S2.t.shift(); }
+  const [x0,y0]=S2.pts[0], dx=e.clientX-x0, dy=y0-e.clientY;
+  if (!S2.mode && Math.abs(dx)+Math.abs(dy)>10) S2.mode = Math.abs(dx)>Math.abs(dy)*1.3 ? 'move' : 'swipe';
+  if (S2.mode==='move'){ BW.x=Math.max(BOWL.MINX, Math.min(BOWL.MAXX, S2.x0 + dx/BW.sc*0.25)); S2.pts=[S2.pts[0]]; S2.t=[S2.t[0]]; } });
+const bwSwipeEnd = e=>{ const S2=BW.swipe; BW.swipe=null; if (!S2 || S2.mode!=='swipe' || BW.phase!=='aim') return;
+  const P2=S2.pts, T=S2.t, n=P2.length; if (n<3) return; const dy=P2[0][1]-P2[n-1][1], dx=P2[n-1][0]-P2[0][0]; if (dy<40) { localMsg('Swipe UP to bowl.'); return; }
+  const k0=Math.max(1,Math.floor(n*0.3)); let i0=0; for (let i=n-1;i>=0;i--){ if (T[n-1]-T[i] > 140){ i0=i; break; } }
+  const speed = (P2[i0][1]-P2[n-1][1]) / Math.max(16, T[n-1]-T[i0]);   // px per ms over the last bit of the swipe
+  const power = Math.max(0, Math.min(1, (speed-0.35)/1.6));
+  const vy = BOWL.MINV + (BOWL.MAXV-BOWL.MINV)*power;
+  const ang = Math.max(-BOWL.MAXANG, Math.min(BOWL.MAXANG, dx/dy*0.07));
+  // hook: how much the end of the swipe curves compared to the start
+  const s1=(P2[k0][0]-P2[0][0])/Math.max(8,P2[0][1]-P2[k0][1]), s2=(P2[n-1][0]-P2[n-1-k0][0])/Math.max(8,P2[n-1-k0][1]-P2[n-1][1]);
+  const spin = Math.max(-1, Math.min(1, (s2-s1)*1.4));
+  BW.lastThrow={power, spin}; bwThrow({x:BW.x, vx:ang*vy, vy, spin}); };
+bwCv.addEventListener('pointerup', bwSwipeEnd); bwCv.addEventListener('pointercancel', ()=>{ BW.swipe=null; });
+for (const [id,dir] of [['bw_l',-1],['bw_r',1]]){ const el=document.getElementById(id); let timer=null;
+  const go=()=>{ if (BW.phase==='aim') BW.x=Math.max(BOWL.MINX, Math.min(BOWL.MAXX, BW.x+dir*1.5)); };
+  el.addEventListener('pointerdown', e=>{ e.preventDefault(); go(); timer=setInterval(go, 60); }); for (const ev of ['pointerup','pointerleave','pointercancel']) el.addEventListener(ev, ()=>{ clearInterval(timer); }); }
+document.getElementById('bw_exit').addEventListener('click', ()=>bowlClose());
+function bwHint(){ const el=document.getElementById('bw_hint'); if (BW.phase!=='aim'){ el.textContent=''; return; }
+  const touch=matchMedia('(pointer:coarse)').matches, ball = BW.game ? (BW.game.ball===0 ? 'FIRST BALL' : 'SECOND BALL') : '';
+  el.innerHTML = `<b>FRAME ${(BW.game?BW.game.frame:0)+1} · ${ball}</b><br>${touch ? 'Slide sideways to line up, then <b>swipe up</b> to bowl. Curve your swipe to hook it.' : '<b>Drag up</b> on the lane to bowl, or ← → to line up, A D to aim, Q E for hook ('+(BW.spin>0?'+':'')+BW.spin+'), hold SPACE for power.'}`; }
+
+// ---- alley board: who else is bowling ----
+NET.handlers.bw = m => { BW.live = Array.isArray(m.live) ? m.live.filter(q=>q && typeof q.n==='string').slice(0,8) : BW.live; bwAlley();
+  if (m.ev && m.ev.n && m.ev.n!==(me.n||'').toUpperCase() && curRoom==='lanes'){ const txt=`${m.ev.n}: ${String(m.ev.call)}`;
+    if (BW.on){ const el=document.getElementById('bw_toast'); el.textContent='🎳 '+txt; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
+    else if (/STRIKE|TURKEY|IN A ROW|FINAL/.test(m.ev.call)) localMsg(`🎳 ${m.ev.n} ${/FINAL/.test(m.ev.call)?'finished with '+m.ev.call.slice(6):'rolled a '+m.ev.call}!`); } };
+NET.handlers.bb = m => { BW.board=m.board; };
+function bwAlley(){ const el=document.getElementById('bw_alley'); if (!el) return; const meN=(me.n||'').toUpperCase(); const others=BW.live.filter(q=>q.n!==meN);
+  el.innerHTML = others.length ? `<div class="aht">ALSO BOWLING</div>`+others.slice(0,4).map(q=>`<div>L${q.lane+1} ${esc(q.n)} <b>${q.sc}</b> <small>F${q.f}</small></div>`).join('') : ''; el.style.display = others.length ? '' : 'none'; }
+
+// ---- open, lobby, start, results ----
+function openBowl(){ if (!joined) return; if (curRoom!=='lanes'){ showSwap('lanes'); return; } closeAll(); if (arcade.on) exitArcade();
+  BW.on=true; BW.phase='lobby'; bwEl.style.display='block'; document.body.classList.add('arena-on'); bwSize(); BW.rec=null; BW.call=null; BW.standing=[1,1,1,1,1,1,1,1,1,1]; BW.camY=-62;
+  bwBody.innerHTML='<div class="arload">LOADING...</div>'; bwBox.style.display='block'; bwCard(bowlScore([])); bwHint(); sendPresence(true);
+  NET.act('bowl_info').then(r=>{ if (!r.ok){ bwBody.innerHTML=`<div class="arload">${esc(r.msg||'Could not load the lanes.')}</div>`; return; } BW.me=r.me; BW.board=r.board; BW.live=r.live||[]; bwAlley(); BW.resume=r.game; bwLobby(); }); }
+function bowlClose(silent){ if (!BW.on) return; BW.on=false; BW.phase='lobby'; bwEl.style.display='none'; bwBox.style.display='none'; document.body.classList.remove('arena-on'); BW.rec=null; BW.meterOn=false; if (BW.keys) BW.keys.clear(); if (!silent) sendPresence(true); }
+function bwLobby(){ const M=BW.me; if (!M) return; BW.phase='lobby'; const G=BW.resume && !BW.resume.done && BW.resume.rolls.length ? BW.resume : null;
+  bwBody.innerHTML = `<div class="arh"><div class="art">🎳 HAY BALE BOWLING</div><div class="ars">Five frames. Roll the hay bale, knock down the llama pins. Strikes pay!</div></div>
+    <div class="arstats"><div><b>${M.best}</b><small>BEST GAME</small></div><div><b>${M.wkBest}</b><small>THIS WEEK</small></div><div><b>${M.strikes}</b><small>STRIKES</small></div><div><b>${M.earnedToday}/${M.cap}</b><small>COINS TODAY</small></div></div>
+    ${M.playedToday ? `<div class="arbonus done">✅ Daily bonus collected. Every game still pays coins.</div>` : `<div class="arbonus">🎁 First game today: <b>+2 bonus coins</b>!</div>`}
+    <div class="arbonus">💰 1 coin per 10 pins of score, +3 for a TURKEY (3 strikes in a row), +10 for a perfect 150.</div>
+    ${G ? `<button class="gbbtn y arplay" id="bw_resume">▶ RESUME GAME (FRAME ${G.frame+1})</button><button class="gbbtn" id="bw_go" style="width:100%">START A NEW GAME</button>` : `<button class="gbbtn y arplay" id="bw_go">▶ BOWL</button>`}
+    <div class="arsec">THIS WEEK'S HIGH GAMES</div>${boardHtml(BW.board)}
+    <div class="arhow"><b>HOW TO BOWL</b> ${matchMedia('(pointer:coarse)').matches ? 'Slide sideways on the lane to line up. <b>Swipe up</b> to roll: a faster swipe rolls harder, a swipe that curves at the end puts hook on it.' : '<b>Drag up</b> on the lane with the mouse (faster = harder, curve the end to hook it), or use ← → to line up, A D to aim, Q E for hook and hold SPACE for power.'} Aim just off the head pin for the best chance of a strike.</div>
+    <div class="srow"><button class="gbbtn" id="bw_leave">LEAVE</button></div>`;
+  bwBox.style.display='block'; bwWire(); }
+function bwWire(){ const go=document.getElementById('bw_go'); if (go) go.addEventListener('click', bwStart); const lv=document.getElementById('bw_leave'); if (lv) lv.addEventListener('click', ()=>bowlClose());
+  const rs=document.getElementById('bw_resume'); if (rs) rs.addEventListener('click', ()=>{ const G=BW.resume; BW.game={frame:G.frame, ball:G.ball, done:false}; BW.standing=G.standing; bwCard(G.card); bwBox.style.display='none'; BW.phase='aim'; BW.x=0; bwHint(); }); }
+function bwStart(){ if (BW.starting) return; BW.starting=true; ensureAudio();
+  NET.act('bowl_start').then(r=>{ BW.starting=false; if (!r.ok){ localMsg(r.msg||'Could not start a game.'); return; }
+    BW.game={frame:0, ball:0, done:false}; BW.standing=r.game.standing; BW.x=0; BW.aim=0; BW.spin=0; BW.result=null; bwCard(r.game.card); bwBox.style.display='none'; BW.phase='aim'; BW.camY=-62; bwHint(); sfxChime([523,659,784]); }); }
+function bwResults(r){ const F=r.final; BW.result=r; BW.me=F.me; BW.board=F.board; if (Number.isFinite(F.tk)) tkSet(F.tk);
+  const lines=[]; const base=F.earned-F.bonus.daily-F.bonus.turkey-F.bonus.perfect;
+  if (base>0) lines.push(`<li><span>Score</span><b>+${base}</b></li>`); if (F.bonus.daily) lines.push(`<li><span>🎁 First game today</span><b>+${F.bonus.daily}</b></li>`); if (F.bonus.turkey) lines.push(`<li><span>🦃 Turkey bonus</span><b>+${F.bonus.turkey}</b></li>`); if (F.bonus.perfect) lines.push(`<li><span>💯 Perfect game</span><b>+${F.bonus.perfect}</b></li>`);
+  bwBody.innerHTML = `<div class="arh"><div class="art">${F.total===150?'💯 PERFECT GAME!':F.total>=100?'🔥 GREAT GAME!':'GAME OVER'}</div><div class="ars">${F.strikes} strike${F.strikes===1?'':'s'}</div></div>
+    <div class="arbig" id="bw_count">0</div>
+    <div class="arbadges">${F.best?'<span class="bdg gold">⭐ NEW PERSONAL BEST</span>':''}${F.wkBest?'<span class="bdg pink">📈 WEEKLY BEST</span>':''}</div>
+    <div class="artok"><div class="artk">+${F.earned} <span>COINS</span></div>${lines.length?`<ul>${lines.join('')}</ul>`:''}${F.capped?'<div class="arcap">You hit today\'s bowling coin limit. Scores still count!</div>':''}</div>
+    <button class="gbbtn y arplay" id="bw_go">▶ BOWL AGAIN</button>
+    <div class="arsec">THIS WEEK'S HIGH GAMES</div>${boardHtml(F.board)}
+    <div class="srow"><button class="gbbtn" id="bw_leave">LEAVE</button></div>`;
+  bwBox.style.display='block'; bwWire();
+  const el=document.getElementById('bw_count'), goal=F.total, t0=performance.now(); const step=()=>{ const u=Math.min(1,(performance.now()-t0)/900); el.textContent=Math.round(goal*(1-Math.pow(1-u,3))); if (u<1) requestAnimationFrame(step); else if (F.best) sfxChime([1047,1319,1568,2093]); }; step(); }
+
 startGate();
 let last = performance.now();
 function loop(now){
@@ -4127,8 +4559,8 @@ function loop(now){
   updateOthers(dt); updateRope(dt); updateText(dt); updateBars(dt);
   if (pendingSend && performance.now()-lastSent>=90) sendPresence(true);
   scheduleMusic();
-  arenaTick(dt, now);
-  if (!AR.on) render(t); drawPreviews(t);
+  arenaTick(dt, now); bowlTick(dt, now);
+  if (!AR.on && !BW.on) render(t); drawPreviews(t);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

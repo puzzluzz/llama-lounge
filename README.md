@@ -42,6 +42,17 @@ A fourth room with a quick mini-game. Press PLAY (or tap the ring) for a 60-seco
 - **Progress:** XP levels unlock spit colors (green 2, pink 4, gold 6, rainbow 8, fire 10). There's a weekly leaderboard (resets Monday, Eastern time) and an all-time best.
 - The `arena` table is created automatically the first time someone plays.
 
+## Llama Lanes (hay bale bowling)
+
+A fifth room with four lanes. Press BOWL (or tap a lane or a lane screen) for a 5-frame game.
+
+- **Bowling:** slide sideways to line up, then swipe up. Swipe speed is power, curving the end of the swipe adds hook. On a computer you can also drag with the mouse, or use the arrow keys to line up, A/D to aim, Q/E for hook and hold Space for power.
+- **Scoring:** normal strike and spare scoring over 5 frames; the 5th frame gets bonus balls. A perfect game is 150.
+- **Fair pinfall:** `tools/bowl_physics.js` is the one copy of the ball and pin physics. `python3 tools/sync_bowl.py` pastes it into both `src/worker.js` and `public/index.html`. The server simulates every roll and its result is the one that counts; the page runs the same code to animate it.
+- **Coins:** 1 per 10 points (max 15), +2 for the first game of the day, +3 per turkey, +10 for a perfect game. Bowling coins are capped at 40 a day. Rolls must be at least 2.2 seconds apart.
+- **Together:** the lane screens and the ALSO BOWLING panel show everyone's live score, and strikes are called out to the room.
+- The `bowl` table is created automatically the first time someone bowls.
+
 ## Owner and mods
 
 The owner is the account with `role = 'admin'` in the `users` table (PUZZ). Nothing else can make someone the owner. The owner shows a gold crown by their name, mods show a blue shield. The server stamps these badges, so nobody can fake one.

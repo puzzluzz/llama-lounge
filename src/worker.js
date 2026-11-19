@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-19d";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-19e";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -199,6 +199,118 @@ const etDay = (t) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_Y
 function etWeek(t) { const d = new Date(etDay(t) + "T12:00:00Z"); const wd = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - wd); return d.toISOString().slice(0, 10); }   // Monday of the week
 const unlocked = (lvl) => ARENA.colors.filter(([, l]) => lvl >= l).map(([c]) => c);
 
+// BOWL-PHYSICS-START (generated from tools/bowl_physics.js by tools/sync_bowl.py; edit that file, not this copy)
+// ---- BOWLING PHYSICS (shared: the server runs this exact code to decide which pins fall) ----
+// Units are inches and seconds. Only + - * / and Math.sqrt are used, so every browser and the server get the same answer.
+const BOWL = { HW: 20.75, BR: 4.3, PR: 2.4, HEAD: 720, WALL: 27, PIT: 772, DT: 1 / 480, MB: 4.3,
+  MINX: -16, MAXX: 16, MINV: 230, MAXV: 330, MAXANG: 0.035, HOOK: 16 };
+function bowlPins() { const p = []; for (let r = 0; r < 4; r++) for (let j = 0; j <= r; j++) p.push([(j - r / 2) * 12, BOWL.HEAD + r * 10.392]); return p; }
+// clean up a throw so it is inside the rules (the server does this too)
+function bowlClamp(s) {
+  const n = (v, lo, hi) => Math.max(lo, Math.min(hi, Number.isFinite(+v) ? +v : 0));
+  const vy = Math.round(n(s.vy, BOWL.MINV, BOWL.MAXV) * 1000) / 1000;
+  const vx = Math.round(n(s.vx, -vy * BOWL.MAXANG, vy * BOWL.MAXANG) * 1000) / 1000;
+  return { x: Math.round(n(s.x, BOWL.MINX, BOWL.MAXX) * 1000) / 1000, vx, vy, spin: Math.round(n(s.spin, -1, 1) * 1000) / 1000 };
+}
+// standing: 10 flags (1 = pin is up). rec: optional array that gets a snapshot every 4 steps for the animation.
+function bowlSim(start, standing, rec) {
+  const B = BOWL, dt = B.DT, home = bowlPins();
+  const ball = { x: start.x, y: 0, vx: start.vx, vy: start.vy, gut: false };
+  const pins = [];
+  for (let i = 0; i < 10; i++) if (standing[i]) pins.push({ i, x: home[i][0], y: home[i][1], vx: 0, vy: 0, hit: false, pit: false });
+  const R1 = B.BR + B.PR, R2 = B.PR * 2;
+  let still = 0, steps = 0;
+  for (; steps < 480 * 8; steps++) {
+    // the ball: straight on the oily front, hooks on the dry back end, drops in the gutter if it rolls off the lane
+    if (ball.y > 280 && ball.y < B.HEAD - 10 && !ball.gut) ball.vx += start.spin * B.HOOK * dt;
+    ball.x += ball.vx * dt; ball.y += ball.vy * dt;
+    if (!ball.gut && ball.y < B.HEAD - 14 && (ball.x > B.HW || ball.x < -B.HW)) { ball.gut = true; ball.vx = 0; ball.x = ball.x > 0 ? B.HW + 4.5 : -B.HW - 4.5; }
+    if (ball.y > B.PIT + 30) { ball.vx = 0; ball.vy = 0; }
+    // ball hits pins
+    if (!ball.gut) for (const p of pins) {
+      if (p.pit) continue; const dx = p.x - ball.x, dy = p.y - ball.y, d2 = dx * dx + dy * dy;
+      if (d2 < R1 * R1) { const d = Math.sqrt(d2) || 0.0001, nx = dx / d, ny = dy / d;
+        const rv = (ball.vx - p.vx) * nx + (ball.vy - p.vy) * ny;
+        if (rv > 0) { const j = 1.55 * rv / (1 / B.MB + 1); ball.vx -= j / B.MB * nx; ball.vy -= j / B.MB * ny; p.vx += j * nx; p.vy += j * ny; p.hit = true; }
+        const o = R1 - d; p.x += nx * o; p.y += ny * o; }
+    }
+    // pins hit each other (a flying pin knocks over a standing one)
+    for (let a = 0; a < pins.length; a++) { const p = pins[a]; if (p.pit) continue;
+      for (let b = a + 1; b < pins.length; b++) { const q = pins[b]; if (q.pit) continue;
+        const dx = q.x - p.x, dy = q.y - p.y, d2 = dx * dx + dy * dy;
+        if (d2 < R2 * R2) { const d = Math.sqrt(d2) || 0.0001, nx = dx / d, ny = dy / d;
+          const rv = (p.vx - q.vx) * nx + (p.vy - q.vy) * ny;
+          if (rv > 0) { const j = 1.8 * rv / 2; p.vx -= j * nx; p.vy -= j * ny; q.vx += j * nx; q.vy += j * ny; if (j > 5) { p.hit = true; q.hit = true; } }
+          const o = (R2 - d) / 2; p.x -= nx * o; p.y -= ny * o; q.x += nx * o; q.y += ny * o; }
+      } }
+    // pins slide, bounce off the side walls, and drop into the pit
+    let moving = ball.vy > 0 && ball.y < B.PIT + 30 ? 1 : 0;
+    for (const p of pins) { if (p.pit) continue;
+      p.x += p.vx * dt; p.y += p.vy * dt; const f = 1 - 2.2 * dt; p.vx *= f; p.vy *= f;
+      if (p.x > B.WALL) { p.x = B.WALL; p.vx = -p.vx * 0.55; } if (p.x < -B.WALL) { p.x = -B.WALL; p.vx = -p.vx * 0.55; }
+      if (p.y < B.HEAD - 40) { p.y = B.HEAD - 40; p.vy = -p.vy * 0.3; }
+      if (p.y > B.PIT) { p.pit = true; p.hit = true; p.vx = 0; p.vy = 0; }
+      if (p.vx * p.vx + p.vy * p.vy > 4) moving = 1; }
+    if (rec && steps % 4 === 0) rec.push([Math.round(ball.x * 100) / 100, Math.round(ball.y * 100) / 100, ball.gut ? 1 : 0, pins.map((p) => [p.i, Math.round(p.x * 100) / 100, Math.round(p.y * 100) / 100, p.hit ? 1 : 0, p.pit ? 1 : 0])]);
+    still = moving ? 0 : still + 1;
+    if (still > 120 && ball.y > B.HEAD) break;
+  }
+  const home2 = bowlPins();
+  const down = pins.filter((p) => p.hit || (p.x - home2[p.i][0]) * (p.x - home2[p.i][0]) + (p.y - home2[p.i][1]) * (p.y - home2[p.i][1]) > 6.25).map((p) => p.i);
+  return { down, gutter: ball.gut, steps };
+}
+// ---- 5-frame scoring (the last frame gets bonus balls after a strike or spare) ----
+const BOWL_FRAMES = 5;
+function bowlScore(rolls) {
+  const frames = []; let i = 0, total = 0;
+  for (let f = 0; f < BOWL_FRAMES; f++) {
+    const last = f === BOWL_FRAMES - 1, a = rolls[i], b = rolls[i + 1], c = rolls[i + 2];
+    if (a === undefined) { frames.push({ marks: [], score: null }); continue; }
+    if (!last) {
+      if (a === 10) { const ok = b !== undefined && c !== undefined; if (ok) total += 10 + b + c; frames.push({ marks: ['X'], score: ok ? total : null }); i += 1; continue; }
+      if (b === undefined) { frames.push({ marks: [mk(a)], score: null }); i += 1; continue; }
+      if (a + b === 10) { const ok = c !== undefined; if (ok) total += 10 + c; frames.push({ marks: [mk(a), '/'], score: ok ? total : null }); i += 2; continue; }
+      total += a + b; frames.push({ marks: [mk(a), mk(b)], score: total }); i += 2; continue;
+    }
+    // last frame: up to three balls
+    const m = [a === 10 ? 'X' : mk(a)];
+    if (b !== undefined) m.push(a === 10 ? (b === 10 ? 'X' : mk(b)) : (a + b === 10 ? '/' : mk(b)));
+    if (c !== undefined) m.push(a === 10 && b !== 10 ? (b + c === 10 ? '/' : mk(c)) : (c === 10 ? 'X' : mk(c)));
+    const needs = (a === 10 || (b !== undefined && a + b === 10)) ? 3 : 2;
+    const have = [a, b, c].filter((v) => v !== undefined).length;
+    if (have >= needs) total += a + (b || 0) + (needs === 3 ? (c || 0) : 0);
+    frames.push({ marks: m, score: have >= needs ? total : null }); i += have;
+  }
+  return { frames, total };
+  function mk(v) { return v === 0 ? '-' : String(v); }
+}
+// where the game is: which frame, which ball, which pins are standing, and whether it's over
+function bowlState(rolls) {
+  let i = 0, standing = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+  for (let f = 0; f < BOWL_FRAMES; f++) {
+    const last = f === BOWL_FRAMES - 1;
+    if (!last) {
+      if (rolls[i] === undefined) return { frame: f, ball: 0, done: false };
+      if (rolls[i] === 10) { i += 1; continue; }
+      if (rolls[i + 1] === undefined) return { frame: f, ball: 1, done: false };
+      i += 2; continue;
+    }
+    const a = rolls[i], b = rolls[i + 1], c = rolls[i + 2];
+    if (a === undefined) return { frame: f, ball: 0, done: false };
+    if (b === undefined) return { frame: f, ball: 1, done: false, fresh: a === 10 };
+    const extra = a === 10 || a + b === 10;
+    if (!extra) return { frame: f, ball: 2, done: true };
+    if (c === undefined) return { frame: f, ball: 2, done: false, fresh: (a === 10 && b === 10) || (a !== 10 && a + b === 10) };
+    return { frame: f, ball: 3, done: true };
+  }
+  return { frame: BOWL_FRAMES, ball: 0, done: true };
+}
+// BOWL-PHYSICS-END
+
+// ---------- hay bale bowling ----------
+// The server keeps each player's game, runs the same physics as the page to decide pinfall, and pays coins at the end.
+const LANES = { minGap: 2200, dayCap: 40, expire: 30 * 60000 };
+
 // ---------- realtime room ----------
 const PRES_KEYS = new Set(["bj", "c", "n", "x", "y", "d", "p", "m", "s", "h", "hl", "sk", "e", "a", "sp", "td", "g", "fk", "rm", "fs", "sl", "j", "l", "ea"]);
 function cleanPresence(p, name, tk, muted, staff) {
@@ -387,6 +499,10 @@ export class Lounge extends DurableObject {
       case "arena_info": return this.arenaInfo(a, now);
       case "arena_join": return this.arenaJoin(ws, a, m, now);
       case "arena_end": return this.arenaEnd(ws, a, m, now);
+      case "bowl_info": return this.bowlInfo(a, now);
+      case "bowl_start": return this.bowlStart(a, now);
+      case "bowl_roll": return this.bowlRoll(a, m, now);
+      case "bowl_quit": { await this.ctx.storage.delete("bowl:" + a.uid); this.bowlLiveDrop(a.uid); return { ok: true }; }
     }
     return { ok: false, msg: "The game was just updated. Refresh the page to get the newest version." };
   }
@@ -557,6 +673,88 @@ export class Lounge extends DurableObject {
     if (best || newWk) this.arenaRoomBroadcast({ t: "ab", board });
     return { ok: true, score, place, players: humans.length, earned: earn, bonus, capped: earnedSoFar + earn >= ARENA.dayCap, best, wkBest: newWk && score > 0, levelUp: after > before ? after : 0,
              newColors: unlocked(after).filter((c) => !unlocked(before).includes(c)), me, board, tk };
+  }
+
+  // ---------- hay bale bowling ----------
+  async bowlTable() {
+    if (this.bowlReady) return;
+    await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS bowl (uid INTEGER PRIMARY KEY, best INTEGER NOT NULL DEFAULT 0, wk TEXT NOT NULL DEFAULT '', wk_best INTEGER NOT NULL DEFAULT 0, games INTEGER NOT NULL DEFAULT 0, strikes INTEGER NOT NULL DEFAULT 0, last_day TEXT NOT NULL DEFAULT '', earn_day TEXT NOT NULL DEFAULT '', earned INTEGER NOT NULL DEFAULT 0)").run();
+    this.bowlReady = true;
+  }
+  async bowlRow(uid) { await this.bowlTable(); return (await this.env.DB.prepare("SELECT * FROM bowl WHERE uid = ?").bind(uid).first()) || { uid, best: 0, wk: "", wk_best: 0, games: 0, strikes: 0, last_day: "", earn_day: "", earned: 0 }; }
+  async bowlBoard(now) {
+    await this.bowlTable(); const wk = etWeek(now);
+    const q = async (sql, ...b) => ((await this.env.DB.prepare(sql).bind(...b).all()).results || []).map((r) => ({ n: r.name.toUpperCase(), s: r.s }));
+    return { week: await q("SELECT u.name, b.wk_best AS s FROM bowl b JOIN users u ON u.id = b.uid WHERE b.wk = ? AND b.wk_best > 0 AND u.banned = 0 ORDER BY b.wk_best DESC LIMIT 10", wk),
+             all: await q("SELECT u.name, b.best AS s FROM bowl b JOIN users u ON u.id = b.uid WHERE b.best > 0 AND u.banned = 0 ORDER BY b.best DESC LIMIT 5") };
+  }
+  bowlMe(r, now) { const today = etDay(now);
+    return { best: r.best, wkBest: r.wk === etWeek(now) ? r.wk_best : 0, games: r.games, strikes: r.strikes, playedToday: r.last_day === today, earnedToday: r.earn_day === today ? r.earned : 0, cap: LANES.dayCap }; }
+  bowlLiveList(now) { const out = []; for (const [uid, L] of this.bowlLive || []) { if (now - L.at > 5 * 60000) { this.bowlLive.delete(uid); continue; } out.push({ n: L.n, c: L.c, sc: L.sc, f: L.f, lane: L.lane }); } return out; }
+  bowlLiveDrop(uid) { if (this.bowlLive && this.bowlLive.delete(uid)) this.lanesBroadcast({ t: "bw", live: this.bowlLiveList(Date.now()) }); }
+  lanesBroadcast(obj) { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === "lanes") { try { w.send(s); } catch (e) {} } } }
+  bowlLaneFor(uid) { this.bowlLive = this.bowlLive || new Map(); const cur = this.bowlLive.get(uid); if (cur) return cur.lane;
+    const used = new Set([...this.bowlLive.values()].map((L) => L.lane)); for (let i = 0; i < 4; i++) if (!used.has(i)) return i; return uid % 4; }
+  async bowlGame(uid, now) { const G = await this.ctx.storage.get("bowl:" + uid); if (!G || now - G.last > LANES.expire) return null; return G; }
+  bowlView(G) { const st = bowlState(G.rolls); return { rolls: G.rolls, standing: G.standing, card: bowlScore(G.rolls), frame: st.frame, ball: st.ball, done: st.done, lane: G.lane }; }
+  async bowlInfo(a, now) {
+    const G = await this.bowlGame(a.uid, now);
+    return { ok: true, me: this.bowlMe(await this.bowlRow(a.uid), now), board: await this.bowlBoard(now), live: this.bowlLiveList(now), game: G ? this.bowlView(G) : null };
+  }
+  async bowlStart(a, now) {
+    if (!a.pres || a.pres.rm !== "lanes") return { ok: false, msg: "Head to LLAMA LANES to bowl." };
+    const lane = this.bowlLaneFor(a.uid);
+    const G = { rolls: [], standing: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1], started: now, last: now - LANES.minGap, lane };
+    await this.ctx.storage.put("bowl:" + a.uid, G);
+    this.bowlLive.set(a.uid, { n: a.name, c: (a.pres && a.pres.c) || "twotone", sc: 0, f: 1, lane, at: now });
+    this.lanesBroadcast({ t: "bw", live: this.bowlLiveList(now) });
+    return { ok: true, game: this.bowlView(G) };
+  }
+  async bowlRoll(a, m, now) {
+    const G = await this.bowlGame(a.uid, now); if (!G) return { ok: false, msg: "Start a new game first." };
+    if (now - G.last < LANES.minGap) return { ok: false, msg: "Wait for the pins to settle." };
+    const st0 = bowlState(G.rolls); if (st0.done) return { ok: false, msg: "That game is over." };
+    const throwIn = bowlClamp(m);   // same limits as the page
+    const res = bowlSim(throwIn, G.standing);
+    const before = G.standing.slice(); const n = res.down.length;
+    G.rolls.push(n); G.last = now;
+    for (const i of res.down) G.standing[i] = 0;
+    const st = bowlState(G.rolls);
+    if (!st.done && (st.ball === 0 || st.fresh)) G.standing = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];   // pinsetter: fresh rack
+    const card = bowlScore(G.rolls);
+    // what to call it
+    const firstBall = st0.ball === 0 || (st0.frame === BOWL_FRAMES - 1 && before.every((v) => v === 1));
+    const prev = G.rolls.length > 1 ? G.rolls[G.rolls.length - 2] : null;
+    let call = res.gutter ? "GUTTER" : n === 0 ? "MISS" : "";
+    if (firstBall && n === 10) call = "STRIKE"; else if (!firstBall && before.filter(Boolean).length === n && n > 0) call = "SPARE";
+    const streak = (() => { let k = 0; for (let i = G.rolls.length - 1; i >= 0 && G.rolls[i] === 10; i--) k++; return k; })();
+    if (call === "STRIKE" && streak >= 3) call = streak === 3 ? "TURKEY" : streak + " IN A ROW";
+    const L = this.bowlLive && this.bowlLive.get(a.uid); if (L) { L.sc = card.total; L.f = Math.min(BOWL_FRAMES, st.frame + 1); L.at = now; }
+    this.lanesBroadcast({ t: "bw", live: this.bowlLiveList(now), ev: call && call !== "MISS" ? { n: a.name, call } : null });
+    const out = { ok: true, throw: throwIn, before, down: res.down, n, gutter: res.gutter, call, card, rolls: G.rolls, standing: G.standing, frame: st.frame, ball: st.ball, done: st.done };
+    if (!st.done) { await this.ctx.storage.put("bowl:" + a.uid, G); return out; }
+    // game over: record it and pay coins
+    await this.ctx.storage.delete("bowl:" + a.uid); this.bowlLiveDrop(a.uid);
+    const total = card.total, strikes = G.rolls.filter((v, i) => v === 10).length;
+    const r = await this.bowlRow(a.uid), today = etDay(now), wk = etWeek(now);
+    const firstToday = r.last_day !== today;
+    let turkeys = 0; { let k = 0; for (const v of G.rolls) { if (v === 10) { k++; if (k === 3) turkeys++; } else k = 0; } }
+    // plausibility: a game can't be faster than its rolls allow
+    const minMs = (G.rolls.length - 1) * LANES.minGap;
+    let earn = now - G.started >= minMs ? Math.min(15, Math.floor(total / 10)) : 0;
+    const bonus = { daily: firstToday ? 2 : 0, turkey: turkeys * 3, perfect: total === BOWL_FRAMES * 30 ? 10 : 0 };
+    earn += bonus.daily + bonus.turkey + bonus.perfect;
+    const soFar = r.earn_day === today ? r.earned : 0; earn = Math.max(0, Math.min(earn, LANES.dayCap - soFar));
+    const best = total > r.best, wkBest = r.wk !== wk ? total : Math.max(r.wk_best, total), newWk = r.wk !== wk || total > r.wk_best;
+    await this.env.DB.prepare(`INSERT INTO bowl (uid, best, wk, wk_best, games, strikes, last_day, earn_day, earned) VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?)
+      ON CONFLICT(uid) DO UPDATE SET best = MAX(best, excluded.best), wk = excluded.wk, wk_best = excluded.wk_best, games = games + 1, strikes = strikes + excluded.strikes, last_day = excluded.last_day, earn_day = excluded.earn_day, earned = excluded.earned`)
+      .bind(a.uid, total, wk, wkBest, strikes, today, today, soFar + earn).run();
+    const tk = earn ? await this.credit(a.uid, earn, "bowling") : (await this.user(a.uid)).tk;
+    const board = await this.bowlBoard(now);
+    if (best || newWk) this.lanesBroadcast({ t: "bb", board });
+    this.lanesBroadcast({ t: "bw", live: this.bowlLiveList(now), ev: { n: a.name, call: "FINAL " + total } });
+    return { ...out, final: { total, strikes, earned: earn, bonus, capped: soFar + earn >= LANES.dayCap, best, wkBest: newWk && total > 0,
+      me: this.bowlMe({ ...r, best: Math.max(r.best, total), wk, wk_best: wkBest, games: r.games + 1, strikes: r.strikes + strikes, last_day: today, earn_day: today, earned: soFar + earn }, now), board, tk } };
   }
 
   // ---------- staff tools: mods mute, unmute and kick; the owner can also ban, unban and make or remove mods ----------
