@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-22h";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-22i";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -85,8 +85,8 @@ const ITEMS = {
 // ---------- player rooms ----------
 // One room per player. Only the owner can change it. Public rooms are open to everyone; private ones let in the owner,
 // people on the owner's invite list, people the owner let in after they knocked (for a few hours), and staff.
-const PR = { w: 7, h: 11, maxFurn: 40,   // player rooms: 7 wide, 11 deep (the long wall is the left one, where the door is)
-  clear: ["0,10", "1,10", "2,10", "3,10"], knockGap: 20000, letInMs: 3 * 3600e3, nameMax: 24 };
+const PR = { w: 11, h: 7, maxFurn: 40,   // player rooms: 11 wide, 7 deep (the long wall is the right one; the door is at the front of the left wall)
+  clear: ["0,6", "1,6", "2,6", "3,6"], knockGap: 20000, letInMs: 3 * 3600e3, nameMax: 24 };
 const PR_WALLS = ["lavender", "cream", "mint", "pink", "night", "wood"], PR_FLOORS = ["wood", "checker", "carpet", "marble", "grass"];
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
 const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30, rug_persian: 25, rug_round: 15, rug_stripe: 12, rug_shag: 18,
@@ -745,7 +745,7 @@ export class Lounge extends DurableObject {
     if (!(gx >= 0 && gy >= 0 && gx < PR.w && gy < PR.h)) return { ok: false, msg: "That's outside the room." };
     const wall = FURN_WALL.has(k);
     if (wall && gx !== 0 && gy !== 0) return { ok: false, msg: "Wall items go on a wall. Tap a spot right next to a wall." };
-    if (wall && gx === 0 && gy >= 9) return { ok: false, msg: "That's where the door is." };
+    if (wall && gx === 0 && gy >= PR.h - 2) return { ok: false, msg: "That's where the door is." };
     const furn = await this.prFurn(r.id); if (furn.length >= PR.maxFurn) return { ok: false, msg: `Rooms hold up to ${PR.maxFurn} pieces.` };
     { const why = this.furnFits(k, gx, gy, rot, furn, -1); if (why) return { ok: false, msg: why }; }
     const own = await this.env.DB.prepare("SELECT n FROM finv WHERE uid = ? AND item = ?").bind(a.uid, k).first();
@@ -770,7 +770,7 @@ export class Lounge extends DurableObject {
     const id = Math.floor(+m.fid || 0); const f = await this.env.DB.prepare("SELECT * FROM pfurn WHERE id = ? AND room = ?").bind(id, r.id).first(); if (!f) return { ok: false, msg: "That piece is gone." };
     const gx = Math.floor(+m.gx), gy = Math.floor(+m.gy);
     if (!(gx >= 0 && gy >= 0 && gx < PR.w && gy < PR.h)) return { ok: false, msg: "That's outside the room." };
-    if (FURN_WALL.has(f.item)) { if (gx !== 0 && gy !== 0) return { ok: false, msg: "Wall items go on a wall." }; if (gx === 0 && gy >= 9) return { ok: false, msg: "That's where the door is." }; }
+    if (FURN_WALL.has(f.item)) { if (gx !== 0 && gy !== 0) return { ok: false, msg: "Wall items go on a wall." }; if (gx === 0 && gy >= PR.h - 2) return { ok: false, msg: "That's where the door is." }; }
     const why = this.furnFits(f.item, gx, gy, f.rot, await this.prFurn(r.id), f.id); if (why) return { ok: false, msg: why };
     await this.env.DB.prepare("UPDATE pfurn SET gx = ?, gy = ? WHERE id = ?").bind(gx, gy, id).run();
     const nf = await this.prFurn(r.id); this.toRoom("p:" + r.id, { t: "prf", room: r.id, furn: nf });
