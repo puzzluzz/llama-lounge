@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-20j";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-20k";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -78,6 +78,7 @@ const ITEMS = {
   shades: { s: "eyes", p: 20 }, hearts: { s: "eyes", p: 25 }, stars: { s: "eyes", p: 25 },
   bandana: { s: "neck", p: 12 }, bowtie: { s: "neck", p: 15 }, scarf: { s: "neck", p: 18 }, lei: { s: "neck", p: 15 },
   tee_smile: { s: "shirt", p: 25 }, tee_cancelled: { s: "shirt", p: 25 }, tee_wild: { s: "shirt", p: 25 }, tee_cancel: { s: "shirt", p: 25 }, tee_woke: { s: "shirt", p: 25 },
+  tee_lounge: { s: "shirt", p: 25 }, tee_acres: { s: "shirt", p: 25 }, tee_arena: { s: "shirt", p: 25 },
 };
 const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
 

@@ -728,7 +728,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-20j";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-20k";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -799,7 +799,13 @@ const ITEMS={
   tee_smile:{s:'shirt',p:25,n:'SMILE TEE',c:['#6b6b4a','#4e4e34','#8a8a64'],pr:'smile'}, tee_cancelled:{s:'shirt',p:25,n:'CANCELLED TEE',c:['#4b3bb0','#33287e','#6a5ad0'],pr:'cancelled'},
   tee_wild:{s:'shirt',p:25,n:'GONE WILD TEE',c:['#2c2a34','#1a1820','#4a4856'],pr:'wild'}, tee_cancel:{s:'shirt',p:25,n:'CANCEL CULTURE TEE',c:['#2c2a34','#1a1820','#4a4856'],pr:'cancel'},
   tee_woke:{s:'shirt',p:25,n:'GOT WOKE? TEE',c:['#f4f4f0','#c8c8c4','#ffffff'],pr:'woke'},
+  tee_lounge:{s:'shirt',p:25,n:'LOUNGE TEE',c:['#f85888','#c8306a','#ffa0c0'],pr:'lounge'}, tee_acres:{s:'shirt',p:25,n:'ACRES TEE',c:['#4aa04a','#2e7a2e','#7fd07f'],pr:'acres'},
+  tee_arena:{s:'shirt',p:25,n:'SPIT ARENA TEE',c:['#3a7ad8','#28589e','#6aa8f0'],pr:'arena'},
 };
+// shirt prints, 6 x 4 pixels, used for the worn shirt and the one on the hanger
+const TEE_PRINTS={ smile:['..aa..','.abba.','.aaaa.','..cc..'], cancelled:['.bbbb.','bbccbb','.bbbb.','dddddd'], wild:['..e...','.efe.e','efffef','ffffff'], cancel:['gggggg','......','gggggg','gggg..'], woke:['hhhhh.','......','hhhhhh','hh....'],
+  lounge:['gggggg','g.ii.g','g.ii.g','gggggg'], acres:['...jj.','..kk..','.kk...','kk....'], arena:['.g..g.','gg.gg.','.g..g.','......'] };
+const TEE_PC={a:'#d8b07a',b:'#6fd0ff',c:'#1a1626',d:'#d8b07a',e:'#ffb030',f:'#e03048',g:'#ffffff',h:'#1a1626',i:'#f8d030',j:'#4aa04a',k:'#ff8a30'};
 const cleanWear = w => { const o={}; if (w && typeof w==='object') for (const s2 of WEAR_SLOTS){ const k=w[s2]; if (typeof k==='string' && ITEMS[k] && ITEMS[k].s===s2) o[s2]=k; } return o; };
 const wearKey = w => w ? WEAR_SLOTS.map(s2=>w[s2]||'').join(',') : '';
 function buildSprite(cid, dir, frame, pose, wear, only) {
@@ -853,8 +859,7 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
     for (let x=10;x<=17;x++) put(x,24+oy,OUT); for (let x=6;x<=9;x++) put(x,25+oy,OUT); for (let x=18;x<=21;x++) put(x,25+oy,OUT); put(5,26+oy,OUT); put(22,26+oy,OUT);
     for (let x=3;x<=7;x++) put(x,30+oy,OUT); for (let x=20;x<=24;x++) put(x,30+oy,OUT); for (let x=8;x<=19;x++) put(x,38+oy,OUT);
     if (front){ for (let x=12;x<=15;x++) put(x,25+oy,fur(13.5,22+oy,3,5)(x,25+oy));   // the neck shows through the collar
-      const P2={ smile:['..aa..','.abba.','.aaaa.','..cc..'], cancelled:['.bbbb.','bbccbb','.bbbb.','dddddd'], wild:['..e...','.efe.e','efffef','ffffff'], cancel:['gggggg','......','gggggg','gggg..'], woke:['hhhhh.','......','hhhhhh','hh....'] }[TEE.pr];
-      const PC={a:'#d8b07a',b:'#6fd0ff',c:'#1a1626',d:'#d8b07a',e:'#ffb030',f:'#e03048',g:'#ffffff',h:'#1a1626'};
+      const P2=TEE_PRINTS[TEE.pr], PC=TEE_PC;
       if (P2) P2.forEach((row,j)=>{ for (let i=0;i<6;i++) if (row[i]!=='.') put(11+i,30+j+oy,PC[row[i]]); }); }
     else { for (let x=11;x<=16;x++) put(x,25+oy,C[1]); } }
   // tail (back)
@@ -883,8 +888,9 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
       put(13,31+oy,'#f6c945'); put(14,31+oy,'#c8951c'); put(13,32+oy,'#fff1a8'); put(14,32+oy,'#f6c945'); put(13,33+oy,'#c8951c');
     } else { for (let x=10;x<=17;x++) put(x,25+oy,(x%2)?'#f6c945':'#c8951c'); }
   }
-  // ears
+  // ears (upright ears tuck under hats that cover the top of the head)
   if (!L) {}
+  else if (ch.ears==='up' && ['cap','beanie','tophat','cowboy'].includes(W.hat)) {}
   else if (ch.ears==='up') {
     const ear = (cx) => { oell(cx,5+oy,1.7,4.2,fur(cx,5+oy,1.7,4.2)); for(let y=3;y<=6;y++) put(cx,y+oy,pal(cx,y+oy)[1]); };
     ear(9); ear(18);
@@ -949,7 +955,7 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
     else if (W.hat==='beanie'){ oell(13.5,6.6+oy,6.6,3.8,(x,y)=>((x+Math.round(y))%3===0)?C[1]:(x>=16?C[1]:C[0])); for (let x=7;x<=20;x++){ put(x,9+oy,(x%2)?C[1]:C[0]); put(x,10+oy,(x%2)?C[1]:C[2]); put(x,11+oy,OUT); } put(6,9+oy,OUT); put(6,10+oy,OUT); put(21,9+oy,OUT); put(21,10+oy,OUT);
       oell(13.5,2.4+oy,2.2,1.9,(x,y)=>((x+y)%2)?'#ffffff':'#e8e8f0'); }
     else if (W.hat==='party'){ for (let y=0;y<=9;y++){ const hw=Math.round(0.6+y*0.62); const xa=Math.round(13.5-hw), xb=Math.round(13.5+hw); for (let x=xa;x<=xb;x++) put(x,y+oy,(x===xa||x===xb)?OUT:(((x+y*2)>>1)%3===0?C[1]:(((x+y*2)>>1)%3===1?C[0]:'#58c8f0'))); }
-      rect(7,10+oy,14,1,OUT); oell(13.5,0+oy,1.4,1.2,'#ffffff'); for (let y=10;y<=15;y++) put(front?7:20,y+oy,'#d8d8e8'); }
+      rect(7,10+oy,14,1,OUT); oell(13.5,0+oy,1.4,1.2,'#ffffff'); }
     else if (W.hat==='tophat'){ oell(13.5,9+oy,8.6,1.4,hf(13.5,9+oy,8.6,1.4)); rect(8,-1+oy,12,10,OUT); rect(9,0+oy,10,9,C[0]); rect(16,0+oy,3,9,C[1]); rect(9,6+oy,10,2,'#e03048'); rect(16,6+oy,3,2,'#a81830'); rect(10,1+oy,1,4,C[2]); }
     else if (W.hat==='flowers'){ for (let x=6;x<=21;x++){ const y=Math.round(8+oy-Math.abs(x-13.5)*0.1); put(x,y,C[0]); put(x,y+1,C[1]); if (x%3===0) put(x,y-1,'#6ac06a'); }
       [[7,'#f85888'],[10,'#f8d030'],[13.5,'#ffffff'],[17,'#8ad0ff'],[20,'#f85888']].forEach(([x,c])=>{ x=Math.round(x); const y=6+oy; put(x,y-1,c); put(x-1,y,c); put(x+1,y,c); put(x,y+1,c); put(x-1,y-1,OUT); put(x+1,y-1,OUT); put(x,y,'#f8d030'); }); } }
@@ -984,8 +990,7 @@ function teeIcon(id){ const k='tee:'+id; let c=itemIconCache.get(k); if (c) retu
   R(5,0,7,1,OUT); R(1,1,15,1,OUT); R(0,2,17,4,OUT); R(0,6,4,1,OUT); R(13,6,4,1,OUT); R(3,6,11,9,OUT); R(4,15,9,1,OUT);
   R(2,1,13,1,C[0]); R(1,2,15,3,C[0]); R(1,5,3,1,C[1]); R(13,5,3,1,C[1]); R(4,5,9,9,C[0]); R(4,14,9,1,C[1]);
   R(11,2,4,3,C[1]); R(10,5,3,9,C[1]); R(4,2,2,7,C[2]); R(6,1,5,1,C[1]); R(7,1,3,1,OUT);
-  const P2={ smile:['..aa..','.abba.','.aaaa.','..cc..'], cancelled:['.bbbb.','bbccbb','.bbbb.','dddddd'], wild:['..e...','.efe.e','efffef','ffffff'], cancel:['gggggg','......','gggggg','gggg..'], woke:['hhhhh.','......','hhhhhh','hh....'] }[it.pr];
-  const PC={a:'#d8b07a',b:'#6fd0ff',c:'#1a1626',d:'#d8b07a',e:'#ffb030',f:'#e03048',g:'#ffffff',h:'#1a1626'};
+  const P2=TEE_PRINTS[it.pr], PC=TEE_PC;
   if (P2) P2.forEach((row,j)=>{ for (let i=0;i<6;i++) if (row[i]!=='.') R(5+i,6+j,1,1,PC[row[i]]); });
   itemIconCache.set(k,c); return c; }
 // one item on its own, cropped to its pixels (store racks)
@@ -1128,7 +1133,9 @@ function buildLanesWorld(){
 // LLAMA STORE: the shirts hang framed on the left wall; a checkout counter, two clothing racks and a table of folded shirts
 const STORE_COUNTER=[[8,2],[9,2],[10,2]], STORE_TABLE=[], STORE_VEND=[5,0];
 // two long racks across the shop; every spot holds one item you can buy (same art as when you wear it)
-const RACK_A=['tee_smile','tee_cancelled','tee_wild','tee_cancel','tee_woke','bandana','bowtie','scarf','lei'], RACK_B=['cap','cowboy','beanie','party','tophat','flowers','shades','hearts','stars'];
+const RACK_A=['tee_smile','tee_cancelled','tee_wild','tee_cancel','tee_woke','bandana','bowtie','scarf','lei'], RACK_B=['cap','cowboy','beanie','party','tophat','flowers','tee_lounge','tee_acres','tee_arena'];
+// glass accessories case next to the register: two tiles, each item sits on the velvet at its spot
+const STORE_CASE=[[6,2],[7,2]], CASE_ITEMS=[['shades',6.3],['hearts',6.82],['stars',7.42]];
 const STORE_RACKS=[...RACK_A.map((id,i)=>[2+i,5,id,i===0?-1:i===RACK_A.length-1?1:0]), ...RACK_B.map((id,i)=>[2+i,8,id,i===0?-1:i===RACK_B.length-1?1:0])];
 const rackItemAt=(x,y)=>{ const r=STORE_RACKS.find(([a,b])=>a===x&&b===y); return r?r[2]:null; };
 function buildStoreWorld(){
@@ -1136,6 +1143,7 @@ function buildStoreWorld(){
   for (const [x,y] of STORE_COUNTER){ FURN.push({t:'counter',gx:x,gy:y,reg:x===9,end:x===10?1:x===8?-1:0}); block(x,y); }
   FURN.push({t:'clerk',gx:8,gy:1}); for (let x=8;x<=10;x++) for (let y=0;y<=1;y++) block(x,y);   // the cashier's spot behind the register
   for (const [x,y,item,end] of STORE_RACKS){ FURN.push({t:'rack',gx:x,gy:y,item,end}); block(x,y); }
+  STORE_CASE.forEach(([x,y],k)=>{ FURN.push({t:'glasscase',gx:x,gy:y,end:k===0?-1:1}); block(x,y); });
   FURN.push({t:'vending',gx:STORE_VEND[0],gy:STORE_VEND[1]}); block(STORE_VEND[0],STORE_VEND[1]);
   for (const [x,y,d] of [[11,10,'fr'],[12,9,'fr']]){ SEATS.push({gx:x,gy:y,dir:d,lift:5}); FURN.push({t:'cushion',gx:x,gy:y,col:['#f85888','#b83068','#f8a8c8']}); }
   FURN.push({t:'fern',gx:12,gy:0,flip:true}); block(12,0);
@@ -1959,6 +1967,20 @@ function drawFurn(f,t){
       g.fillStyle='#8a8aa0'; g.fillRect(tagX,tagY,2,1);
       g.fillStyle=OUT; g.fillRect(tagX+2,tagY-1,6,5); g.fillStyle=own?'#7fe0a0':'#fff8e0'; g.fillRect(tagX+3,tagY,4,3); g.fillStyle=own?'#1f8a4c':'#c89818'; g.fillRect(tagX+4,tagY+1,2,1);
       break; }
+    case 'glasscase': { // accessories case: wood base, purple velvet top, glasses laid out under glass
+      const a=f.gx+(f.end===-1?0.06:0), c=f.gx+(f.end===1?0.94:1), b=f.gy+0.14, e=f.gy+0.86, Hb=11, Hg=20;
+      box(a,b,c-a,e-b,Hb,'#e8dcf8','#8a5a30','#6a4220');
+      { const [x,y]=P((a+c)/2,e,4); g.fillStyle='#b07a48'; g.fillRect(Math.round(x)-7,Math.round(y),14,1); }
+      for (const [id,x] of CASE_ITEMS){ if (Math.floor(x)!==f.gx) continue; const ic=itemIcon(id); const [px,py]=P(x,f.gy+0.5,Hb); g.drawImage(ic, Math.round(px)-Math.floor(ic.width/2), Math.round(py)-ic.height+1);
+        g.fillStyle=OUT; g.fillRect(Math.round(px)+Math.ceil(ic.width/2)-1,Math.round(py)-1,5,4); g.fillStyle=INV.owned.includes(id)?'#7fe0a0':'#fff8e0'; g.fillRect(Math.round(px)+Math.ceil(ic.width/2),Math.round(py),3,2); }
+      // glass: see-through faces with bright edges
+      const corners=[[a,b],[c,b],[c,e],[a,e]], T=corners.map(([x,y])=>P(x,y,Hg)), B=corners.map(([x,y])=>P(x,y,Hb));
+      polyPx([T[0],T[1],T[2],T[3]],'rgba(200,230,255,0.22)'); polyPx([B[3],B[2],T[2],T[3]],'rgba(200,230,255,0.16)'); polyPx([B[1],B[2],T[2],T[1]],'rgba(170,210,240,0.2)');
+      const ed=(p,q,col)=>linePx(p[0],p[1],q[0],q[1],col);
+      ed(T[0],T[1],'#e8f4ff'); ed(T[1],T[2],'#e8f4ff'); ed(T[2],T[3],'#ffffff'); ed(T[3],T[0],'#e8f4ff');
+      if (f.end===-1) ed(B[3],T[3],'#d8ecff'); if (f.end===1) ed(B[1],T[1],'#d8ecff'); ed(B[2],T[2],'#ffffff');
+      { const s0=P(a+0.15,e,Hg-2), s1=P(a+0.3,e,Hb+3); ed(s0,s1,'rgba(255,255,255,0.7)'); }   // shine
+      break; }
     case 'vending': { // drinks machine against the back wall: red cabinet, lit sign, a window full of bottles
       const a=f.gx+0.12, b=f.gy+0.12, c=f.gx+0.88, e=f.gy+0.86, H=46;
       box(a,b,c-a,e-b,H,'#f0f0f8','#e03048','#b0203a');
@@ -2470,7 +2492,7 @@ function context(){
   if (curRoom==='store'){
     if (me.p!=='sit' && STORE_COUNTER.some(([x,y])=>near(x,y))) return 'shop';
     if (standNear()==='vend') return 'vend';
-    if (me.p!=='sit' && STORE_RACKS.some(([x,y])=>near(x,y))) return 'clothes';
+    if (me.p!=='sit' && (STORE_RACKS.some(([x,y])=>near(x,y)) || STORE_CASE.some(([x,y])=>near(x,y)))) return 'clothes';
     if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
     return me.p==='sit' ? 'stand' : 'sit'; }
   if (curRoom==='casino'){
@@ -2531,7 +2553,7 @@ function doAction(a){
   if (a==='bowl'){ openBowl(); return; }
   if (a==='shop'){ openCatalog(); return; }
   if (a==='vend'){ openFw('vend'); return; }
-  if (a==='clothes'){ const r=STORE_RACKS.find(([x,y])=>near(x,y)); openWardrobe('shop', r&&r[2]); return; }
+  if (a==='clothes'){ const r=STORE_RACKS.find(([x,y])=>near(x,y)); openWardrobe('shop', r ? r[2] : STORE_CASE.some(([x,y])=>near(x,y)) ? 'shades' : null); return; }
   if (a==='dunk'){ openDunk(); return; }
   if (a==='goCasino'){ if (!me.moving) showSwap('casino'); return; }
   if (a==='goLoungeC'){ if (!me.moving) showSwap('lounge'); return; }
@@ -3983,6 +4005,7 @@ function storePointer(e){
   for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
   const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
   { const it=rackItemAt(gx,gy); if (it){ openWardrobe('shop', it); return; } }
+  if (STORE_CASE.some(([x,y])=>x===gx&&y===gy)){ openWardrobe('shop', gx===7 ? 'stars' : 'shades'); return; }
   if (gx===STORE_VEND[0] && gy===STORE_VEND[1]){ if (nearStand(STANDS.vend)) openFw('vend'); else { walkTo(STORE_VEND[0],STORE_VEND[1]+1); localMsg('Walk up to the vending machine and press DRINKS.'); } return; }
   if (STORE_COUNTER.some(([x,y])=>x===gx&&y===gy)){ openCatalog(); return; }
   if (walkable(gx,gy)){ walkTo(gx,gy); return; }
@@ -4362,7 +4385,7 @@ function drawFishing(t){
 // ======================= CONTEXT TIPS =======================
 const TIPS = {
   counter:'<b>CHECKOUT</b> Press SHOP or tap the counter to see the real La Llama P.I.C. shirts.',
-  racks:'<b>CLOTHES</b> Tap anything on the racks to try it on and buy it with tokens. Change outfits any time in MENU > WARDROBE.',
+  racks:'<b>CLOTHES</b> Tap anything on the racks or in the glass case to try it on and buy it with tokens. Change outfits any time in MENU > WARDROBE.',
   arcade:'<b>ARCADE</b> Tap the cabinet to play HAY CATCH or LLAMA DASH.',
   juke:'<b>JUKEBOX</b> Tap it to change the song. Everyone hears it. The ♪ button mutes it for you.',
   lamp:'<b>LAMP</b> Tap the lamp to switch it on and off for everyone.',
@@ -4398,7 +4421,7 @@ function tipContext(){
     if (me.p!=='sit' && CROPS.some(c=>near(c.gx,c.gy))) return 'crops';
     const sb=(me.p==='sit')?seatAt(me.gx,me.gy):null; if (sb && sb.gy>=10) return 'campfire';
     return null; }
-  if (curRoom==='store'){ if (me.p!=='sit' && STORE_COUNTER.some(([x,y])=>near(x,y))) return 'counter'; if (me.p!=='sit' && STORE_RACKS.some(([x,y])=>near(x,y))) return 'racks'; if (me.p!=='sit' && me.gx<=1 && me.gy>=1 && me.gy<=9) return 'merch'; return null; }
+  if (curRoom==='store'){ if (me.p!=='sit' && STORE_COUNTER.some(([x,y])=>near(x,y))) return 'counter'; if (me.p!=='sit' && (STORE_RACKS.some(([x,y])=>near(x,y)) || STORE_CASE.some(([x,y])=>near(x,y)))) return 'racks'; if (me.p!=='sit' && me.gx<=1 && me.gy>=1 && me.gy<=9) return 'merch'; return null; }
   if (curRoom==='casino') return me.p!=='sit' ? null : isSlotSeat(me.gx,me.gy) ? 'slots' : seatIn(ROUL_SEATS,me.gx,me.gy) ? 'roulette' : seatIn(BJ_SEATS,me.gx,me.gy) ? 'blackjack' : null;
   if (me.p!=='sit' && me.gx===0 && me.gy===10) return 'door';
   if (me.p!=='sit' && near(7,0)) return 'rope';
