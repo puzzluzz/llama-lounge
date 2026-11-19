@@ -249,3 +249,4 @@ No API keys or passwords are involved.
 - **Bar counter:** in the lounge, tapping anywhere on the bar counter (top, front, or just around it) walks you to the nearest stool and opens the bar menu, not just the small cup.
 - **Fishing and name tags:** while the bite "!" or a just-caught fish shows over a llama's head, its name tag moves up out of the way, the same as for emote bubbles.
 - **Acres benches:** a llama sitting on either end of a two-seat bench is drawn after the bench, so the backrest stays behind it instead of cutting across it.
+- **Hide the shortcut buttons:** a small ‹ button at the end of the Jobs/Friends/Chat/Rooms/Bag row slides them off the left edge. A small › tab at the left edge brings them back, and shows a pink dot if a friend request or unread message is waiting. The choice is remembered on that device.
