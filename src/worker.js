@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-19v";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-19w";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -13,6 +13,9 @@ const LOGIN_MAX_FAILS = 8;                // per username per 15 minutes
 const IP_MAX_FAILS = 30;                  // per IP per 15 minutes
 const SIGNUPS_PER_IP_HOUR = 5;
 const WINDOW_MS = 15 * 60 * 1000;
+// email: reset links last 30 minutes and work once; confirm links last 2 days. Limits are per 15 minutes.
+const RESET_MS = 30 * 60 * 1000, VERIFY_MS = 48 * 3600 * 1000;
+const FORGOT_PER_IP = 6, FORGOT_PER_EMAIL = 3, RESET_BAD_PER_IP = 10, PW_CHECK_FAILS = 8;
 
 // six slot machines on the casino's back wall with a gap between each, two of each kind; stools are one tile in front (y 1)
 // symbols: cherry, lemon, carrot, bell, seven, llama.
@@ -107,14 +110,65 @@ async function bump(env, k) {
 // The owner is ONLY the account with users.role = 'admin' in the database. Never by name, setting or anything the browser sends.
 const isAdmin = (env, u) => !!u && u.role === "admin";
 const staffRole = (env, u) => (isAdmin(env, u) ? "owner" : u.role === "mod" ? "mod" : "");
-const profileOf = (env, u, timers = []) => ({ name: u.name.toUpperCase(), c: u.c, agreed: u.agreed, bet: u.bet, tk: u.tk, bestHay: u.best_hay, bestDash: u.best_dash, admin: isAdmin(env, u), staff: staffRole(env, u), timers });
+const profileOf = (env, u, timers = []) => ({ email: u.email || "", emailOk: !!u.email_ok, mailOn: mailOn(env), name: u.name.toUpperCase(), c: u.c, agreed: u.agreed, bet: u.bet, tk: u.tk, bestHay: u.best_hay, bestDash: u.best_dash, admin: isAdmin(env, u), staff: staffRole(env, u), timers });
+
+// ---------- email ----------
+// Sending uses Cloudflare Email Service: a "send_email" binding named EMAIL plus a MAIL_FROM address on a domain
+// set up in Cloudflare. Until both exist, accounts still save emails; reset and confirm emails just aren't sent.
+const mailOn = (env) => !!(env.EMAIL && env.MAIL_FROM);
+const normEmail = (e) => String(e || "").trim().toLowerCase();
+const emailOk = (e) => e.length <= 254 && /^[^\s@<>()",;:]{1,64}@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(e);
+const siteUrl = (env, url) => (env.APP_URL || url.origin).replace(/\/+$/, "");
+async function sendMail(env, to, subject, lines, link, button) {
+  if (!mailOn(env)) return false;
+  const text = lines.join("\n\n") + (link ? "\n\n" + link : "") + "\n\nLlama Lounge";
+  const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;color:#2a2340"><h2 style="color:#d62d6a">🦙 Llama Lounge</h2>${lines.map((l) => `<p>${l.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]))}</p>`).join("")}${link ? `<p><a href="${link}" style="display:inline-block;background:#ffd23f;color:#2a1d00;padding:12px 22px;border-radius:12px;font-weight:bold;text-decoration:none">${button}</a></p><p style="font-size:12px;color:#777">Or paste this link into your browser:<br>${link}</p>` : ""}</div>`;
+  try { await env.EMAIL.send({ to, from: { email: env.MAIL_FROM, name: "Llama Lounge" }, subject, text, html }); return true; }
+  catch (e) { console.error("mail failed", e && e.code, e && e.message); return false; }
+}
+// one-time links: only a hash of the token is stored, so a database leak can't be used to reset anyone
+async function newLink(env, uid, kind, email, ms) {
+  const raw = new Uint8Array(32); crypto.getRandomValues(raw); const tok = b64u(raw);
+  await env.DB.prepare("DELETE FROM email_tokens WHERE (uid = ? AND kind = ?) OR expires < ?").bind(uid, kind, Date.now()).run();
+  await env.DB.prepare("INSERT INTO email_tokens (hash, uid, kind, email, expires) VALUES (?, ?, ?, ?, ?)").bind(await sha256hex(tok), uid, kind, email, Date.now() + ms).run();
+  return tok;
+}
+async function takeLink(env, tok, kind) {
+  if (!/^[A-Za-z0-9_-]{40,50}$/.test(String(tok || ""))) return null;
+  const h = await sha256hex(tok);
+  const row = await env.DB.prepare("SELECT * FROM email_tokens WHERE hash = ? AND kind = ? AND expires > ?").bind(h, kind, Date.now()).first();
+  if (row) await env.DB.prepare("DELETE FROM email_tokens WHERE hash = ?").bind(h).run();   // every link works once
+  return row;
+}
+async function sendVerify(env, url, u, email) {
+  const tok = await newLink(env, u.id, "verify", email, VERIFY_MS);
+  return sendMail(env, email, "Confirm your Llama Lounge email", [`Hi ${u.name.toUpperCase()}!`, "Tap the button to confirm this is your email. That way you can reset your password if you ever forget it.", "Didn't make a Llama Lounge account? You can ignore this email."], `${siteUrl(env, url)}/#verify=${tok}`, "CONFIRM MY EMAIL");
+}
+// add the email columns and link table once per server start (safe to run on an existing database)
+let authSchema = null;
+function ensureAuthSchema(env) {
+  if (!authSchema) authSchema = (async () => {
+    for (const col of ["email TEXT", "email_ok INTEGER NOT NULL DEFAULT 0"]) {
+      try { await env.DB.prepare("ALTER TABLE users ADD COLUMN " + col).run(); } catch (e) { if (!/duplicate column/i.test(String(e && e.message || e))) throw e; }
+    }
+    await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users (email)").run();
+    await env.DB.prepare("CREATE TABLE IF NOT EXISTS email_tokens (hash TEXT PRIMARY KEY, uid INTEGER NOT NULL, kind TEXT NOT NULL, email TEXT NOT NULL, expires INTEGER NOT NULL)").run();
+  })().catch((e) => { authSchema = null; throw e; });
+  return authSchema;
+}
+async function setPassword(env, uid, pw) {
+  const salt = new Uint8Array(16); crypto.getRandomValues(salt); const h = await pbkdf2(pw, salt, PBKDF2_ITERS);
+  await env.DB.prepare("UPDATE users SET salt = ?, hash = ?, iters = ? WHERE id = ?").bind(b64(salt), b64(h), PBKDF2_ITERS, uid).run();
+  await env.DB.prepare("DELETE FROM sessions WHERE uid = ?").bind(uid).run();   // sign out everywhere
+}
+async function checkPassword(u, pw) { const h = await pbkdf2(pw, unb64(u.salt), u.iters); return sameBytes(h, unb64(u.hash)); }
 
 // same-origin check for anything that changes state
 function originOk(req, url) { const o = req.headers.get("origin"); return !o || o === url.origin; }
 
 // ---------- HTTP entry ----------
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url);
     if (url.pathname === "/ws") {
       if (!originOk(req, url) || !req.headers.get("origin")) return new Response("bad origin", { status: 403 });
@@ -127,13 +181,14 @@ export default {
       return env.LOUNGE.get(env.LOUNGE.idFromName("main")).fetch(fwd);
     }
     if (url.pathname.startsWith("/api/")) {
-      try { return await api(req, env, url); } catch (e) { console.error(e); return json({ error: "server error" }, 500); }
+      try { await ensureAuthSchema(env); return await api(req, env, url, ctx); } catch (e) { console.error(e); return json({ error: "server error" }, 500); }
     }
     return env.ASSETS ? env.ASSETS.fetch(req) : new Response("not found", { status: 404 });
   },
 };
 
-async function api(req, env, url) {
+async function api(req, env, url, ctx) {
+  const later = (p) => (ctx && ctx.waitUntil ? ctx.waitUntil(p) : p);
   const path = url.pathname;
   if (req.method === "GET" && path === "/api/me") {
     const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
@@ -148,32 +203,35 @@ async function api(req, env, url) {
   const ip = clientIp(req);
 
   if (path === "/api/signup") {
-    const name = String(body.u || "").trim(), pw = String(body.p || "");
+    const name = String(body.u || "").trim(), pw = String(body.p || ""), email = normEmail(body.e);
     if (!/^[A-Za-z0-9_]{3,12}$/.test(name)) return json({ error: "Names are 3 to 12 letters, numbers or _." }, 400);
+    if (!emailOk(email)) return json({ error: "Enter a real email. It's how you reset your password." }, 400);
     if (pw.length < 8 || pw.length > 72) return json({ error: "Passwords need 8 to 72 characters." }, 400);
     if (await blocked(env, "su:" + ip, SIGNUPS_PER_IP_HOUR)) return json({ error: "Too many new accounts from here. Try again later." }, 429);
     const salt = new Uint8Array(16); crypto.getRandomValues(salt);
     const hash = await pbkdf2(pw, salt, PBKDF2_ITERS);
     try {
-      const r = await env.DB.prepare("INSERT INTO users (name, salt, hash, iters, created, tk) VALUES (?, ?, ?, ?, ?, ?)").bind(name, b64(salt), b64(hash), PBKDF2_ITERS, Date.now(), START_TOKENS).run();
+      const r = await env.DB.prepare("INSERT INTO users (name, salt, hash, iters, created, tk, email) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(name, b64(salt), b64(hash), PBKDF2_ITERS, Date.now(), START_TOKENS, email).run();
       await bump(env, "su:" + ip);
       const tok = await newSession(env, r.meta.last_row_id);
       const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(r.meta.last_row_id).first();
+      later(sendVerify(env, url, u, email));
       return json(profileOf(env, u), 200, { "set-cookie": sessCookie(tok, SESSION_DAYS * 86400) });
     } catch (e) {
-      if (String(e).includes("UNIQUE")) return json({ error: "That name is taken." }, 409);
+      if (String(e).includes("UNIQUE")) return json({ error: String(e).includes("email") ? "That email already has an account. Log in, or use FORGOT PASSWORD." : "That name is taken." }, 409);
       throw e;
     }
   }
   if (path === "/api/login") {
-    const name = String(body.u || "").trim(), pw = String(body.p || "");
+    const name = String(body.u || "").trim(), pw = String(body.p || "");   // a llama name or an email
     const uk = "u:" + name.toLowerCase(), ik = "ip:" + ip;
     if (await blocked(env, uk, LOGIN_MAX_FAILS) || await blocked(env, ik, IP_MAX_FAILS)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
-    const u = /^[A-Za-z0-9_]{3,12}$/.test(name) ? await env.DB.prepare("SELECT * FROM users WHERE name = ?").bind(name).first() : null;
+    const u = name.includes("@") ? (emailOk(normEmail(name)) ? await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(normEmail(name)).first() : null)
+      : /^[A-Za-z0-9_]{3,12}$/.test(name) ? await env.DB.prepare("SELECT * FROM users WHERE name = ?").bind(name).first() : null;
     // always run the hash so a wrong name and a wrong password take the same time
     const salt = u ? unb64(u.salt) : new Uint8Array(16);
     const h = await pbkdf2(pw, salt, u ? u.iters : PBKDF2_ITERS);
-    if (!u || !sameBytes(h, unb64(u.hash))) { await bump(env, uk); await bump(env, ik); return json({ error: "Wrong name or password." }, 401); }
+    if (!u || !sameBytes(h, unb64(u.hash))) { await bump(env, uk); await bump(env, ik); return json({ error: "Wrong name, email or password." }, 401); }
     if (u.banned) return json({ error: "This account is banned." }, 403);
     await env.DB.prepare("DELETE FROM login_attempts WHERE k = ?").bind(uk).run();
     await env.DB.prepare("DELETE FROM sessions WHERE expires < ?").bind(Date.now()).run();
@@ -188,12 +246,75 @@ async function api(req, env, url) {
     const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
     const oldp = String(body.old || ""), np = String(body.p || "");
     if (np.length < 8 || np.length > 72) return json({ error: "Passwords need 8 to 72 characters." }, 400);
-    const h = await pbkdf2(oldp, unb64(u.salt), u.iters); if (!sameBytes(h, unb64(u.hash))) return json({ error: "Current password is wrong." }, 401);
-    const salt = new Uint8Array(16); crypto.getRandomValues(salt); const nh = await pbkdf2(np, salt, PBKDF2_ITERS);
-    await env.DB.prepare("UPDATE users SET salt = ?, hash = ?, iters = ? WHERE id = ?").bind(b64(salt), b64(nh), PBKDF2_ITERS, u.id).run();
-    await env.DB.prepare("DELETE FROM sessions WHERE uid = ?").bind(u.id).run();   // sign out everywhere
+    if (await blocked(env, "pw:" + u.id, PW_CHECK_FAILS)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
+    if (!(await checkPassword(u, oldp))) { await bump(env, "pw:" + u.id); return json({ error: "Current password is wrong." }, 401); }
+    await setPassword(env, u.id, np);
+    if (u.email) later(sendMail(env, u.email, "Your Llama Lounge password was changed", [`Hi ${u.name.toUpperCase()}, your password was just changed and every other device was logged out.`, "If this wasn't you, use FORGOT PASSWORD on the login screen right away."]));
     const tok = await newSession(env, u.id);
     return json({ ok: true }, 200, { "set-cookie": sessCookie(tok, SESSION_DAYS * 86400) });
+  }
+  // add or change the account email (needs the current password, so a stolen session can't redirect resets)
+  if (path === "/api/email") {
+    const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
+    const email = normEmail(body.e), pw = String(body.p || "");
+    if (!emailOk(email)) return json({ error: "That doesn't look like an email." }, 400);
+    if (await blocked(env, "pw:" + u.id, PW_CHECK_FAILS)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
+    if (!(await checkPassword(u, pw))) { await bump(env, "pw:" + u.id); return json({ error: "Password is wrong." }, 401); }
+    if (email === u.email) return json({ error: "That's already your email." }, 400);
+    try { await env.DB.prepare("UPDATE users SET email = ?, email_ok = 0 WHERE id = ?").bind(email, u.id).run(); }
+    catch (e) { if (String(e).includes("UNIQUE")) return json({ error: "That email is on another account." }, 409); throw e; }
+    await env.DB.prepare("DELETE FROM email_tokens WHERE uid = ? AND kind = 'reset'").bind(u.id).run();   // old reset links stop working
+    later(sendVerify(env, url, u, email));
+    if (u.email) later(sendMail(env, u.email, "Your Llama Lounge email was changed", [`Hi ${u.name.toUpperCase()}, the email on your account was changed to ${email}.`, "If this wasn't you, reply to a staff member in the game right away."]));
+    const nu = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(u.id).first();
+    return json({ ok: true, ...profileOf(env, nu) });
+  }
+  if (path === "/api/verify/resend") {
+    const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
+    if (!u.email || u.email_ok) return json({ ok: true });
+    if (await blocked(env, "vr:" + u.id, 3)) return json({ error: "We just sent one. Check your inbox and spam folder." }, 429);
+    await bump(env, "vr:" + u.id);
+    return json({ ok: true, sent: await sendVerify(env, url, u, u.email) });
+  }
+  if (path === "/api/verify") {
+    if (await blocked(env, "rs:" + ip, RESET_BAD_PER_IP)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
+    const row = await takeLink(env, body.t, "verify");
+    if (!row) { await bump(env, "rs:" + ip); return json({ error: "This confirm link expired or was already used." }, 400); }
+    const r = await env.DB.prepare("UPDATE users SET email_ok = 1 WHERE id = ? AND email = ?").bind(row.uid, row.email).run();
+    if (!r.meta.changes) return json({ error: "This link is for an email that's no longer on the account." }, 400);
+    return json({ ok: true });
+  }
+  // forgot password: the answer is always the same, so nobody can use it to find out which emails have accounts
+  if (path === "/api/forgot") {
+    const email = normEmail(body.e);
+    if (!emailOk(email)) return json({ error: "Enter the email on your account." }, 400);
+    if (await blocked(env, "fg:" + ip, FORGOT_PER_IP) || await blocked(env, "fe:" + email, FORGOT_PER_EMAIL)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
+    await bump(env, "fg:" + ip); await bump(env, "fe:" + email);
+    const u = await env.DB.prepare("SELECT * FROM users WHERE email = ? AND banned = 0").bind(email).first();
+    if (u) {
+      const tok = await newLink(env, u.id, "reset", email, RESET_MS), link = `${siteUrl(env, url)}/#reset=${tok}`;
+      if (!mailOn(env) && ["localhost", "127.0.0.1"].includes(url.hostname)) console.log("[dev] reset link for " + u.name + ": " + link);
+      later(sendMail(env, email, "Reset your Llama Lounge password", [`Hi ${u.name.toUpperCase()}!`, "Someone asked to reset your password. Tap the button to pick a new one. The link works once and expires in 30 minutes.", "Didn't ask for this? Ignore this email and your password stays the same."], link, "RESET MY PASSWORD"));
+    }
+    return json({ ok: true, mailOn: mailOn(env) });
+  }
+  if (path === "/api/reset") {
+    if (await blocked(env, "rs:" + ip, RESET_BAD_PER_IP)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
+    const np = String(body.p || "");
+    if (np.length < 8 || np.length > 72) return json({ error: "Passwords need 8 to 72 characters." }, 400);
+    const row = await takeLink(env, body.t, "reset");
+    if (!row) { await bump(env, "rs:" + ip); return json({ error: "This reset link expired or was already used. Ask for a new one." }, 400); }
+    const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(row.uid).first();
+    if (!u || u.email !== row.email) return json({ error: "This reset link is no longer valid. Ask for a new one." }, 400);
+    if (u.banned) return json({ error: "This account is banned." }, 403);
+    await setPassword(env, u.id, np);   // also signs out every device
+    await env.DB.prepare("UPDATE users SET email_ok = 1 WHERE id = ?").bind(u.id).run();   // opening the email proves it's theirs
+    await env.DB.prepare("DELETE FROM email_tokens WHERE uid = ? AND kind = 'reset'").bind(u.id).run();
+    await env.DB.prepare("DELETE FROM login_attempts WHERE k = ?").bind("u:" + u.name.toLowerCase()).run();
+    later(sendMail(env, u.email, "Your Llama Lounge password was reset", [`Hi ${u.name.toUpperCase()}, your password was just reset and every other device was logged out.`, "If this wasn't you, reset it again right away and tell a staff member."]));
+    const tok = await newSession(env, u.id);
+    const nu = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(u.id).first();
+    return json(profileOf(env, nu), 200, { "set-cookie": sessCookie(tok, SESSION_DAYS * 86400) });
   }
   return json({ error: "not found" }, 404);
 }

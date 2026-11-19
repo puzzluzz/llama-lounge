@@ -140,3 +140,20 @@ In the Cloudflare dashboard, open **Workers & Pages → llama-lounge → Setting
 | `wrangler.jsonc` | Cloudflare settings, with your database ID already filled in |
 | `schema.sql` | the database tables (already applied to your database) |
 | `tools/build_client.py` | rebuilds `public/index.html` from Claude's game files. You don't need to run this. |
+
+## Accounts, email and password resets
+
+- New players sign up with a llama name, an email and a password. They can log in with either the name or the email.
+- Older accounts without an email get an "Add your email" pop-up after they enter a room (LATER hides it for a day). Anyone can add or change their email, or change their password, from Menu > ACCOUNT. Changing the email needs the current password.
+- Forgot password sends a link that works once and expires in 30 minutes. Only a hash of each link is stored. Resetting logs the account out on every other device and sends a "your password was reset" notice.
+- The forgot-password answer is the same whether or not an email has an account, so it can't be used to look up players. Forgot, reset, confirm and password checks are all rate limited.
+- The server adds the new database columns (`users.email`, `users.email_ok`) and the `email_tokens` table on its own.
+
+### Turning on the emails
+
+Emails are sent with Cloudflare Email Service. Until it's set up, emails are still saved, but nothing is sent and FORGOT PASSWORD tells players to ask staff. To turn it on:
+
+1. Have a domain on Cloudflare (for example the game's own domain) and onboard it under **Email > Email Sending** in the Cloudflare dashboard. Sending needs the Workers Paid plan.
+2. In `wrangler.jsonc` add `"send_email": [{ "name": "EMAIL" }]` and `"vars": { "MAIL_FROM": "noreply@yourdomain.com", "APP_URL": "https://your-game-address" }`.
+
+No API keys or passwords are involved.

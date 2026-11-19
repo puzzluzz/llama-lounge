@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="referrer" content="no-referrer">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#120d22">
@@ -324,6 +325,28 @@
   #auth input:focus{border-color:var(--yel);background:#fff}
   #au_err{font-size:13px;margin-top:6px}
   #auth .srow{margin-top:14px} #auth .srow .gbbtn{flex:1;min-height:48px;font-size:15px}
+  .autabs{display:flex;gap:4px;padding:4px;margin:6px 0 10px;border-radius:14px;background:#efecf7}
+  .autabs button{flex:1;height:40px;border:0;border-radius:11px;background:transparent;font:800 13px var(--ui);letter-spacing:.05em;color:var(--sub);cursor:pointer}
+  .autabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(40,20,80,.15)}
+  #auth.v-forgot .autabs,#auth.v-reset .autabs{display:none}
+  #au_sub{font-size:14px!important;color:var(--sub);margin:4px 0 2px}
+  .pwrap{position:relative;display:block}
+  .pwrap input{padding-right:70px!important}
+  .pwrap .eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);margin-top:3px;border:0;background:transparent;font:800 11px var(--ui);letter-spacing:.05em;color:var(--sub);padding:8px;cursor:pointer}
+  .aulinks{display:flex;justify-content:center;margin-top:10px}
+  .aulink{border:0;background:transparent;font:700 14px var(--ui);color:#5a48b0;text-decoration:underline;cursor:pointer;padding:6px}
+  #au_err.good{color:#1f8a4c}
+  #acctbox{width:min(calc(100% - 24px),400px)}
+  #acctbox .acsec{background:#f6f4fb;border-radius:14px;padding:12px 14px;margin:10px 0;text-align:left}
+  #acctbox .ach{font:800 12px var(--ui);letter-spacing:.06em;color:var(--sub);margin-bottom:6px}
+  #acctbox .acv{font:600 15px var(--ui);word-break:break-all}
+  #acctbox .acst{font:700 12px var(--ui);margin-top:4px} #acctbox .acst.ok{color:#1f8a4c} #acctbox .acst.no{color:#b06a00}
+  #acctbox p{font:500 14px/1.45 var(--ui);margin:6px 0 4px;color:var(--ink)}
+  #acctbox input{display:block;width:100%;box-sizing:border-box;margin-top:8px;font:16px var(--ui);padding:11px 13px;border:2px solid var(--line);border-radius:12px;background:#fff;outline:none}
+  #acctbox input:focus{border-color:var(--yel)}
+  #acctbox .srow{display:flex;gap:8px;margin-top:10px} #acctbox .srow .gbbtn{flex:1;min-height:44px}
+  #acctbox .acmsg{min-height:18px;font:600 13px var(--ui);color:#e02838;margin-top:6px} #acctbox .acmsg.good{color:#1f8a4c}
+  #acctbox .aclink{border:0;background:transparent;font:700 13px var(--ui);color:#5a48b0;text-decoration:underline;padding:4px 0;cursor:pointer}
   /* llama picker */
   #pick{line-height:1.4} #pick .tt{font-size:18px;font-weight:800} #pick .tt b{color:#d62d6a}
   .card{border:0;border-radius:16px;padding:6px;background:var(--soft);transition:transform .1s}
@@ -490,7 +513,7 @@
   <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button class="pbtn ic" id="zout" title="Zoom out" aria-label="Zoom out">−</button><button class="pbtn ic" id="zin" title="Zoom in" aria-label="Zoom in">+</button><button class="pbtn ic" id="musicbtn" title="Music" aria-label="Music">♪</button><button class="pbtn y" id="menubtn" aria-label="Menu"><span class="hamb"><i></i><i></i><i></i></span><span class="mtx">MENU</span></button></div>
   <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
   <div id="keys">ARROWS/WASD WALK · SPACE ACTION<br>ENTER TALK · M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
-  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">CHANGE ROOM</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="llama" data-i="🦙">CHANGE LLAMA</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
+  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">CHANGE ROOM</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="llama" data-i="🦙">CHANGE LLAMA</div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
   <div id="emenu" class="gb menu sheet"><div data-e="heart">♥ HEART</div><div data-e="bang">! WOW</div><div data-e="huh">? HUH</div><div data-e="note">♪ SING</div><div data-e="lol">^^ LOL</div><div data-e="zzz">Z SLEEP</div><div data-e="wave">✋ WAVE</div><div data-e="flex">💪 FLEX</div><div data-e="palm">-_- FACEPALM</div></div>
   <div id="pmenu" class="gb"><div id="pm_name" class="pmn"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_close">✕</button></div></div>
   <div id="tmenu" class="gb sheet"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
@@ -509,15 +532,19 @@
   <button id="jobsbtn" aria-label="Jobs: ways to earn coins"><span class="jb-nail l"></span><span class="jb-nail r"></span><span class="jb-coin"></span>JOBS</button>
   <div id="auth" class="gb">
     <div class="rt">🦙 <b>LLAMA LOUNGE</b></div>
-    <div id="au_sub">LOG IN OR MAKE A NEW LLAMA ACCOUNT</div>
-    <form id="au_form" autocomplete="on">
-      <label>NAME<input id="au_u" name="username" autocomplete="username" maxlength="12" spellcheck="false" autocapitalize="off"></label>
-      <label>PASSWORD<input id="au_p" name="password" type="password" autocomplete="current-password" maxlength="72"></label>
-      <div id="au_err"></div>
-      <div class="srow"><button class="gbbtn y" id="au_login" type="submit">LOG IN</button><button class="gbbtn" id="au_signup" type="button">SIGN UP</button></div>
+    <div class="autabs" id="au_tabs"><button type="button" data-v="login">LOG IN</button><button type="button" data-v="signup">SIGN UP</button></div>
+    <div id="au_sub"></div>
+    <form id="au_form" autocomplete="on" novalidate>
+      <label id="au_ul"><span id="au_ut">NAME OR EMAIL</span><input id="au_u" name="username" autocomplete="username" maxlength="254" spellcheck="false" autocapitalize="off"></label>
+      <label id="au_el">EMAIL<input id="au_e" name="email" type="email" autocomplete="email" maxlength="254" spellcheck="false" autocapitalize="off"></label>
+      <label id="au_pl"><span id="au_pt">PASSWORD</span><span class="pwrap"><input id="au_p" name="password" type="password" autocomplete="current-password" maxlength="72"><button type="button" class="eye" data-for="au_p">SHOW</button></span></label>
+      <div id="au_err" role="alert"></div>
+      <div class="srow"><button class="gbbtn y" id="au_go" type="submit">LOG IN</button></div>
+      <div class="aulinks"><button type="button" class="aulink" id="au_forgot">Forgot password?</button><button type="button" class="aulink" id="au_back">Back to log in</button></div>
     </form>
-    <div class="aunote">Names: 3 to 12 letters or numbers. Passwords: 8+ characters, stored encrypted. Don't reuse a password from another site.</div>
+    <div class="aunote" id="au_note"></div>
   </div>
+  <div id="acctbox" class="gb sheet"><div class="slt" id="ac_title">🔐 ACCOUNT</div><div id="ac_body"></div></div>
   <div id="kicked"></div>
   <div id="roompick" class="gb sheet"><div class="rpt" id="rp_title">WHERE TO?</div>
     <button class="rpb" data-r="lounge"><span class="rpi">🍸</span><span class="rpx"><b>LLAMA LOUNGE</b><small>BAR · ARCADE · JUKEBOX · DANCE FLOOR · TABLE GAMES</small><i id="rp_n_lounge"></i></span></button>
@@ -606,7 +633,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19v";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19w";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -2685,7 +2712,7 @@ function items(m){ return [...m.children].filter(c=>!c.classList.contains('sheet
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
   const a=el.dataset.a;
@@ -2694,6 +2721,7 @@ function menuAct(el){
   if (a==='llama') openPicker();
   else if (a==='room') showRoomPick(false);
   else if (a==='dash') openDash();
+  else if (a==='account'){ openAccount(); }
   else if (a==='logout'){ apiPost('/api/logout').then(()=>{ NET.closedForGood=true; location.reload(); }); }
   else if (a==='sit') toggleSit();
   else if (a==='tips'){ tipsOff=!tipsOff; if(!tipsOff){ tipHidden={}; store.tipHidden={}; } store.tipsOff=tipsOff; saveStore(); mtips.textContent=tipsOff?'TIPS: OFF':'TIPS: ON'; localMsg(tipsOff?'Tips are off.':'Tips are back on!'); }
@@ -4046,12 +4074,13 @@ function acctSave(){ clearTimeout(acctTimer); acctTimer=setTimeout(()=>{ NET.act
 const acctHasLlama = () => !!(acct && CHAR_IDS.includes(acct.c));
 function autoEnter(){ try { setSel(me.c); pname.value=me.n; enter(); } catch(e){ console.error(e); if (!joined){ roomPickEl.style.display='none'; pick.style.display='flex'; } } }
 async function startGate(){
+  if (await handleEmailLink()) return;   // a reset link shows the new-password form first
   loadingEl.style.display='block';
   let r=null; try { r = await fetch('/api/me', {credentials:'same-origin'}); } catch(e){}
   loadingEl.style.display='none';
   if (r && r.ok){ applyProfile(await r.json()); afterLogin(); }
   else if (r && r.status===403){ const j=await r.json().catch(()=>({})); showKicked(j.error||'This account is banned.'); }
-  else showAuth();
+  else showAuth('login', pendingNote, /confirmed/.test(pendingNote)), pendingNote='';
 }
 function applyProfile(p){
   acct = Object.assign({}, p); isAdminUser = !!p.admin; me.st = ['owner','mod'].includes(p.staff) ? p.staff : ''; dashMenu();
@@ -4063,24 +4092,108 @@ function applyProfile(p){
   saveStore(); tokUI(0);
 }
 function afterLogin(){
-  NET.connect();
+  NET.connect(); maybeAskEmail();
+  if (pendingNote){ const n=pendingNote; pendingNote=''; const t=setInterval(()=>{ if (joined){ clearInterval(t); setTimeout(()=>localMsg(n), 1500); } }, 500); }
   if ((+store.agreed||0) < RULES_V){ rulesEl.style.display='flex'; return; }
   if (acctHasLlama()) autoEnter(); else pick.style.display='flex';
 }
 const authEl=document.getElementById('auth'), auErr=document.getElementById('au_err'); let isAdminUser=false;
-function showAuth(){ closeAll(); authEl.style.display='block'; setTimeout(()=>document.getElementById('au_u').focus(), 50); }
-async function doAuth(kind){
-  const u=document.getElementById('au_u').value.trim(), p=document.getElementById('au_p').value;
-  auErr.textContent = kind==='signup' ? 'MAKING YOUR ACCOUNT...' : 'LOGGING IN...';
-  for (const b of authEl.querySelectorAll('button')) b.disabled=true;
-  const r = await apiPost('/api/'+kind, {u, p});
-  for (const b of authEl.querySelectorAll('button')) b.disabled=false;
-  if (!r.ok){ auErr.textContent = (r.error||'Something went wrong.').toUpperCase(); return; }
-  document.getElementById('au_p').value=''; authEl.style.display='none'; applyProfile(r); afterLogin();
+// ---- login screen: LOG IN / SIGN UP tabs, plus FORGOT PASSWORD and RESET (from an email link) ----
+const $id = id=>document.getElementById(id);
+let auView='login', resetTok='', pendingNote='';
+const AU_VIEWS = {
+  login:  {sub:'Welcome back! Log in with your llama name or email.', u:'NAME OR EMAIL', ua:'username', um:254, e:false, p:'PASSWORD', pa:'current-password', go:'LOG IN', forgot:true, back:false, note:"Don't reuse a password from another site."},
+  signup: {sub:'Make your llama account. You start with 10 tokens!', u:'LLAMA NAME', ua:'username', um:12, e:true, p:'PASSWORD', pa:'new-password', go:'MAKE MY LLAMA', forgot:false, back:false, note:'Names: 3 to 12 letters, numbers or _. Passwords: 8+ characters, stored encrypted. Your email is only used for password resets and is never shown to other players.'},
+  forgot: {sub:"Enter your account's email and we'll send you a link to pick a new password.", u:null, e:true, p:null, go:'SEND RESET LINK', forgot:false, back:true, note:'The link works once and expires in 30 minutes. Check your spam folder too.'},
+  reset:  {sub:'Pick a new password for your llama. This logs you out everywhere else.', u:null, e:false, p:'NEW PASSWORD', pa:'new-password', go:'SAVE NEW PASSWORD', forgot:false, back:true, note:'8+ characters. Make it one you don\'t use anywhere else.'},
+};
+function authView(v, msg, good){
+  auView=v; const V=AU_VIEWS[v]; authEl.className='gb v-'+v;
+  for (const b of $id('au_tabs').children) b.classList.toggle('on', b.dataset.v===v);
+  $id('au_sub').textContent=V.sub;
+  $id('au_ul').style.display=V.u?'':'none'; if (V.u){ $id('au_ut').textContent=V.u; $id('au_u').maxLength=V.um; $id('au_u').autocomplete=V.ua; }
+  $id('au_el').style.display=V.e?'':'none';
+  $id('au_pl').style.display=V.p?'':'none'; if (V.p){ $id('au_pt').textContent=V.p; $id('au_p').autocomplete=V.pa; }
+  $id('au_go').textContent=V.go; $id('au_forgot').style.display=V.forgot?'':'none'; $id('au_back').style.display=V.back?'':'none';
+  $id('au_note').textContent=V.note; auErr.textContent=msg||''; auErr.classList.toggle('good', !!good);
+  setTimeout(()=>{ const f = V.u ? $id('au_u') : V.e ? $id('au_e') : $id('au_p'); if (authEl.style.display==='block') f.focus(); }, 50);
 }
-document.getElementById('au_form').addEventListener('submit', e=>{ e.preventDefault(); doAuth('login'); });
-document.getElementById('au_signup').addEventListener('click', ()=>doAuth('signup'));
-for (const el of [document.getElementById('au_u'), document.getElementById('au_p')]) el.addEventListener('keydown', e=>e.stopPropagation());
+function showAuth(v, msg, good){ closeAll(); authEl.style.display='block'; authView(v||'login', msg, good); }
+async function doAuth(){
+  const v=auView, u=$id('au_u').value.trim(), e=$id('au_e').value.trim(), p=$id('au_p').value;
+  const busy={login:'LOGGING IN...', signup:'MAKING YOUR ACCOUNT...', forgot:'SENDING...', reset:'SAVING...'}[v];
+  if ((v==='signup'||v==='forgot') && !/^\S+@\S+\.\S+$/.test(e)){ auErr.classList.remove('good'); auErr.textContent='Enter a real email.'; return; }
+  auErr.classList.remove('good'); auErr.textContent=busy;
+  for (const b of authEl.querySelectorAll('button')) b.disabled=true;
+  const r = v==='login' ? await apiPost('/api/login',{u,p}) : v==='signup' ? await apiPost('/api/signup',{u,e,p}) : v==='forgot' ? await apiPost('/api/forgot',{e}) : await apiPost('/api/reset',{t:resetTok,p});
+  for (const b of authEl.querySelectorAll('button')) b.disabled=false;
+  if (!r.ok){ auErr.textContent = r.error||'Something went wrong.'; return; }
+  if (v==='forgot'){ authView('login', r.mailOn===false ? "Password reset emails aren't switched on yet. Ask a staff member in the game for help." : 'If that email has an account, a reset link is on its way. Check your inbox and spam folder.', r.mailOn!==false); $id('au_u').value=e; return; }
+  if (v==='reset'){ resetTok=''; pendingNote='Your password was changed. Every other device was logged out.'; }
+  $id('au_p').value=''; authEl.style.display='none'; applyProfile(r); afterLogin();
+}
+$id('au_form').addEventListener('submit', e=>{ e.preventDefault(); doAuth(); });
+for (const b of $id('au_tabs').children) b.addEventListener('click', ()=>authView(b.dataset.v));
+$id('au_forgot').addEventListener('click', ()=>{ const u=$id('au_u').value.trim(); if (u.includes('@')) $id('au_e').value=u; authView('forgot'); });
+$id('au_back').addEventListener('click', ()=>{ resetTok=''; authView('login'); });
+for (const b of document.querySelectorAll('.eye')) b.addEventListener('click', ()=>{ const i=$id(b.dataset.for); const show=i.type==='password'; i.type=show?'text':'password'; b.textContent=show?'HIDE':'SHOW'; i.focus(); });
+for (const el of authEl.querySelectorAll('input')) el.addEventListener('keydown', e=>e.stopPropagation());
+// email links land on /#reset=... or /#verify=... (the part after # never reaches any server log). Read it, then wipe it from the address bar.
+async function handleEmailLink(){
+  const m=/^#(reset|verify)=([A-Za-z0-9_-]{40,50})$/.exec(location.hash||''); if (!m) return false;
+  try { history.replaceState(null, '', location.pathname+location.search); } catch(_){}
+  if (m[1]==='reset'){ resetTok=m[2]; showAuth('reset'); return true; }
+  const r=await apiPost('/api/verify',{t:m[2]}); pendingNote = r.ok ? 'Email confirmed! You can now reset your password by email if you ever need to.' : (r.error||'That confirm link did not work.');
+  return false;
+}
+addEventListener('hashchange', async ()=>{ const v=await handleEmailLink(); if (!v && pendingNote && joined){ localMsg(pendingNote); pendingNote=''; } });
+// ---- account sheet (menu > ACCOUNT) and the "add your email" pop-up for older accounts ----
+const acctEl=$id('acctbox'), acBody=$id('ac_body');
+function acMsg(t, good){ const el=acBody.querySelector('.acmsg'); if (el){ el.textContent=t||''; el.classList.toggle('good', !!good); } }
+function acInputs(){ for (const el of acBody.querySelectorAll('input')) el.addEventListener('keydown', e=>e.stopPropagation()); }
+function openAccount(ask){
+  closeAll(); const a=acct||{}; const mailOn=a.mailOn!==false;
+  $id('ac_title').textContent = ask ? '📧 ADD YOUR EMAIL' : '🔐 ACCOUNT';
+  if (ask){
+    acBody.innerHTML = `<p>Add an email to your llama so you can reset your password if you ever forget it. Other players never see it.</p>
+      <input id="ac_e" type="email" autocomplete="email" placeholder="you@example.com" maxlength="254" autocapitalize="off" spellcheck="false">
+      <input id="ac_p" type="password" autocomplete="current-password" placeholder="Your password" maxlength="72">
+      <div class="acmsg"></div><div class="srow"><button class="gbbtn y" id="ac_save">SAVE EMAIL</button><button class="gbbtn" id="ac_later">LATER</button></div>`;
+    $id('ac_later').onclick=()=>{ try{ localStorage.setItem('ll_emailLater', String(Date.now())); }catch(_){} acctEl.style.display='none'; };
+  } else {
+    const st = !a.email ? '' : !mailOn ? '' : a.emailOk ? '<div class="acst ok">✅ CONFIRMED</div>' : '<div class="acst no">⏳ NOT CONFIRMED YET · <button class="aclink" id="ac_resend">SEND CONFIRM EMAIL AGAIN</button></div>';
+    acBody.innerHTML = `<div class="acsec"><div class="ach">LLAMA</div><div class="acv">${esc(me.n||'')}</div></div>
+      <div class="acsec"><div class="ach">EMAIL</div><div class="acv">${a.email?esc(a.email):'No email yet. Add one so you can reset your password.'}</div>${st}
+        <input id="ac_e" type="email" autocomplete="email" placeholder="${a.email?'New email':'you@example.com'}" maxlength="254" autocapitalize="off" spellcheck="false">
+        <input id="ac_p" type="password" autocomplete="current-password" placeholder="Your password" maxlength="72">
+        <div class="srow"><button class="gbbtn y" id="ac_save">${a.email?'CHANGE EMAIL':'SAVE EMAIL'}</button></div></div>
+      <div class="acsec"><div class="ach">PASSWORD</div>
+        <input id="ac_op" type="password" autocomplete="current-password" placeholder="Current password" maxlength="72">
+        <input id="ac_np" type="password" autocomplete="new-password" placeholder="New password (8+ characters)" maxlength="72">
+        <div class="srow"><button class="gbbtn" id="ac_pw">CHANGE PASSWORD</button></div></div>
+      <div class="acmsg"></div><div class="srow"><button class="gbbtn" id="ac_close">DONE</button></div>`;
+    $id('ac_close').onclick=()=>{ acctEl.style.display='none'; };
+    $id('ac_pw').onclick=async ()=>{ const o=$id('ac_op').value, n=$id('ac_np').value; if (n.length<8) return acMsg('New passwords need 8+ characters.');
+      acMsg('SAVING...'); const r=await apiPost('/api/password',{old:o,p:n}); if (!r.ok) return acMsg(r.error||'That did not work.');
+      $id('ac_op').value=''; $id('ac_np').value=''; acMsg('Password changed. Other devices were logged out.', true); };
+    const rs=$id('ac_resend'); if (rs) rs.onclick=async ()=>{ acMsg('SENDING...'); const r=await apiPost('/api/verify/resend'); acMsg(r.ok?'Sent! Check your inbox and spam folder.':(r.error||'That did not work.'), r.ok); };
+  }
+  $id('ac_save').onclick=async ()=>{ const e=$id('ac_e').value.trim(), p=$id('ac_p').value;
+    if (!/^\S+@\S+\.\S+$/.test(e)) return acMsg('Enter a real email.'); if (!p) return acMsg('Enter your password to save it.');
+    acMsg('SAVING...'); const r=await apiPost('/api/email',{e,p}); if (!r.ok) return acMsg(r.error||'That did not work.');
+    acct.email=r.email; acct.emailOk=r.emailOk; acct.mailOn=r.mailOn;
+    if (ask){ acctEl.style.display='none'; localMsg(r.mailOn ? 'Email saved! Check your inbox to confirm it.' : 'Email saved!'); }
+    else { openAccount(); acMsg(r.mailOn ? 'Saved! Check your inbox to confirm it.' : 'Email saved!', true); } };
+  acInputs(); acctEl.style.display='block';
+}
+// older accounts without an email get the pop-up once they're in a room (LATER hides it for a day)
+function maybeAskEmail(){
+  if (!acct || acct.email) return;
+  let later=0; try{ later=+localStorage.getItem('ll_emailLater')||0; }catch(_){}
+  if (Date.now()-later < 864e5) return;
+  const t=setInterval(()=>{ if (!joined) return; clearInterval(t);
+    setTimeout(()=>{ const busy=[...document.querySelectorAll('.gb.sheet')].some(el=>el.style.display && el.style.display!=='none'); if (!acct.email && !busy) openAccount(true); else if (!acct.email) setTimeout(maybeAskEmail, 20000); }, 2500); }, 1000);
+}
 function showKicked(msg){ const k=document.getElementById('kicked'); k.textContent=msg; k.style.display='flex'; NET.closedForGood=true; try{ NET.ws&&NET.ws.close(); }catch(e){} }
 NET.handlers.tk = m => tkSet(m.tk, m.msg);
 // ======================= STAFF DASHBOARD (owner and mods; the server checks every action) =======================
