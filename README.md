@@ -31,6 +31,10 @@ Each release bumps `VERSION` in `src/worker.js` and `GAME_VERSION` in `public/in
 
 After any change, run `npx wrangler deploy` again from this folder. Accounts and tokens stay in the database.
 
+## Dunk tank (Llama Acres)
+
+By the pond. Stand in front of the target and press THROW (or tap the target). Stop the crosshair across, then up and down; a bullseye dunks whoever is on the seat. A throw costs 1 coin and a dunk pays 3 (up to 30 a day). Any llama can sit on the plank and earns 1 coin each time someone dunks them (up to 15 a day). When nobody is sitting, DUNKY takes the seat. Everyone in Llama Acres sees the ball fly and the splash.
+
 ## Hunger and thirst
 
 Every llama has a 🍔 hunger and 💧 thirst meter (0 to 100) in the top bar. They only go down while you're online: thirst empties in about an hour, hunger in about 75 minutes. The server keeps the real numbers (the `needs` table is created automatically) and fills them when you buy something.

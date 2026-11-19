@@ -438,6 +438,9 @@
   .bwlr{width:52px;height:52px;flex:none;border-radius:16px;border:1px solid var(--gline);background:var(--glass);color:#fff;font-size:18px;cursor:pointer}
   #bwbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:min(460px,calc(100% - 24px));max-height:90vh;z-index:9!important;animation:popIn .18s ease-out}
   #bw_resume{margin-bottom:8px}
+  #dkbox{display:none;left:50%;top:46%;transform:translate(-50%,-50%);text-align:center;width:min(calc(100% - 24px),360px);animation:popIn .18s ease-out}
+  #dkbox .slt{color:#1c6ad8;margin-bottom:8px} #dkcv{display:block;margin:0 auto;width:min(100%,320px);aspect-ratio:4/3;image-rendering:pixelated;border-radius:14px;touch-action:manipulation;cursor:crosshair}
+  #dk_msg{font-size:14px;font-weight:800;margin:10px 0 4px;min-height:40px;line-height:1.4} .dkn{font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.03em;margin-bottom:6px}
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
   @media (max-height:520px) and (min-width:641px){ #dock{bottom:6px;padding:6px} .pbtn{height:38px} #chatin{height:38px} #saybtn{width:30px;height:30px} }
 </style>
@@ -493,6 +496,9 @@
     <label class="vrow"><span>🎵 MUSIC</span><input type="range" id="mvol" min="0" max="100" step="1" aria-label="Music volume"><b id="mvol_n"></b></label>
     <label class="vrow"><span>💦 EFFECTS</span><input type="range" id="svol" min="0" max="100" step="1" aria-label="Sound effects volume"><b id="svol_n"></b></label>
     <div class="srow"><button class="gbbtn" id="mmute">MUTE MUSIC</button><button class="gbbtn" id="snd_close">DONE</button></div></div>
+  <div id="dkbox" class="gb sheet"><div class="slt">💦 DUNK TANK</div><canvas id="dkcv" width="160" height="120"></canvas><div id="dk_msg"></div>
+    <div class="dkn">1 COIN A THROW · A DUNK PAYS 3 · SIT ON THE TANK AND EARN 1 EVERY TIME YOU GET DUNKED</div>
+    <div class="srow"><button class="gbbtn y" id="dk_throw">THROW ⚾</button><button class="gbbtn" id="dk_close">CLOSE</button></div></div>
   <div id="dashbox" class="gb sheet"><div class="slt" id="ds_title">STAFF DASHBOARD</div><div id="ds_body"></div><div class="srow"><button class="gbbtn" id="ds_refresh">REFRESH</button><button class="gbbtn" id="ds_close">CLOSE</button></div></div>
   <div id="tblbox" class="gb sheet"><div class="slt" id="tb_title"></div><canvas id="tbcv" width="150" height="66"></canvas><div id="tb_msg"></div>
     <div class="tbopts" id="tb_opts"></div>
@@ -516,6 +522,7 @@
       <li>Keep your llama fed and watered! The 🍔 and 💧 meters at the top go down while you play. Order food and drinks at the bar (sit on a bar stool and press ORDER), buy cider and snacks in LLAMA ACRES, or nibble an apple off the trees. If a meter runs empty your llama walks slower and games pay half.</li>
       <li>Earn LLAMA TOKENS by hitting arcade milestones and working the bar. Spend them on drinks (1 token), or bet up to 10 against THE HOUSE at the table games. Table games can also be played for free.</li>
       <li>Five rooms: the LLAMA LOUNGE, LLAMA ACRES outside, the LLAMA CASINO, the SPIT ARENA and LLAMA LANES. Tap a room in the bar at the bottom to walk there. Harvest the carrot patch in LLAMA ACRES for tokens.</li>
+      <li>Try the DUNK TANK in LLAMA ACRES: stand in front of the target and press THROW. Hit the bullseye to dunk whoever is on the seat (1 coin a throw, a dunk pays 3). Brave llamas can sit on the tank and earn a coin every time they get dunked.</li>
       <li>In the SPIT ARENA, press PLAY for a 60-second spit-ball round. Play solo against rival llamas, or with everyone who joins. Earn tokens, level up to unlock spit colors, and keep a daily streak.</li>
       <li>At LLAMA LANES, press BOWL for a 5-frame game of hay bale bowling. Swipe up to roll. Strikes, spares and high scores win coins.</li>
       <li>Scroll, pinch, or use + and − to zoom.</li>
@@ -560,7 +567,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19f";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19g";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -749,6 +756,7 @@ const ROUL_SEATS = [[5,5],[5,6],[8,5],[8,6],[6,7],[7,7]], BJ_SEATS = [[10,5],[11
 const seatIn = (list,x,y) => curRoom==='casino' && list.some(([a,b])=>a===x&&b===y);
 const isSlotSeat = (x,y) => curRoom==='casino' && y===1 && CASINO_SLOT_X.includes(x);
 const DANCE = new Set(), CROPS = [], POND = [];
+const DUNK_SEAT = [18,10], DUNK_TGT = [16,10];   // the server checks the same tiles
 function clearWorld(){ [N,NY]=ROOM_DIMS[curRoom]; if (BLOCK.length!==N*NY) BLOCK=new Uint8Array(N*NY); FURN.length=0; SEATS.length=0; BLOCK.fill(0); DANCE.clear(); CROPS.length=0; POND.length=0; }
 function lounge(tx,ty,col){
   FURN.push({t:'table',gx:tx,gy:ty}); block(tx,ty);
@@ -807,10 +815,13 @@ function buildBarnWorld(){
   // market stalls, two tiles wide (the server checks the same spots)
   FURN.push({t:'cider',gx:7,gy:4,w:2,dz:0.5}); block(7,4); block(8,4);
   FURN.push({t:'snack',gx:10,gy:4,w:2,dz:0.5}); block(10,4); block(11,4);
-  for (const [x,y] of [[0,9],[21,19],[20,12],[1,19],[15,17],[11,2],[9,19]]){ FURN.push({t:'tree',gx:x,gy:y}); block(x,y); }
+  for (const [x,y] of [[0,9],[21,19],[21,16],[1,19],[15,17],[11,2],[9,19]]){ FURN.push({t:'tree',gx:x,gy:y}); block(x,y); }
   // apples on the grass: tap to eat (they grow back)
   for (const [x,y] of [[8,15],[9,18],[14,14],[18,15],[20,10],[13,8]]){ FURN.push({t:'apple',gx:x,gy:y,k:'a'+x+','+y}); block(x,y); }
   FURN.push({t:'hay',gx:21,gy:0}); block(21,0);
+  // dunk tank: sit on the plank over the water (the server checks the same seat), throw at the target from in front of it
+  SEATS.push({gx:DUNK_SEAT[0],gy:DUNK_SEAT[1],dir:'fl',lift:26,dunk:true}); FURN.push({t:'dunktank',gx:DUNK_SEAT[0],gy:DUNK_SEAT[1]});
+  FURN.push({t:'dunktarget',gx:DUNK_TGT[0],gy:DUNK_TGT[1]}); block(DUNK_TGT[0],DUNK_TGT[1]);
 }
 // LLAMA CASINO: red carpet, slot row on the back wall, a roulette table, two blackjack tables
 function buildCasinoWorld(){
@@ -1486,6 +1497,28 @@ function drawFurn(f,t){
       for (const [px,py] of pts){ const [x,y]=P(px,py); const X=Math.round(x), Y=Math.round(y);
         g.fillStyle=INK; g.fillRect(X-2,Y-8,4,9); g.fillStyle='#f8f8f0'; g.fillRect(X-1,Y-7,2,7); g.fillStyle='#e03048'; g.fillRect(X-1,Y-5,2,1); g.fillStyle=INK; g.fillRect(X-2,Y-9,1,1); g.fillRect(X+1,Y-9,1,1); }
       break; }
+    case 'dunktank': {
+      const dp=dunkDepth(), sitter=dunkSitter();
+      // back of the tank, water, then DUNKY if nobody is brave enough to sit
+      box(f.gx,f.gy,1,1,24,'#8ad0f8','#58a8e0','#3888c8',0.06);
+      { const [lx,ly]=P(f.gx+0.06,f.gy+1-0.06,18), [rx,ry]=P(f.gx+1-0.06,f.gy+1-0.06,18); g.fillStyle='#c8ecff'; for (let x=Math.round(lx);x<Math.round(rx);x++){ const wv=Math.round(Math.sin(t*4+x*0.5)*(dp>0?1.5:0.5)); g.fillRect(x, Math.round(ly+(x-lx)*(ry-ly)/(rx-lx))+wv, 1, 1); } }
+      // plank and ladder
+      { const [ax,ay]=P(f.gx+0.15,f.gy+0.5,26-(dp>0?6:0)), [bx,by]=P(f.gx+0.85,f.gy+0.5,26-(dp>0?6:0)); g.fillStyle=INK; g.fillRect(Math.round(ax)-1, Math.round(Math.min(ay,by))-1, Math.round(bx-ax)+3, 4); g.fillStyle='#c88a4a'; g.fillRect(Math.round(ax), Math.round(Math.min(ay,by)), Math.round(bx-ax)+1, 2); }
+      { const [lx,ly]=P(f.gx+1,f.gy+0.2,0); g.fillStyle='#8a5426'; g.fillRect(Math.round(lx)+1, Math.round(ly)-28, 1, 28); g.fillRect(Math.round(lx)+5, Math.round(ly)-26, 1, 26); for (let k=0;k<26;k+=5){ g.fillRect(Math.round(lx)+1, Math.round(ly)-k-2, 5, 1); } }
+      // sign
+      { const [sx2,sy2]=P(f.gx+1.3,f.gy+0.2,40); g.fillStyle=INK; g.fillRect(Math.round(sx2)-17, Math.round(sy2)-1, 35, 11); g.fillStyle='#ff5c8a'; g.fillRect(Math.round(sx2)-16, Math.round(sy2), 33, 9); pfDraw(g,'DUNK!',Math.round(sx2)-11,Math.round(sy2)+2,(Math.floor(t*3)%2)?'#ffffff':'#ffd23f'); g.fillStyle='#8a5426'; g.fillRect(Math.round(sx2), Math.round(sy2)+10, 1, 12); }
+      if (!sitter){ const [px,py]=P(f.gx+0.5,f.gy+0.5,0); const x0=Math.round(px)-14, y0=Math.round(py)-45-26+6+dp;
+        dunkClip(Math.round(py)-18, ()=>g.drawImage(sprite('poophat', 'fl', 0, 'sit'), x0, y0));
+        if (dp>0) dunkSplash(Math.round(px), Math.round(py)-18, t); else pfDraw(g,'DUNKY',x0+3,y0-7,'#ffd23f'); }
+      break; }
+    case 'dunktarget': {
+      const [px,py]=P(f.gx+0.5,f.gy+0.5,0), X=Math.round(px), Y=Math.round(py);
+      g.fillStyle=INK; g.fillRect(X-1,Y-34,3,34); g.fillStyle='#c8c8d8'; g.fillRect(X,Y-34,1,34);
+      // arm reaching to the tank
+      g.fillStyle=INK; g.fillRect(X,Y-31,26,3); g.fillStyle='#c8c8d8'; g.fillRect(X,Y-30,26,1);
+      const hitNow = DK.flash && performance.now()-DK.flash<400; const cy=Y-38;
+      for (const [r,c] of [[9,INK],[8,'#f8f8f8'],[6,'#e03048'],[4,'#f8f8f8'],[2,'#e03048']]){ g.fillStyle = hitNow && c!==INK ? '#ffd23f' : c; for (let yy=-r;yy<=r;yy++){ const w=Math.round(Math.sqrt(r*r-yy*yy)); g.fillRect(X-w, cy+yy, w*2+1, 1); } }
+      break; }
     case 'balerack': { box(f.gx,f.gy,1,1,8,'#6a4a8a','#4a3068','#3a2050',0.1);
       for (const [dx,dy,c] of [[0.3,0.35,'#e8b838'],[0.7,0.35,'#d8a028'],[0.5,0.7,'#f0c848']]){ const [x,y]=P(f.gx+dx,f.gy+dy,8); const X=Math.round(x),Y=Math.round(y);
         g.fillStyle=INK; g.fillRect(X-4,Y-7,9,8); g.fillStyle=c; g.fillRect(X-3,Y-6,7,6); g.fillStyle='#a87818'; g.fillRect(X-3,Y-4,7,1); g.fillRect(X-3,Y-2,7,1); g.fillStyle='#fff0a0'; g.fillRect(X-2,Y-6,2,1); }
@@ -1963,6 +1996,7 @@ function context(){
   if (me.bar) return 'unbar';
   if (curRoom==='barn'){
     if (me.fish) return 'reel';
+    if (me.p!=='sit' && inDunkZone()) return 'dunk';
     if (me.p!=='sit' && pondNear()) return 'fish';
     if (me.p!=='sit' && readyCropNear()) return 'harvest';
     { const k=standNear(); if (k) return k==='cider'?'fw':'snack'; }
@@ -1988,7 +2022,7 @@ function context(){
   if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
   return me.p==='sit' ? 'stand' : 'sit';
 }
-const ALABEL = {grab:'ORDER', arena:'PLAY', bowl:'BOWL', fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
+const ALABEL = {dunk:'THROW', grab:'ORDER', arena:'PLAY', bowl:'BOWL', fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
 const alabel=document.getElementById('alabel'); let lastLabel='';
 function updateALabel(){ const c=context(); const l = arcade.on ? (arcade.mode==='menu'?'SELECT':arcade.over?'RETRY':arcade.mode==='dash'?'JUMP':'---') : (c?ALABEL[c]:'SIT'); if(l!==lastLabel){ alabel.textContent=l; lastLabel=l; } }
 // ---- bartending: slip past the rope, pace behind the bar pouring drinks ----
@@ -2027,6 +2061,7 @@ function doAction(a){
   if (a==='roul'||a==='bj'){ openTable(a); return; }
   if (a==='arena'){ openArena(); return; }
   if (a==='bowl'){ openBowl(); return; }
+  if (a==='dunk'){ openDunk(); return; }
   if (a==='goCasino'){ if (!me.moving) showSwap('casino'); return; }
   if (a==='goLoungeC'){ if (!me.moving) showSwap('lounge'); return; }
   if (a==='goLounge'){ if (!me.moving && near(14,0)) showSwap('lounge'); return; }
@@ -2539,12 +2574,12 @@ function openLogo(){ closeAll(); shopImgEl.src=LOGO.src; shopImgEl.style.backgro
 document.getElementById('shopclose').addEventListener('click', ()=>closeAll());
 const menu=document.getElementById('menu'), emenu=document.getElementById('emenu'), logbox=document.getElementById('logbox'), pick=document.getElementById('pick');
 let curMenu=null, menuIdx=0;
-function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || (typeof tblEl!=='undefined' && tblEl.style.display==='block') || (typeof dashEl!=='undefined' && dashEl.style.display==='block') || (typeof sndEl!=='undefined' && sndEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
+function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || (typeof tblEl!=='undefined' && tblEl.style.display==='block') || (typeof dashEl!=='undefined' && dashEl.style.display==='block') || (typeof sndEl!=='undefined' && sndEl.style.display==='block') || (typeof dkEl!=='undefined' && dkEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
 function items(m){ return [...m.children]; }
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
   const a=el.dataset.a;
@@ -2783,7 +2818,8 @@ function drawLlama(o, t, isMe){
     if (u>0.15 && u<0.85){ g.fillStyle='#f8f8f8'; g.fillRect(x0+14+Math.round(Math.cos(u*12)*14), y0+20-jump+Math.round(Math.sin(u*12)*10), 2, 2); } }
   else {
     if (fe>=FLIP_T && fe<FLIP_T+350){ const k=(fe-FLIP_T)/350; g.fillStyle=k<0.5?'#f8f070':'#f8f8f8'; for(let a=0;a<6;a++){ const r=4+k*10; g.fillRect(x0+14+Math.round(Math.cos(a*1.05)*r), y0+44+Math.round(Math.sin(a*1.05)*r*0.4), 2, 1); } }
-    g.drawImage(sprite(o.c, dir, fr, pose), x0+jit, y0-gulp); }
+    if (seat && seat.dunk){ const dp=dunkDepth(); dunkClip(sy-18, ()=>g.drawImage(sprite(o.c, dir, fr, pose), x0+jit, y0-gulp+dp)); if (dp>0) dunkSplash(sx, sy-18, t); }
+    else g.drawImage(sprite(o.c, dir, fr, pose), x0+jit, y0-gulp); }
   if (jit){ g.fillStyle='#a8e0f8'; g.fillRect(x0+22,y0+6,2,3); g.fillStyle='#f8f8f8'; g.fillRect(x0+22,y0+6,1,1); }
   if (!o.leaving) llamaHits.push({id: isMe?null:o.id, x0:x0+4, x1:x0+24, y0:y0, y1:y0+46});
   const oy = pose==='sit'?6:((walking||dancing)&&(fr===1||fr===3)?1:0);
@@ -3062,7 +3098,7 @@ function render(t){
     if (it.f) drawFurn(it.f, t);
     else { const fa = (!it.me && it.l.leaving) ? Math.max(0, 1-(performance.now()-it.l.leaving)/LEAVE_T) : 1; g.globalAlpha=fa; const pos = drawLlama(it.l, t, it.me); g.globalAlpha=1; overlayItems.push({l:it.l, x:pos[0], y:pos[1], me:it.me, balloon:pos[2], fa}); }
   }
-  drawSpits(t);
+  drawSpits(t); drawDunk(t);
   drawFishing(t);
   drawNight(t);
   arcadeText=null; drawArcade(t);
@@ -3430,6 +3466,8 @@ function casinoPointer(e){
 }
 function barnPointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
+  { const [gx0,gy0]=toGrid(e.clientX, e.clientY); const [px,py]=P(DUNK_TGT[0]+0.5,DUNK_TGT[1]+0.5,0);
+    if ((gx0===DUNK_TGT[0]&&gy0===DUNK_TGT[1]) || (Math.abs(lx-px)<=11 && ly>=py-50 && ly<=py-26)){ if (inDunkZone() && me.p!=='sit' && !me.moving) openDunk(); else walkTo(DUNK_TGT[0]-2, DUNK_TGT[1], 'dunk'); return; } }
   for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
   const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
   if (POND.some(([x,y])=>x===gx&&y===gy)){ if (me.fish) return; if (pondNear() && me.p!=='sit') startFish(); else { let best=null,bd=1e9; for (const [x,y] of POND) for (const [dx,dy] of DIRS8){ const ax=x+dx, ay=y+dy; if(!walkable(ax,ay)) continue; const d=Math.hypot(ax-me.gx,ay-me.gy); if(d<bd){bd=d;best=[ax,ay];} } if (best) walkTo(best[0],best[1],'fish'); } return; }
@@ -4575,6 +4613,50 @@ function bwResults(r){ const F=r.final; BW.result=r; BW.me=F.me; BW.board=F.boar
     <div class="srow"><button class="gbbtn" id="bw_leave">LEAVE</button></div>`;
   bwBox.style.display='block'; bwWire();
   const el=document.getElementById('bw_count'), goal=F.total, t0=performance.now(); const step=()=>{ const u=Math.min(1,(performance.now()-t0)/900); el.textContent=Math.round(goal*(1-Math.pow(1-u,3))); if (u<1) requestAnimationFrame(step); else if (F.best) sfxChime([1047,1319,1568,2093]); }; step(); }
+
+// ======================= DUNK TANK (Llama Acres) =======================
+// Two taps: stop the crosshair across, then up and down. A bullseye drops whoever is on the seat into the water.
+const DK = { t0:-1e9, balls:[], flash:0, phase:'x', cx:0, cy:0, lx:null, ly:null, busy:false };
+const DUNK_T = 2900;
+function dunkDepth(){ const u=performance.now()-DK.t0; if (u<0||u>DUNK_T) return 0; if (u<260) return Math.round(26*u/260); if (u<DUNK_T-600) return 24+Math.round(Math.sin(u/160)*2); return Math.round(24*(DUNK_T-u)/600); }
+function dunkSitter(){ const [x,y]=DUNK_SEAT; if (me.p==='sit' && me.gx===x && me.gy===y) return 'me'; for (const o of others.values()) if (!o.leaving && sameRoom(o) && o.p==='sit' && Math.floor(o.x)===x && Math.floor(o.y)===y) return o.id; return null; }
+function dunkClip(waterY, draw){ const dp=dunkDepth(); if (dp<=0){ draw(); return; } g.save(); g.beginPath(); g.rect(-9999,-9999,99999,9999+waterY); g.clip(); draw(); g.restore(); }
+function dunkSplash(x, y, t){ const u=performance.now()-DK.t0; g.fillStyle='#c8ecff'; if (u<700){ const k=u/700; for (let i=0;i<10;i++){ const a=-Math.PI*(0.1+0.8*i/9); g.fillRect(Math.round(x+Math.cos(a)*k*18), Math.round(y+Math.sin(a)*k*22+k*k*20), 2, 2); } }
+  for (let i=0;i<3;i++){ const b=((t*1.5+i*0.33)%1); g.fillRect(Math.round(x-6+i*6+Math.sin(t*5+i)*2), Math.round(y-b*6), 1, 1); } }
+function inDunkZone(){ if (curRoom!=='barn') return false; const [tx,ty]=DUNK_TGT; return me.gx<tx && Math.max(Math.abs(me.gx-tx), Math.abs(me.gy-ty))<=4; }
+// the ball flies from the thrower to the target
+function drawDunk(t){ if (curRoom!=='barn') return; const now=performance.now();
+  for (let i=DK.balls.length-1;i>=0;i--){ const B=DK.balls[i], u=(now-B.t0)/550; if (u>=1){ DK.balls.splice(i,1); if (B.hit){ DK.flash=now; DK.t0=now; sfxDunk(); } else { sfxTone(300,0.08,'triangle',0.15); } continue; }
+    const x=B.x0+(B.x1-B.x0)*u, y=B.y0+(B.y1-B.y0)*u - Math.sin(u*Math.PI)*22; g.fillStyle=INK; g.fillRect(OX+Math.round(x)-2,OY+Math.round(y)-2,5,5); g.fillStyle='#f8f8f8'; g.fillRect(OX+Math.round(x)-1,OY+Math.round(y)-1,3,3); g.fillStyle='#e03048'; g.fillRect(OX+Math.round(x),OY+Math.round(y)-1,1,3); } }
+function sfxDunk(){ try { if (!sfxReady()) return; const t=actx.currentTime+0.01; pop(t, 1800, 900, 0.08, 0.5); wetNoise(t+0.08, 0.6, 0.9, 'lowpass', 1800, 250, 0.8); wetNoise(t+0.12, 0.35, 0.5, 'bandpass', 2600, 900, 1.5); pop(t+0.1, 220, 60, 0.25, 0.6); } catch(e){} }
+NET.handlers.dk = m => { if (curRoom!=='barn') return; const thrower = m.peer===(NET.peer||myPeer) ? me : [...others.values()].find(o=>o.id===m.peer) || null;
+  const [tx,ty]=proj(DUNK_TGT[0]+0.5, DUNK_TGT[1]+0.5); let x0=tx-60, y0=ty-30; if (thrower){ const p0=proj(thrower.x, thrower.y); x0=p0[0]; y0=p0[1]-30; }
+  DK.balls.push({x0, y0, x1:tx, y1:ty-38, t0:performance.now(), hit:!!m.hit}); sfxTone(520,0.06,'triangle',0.15);
+  if (m.hit && thrower!==me) setTimeout(()=>localMsg(`💦 SPLASH! ${m.by} dunked ${m.sitter ? m.sitter : 'DUNKY'}!`), 560); };
+// ---- the throw popup ----
+const dkEl=document.getElementById('dkbox'), dkCv=document.getElementById('dkcv'), dkCx=dkCv.getContext('2d');
+function openDunk(){ if (curRoom!=='barn') return; closeAll(); DK.phase='x'; DK.lx=null; DK.ly=null; DK.t=0; dkEl.style.display='block'; dunkMsg(`TAP TO STOP THE CROSSHAIR. HIT THE BULLSEYE TO DUNK ${dunkSitter() ? 'THE LLAMA ON THE SEAT' : 'DUNKY'}!`); dunkLoop(); }
+function dunkMsg(t){ document.getElementById('dk_msg').textContent=t; }
+let dkRaf=0; function dunkLoop(){ cancelAnimationFrame(dkRaf); const step=()=>{ if (dkEl.style.display!=='block') return; DK.t+=1/60; dunkDraw(); dkRaf=requestAnimationFrame(step); }; dkRaf=requestAnimationFrame(step); }
+const dkSweep = (t, sp) => Math.sin(t*sp);   // -1..1
+function dunkDraw(){ const c=dkCx, W=160, H=120, cx=W/2, cy=H/2, R=44; c.imageSmoothingEnabled=false; c.fillStyle='#6cb048'; c.fillRect(0,0,W,H); c.fillStyle='#5aa03c'; for (let y=0;y<H;y+=6) for (let x=(y/6)%2*3;x<W;x+=6) c.fillRect(x,y,1,1);
+  for (const [r,col] of [[R+2,'#181020'],[R,'#f8f8f8'],[R*0.8,'#e03048'],[R*0.6,'#f8f8f8'],[R*0.45,'#e03048'],[R*0.3*44/50,'#ffd23f']]){ c.fillStyle=col; for (let yy=-Math.round(r);yy<=Math.round(r);yy++){ const w=Math.round(Math.sqrt(r*r-yy*yy)); c.fillRect(cx-w, cy+yy, w*2+1, 1); } }
+  const sx = DK.lx!=null ? DK.lx : dkSweep(DK.t, 2.4), sy = DK.ly!=null ? DK.ly : (DK.phase==='y' ? dkSweep(DK.t, 2.8) : 0);
+  const X=Math.round(cx+sx*(R+6)), Y=Math.round(cy+sy*(R+6));
+  c.fillStyle='#181020'; if (DK.phase==='x' || DK.lx!=null) c.fillRect(X,0,1,H); if (DK.phase!=='x') c.fillRect(0,Y,W,1);
+  c.fillStyle='#181020'; c.fillRect(X-4,Y-4,9,9); c.fillStyle='#ffd23f'; c.fillRect(X-3,Y-3,7,7); c.fillStyle='#181020'; c.fillRect(X-1,Y-1,3,3); }
+function dunkTap(){ if (DK.busy) return; ensureAudio();
+  if (DK.phase==='x'){ DK.lx=dkSweep(DK.t, 2.4); DK.phase='y'; DK.t=0; sfxTone(660,0.05,'square',0.15); dunkMsg('NOW STOP IT UP AND DOWN!'); return; }
+  if (DK.phase==='y'){ DK.ly=dkSweep(DK.t, 2.8); DK.phase='done'; const r=Math.sqrt(DK.lx*DK.lx+DK.ly*DK.ly)*(50/44); const hit = r <= 0.3;
+    DK.busy=true; dunkMsg('THROWING...');
+    NET.act('dunk_throw',{hit}).then(res=>{ DK.busy=false; if (!res.ok){ dunkMsg((res.msg||'TRY AGAIN.').toUpperCase()); DK.phase='again'; return; } tkSet(res.tk);
+      dunkMsg(res.hit ? (res.won ? `BULLSEYE! SPLASH! +${res.won} COINS` : 'BULLSEYE! SPLASH! (DAILY DUNK PRIZES ALL WON)') : (r<0.5 ? 'SO CLOSE! TRY AGAIN.' : 'MISSED! TRY AGAIN.')); DK.phase='again'; });
+    return; }
+  if (DK.phase==='again'){ DK.phase='x'; DK.lx=null; DK.ly=null; DK.t=0; dunkMsg('TAP TO STOP THE CROSSHAIR ACROSS.'); } }
+dkCv.addEventListener('pointerdown', e=>{ e.preventDefault(); dunkTap(); });
+document.getElementById('dk_throw').addEventListener('click', dunkTap);
+document.getElementById('dk_close').addEventListener('click', ()=>{ dkEl.style.display='none'; });
+addEventListener('keydown', e=>{ if (dkEl.style.display==='block' && (e.code==='Space'||e.code==='Enter')){ e.preventDefault(); e.stopImmediatePropagation(); dunkTap(); } }, true);
 
 startGate();
 let last = performance.now();

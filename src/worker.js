@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-19f";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-19g";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -315,6 +315,10 @@ function bowlState(rolls) {
 }
 // BOWL-PHYSICS-END
 
+// ---------- dunk tank (Llama Acres) ----------
+// A throw costs 1 coin; a bullseye dunks whoever is on the seat and pays 3. Whoever volunteers on the seat earns 1 per dunk.
+const DUNK = { seat: [18, 10], target: [16, 10], cost: 1, prize: 3, sitPay: 1, gap: 2500, winCap: 30, sitCap: 15 };
+
 // ---------- hay bale bowling ----------
 // The server keeps each player's game, runs the same physics as the page to decide pinfall, and pays coins at the end.
 const LANES = { minGap: 2200, dayCap: 40, expire: 30 * 60000 };
@@ -518,6 +522,7 @@ export class Lounge extends DurableObject {
       case "arena_info": return this.arenaInfo(a, now);
       case "arena_join": return this.arenaJoin(ws, a, m, now);
       case "arena_end": return this.arenaEnd(ws, a, m, now);
+      case "dunk_throw": return this.dunkThrow(a, m, now);
       case "bowl_info": return this.bowlInfo(a, now);
       case "bowl_start": return this.bowlStart(a, now);
       case "bowl_roll": return this.bowlRoll(a, m, now);
@@ -709,6 +714,30 @@ export class Lounge extends DurableObject {
     if (best || newWk) this.arenaRoomBroadcast({ t: "ab", board });
     return { ok: true, score, place, players: humans.length, earned: earn, bonus, capped: earnedSoFar + earn >= ARENA.dayCap, best, wkBest: newWk && score > 0, levelUp: after > before ? after : 0,
              newColors: unlocked(after).filter((c) => !unlocked(before).includes(c)), me, board, tk };
+  }
+
+  // ---------- dunk tank ----------
+  async dunkThrow(a, m, now) {
+    const [tx, ty] = DUNK.target;
+    if (!this.near(a, "barn", (x, y, p) => p.p !== "sit" && x < tx && Math.max(Math.abs(x + 0.5 - tx), Math.abs(y + 0.5 - ty)) <= 4.6)) return { ok: false, msg: "Step up to the throwing spot in front of the target." };
+    if (now - (this.dunkLast && this.dunkLast.get(a.uid) || 0) < DUNK.gap) return { ok: false, msg: "Wait for the ball to land." };
+    (this.dunkLast = this.dunkLast || new Map()).set(a.uid, now);
+    let tk = await this.debit(a.uid, DUNK.cost, "dunk throw"); if (tk === null) return { ok: false, msg: "A throw costs 1 COIN. Harvest carrots or go fishing to earn some!" };
+    const hit = !!m.hit, today = etDay(now);
+    const key = "dunk:" + a.uid, D = (await this.ctx.storage.get(key)) || {}; if (D.day !== today) { D.day = today; D.won = 0; D.paid = 0; }
+    let won = 0; if (hit) { won = Math.max(0, Math.min(DUNK.prize, DUNK.winCap - D.won)); D.won += won; if (won) tk = await this.credit(a.uid, won, "dunk tank"); }
+    await this.ctx.storage.put(key, D);
+    // pay the brave llama on the seat (not if it's you)
+    let sitter = null;
+    if (hit) for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (!x || !x.pres || x.uid === a.uid) continue;
+      const p = x.pres; if (p.rm !== "barn" || p.p !== "sit" || Math.floor(p.x) !== DUNK.seat[0] || Math.floor(p.y) !== DUNK.seat[1]) continue;
+      sitter = x.name; const k2 = "dunk:" + x.uid, S2 = (await this.ctx.storage.get(k2)) || {}; if (S2.day !== today) { S2.day = today; S2.won = 0; S2.paid = 0; }
+      const pay = Math.max(0, Math.min(DUNK.sitPay, DUNK.sitCap - S2.paid)); S2.paid += pay; await this.ctx.storage.put(k2, S2);
+      if (pay) { const t2 = await this.credit(x.uid, pay, "dunked"); this.send(w, { t: "tk", tk: t2, msg: `SPLASH! ${a.name} dunked you. +${pay} COIN for being a good sport!` }); }
+      break; }
+    const ev = { t: "dk", by: a.name, peer: a.peer, hit, sitter };
+    for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === "barn") { try { w.send(JSON.stringify(ev)); } catch (e) {} } }
+    return { ok: true, hit, won, capped: hit && !won, tk };
   }
 
   // ---------- hay bale bowling ----------
