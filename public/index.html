@@ -567,7 +567,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19i";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19j";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -823,6 +823,7 @@ function buildBarnWorld(){
   // dunk tank: sit on the plank over the water (the server checks the same seat), throw at the target from in front of it
   SEATS.push({gx:DUNK_SEAT[0],gy:DUNK_SEAT[1],dir:'fl',lift:26,dunk:true}); FURN.push({t:'dunktank',gx:DUNK_SEAT[0],gy:DUNK_SEAT[1]});
   FURN.push({t:'dunktarget',gx:DUNK_TGT[0],gy:DUNK_TGT[1]}); block(DUNK_TGT[0],DUNK_TGT[1]);
+  FURN.push({t:'dunksign',gx:DUNK_SEAT[0]+2,gy:DUNK_SEAT[1]}); block(DUNK_SEAT[0]+2,DUNK_SEAT[1]);
 }
 // LLAMA CASINO: red carpet, slot row on the back wall, a roulette table, two blackjack tables
 function buildCasinoWorld(){
@@ -1506,11 +1507,26 @@ function drawFurn(f,t){
       // plank and ladder
       { const [ax,ay]=P(f.gx+0.15,f.gy+0.5,26-(dp>0?6:0)), [bx,by]=P(f.gx+0.85,f.gy+0.5,26-(dp>0?6:0)); g.fillStyle=INK; g.fillRect(Math.round(ax)-1, Math.round(Math.min(ay,by))-1, Math.round(bx-ax)+3, 4); g.fillStyle='#c88a4a'; g.fillRect(Math.round(ax), Math.round(Math.min(ay,by)), Math.round(bx-ax)+1, 2); }
       { const [lx,ly]=P(f.gx+1,f.gy+0.2,0); g.fillStyle='#8a5426'; g.fillRect(Math.round(lx)+1, Math.round(ly)-28, 1, 28); g.fillRect(Math.round(lx)+5, Math.round(ly)-26, 1, 26); for (let k=0;k<26;k+=5){ g.fillRect(Math.round(lx)+1, Math.round(ly)-k-2, 5, 1); } }
-      // sign
-      { const [sx2,sy2]=P(f.gx+1.3,f.gy+0.2,40); g.fillStyle=INK; g.fillRect(Math.round(sx2)-17, Math.round(sy2)-1, 35, 11); g.fillStyle='#ff5c8a'; g.fillRect(Math.round(sx2)-16, Math.round(sy2), 33, 9); pfDraw(g,'DUNK!',Math.round(sx2)-11,Math.round(sy2)+2,(Math.floor(t*3)%2)?'#ffffff':'#ffd23f'); g.fillStyle='#8a5426'; g.fillRect(Math.round(sx2), Math.round(sy2)+10, 1, 12); }
       if (!sitter){ const [px,py]=P(f.gx+0.5,f.gy+0.5,0); const x0=Math.round(px)-14, y0=Math.round(py)-45-26+6+dp;
         dunkClip(Math.round(py)-18, ()=>g.drawImage(sprite('poophat', 'fl', 0, 'sit'), x0, y0));
         if (dp>0) dunkSplash(Math.round(px), Math.round(py)-18, t); else pfDraw(g,'DUNKY',x0+3,y0-7,'#ffd23f'); }
+      break; }
+    case 'dunksign': { // carnival sign on two posts: striped border, chasing bulbs, big DUNK!
+      const W=60, H=36, cv=dunkSignCv; if (cv.width!==W){ cv.width=W; cv.height=H; }
+      const m=cv.getContext('2d'); m.clearRect(0,0,W,H);
+      m.fillStyle=INK; m.fillRect(1,0,W-2,H); m.fillRect(0,1,W,H-2);
+      for (let x=1;x<W-1;x++) for (let y=1;y<H-1;y++){ if (x>3&&x<W-4&&y>3&&y<H-4) continue; m.fillStyle=(Math.floor((x+y)/3)%2)?'#e03048':'#f8f8f0'; m.fillRect(x,y,1,1); }
+      m.fillStyle=INK; m.fillRect(4,4,W-8,H-8); m.fillStyle='#fff4d8'; m.fillRect(5,5,W-10,H-10);
+      const lit=Math.floor(t*6); let k=0; const bulb=(x,y)=>{ m.fillStyle=((k++)+lit)%3===0?'#ffffff':'#ffd23f'; m.fillRect(x,y,1,1); };
+      for (let x=3;x<W-3;x+=4) bulb(x,1); for (let y=4;y<H-3;y+=4) bulb(W-2,y); for (let x=W-4;x>=3;x-=4) bulb(x,H-2); for (let y=H-4;y>=4;y-=4) bulb(1,y);
+      const tw=pfW('DUNK!',2); pfDraw(m,'DUNK!',Math.round(W/2-tw/2),8,'#8a1424',2); pfDraw(m,'DUNK!',Math.round(W/2-tw/2),7,(Math.floor(t*2)%3===0)?'#ff5c8a':'#e03048',2);
+      // little target and "1 COIN"
+      { const tx=Math.round(W/2-(pfW('1 COIN')+9)/2)+3; for (const [r,c] of [[3,'#e03048'],[2,'#f8f8f0'],[1,'#e03048']]){ m.fillStyle=c; m.fillRect(tx-r,24-r,r*2+1,r*2+1); }
+        pfDraw(m,'1 COIN',tx+6,22,'#1c4aa8'); }
+      const [px,py]=P(f.gx+0.5,f.gy+0.55,0), X=Math.round(px)+10, Y=Math.round(py);
+      ellPx(X,Y+1,14,3,'rgba(40,80,20,0.3)');
+      for (const dx of [-17,16]){ g.fillStyle=INK; g.fillRect(X+dx-1,Y-26,4,27); g.fillStyle='#a86a34'; g.fillRect(X+dx,Y-26,2,26); g.fillStyle='#c88a50'; g.fillRect(X+dx,Y-26,1,26); }
+      g.drawImage(cv, X-W/2, Y-26-H+4);
       break; }
     case 'dunktarget': {
       const [px,py]=P(f.gx+0.5,f.gy+0.5,0), X=Math.round(px), Y=Math.round(py);
@@ -2910,7 +2926,7 @@ const plateCache={};
 function plateImg(text, fg, bgc, rim){ const k=text+fg+bgc+rim; if (plateCache[k]) return plateCache[k]; const w=pfW(text)+10, h=11; const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d');
   x.fillStyle=INK; x.fillRect(1,0,w-2,h); x.fillRect(0,1,w,h-2); x.fillStyle=rim; x.fillRect(1,1,w-2,h-2); x.fillStyle=bgc; x.fillRect(2,2,w-4,h-4); pfDraw(x,text,5,3,fg); return plateCache[k]=c; }
 function wallPlate(img, cx, h, sg){ const wx=Math.round(cx-img.width/2); const wy = sg>0 ? Math.round(wx/2-h) : Math.round(-wx/2-h); wallText(img, wx, wy, sg*0.5); }
-const marquee = document.createElement('canvas');
+const marquee = document.createElement('canvas'), dunkSignCv = document.createElement('canvas');
 const arenaBoardCv = document.createElement('canvas'), arenaTitleCv = document.createElement('canvas');
 const laneMonCv = [0,1,2,3].map(()=>document.createElement('canvas')), lanesTitleCv=document.createElement('canvas');
 let laneMonHit = [];
