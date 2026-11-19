@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#120d22">
 <title>Llama Lounge</title>
 <meta name="description" content="Llama Lounge: hang out, chat and play games as a llama.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root{--px:2;--ink:#181020}
   html,body{margin:0;height:100%;background:#100c1c;overflow:hidden;font-family:'Press Start 2P',monospace;color:var(--ink);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -202,28 +203,188 @@
   #keys{position:absolute;right:8px;bottom:62px;font-size:8px;line-height:13px;color:#cfc4f0;text-align:right;pointer-events:none;text-shadow:1px 1px 0 #000}
   @media (max-width:700px){ #keys{display:none} #status{font-size:8px} }
   @media (pointer:coarse){ #keys{display:none} }
+  /* =====================================================================
+     MODERN UI LAYER (2026-11-19): the pixel world stays pixel art; everything
+     in HTML around it (bars, buttons, pop-ups) gets a clean app look.
+     Phones: the game fills the screen, controls float in a dock, pop-ups are bottom sheets.
+     ===================================================================== */
+  :root{--ui:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--ink:#1d1530;--sub:#6b6189;--line:#ece8f4;
+        --glass:rgba(22,15,40,.74);--gline:rgba(255,255,255,.13);--yel:#ffd23f;--pink:#ff5c8a;--card:#fff;--soft:#f3f0f9;--r:22px;
+        --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--dockh:0px}
+  html,body{font-family:var(--ui);background:#120d22}
+  .gb,.gbbtn,.pbtn,.rpb,#chatin,#pname,#auth input,#dashbox .addrow input{font-family:var(--ui)}
+  /* ---------- cards and sheets ---------- */
+  .gb{background:var(--card);color:var(--ink);border:0;border-radius:var(--r);box-shadow:0 24px 60px rgba(8,4,20,.45),0 2px 6px rgba(8,4,20,.2);
+      font-size:15px;line-height:1.45;padding:20px 20px 18px;letter-spacing:.01em}
+  .gb::-webkit-scrollbar{width:0}
+  .lbt,.slt,.fwt,#rp_title,.pmn,#tm_title,#ds_title{font-size:17px!important;font-weight:800;letter-spacing:.02em;line-height:1.3}
+  .srow{gap:10px!important}
+  .gbbtn{font-size:14px;font-weight:700;letter-spacing:.02em;line-height:1.2;background:var(--soft);color:var(--ink);border:0;border-radius:12px;box-shadow:none;
+         padding:11px 16px;min-height:42px;transition:transform .08s,background .15s,filter .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+  .gbbtn:hover{filter:brightness(.97)} .gbbtn:active{transform:scale(.96)}
+  .gbbtn.y,#ragree,#shoplink,#slotbox .gbbtn.y,#tblbox .gbbtn.y,#fwbox .gbbtn.y,#swapbox .gbbtn.y,#auth .gbbtn.y{background:var(--yel);color:#2a1d00}
+  .gbbtn.on,.slbet .gbbtn.on,.tbopts .gbbtn.on{background:var(--ink)!important;color:#fff!important}
+  .gbbtn:disabled{opacity:.4}
+  /* ---------- top bar ---------- */
+  .hb{background:var(--glass);color:#fff;border:1px solid var(--gline);border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.3);
+      -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4)}
+  #status{left:calc(10px + env(safe-area-inset-left,0px));top:calc(10px + var(--sat));padding:8px 12px 8px 12px;display:flex;align-items:center;gap:12px;font-size:12px;line-height:1.2}
+  #status .st1{display:flex;flex-direction:column;gap:3px;min-width:0}
+  #stitle{font-family:'Press Start 2P',monospace;font-size:9px;color:#ff8fb1;letter-spacing:.02em;white-space:nowrap}
+  #status .st2{display:flex;align-items:center;color:#d9d2ee;font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw}
+  #dot{width:8px;height:8px;border-radius:50%;margin-right:6px;flex:none;box-shadow:0 0 0 3px rgba(224,64,64,.25)} #dot.on{box-shadow:0 0 0 3px rgba(48,184,80,.28)}
+  #tokrow{margin:0;padding:6px 10px 6px 7px;border-radius:999px;background:rgba(255,210,63,.16);color:#ffe28a;font-weight:800;font-size:14px;gap:6px}
+  #tokrow .coin{width:16px;height:16px;border:0;background:radial-gradient(circle at 35% 35%,#fff3b0 0 18%,#ffd23f 20% 62%,#d79a12 64%);box-shadow:inset 0 0 0 1.5px #a86f05}
+  #tokn{color:#ffe28a} #tokrow .tkl{font-size:10px;font-weight:700;opacity:.75;letter-spacing:.06em}
+  #topbtns{right:calc(10px + env(safe-area-inset-right,0px));top:calc(10px + var(--sat));gap:8px;align-items:center}
+  .pbtn{font-family:var(--ui);font-weight:800;font-size:13px;letter-spacing:.03em;background:var(--glass);color:#fff;border:1px solid var(--gline);border-radius:14px;
+        box-shadow:0 6px 18px rgba(0,0,0,.28);padding:0 14px;height:44px;line-height:1;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);transition:transform .08s,background .15s}
+  .pbtn:active{transform:scale(.95);box-shadow:0 6px 18px rgba(0,0,0,.28)}
+  .pbtn.ic{width:44px;padding:0;font-size:20px;font-weight:600}
+  #musicbtn.off{color:#8d84a8;text-decoration:line-through}
+  .pbtn.y,#menubtn{background:var(--yel);color:#2a1d00;border-color:transparent}
+  #menubtn{display:inline-flex;align-items:center;gap:8px}
+  .hamb{display:inline-flex;flex-direction:column;gap:3px} .hamb i{display:block;width:16px;height:2px;border-radius:2px;background:currentColor}
+  #exitbtn{background:var(--pink);border-color:transparent}
+  #tip{top:calc(10px + var(--sat));padding:10px 14px;font-size:13px;line-height:1.4;border-radius:16px;gap:12px}
+  #tip b{color:#ff8fb1} #tipall{color:#b9afd6;font-size:11px} #tipx{font-size:15px}
+  /* ---------- dock (rooms + chat + action) ---------- */
+  #dock{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(10px + var(--sab));width:min(900px,calc(100% - 20px));display:none;align-items:center;gap:8px;z-index:3;
+        padding:8px;box-sizing:border-box;background:var(--glass);border:1px solid var(--gline);border-radius:20px;box-shadow:0 12px 34px rgba(0,0,0,.38);
+        -webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4)}
+  #dock.on{display:flex}
+  #roombar{position:static;display:flex;gap:4px;padding:3px;border-radius:14px;background:rgba(255,255,255,.07);flex:none}
+  #roombar .pbtn{height:38px;padding:0 11px;font-size:12px;background:transparent;border:0;box-shadow:none;border-radius:11px;color:#d9d2ee;-webkit-backdrop-filter:none;backdrop-filter:none;white-space:nowrap}
+  #roombar .pbtn.here{background:#fff;color:var(--ink)}
+  #roombar .cnt{display:inline-block;min-width:16px;padding:1px 5px;margin-left:3px;border-radius:999px;background:var(--pink);color:#fff;font-size:10px;line-height:14px}
+  #bottom{position:static;padding:0;flex:1;min-width:0;gap:8px}
+  #chatrow{position:relative;max-width:none;gap:0}
+  #chatin{height:44px;box-sizing:border-box;font-size:16px;font-weight:500;padding:0 52px 0 16px;background:rgba(255,255,255,.95);color:var(--ink);border:0;border-radius:14px;outline:none;letter-spacing:0}
+  #chatin::placeholder{color:#9a91b5} #chatin:focus{background:#fff;box-shadow:0 0 0 3px rgba(255,210,63,.55)}
+  #saybtn{position:absolute;right:4px;top:4px;width:36px;height:36px;padding:0;border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  #abtn{min-width:96px;height:44px;background:var(--pink);border-color:transparent;color:#fff;text-shadow:none;font-size:14px;box-shadow:0 6px 18px rgba(255,92,138,.4)}
+  #abtn span{background:rgba(255,255,255,.95)}
+  @media (pointer:coarse){ #abtn{min-width:96px;padding:0 14px;font-size:14px} }
+  #keys{bottom:calc(var(--dockh) + 18px + var(--sab));right:14px;font-family:var(--ui);font-size:11px;line-height:1.5;color:#b9afd6;font-weight:500;text-shadow:0 1px 2px #000}
+  /* ---------- toast (replaces the big white text box) ---------- */
+  #tbox{bottom:calc(var(--dockh) + 18px + var(--sab))!important;height:auto;min-height:0;width:max-content;box-sizing:border-box;max-width:min(560px,calc(100% - 20px));padding:11px 18px;
+        background:var(--glass);color:#fff;border:1px solid var(--gline);border-radius:16px;font-size:15px;font-weight:600;line-height:1.4;white-space:pre-wrap;
+        -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 10px 30px rgba(0,0,0,.35);animation:toastIn .2s ease-out}
+  #tarrow{right:7px;bottom:5px;color:var(--yel);font-size:9px}
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+  /* ---------- menus ---------- */
+  .menu{top:calc(64px + var(--sat));right:calc(10px + env(safe-area-inset-right,0px));padding:8px;min-width:250px;border-radius:20px}
+  .menu div{display:flex;align-items:center;gap:12px;padding:0 12px;height:44px;border-radius:12px;font-size:14px;font-weight:700;letter-spacing:.02em;line-height:1}
+  .menu div[data-i]::before{content:attr(data-i);font-size:18px;width:24px;text-align:center;position:static}
+  .menu div.on::before{content:attr(data-i);position:static}
+  .menu div:not([data-i]).on::before{content:none}
+  @media (hover:hover){ .menu div:hover,.menu div.on{background:var(--soft)} }
+  .menu div.mclose{color:var(--sub)}
+  #emenu div{font-size:15px}
+  #logbox{top:calc(64px + var(--sat));font-size:14px;line-height:1.45;padding:16px 18px}
+  #logbox .ln{margin-bottom:6px} #logbox .x{font-size:18px;background:transparent;color:var(--sub)}
+  #pmenu{padding:14px;border-radius:18px} #pmenu .pmb{gap:8px}
+  /* ---------- individual pop-ups ---------- */
+  #shopsub,.tmw,#tmenu .tmg .gbbtn small,.rpx small,#au_sub,.aunote,#tb_msg,#sl_msg,#fwbox .fwn,#fw_msg,#fwbox small,#dashbox .dl,#dashbox .dr small{font-size:13px!important;line-height:1.45!important}
+  #shopname,#shopprice{font-size:16px;font-weight:800} #shopimg{border:0;border-radius:16px;background:var(--soft);width:160px;height:160px}
+  #lboard .lbh{font-size:12px;font-weight:800;letter-spacing:.06em;border-bottom:2px solid var(--line);padding-bottom:6px;margin-bottom:6px}
+  #lboard .lbe{font-size:14px;padding:3px 0} #lboard .lbcols{gap:20px}
+  #tmenu .tmg .gbbtn{line-height:1.3;padding:14px 10px;flex-direction:column} #tmenu .tmbl{font-size:12px;font-weight:800}
+  #tm_bet{font-weight:800}
+  #rules{font-size:14px;line-height:1.5} #rules .rt{font-size:18px;font-weight:800;line-height:1.3} #rules .rsec{font-size:12px;font-weight:800;letter-spacing:.08em;border-bottom:2px solid var(--line);padding-bottom:6px;margin:16px 0 8px}
+  #rules ul{padding-left:20px} #rules li{margin-bottom:6px}
+  #rules .srow{background:var(--card);margin:12px -20px 0;padding:12px 0 calc(14px + var(--sab));border-top:1px solid var(--line)}
+  #ragree{font-size:15px;padding:12px 28px}
+  #roompick{gap:10px}
+  .rpb{background:var(--soft);border:0;border-radius:16px;box-shadow:none;padding:14px;gap:14px;transition:transform .08s,background .15s}
+  .rpb:hover,.rpb:focus{background:#ece6fb} .rpb:active{transform:scale(.98)}
+  .rpi{font-size:30px} .rpx b{font-size:15px;font-weight:800;color:var(--ink)} .rpx i{font-size:12px;font-weight:700}
+  .slbet{font-size:12px;font-weight:800;gap:6px} .slbet .gbbtn{min-width:44px;padding:8px 10px}
+  #slotcv,#tbcv{border-radius:14px;border-width:3px} #sl_tok,#tb_tok{font-size:13px;font-weight:700}
+  .tbopts{gap:6px} .tbopts .gbbtn{font-size:12px;padding:8px 4px;min-height:36px}
+  #fw_items .gbbtn{font-size:12px;line-height:1.3;padding:10px;flex-direction:column}
+  #dashbox h4{font-size:12px;font-weight:800;letter-spacing:.08em;margin:16px 0 6px} #dashbox .dr{font-size:14px;padding:8px 0;border-bottom:1px solid var(--line);gap:6px}
+  #dashbox .gbbtn.s{font-size:11px;padding:6px 9px;min-height:30px;border-radius:9px}
+  #dashbox .gbbtn.bad{background:#ffe0e4;color:#b0203a} #dashbox .gbbtn.gd{background:#dfeeff;color:#1c4aa8}
+  #dashbox .addrow input{font-size:16px;padding:9px 12px;border:0;border-radius:12px;background:var(--soft)}
+  #swapbox #sw_text{font-size:17px;font-weight:800;color:var(--ink);margin-bottom:14px}
+  #loading{border-radius:999px;padding:12px 20px;font-size:14px;font-weight:700}
+  /* login */
+  #auth{padding:26px 22px 20px;width:min(calc(100% - 24px),380px)}
+  #auth .rt{font-size:15px;margin-bottom:8px} #auth .rt b{font-family:'Press Start 2P',monospace;font-size:14px;color:#d62d6a}
+  #auth label{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--sub);margin:12px 0 0}
+  #auth input{font-size:16px;padding:12px 14px;margin-top:6px;border:2px solid var(--line);border-radius:14px;background:#faf9fd;font-family:var(--ui);outline:none}
+  #auth input:focus{border-color:var(--yel);background:#fff}
+  #au_err{font-size:13px;margin-top:6px}
+  #auth .srow{margin-top:14px} #auth .srow .gbbtn{flex:1;min-height:48px;font-size:15px}
+  /* llama picker */
+  #pick{line-height:1.4} #pick .tt{font-size:18px;font-weight:800} #pick .tt b{color:#d62d6a}
+  .card{border:0;border-radius:16px;padding:6px;background:var(--soft);transition:transform .1s}
+  .card.sel{background:#fff1c2;box-shadow:0 0 0 3px var(--yel)} .card.sel::after{content:none}
+  #who{font-size:14px;font-weight:700}
+  #pname{font-size:16px;width:180px;padding:11px 14px;border:2px solid var(--line);border-radius:14px;text-transform:uppercase;font-family:var(--ui)}
+  #pick .row{gap:8px;margin-top:12px}
+  #kicked{font-family:var(--ui);font-size:16px;font-weight:600}
+  /* tap-outside scrim behind open pop-ups */
+  body:not(.joined) #tokrow,body:not(.joined) #menubtn,body:not(.joined) #zin,body:not(.joined) #zout{display:none}
+  #scrim{position:absolute;inset:0;background:rgba(10,6,22,.45);display:none;z-index:3;animation:fadeIn .18s ease-out}
+  #screen:has(> .sheet[style*="display: block"], > .sheet[style*="display: flex"]) #scrim{display:block}
+  .sheet{z-index:5!important}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes popIn{from{opacity:0;transform:translate(-50%,-48%) scale(.97)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  #shop,#lboard,#tmenu,#roompick,#slotbox,#dashbox,#tblbox,#fwbox,#swapbox,#rules,#pick,#auth{animation:popIn .18s ease-out}
+  /* ---------- phones: full-screen game, bottom sheets ---------- */
+  @media (max-width:640px){
+    #status{padding:6px 10px;gap:10px} #stitle{font-size:8px} #status .st2{font-size:11px;max-width:34vw} #tokrow{font-size:13px;padding:5px 9px 5px 6px} #tokrow .tkl{display:none}
+    #zout,#zin{display:none}
+    #menubtn .mtx{display:none} #menubtn{width:44px;padding:0;justify-content:center}
+    #tip{top:calc(66px + var(--sat));left:10px;right:10px;transform:none;width:auto;max-width:none;font-size:13px}
+    #dock{flex-wrap:wrap;width:calc(100% - 16px);bottom:calc(8px + var(--sab));padding:8px;gap:8px;border-radius:22px}
+    #roombar{width:100%;box-sizing:border-box}
+    #roombar .pbtn{flex:1;padding:0 4px;font-size:12px;height:36px}
+    #abtn{min-width:84px}
+    .sheet{left:0!important;right:0!important;top:auto!important;bottom:0!important;transform:none!important;width:100%!important;max-width:none!important;min-width:0!important;
+           max-height:86vh!important;border-radius:26px 26px 0 0!important;padding:26px 18px calc(18px + var(--sab))!important;animation:sheetUp .24s cubic-bezier(.2,.9,.3,1)!important}
+    .sheet::before{content:'';position:absolute;top:9px;left:50%;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:#ddd6ea}
+    #auth{animation:popIn .18s ease-out}
+    .menu[style*="display: block"]{display:grid!important;grid-template-columns:repeat(3,1fr);gap:8px}
+    .menu div{flex-direction:column;justify-content:center;gap:6px;height:auto;min-height:78px;padding:10px 4px;background:var(--soft);border-radius:16px;font-size:11px;text-align:center;white-space:normal;line-height:1.2}
+    .menu div[data-i]::before{font-size:24px;width:auto}
+    .menu div.mclose{grid-column:1/-1;min-height:48px;flex-direction:row;background:transparent;font-size:14px}
+    #emenu div{font-size:13px}
+    #logbox{height:60vh!important}
+    #rules{max-height:90vh!important} #rules .srow{margin:12px -18px 0}
+    #shopimg{width:140px;height:140px}
+    #tbox{max-width:calc(100% - 16px);font-size:14px}
+  }
+  @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  @media (max-height:520px) and (min-width:641px){ #dock{bottom:6px;padding:6px} .pbtn{height:38px} #chatin{height:38px} #saybtn{width:30px;height:30px} }
 </style>
 </head>
 <body>
 <div id="screen">
   <canvas id="game"></canvas>
   <canvas id="ui"></canvas>
-  <div id="status" class="hb"><b id="stitle">LLAMA LOUNGE</b><br><span id="dot"></span><span id="stxt">CONNECTING</span><div id="tokrow"><span class="coin"></span><span id="tokn">0</span> TOKENS</div></div>
-  <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button class="pbtn" id="zout" title="Zoom out">−</button><button class="pbtn" id="zin" title="Zoom in">+</button><button class="pbtn" id="musicbtn">♪ ON</button><button class="pbtn y" id="menubtn">MENU</button></div>
+  <div id="status" class="hb"><div class="st1"><b id="stitle">LLAMA LOUNGE</b><span class="st2"><span id="dot"></span><span id="stxt">CONNECTING</span></span></div><div id="tokrow" title="Your tokens"><span class="coin"></span><span id="tokn">0</span><span class="tkl">TOKENS</span></div></div>
+  <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button class="pbtn ic" id="zout" title="Zoom out" aria-label="Zoom out">−</button><button class="pbtn ic" id="zin" title="Zoom in" aria-label="Zoom in">+</button><button class="pbtn ic" id="musicbtn" title="Music" aria-label="Music">♪</button><button class="pbtn y" id="menubtn" aria-label="Menu"><span class="hamb"><i></i><i></i><i></i></span><span class="mtx">MENU</span></button></div>
   <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
   <div id="keys">ARROWS/WASD WALK · SPACE ACTION<br>ENTER TALK · M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
-  <div id="menu" class="gb menu"><div data-a="emote">EMOTE</div><div data-a="spit">SPIT</div><div data-a="scores">HIGH SCORES</div><div data-a="sit">SIT/STAND</div><div data-a="drop">DROP DRINK</div><div data-a="log">CHAT LOG</div><div data-a="tips" id="mtips">TIPS: ON</div><div data-a="rules">RULES</div><div data-a="room">CHANGE ROOM</div><div data-a="dash" id="mdash" style="display:none">DASHBOARD</div><div data-a="logout">LOG OUT</div><div data-a="llama">CHANGE LLAMA</div><div data-a="close">EXIT</div></div>
-  <div id="emenu" class="gb menu"><div data-e="heart">♥ HEART</div><div data-e="bang">! WOW</div><div data-e="huh">? HUH</div><div data-e="note">♪ SING</div><div data-e="lol">^^ LOL</div><div data-e="zzz">Z SLEEP</div><div data-e="wave">✋ WAVE</div><div data-e="flex">💪 FLEX</div><div data-e="palm">-_- FACEPALM</div></div>
+  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">CHANGE ROOM</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="llama" data-i="🦙">CHANGE LLAMA</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
+  <div id="emenu" class="gb menu sheet"><div data-e="heart">♥ HEART</div><div data-e="bang">! WOW</div><div data-e="huh">? HUH</div><div data-e="note">♪ SING</div><div data-e="lol">^^ LOL</div><div data-e="zzz">Z SLEEP</div><div data-e="wave">✋ WAVE</div><div data-e="flex">💪 FLEX</div><div data-e="palm">-_- FACEPALM</div></div>
   <div id="pmenu" class="gb"><div id="pm_name" class="pmn"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_close">✕</button></div></div>
-  <div id="tmenu" class="gb"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
-  <div id="lboard" class="gb"><div class="lbt">🏆 HIGH SCORES</div><div class="lbcols"><div><div class="lbh">HAY CATCH</div><div id="lb_hay"></div></div><div><div class="lbh">LLAMA DASH</div><div id="lb_dash"></div></div></div><div class="srow"><button class="gbbtn" id="lbclose">CLOSE</button></div></div>
-  <div id="shop" class="gb"><img id="shopimg" alt=""><div id="shopname"></div><div id="shopprice"></div><div id="shopsub"></div><div class="srow"><a id="shoplink" class="gbbtn" href="#" target="_blank" rel="noopener noreferrer">VIEW PRODUCT ▶</a><button class="gbbtn" id="shopclose">CLOSE</button></div></div>
-  <div id="logbox" class="gb"><span class="x" id="logx">✕</span><div id="loglines"></div></div>
+  <div id="tmenu" class="gb sheet"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
+  <div id="lboard" class="gb sheet"><div class="lbt">🏆 HIGH SCORES</div><div class="lbcols"><div><div class="lbh">HAY CATCH</div><div id="lb_hay"></div></div><div><div class="lbh">LLAMA DASH</div><div id="lb_dash"></div></div></div><div class="srow"><button class="gbbtn" id="lbclose">CLOSE</button></div></div>
+  <div id="shop" class="gb sheet"><img id="shopimg" alt=""><div id="shopname"></div><div id="shopprice"></div><div id="shopsub"></div><div class="srow"><a id="shoplink" class="gbbtn" href="#" target="_blank" rel="noopener noreferrer">VIEW PRODUCT ▶</a><button class="gbbtn" id="shopclose">CLOSE</button></div></div>
+  <div id="logbox" class="gb sheet"><span class="x" id="logx">✕</span><div id="loglines"></div></div>
   <div id="tbox" class="gb"><span id="ttext"></span><span id="tarrow">▼</span></div>
+  <div id="dock">
+  <div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button></div>
   <div id="bottom">
-    <form id="chatrow" autocomplete="off"><input id="chatin" maxlength="120" placeholder="Say something..."><button class="pbtn y" type="submit">SAY</button></form>
+    <form id="chatrow" autocomplete="off"><input id="chatin" maxlength="120" placeholder="Say something..." enterkeyhint="send"><button class="pbtn y" id="saybtn" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10 15 12 3.4 14z" fill="currentColor"/></svg></button></form>
     <button class="pbtn" id="abtn" title="Action (Space)"><b id="alabel">SIT</b></button>
   </div>
+  </div>
+  <div id="scrim"></div>
   <div id="auth" class="gb">
     <div class="rt">🦙 <b>LLAMA LOUNGE</b></div>
     <div id="au_sub">LOG IN OR MAKE A NEW LLAMA ACCOUNT</div>
@@ -236,27 +397,26 @@
     <div class="aunote">Names: 3 to 12 letters or numbers. Passwords: 8+ characters, stored encrypted. Don't reuse a password from another site.</div>
   </div>
   <div id="kicked"></div>
-  <div id="roompick" class="gb"><div class="rpt" id="rp_title">WHERE TO?</div>
+  <div id="roompick" class="gb sheet"><div class="rpt" id="rp_title">WHERE TO?</div>
     <button class="rpb" data-r="lounge"><span class="rpi">🍸</span><span class="rpx"><b>LLAMA LOUNGE</b><small>BAR · ARCADE · JUKEBOX · DANCE FLOOR · TABLE GAMES</small><i id="rp_n_lounge"></i></span></button>
     <button class="rpb" data-r="casino"><span class="rpi">🎰</span><span class="rpx"><b>LLAMA CASINO</b><small>SLOTS · ROULETTE · BLACKJACK TABLES</small><i id="rp_n_casino"></i></span></button>
     <button class="rpb" data-r="barn"><span class="rpi">🌾</span><span class="rpx"><b>LLAMA ACRES</b><small>BARN · CAMPFIRE · CARROT PATCH (EARN TOKENS)</small><i id="rp_n_barn"></i></span></button>
     <div class="srow"><button class="gbbtn" id="rp_llama">CHANGE LLAMA</button><button class="gbbtn" id="rp_close">CLOSE</button></div></div>
-  <div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button></div>
-  <div id="slotbox" class="gb"><div class="slt" id="sl_title">🎰 LLAMA SLOTS</div><canvas id="slotcv" width="130" height="70"></canvas><div id="sl_msg">1 TOKEN A SPIN. GOOD LUCK!</div>
+  <div id="slotbox" class="gb sheet"><div class="slt" id="sl_title">🎰 LLAMA SLOTS</div><canvas id="slotcv" width="130" height="70"></canvas><div id="sl_msg">1 TOKEN A SPIN. GOOD LUCK!</div>
     <div class="slbet" id="sl_bet"><span>BET</span><button class="gbbtn" data-bet="1">1</button><button class="gbbtn" data-bet="2">2</button><button class="gbbtn" data-bet="5">5</button><button class="gbbtn" data-bet="10">10</button></div>
     <div class="srow"><button class="gbbtn y" id="sl_spin">SPIN ▶</button><button class="gbbtn" id="sl_close">CLOSE</button></div>
     <canvas id="slpaycv" width="130" height="40"></canvas><div id="sl_tok"></div></div>
-  <div id="dashbox" class="gb"><div class="slt" id="ds_title">STAFF DASHBOARD</div><div id="ds_body"></div><div class="srow"><button class="gbbtn" id="ds_refresh">REFRESH</button><button class="gbbtn" id="ds_close">CLOSE</button></div></div>
-  <div id="tblbox" class="gb"><div class="slt" id="tb_title"></div><canvas id="tbcv" width="150" height="66"></canvas><div id="tb_msg"></div>
+  <div id="dashbox" class="gb sheet"><div class="slt" id="ds_title">STAFF DASHBOARD</div><div id="ds_body"></div><div class="srow"><button class="gbbtn" id="ds_refresh">REFRESH</button><button class="gbbtn" id="ds_close">CLOSE</button></div></div>
+  <div id="tblbox" class="gb sheet"><div class="slt" id="tb_title"></div><canvas id="tbcv" width="150" height="66"></canvas><div id="tb_msg"></div>
     <div class="tbopts" id="tb_opts"></div>
     <div class="slbet" id="tb_bet"><span>BET</span><button class="gbbtn" data-bet="1">1</button><button class="gbbtn" data-bet="2">2</button><button class="gbbtn" data-bet="5">5</button><button class="gbbtn" data-bet="10">10</button></div>
     <div class="srow" id="tb_acts"></div><div id="tb_tok"></div></div>
-  <div id="fwbox" class="gb"><div class="fwt" id="fw_t"></div><div class="fwn" id="fw_n"></div>
+  <div id="fwbox" class="gb sheet"><div class="fwt" id="fw_t"></div><div class="fwn" id="fw_n"></div>
     <div class="srow" id="fw_items"></div>
     <div id="fw_msg"></div><div class="srow"><button class="gbbtn" id="fw_close">CLOSE</button></div></div>
-  <div id="swapbox" class="gb"><div id="sw_text">SWAP TO LLAMA ACRES?</div><div class="srow"><button class="gbbtn y" id="sw_go">GO ▶</button><button class="gbbtn" id="sw_stay">STAY</button></div></div>
+  <div id="swapbox" class="gb sheet"><div id="sw_text">SWAP TO LLAMA ACRES?</div><div class="srow"><button class="gbbtn y" id="sw_go">GO ▶</button><button class="gbbtn" id="sw_stay">STAY</button></div></div>
   <div id="loading" class="gb">LOADING YOUR LLAMA...</div>
-  <div id="rules" class="gb">
+  <div id="rules" class="gb sheet">
     <div class="rbody">
     <div class="rt">WELCOME TO THE <b>LLAMA LOUNGE</b>!</div>
     <div class="rsec">HOW TO PLAY</div>
@@ -282,7 +442,7 @@
     </div>
     <div class="srow"><button class="gbbtn" id="ragree">I AGREE</button></div>
   </div>
-  <div id="pick" class="gb">
+  <div id="pick" class="gb sheet">
     <div class="tt">Which <b>LLAMA</b> will<br>you choose?</div>
     <div id="cards"></div>
     <div id="who"></div>
@@ -295,7 +455,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-18e";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19a";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1722,7 +1882,7 @@ function scheduleMusic(){
   }
 }
 const musicbtn=document.getElementById('musicbtn');
-function setMusic(on){ musicOn=on; store.music=on; saveStore(); musicbtn.textContent = on?'♪ ON':'♪ OFF'; if(on){ ensureAudio(); restartSong(); } }
+function setMusic(on){ musicOn=on; store.music=on; saveStore(); musicbtn.classList.toggle('off', !on); musicbtn.title = on ? 'Music on' : 'Music off'; if(on){ ensureAudio(); restartSong(); } }
 musicbtn.addEventListener('click', ()=>setMusic(!musicOn));
 setMusic(musicOn);
 
@@ -2058,7 +2218,7 @@ async function initRoom(){
 const tbox=document.getElementById('tbox'), ttext=document.getElementById('ttext'), tarrow=document.getElementById('tarrow');
 const loglines=document.getElementById('loglines');
 const tq=[]; let tcur=null;
-const LINE=26;
+const LINE=38;
 function paginate(s){
   const lines=[]; let cur='';
   for (let w of s.split(/\s+/).filter(Boolean)){
@@ -2194,19 +2354,20 @@ function flash(){ flashEl.style.transition='none'; flashEl.style.opacity='1'; re
 
 // ======================= INPUT =======================
 const cv=document.getElementById('game'), ui=document.getElementById('ui');
-let S=2, DPR=1, LW=240, LH=216, UIB=28, camX=0, camY=60, camInit=false, frameDt=0.016, ZLEVELS=[2], zoomStep=(+store.zoom||0);
+let S=2, DPR=1, LW=240, LH=216, UIB=28, UIT=0, camX=0, camY=60, camInit=false, frameDt=0.016, ZLEVELS=[2], zoomStep=(+store.zoom||0);
 function resize(){
   DPR=Math.min(2, devicePixelRatio||1);
   const W=innerWidth, H=innerHeight;
   { const fit = Math.min(W/545, (H-60)/385);           // scale where the whole room fits
     let base;
-    if (W < 700) base = Math.max(1.5, Math.min(2, Math.round(fit*2)/2));   // phones: zoom out a bit, keep llamas readable
+    if (W < 700 && H > W*1.4) base = Math.max(1.5, Math.min(2, Math.round(((H-210)/385)*4)/4));   // tall phones: use the height, the camera pans sideways
+    else if (W < 700) base = Math.max(1.5, Math.min(2, Math.round(fit*2)/2));   // phones: zoom out a bit, keep llamas readable
     else base = Math.max(2, Math.min(5, Math.floor(fit)));
-    ZLEVELS = W < 700 ? [1, 1.5, 2, 2.5, 3, 4] : [1, 2, 3, 4, 5, 6];
+    ZLEVELS = W < 700 ? [1, 1.5, 1.75, 2, 2.5, 3, 4] : [1, 2, 3, 4, 5, 6];
     let bi = ZLEVELS.indexOf(base); if (bi<0) bi = ZLEVELS.findIndex(v=>v>=base);
     const zi = Math.max(0, Math.min(ZLEVELS.length-1, bi + zoomStep)); zoomStep = zi - bi; S = ZLEVELS[zi];
     const dpr = devicePixelRatio||1; S = Math.max(1, Math.round(S*dpr)) / dpr; }   // whole device pixels per game pixel = crisp edges
-  LW=Math.ceil(W/S); LH=Math.ceil(H/S); UIB=Math.ceil(56/S);
+  LW=Math.ceil(W/S); LH=Math.ceil(H/S); hudSizes();
   cv.width=LW; cv.height=LH; cv.style.width=(LW*S)+'px'; cv.style.height=(LH*S)+'px';
   ui.width=Math.round(LW*S*DPR); ui.height=Math.round(LH*S*DPR); ui.style.width=(LW*S)+'px'; ui.style.height=(LH*S)+'px';
   // UI scale: full size normally, a step smaller on short (sideways) or very narrow phones
@@ -2214,6 +2375,14 @@ function resize(){
 }
 function updateChatLimit(){ const name=(me.n||'YOU').length; const max=Math.floor((LW-14-12)/4)-name-2; chatin.maxLength=Math.max(10, Math.min(120, max)); if (chatin.value.length>chatin.maxLength) chatin.value=chatin.value.slice(0,chatin.maxLength); }
 addEventListener('resize', ()=>{ resize(); updateChatLimit(); });
+// the dock and top bar are HTML; measure them so the camera frames the room in the space between
+function hudSizes(){ const d=document.getElementById('dock'), st=document.getElementById('status');
+  const dh = d && d.classList.contains('on') ? d.offsetHeight : 0, th = st ? st.getBoundingClientRect().bottom : 0;
+  document.documentElement.style.setProperty('--dockh', dh+'px');
+  UIB = Math.ceil((dh+6)/S); UIT = innerWidth < 700 ? Math.ceil(th/S) : 0; }
+if (window.ResizeObserver){ const ro=new ResizeObserver(()=>{ hudSizes(); }); ro.observe(document.getElementById('dock')); ro.observe(document.getElementById('status')); }
+// tapping outside a pop-up closes it
+document.getElementById('scrim').addEventListener('pointerdown', e=>{ e.preventDefault(); if (joined && !(typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') && pick.style.display!=='flex') closeAll(); });
 // ---- zoom: mouse wheel, pinch, and +/- buttons ----
 function setZoom(delta){ const before=zoomStep; zoomStep+=delta; resize(); if (zoomStep===before) return; store.zoom=zoomStep; saveStore(); camInit=false; updateChatLimit(); }
 document.getElementById('zin').addEventListener('click', ()=>setZoom(1));
@@ -2573,7 +2742,7 @@ const overlayItems = [];
 function render(t){
   g = ctx; ctx.imageSmoothingEnabled=false;
   const [wx,wy] = proj(me.x,me.y);
-  const viewH = LH-UIB, roomL=-NY*20-24, roomR=N*20+24, roomT=-114, roomB=(N+NY)*10+16;
+  const viewH = LH-UIB-UIT, roomL=-NY*20-24, roomR=N*20+24, roomT=-114, roomB=(N+NY)*10+16;
   // dead-zone camera: holds still while you walk around the middle, glides when you near an edge
   const clampX = v => (LW >= roomR-roomL) ? 0 : Math.max(roomL+LW/2, Math.min(roomR-LW/2, v));
   const clampY = v => (viewH >= roomB-roomT) ? (roomT+roomB)/2 : Math.max(roomT+viewH/2, Math.min(roomB-viewH/2, v));
@@ -2586,7 +2755,7 @@ function render(t){
   tx=clampX(tx); ty=clampY(ty);
   const k=Math.min(1, frameDt*3.5); camX += (tx-camX)*k; camY += (ty-camY)*k;
   if (Math.abs(tx-camX)<0.3) camX=tx; if (Math.abs(ty-camY)<0.3) camY=ty;
-  OX = Math.round(LW/2 - camX); OY = Math.round(viewH/2 - camY);
+  OX = Math.round(LW/2 - camX); OY = Math.round(UIT + viewH/2 - camY);
   if (curRoom==='barn'){ const sk=barnSky(); const top=OY-BGY; ctx.fillStyle=sk[2]; ctx.fillRect(0,0,LW,LH); ctx.fillStyle=sk[1]; ctx.fillRect(0,0,LW,top+140); ctx.fillStyle=sk[0]; ctx.fillRect(0,0,LW,top+70); }
   else { ctx.fillStyle='#100c1c'; ctx.fillRect(0,0,LW,LH); }
   ctx.drawImage(bg, OX-BGX, OY-BGY);
@@ -2925,7 +3094,7 @@ function showSwap(r){ if (!joined || r===curRoom || !ROOMS.includes(r)) return; 
 document.getElementById('sw_go').addEventListener('click', ()=>{ swapEl.style.display='none'; const r=swapTo; swapTo=null; if (!r) return; if (arcade.on) exitArcade(); localMsg(`Heading to ${ROOM_NAMES[r]}...`); goThroughDoor(r); });
 function goThroughDoor(r){ const [dx,dy]=DOORWAY[curRoom]; if (me.gx===dx && me.gy===dy && !me.moving && !me.bar){ switchRoom(r); return; } me.travelTo=r; if (!walkTo(dx,dy,'travel')){ me.travelTo=null; switchRoom(r); } }
 document.getElementById('sw_stay').addEventListener('click', ()=>{ swapEl.style.display='none'; swapTo=null; });
-function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n=roomCount(r); b.textContent = ({lounge:'🍸 LOUNGE', barn:'🌾 ACRES', casino:'🎰 CASINO'})[r] + (n ? ` (${n})` : ''); } }
+function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; document.getElementById('dock').classList.toggle('on', !!joined); document.body.classList.toggle('joined', !!joined); for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n=roomCount(r); b.innerHTML = ({lounge:'🍸 LOUNGE', barn:'🌾 ACRES', casino:'🎰 CASINO'})[r] + (n ? ` <span class="cnt">${n}</span>` : ''); } }
 for (const b of roombarEl.querySelectorAll('[data-go]')) b.addEventListener('click', ()=>{ ensureAudio(); const r=b.dataset.go;
   if (!joined) return; if (r===curRoom){ localMsg(`You're already in ${ROOM_NAMES[r]}.`); return; }
   showSwap(r); });
