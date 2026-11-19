@@ -386,7 +386,7 @@
   #ar_knob{position:absolute;left:32px;top:32px;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.85);box-shadow:0 4px 12px rgba(0,0,0,.4)}
   #ar_fire{position:absolute;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(28px + var(--sab));width:104px;height:104px;border-radius:50%;border:0;background:radial-gradient(circle at 35% 30%,#ff9cb8,#ff5c8a 55%,#d8306a);color:#fff;font-family:var(--ui);font-weight:800;font-size:18px;letter-spacing:.06em;box-shadow:0 10px 26px rgba(255,92,138,.5),inset 0 -4px 0 rgba(0,0,0,.15);display:none}
   #ar_fire.on{transform:scale(.93);filter:brightness(1.1)}
-  @media (pointer:coarse){ #ar_fire{display:block} #arena::after{content:'DRAG HERE TO RUN';position:absolute;left:22px;bottom:calc(64px + var(--sab));color:rgba(255,255,255,.28);font-weight:800;font-size:12px;letter-spacing:.08em;pointer-events:none} }
+  @media (pointer:coarse){ #ar_fire{display:block} #arena::after{content:'DRAG HERE TO RUN · TAP LLAMAS TO SPIT';position:absolute;left:22px;bottom:calc(64px + var(--sab));color:rgba(255,255,255,.28);font-weight:800;font-size:12px;letter-spacing:.08em;pointer-events:none} }
   body.arena-on #status,body.arena-on #topbtns,body.arena-on #dock,body.arena-on #tbox,body.arena-on #tip{visibility:hidden}
   #arbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:min(460px,calc(100% - 24px));max-height:90vh;z-index:9!important;animation:popIn .18s ease-out}
   .arh{text-align:center;margin-bottom:12px} .art{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:.02em} .ars{font-size:13px;color:var(--sub);margin-top:4px;line-height:1.4}
@@ -522,7 +522,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19c";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19d";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -3786,7 +3786,7 @@ NET.handlers.staff = m => { me.st = ['owner','mod'].includes(m.st) ? m.st : ''; 
 // Rival llamas, the golden llama and power-ups all come from the round's seed, so every player sees the same ones.
 // A hit on another player only counts when THEIR game confirms it; the server pays tokens and caps them.
 const AR = { on:false, phase:'lobby', match:null, off:0, live:null, board:null, me:null, color:'blue', humans:1,
-  W:288, H:288, sc:2, t:0, last:0, sendT:0, fires:[], events:[], remote:new Map(), bots:[], gold:[], ups:[], spits:[], parts:[], texts:[],
+  W:288, H:288, sc:2, t:0, marks:[], last:0, sendT:0, fires:[], events:[], remote:new Map(), bots:[], gold:[], ups:[], spits:[], parts:[], texts:[],
   p:null, shake:0, banner:null, beeps:{}, keys:new Set(), stick:{on:false,id:null,x0:0,y0:0,dx:0,dy:0}, fireHeld:false, mouse:null, result:null, ending:false };
 const ARW = AR.W, ARH = AR.H, AR_MINX = 22, AR_MAXX = ARW-22, AR_MINY = 70, AR_MAXY = ARH-14;
 const SPIT_COLS = { blue:['#5ab8f0','#c8f0ff'], green:['#48c058','#c8f8b8'], pink:['#f060a8','#ffd0ec'], gold:['#e8a818','#fff0a0'], rainbow:null, fire:null };
@@ -3888,8 +3888,9 @@ function sfxTone(f, dur, type, vol, delay){ try { if (!sfxReady()) return; const
 function sfxChime(notes){ notes.forEach((f,i)=>sfxTone(f, 0.16, 'square', 0.22, i*0.07)); }
 
 // ---- spitting ----
-function myFire(ax, ay){ const P=AR.p; if (AR.phase!=='play' || P.stun>0 || P.cd>0) return;
-  let a; if (ax!=null){ a=Math.atan2(ay-(P.y-14), ax-P.x); }
+function myFire(ax, ay, tgt){ const P=AR.p; if (AR.phase!=='play' || P.stun>0 || P.cd>0) return;
+  let a; if (tgt){ const d=Math.sqrt((tgt.x-P.x)*(tgt.x-P.x)+(tgt.y-P.y)*(tgt.y-P.y)), lead=d/230; a=Math.atan2((tgt.y+(tgt.vy||0)*lead)-P.y, (tgt.x+(tgt.vx||0)*lead)-P.x); AR.marks.push({q:tgt, life:0.5}); }
+  else if (ax!=null){ a=Math.atan2(ay-(P.y-14), ax-P.x); }
   else { // auto-aim: nearest rival in reach, else straight ahead
     let best=null, bd=190; const cands=[]; for (const s of AR.bots) if (s.alive) cands.push(s.plan); for (const G of AR.gold) if (G.alive) cands.push(G); for (const o of AR.remote.values()) if (!o.gone) cands.push(o);
     for (const q of cands){ const d=Math.hypot(q.x-P.x,q.y-P.y); if (d<bd){ bd=d; best=q; } }
@@ -4004,6 +4005,8 @@ function arDraw(t){
     c.fillStyle='#181020'; c.fillRect(X-3,Y-21,6,5); c.fillStyle=a; c.fillRect(X-2,Y-20,4,3); c.fillStyle=b; c.fillRect(X-1,Y-20,2,1);
     if (s.col==='fire' || s.col==='rainbow'){ c.fillStyle=a; c.fillRect(Math.round(X-s.vx*0.025)-1, Math.round(Y-18-s.vy*0.025), 2, 2); c.fillRect(Math.round(X-s.vx*0.05), Math.round(Y-18-s.vy*0.05), 1, 1); } }
   for (const q of AR.parts){ c.fillStyle=q.col; c.fillRect(Math.round(q.x),Math.round(q.y),2,2); }
+  for (let i=AR.marks.length-1;i>=0;i--){ const M=AR.marks[i]; M.life-=1/60; if (M.life<=0){ AR.marks.splice(i,1); continue; } const r=8+Math.round((0.5-M.life)*10), x=Math.round(M.q.x), y=Math.round(M.q.y-20);
+    c.fillStyle='#ff3050'; c.fillRect(x-r,y-1,4,2); c.fillRect(x+r-3,y-1,4,2); c.fillRect(x-1,y-r,2,4); c.fillRect(x-1,y+r-3,2,4); }
   for (const q of AR.texts){ if (q.life<0.25 && Math.floor(AR.t*20)%2) continue; arText(c, q.txt, q.x, Math.round(q.y), q.col, 1, true); }
   // countdown and banners
   const tt=mtime();
@@ -4030,12 +4033,14 @@ addEventListener('keydown', e=>{ if (!AR.on) return; if (document.activeElement 
   if (e.code==='Escape'){ e.preventDefault(); arenaClose(); return; } }, true);
 addEventListener('keyup', e=>{ if (!AR.on) return; const k=AR_KEYS[e.code]; if (k) AR.keys.delete(k); if (e.code==='Space'||e.code==='KeyJ'||e.code==='KeyQ') AR.fireHeld=false; }, true);
 const arToWorld = e => { const r=arCv.getBoundingClientRect(); return [(e.clientX-r.left)/AR.sc, (e.clientY-r.top)/AR.sc]; };
-arCv.addEventListener('pointerdown', e=>{ if (e.pointerType==='touch') return; e.preventDefault(); ensureAudio(); if (AR.phase!=='play') return; AR.mouse=arToWorld(e); AR.fireHeld=true; myFire(AR.mouse[0], AR.mouse[1]+14); });
-arCv.addEventListener('pointermove', e=>{ if (e.pointerType==='touch' || !AR.fireHeld) return; const w=arToWorld(e); AR.mouse=[w[0], w[1]+14]; });
-addEventListener('pointerup', e=>{ if (e.pointerType!=='touch'){ AR.fireHeld=false; AR.mouse=null; } });
+// click or tap a llama to spit at it (a miss spits toward where you clicked)
+function arTapTarget(wx, wy){ const cands=[]; for (const s2 of AR.bots) if (s2.alive) cands.push(s2.plan); for (const G of AR.gold) if (G.alive) cands.push(G); for (const o of AR.remote.values()) if (!o.gone) cands.push(o);
+  let best=null, bd=1e9; for (const q of cands){ if (Math.abs(wx-q.x)<15 && wy>q.y-50 && wy<q.y+8){ const d=Math.abs(wx-q.x)+Math.abs(wy-(q.y-20))*0.5; if (d<bd){ bd=d; best=q; } } } return best; }
+arCv.addEventListener('pointerdown', e=>{ e.preventDefault(); e.stopPropagation(); ensureAudio(); if (AR.phase!=='play') return; const [wx,wy]=arToWorld(e); const q=arTapTarget(wx,wy);
+  if (q) myFire(null, null, q); else myFire(wx, wy+14); });
 // touch: drag anywhere on the left half to move (a stick appears under your thumb), hold SPIT to fire
 const stickEl=document.getElementById('ar_stick'), knobEl=document.getElementById('ar_knob'), fireEl=document.getElementById('ar_fire');
-arEl.addEventListener('pointerdown', e=>{ if (!AR.on || e.pointerType!=='touch' || e.target===fireEl || fireEl.contains(e.target) || e.target.closest('#arbox,#ar_exit')) return; if (e.clientX > innerWidth*0.6 && e.target!==stickEl) return;
+arEl.addEventListener('pointerdown', e=>{ if (!AR.on || e.pointerType!=='touch' || e.target===arCv || e.target===fireEl || fireEl.contains(e.target) || e.target.closest('#arbox,#ar_exit')) return;
   AR.stick={on:true,id:e.pointerId,x0:e.clientX,y0:e.clientY,dx:0,dy:0}; stickEl.style.display='block'; stickEl.style.left=(e.clientX-56)+'px'; stickEl.style.top=(e.clientY-56)+'px'; knobEl.style.transform='translate(0,0)'; e.preventDefault(); });
 arEl.addEventListener('pointermove', e=>{ const S2=AR.stick; if (!S2.on || e.pointerId!==S2.id) return; let dx=e.clientX-S2.x0, dy=e.clientY-S2.y0; const L=Math.hypot(dx,dy), R=44; if (L>R){ dx*=R/L; dy*=R/L; } S2.dx=dx/R; S2.dy=dy/R; knobEl.style.transform=`translate(${dx}px,${dy}px)`; });
 const stickEnd = e=>{ const S2=AR.stick; if (S2.on && e.pointerId===S2.id){ AR.stick={on:false,id:null,dx:0,dy:0}; stickEl.style.display='none'; } };
@@ -4069,7 +4074,7 @@ function arLobby(){ const M=AR.me; if (!M) return; AR.phase='lobby';
     <button class="gbbtn y arplay" id="ar_go">▶ PLAY</button>
     <div class="arsec">SPIT COLOR</div>${colorPicker(M)}
     <div class="arsec">THIS WEEK'S TOP SPITTERS</div>${boardHtml(AR.board)}
-    <div class="arhow"><b>HOW TO PLAY</b> ${matchMedia('(pointer:coarse)').matches ? 'Drag on the left side to run. Hold SPIT to fire (it aims for you).' : 'WASD or arrows to run. Click to spit where you aim, or hold SPACE to auto-aim.'} Rivals flash <b style="color:#e02848">!</b> before they spit. 🌶 rapid fire, ✳ triple spit, 🛡 shield. The golden llama is worth 5. Last 10 seconds: double points.</div>
+    <div class="arhow"><b>HOW TO PLAY</b> ${matchMedia('(pointer:coarse)').matches ? 'Tap a llama to spit at it. Drag below the arena to run. The SPIT button aims for you.' : 'Click a llama to spit at it. WASD or arrows to run. SPACE spits at the nearest llama.'} Rivals flash <b style="color:#e02848">!</b> before they spit. 🌶 rapid fire, ✳ triple spit, 🛡 shield. The golden llama is worth 5. Last 10 seconds: double points.</div>
     <div class="srow"><button class="gbbtn" id="ar_leave">LEAVE</button></div>`;
   arBox.style.display='block'; arWire(); }
 function arWire(){ const go=document.getElementById('ar_go'); if (go) go.addEventListener('click', arPlay);
