@@ -348,7 +348,7 @@
     #tip{top:calc(66px + var(--sat));left:10px;right:10px;transform:none;width:auto;max-width:none;font-size:13px}
     #dock{flex-wrap:wrap;width:calc(100% - 16px);bottom:calc(8px + var(--sab));padding:8px;gap:8px;border-radius:22px}
     #roombar{width:100%;box-sizing:border-box}
-    #roombar .pbtn{flex:1 1 0;min-width:0;padding:4px 2px 3px;height:46px;font-size:10px;letter-spacing:.02em;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;overflow:visible}
+    #roombar .pbtn{min-width:62px;padding:4px 2px 3px;height:46px;font-size:10px;letter-spacing:.02em;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;overflow:visible}
     #roombar .ri{font-size:17px;line-height:1} #roombar .rl{line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
     #roombar .cnt{position:absolute;top:2px;right:3px;margin:0;min-width:14px;padding:0 4px;font-size:9px;line-height:14px}
     #abtn{min-width:84px}
@@ -460,6 +460,24 @@
   .job .ji{font-size:24px;width:30px;text-align:center;flex:none} .job .jt{flex:1;min-width:0} .job b{display:block;font-size:14px} .job small{display:block;font-size:12px;color:var(--sub);line-height:1.35;margin-top:2px}
   .job .jp{font-size:12px;font-weight:800;color:#a06808;white-space:nowrap} .job.risk .jp{color:#b0203a}
   .job .gbbtn{min-height:36px;padding:8px 12px;font-size:12px;flex:none}
+  /* ✕ in the top-right corner of every pop-up; it stays put while a long pop-up scrolls */
+  .sheetx{position:sticky;top:0;float:right;z-index:3;width:34px;height:34px;margin:-8px -6px 0 8px;border:0;border-radius:50%;background:var(--soft);color:var(--ink);font-size:16px;font-weight:800;line-height:34px;text-align:center;cursor:pointer;font-family:var(--ui);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .sheetx:hover{background:#e6e0f2} .sheetx:active{transform:scale(.92)}
+  #rules>.sheetx,#pick>.sheetx,#roompick>.sheetx{align-self:flex-end;margin:-8px -6px -34px 0;flex:none}
+  .menu>.sheetx{display:none}
+  @media (max-width:640px){ .menu>.sheetx{display:block;grid-column:1/-1;justify-self:end;float:none;margin:-12px -4px -4px 0;position:static} .sheetx{width:38px;height:38px;line-height:38px;font-size:17px} }
+  body:not(.joined) #rules>.sheetx,body:not(.joined) #pick>.sheetx,body:not(.joined) #roompick>.sheetx{display:none}
+  #logbox .x{display:none}
+  /* rules: let the text take its full height so the pop-up scrolls and I AGREE stays at the bottom */
+  #rules .rbody{flex:none!important}
+  /* room bar: scrolls sideways when there are more rooms than fit, with a fade on the side that has more */
+  #roombar{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;overscroll-behavior-x:contain;max-width:min(560px,52vw)}
+  #roombar::-webkit-scrollbar{display:none}
+  #roombar .pbtn{flex:none;scroll-snap-align:start}
+  #roombar.fl{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 28px);mask-image:linear-gradient(90deg,transparent 0,#000 28px)}
+  #roombar.fr{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent 100%);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent 100%)}
+  #roombar.fl.fr{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%)}
+  @media (max-width:640px){ #roombar{max-width:none} #roombar .pbtn{flex:1 0 62px} }
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
   @media (max-height:520px) and (min-width:641px){ #dock{bottom:6px;padding:6px} .pbtn{height:38px} #chatin{height:38px} #saybtn{width:30px;height:30px} }
 </style>
@@ -588,7 +606,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19t";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19v";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -2663,7 +2681,7 @@ document.getElementById('shopclose').addEventListener('click', ()=>closeAll());
 const menu=document.getElementById('menu'), emenu=document.getElementById('emenu'), logbox=document.getElementById('logbox'), pick=document.getElementById('pick');
 let curMenu=null, menuIdx=0;
 function uiOpen(){ return (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || (typeof tblEl!=='undefined' && tblEl.style.display==='block') || (typeof dashEl!=='undefined' && dashEl.style.display==='block') || (typeof sndEl!=='undefined' && sndEl.style.display==='block') || (typeof dkEl!=='undefined' && dkEl.style.display==='block') || (typeof jobsEl!=='undefined' && jobsEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
-function items(m){ return [...m.children]; }
+function items(m){ return [...m.children].filter(c=>!c.classList.contains('sheetx')); }
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
@@ -3513,7 +3531,7 @@ function setRoom(r){ if (me.fish) stopFish(true); if (typeof AR!=='undefined' &&
   me.bar=false; me.path=[]; me.moving=false; me.p='stand'; me.pending=null; me.after=null; me.prog=0;
   const [sx,sy]=entryFor(curRoom).at; me.gx=sx; me.gy=sy; me.x=sx+0.5; me.y=sy+0.5; me.d='fr';
   tgState[0]=tgState[1]=null; tableFx[0]=tableFx[1]=null; camInit=false;
-  document.getElementById('stitle').textContent = ROOM_NAMES[curRoom]; updateStatus(); updateRoombar();
+  document.getElementById('stitle').textContent = ROOM_NAMES[curRoom]; updateStatus(); updateRoombar(); setTimeout(roombarShowHere, 50);
 }
 // ---- bottom-left room selector: walk to the doorway, then confirm the swap ----
 const swapEl=document.getElementById('swapbox'), roombarEl=document.getElementById('roombar'); let swapTo=null;
@@ -3523,6 +3541,11 @@ document.getElementById('sw_go').addEventListener('click', ()=>{ swapEl.style.di
 function goThroughDoor(r){ const [dx,dy]=DOORWAY[curRoom]; if (me.gx===dx && me.gy===dy && !me.moving && !me.bar){ switchRoom(r); return; } me.travelTo=r; if (!walkTo(dx,dy,'travel')){ me.travelTo=null; switchRoom(r); } }
 document.getElementById('sw_stay').addEventListener('click', ()=>{ swapEl.style.display='none'; swapTo=null; });
 function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; document.getElementById('dock').classList.toggle('on', !!joined); document.body.classList.toggle('joined', !!joined); for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n=roomCount(r); const [ic,lb]=({lounge:['🍸','LOUNGE'], barn:['🌾','ACRES'], casino:['🎰','CASINO'], arena:['💦','ARENA'], lanes:['🎳','LANES']})[r]; b.innerHTML = `<span class="ri">${ic}</span><span class="rl">${lb}</span>` + (n ? `<span class="cnt">${n}</span>` : ''); } }
+// fades show which side has more rooms; a mouse wheel scrolls the bar sideways; your room's tab stays in view
+function roombarEdges(){ const el=roombarEl, max=el.scrollWidth-el.clientWidth; el.classList.toggle('fl', el.scrollLeft>2); el.classList.toggle('fr', max>2 && el.scrollLeft<max-2); }
+roombarEl.addEventListener('scroll', roombarEdges, {passive:true}); addEventListener('resize', roombarEdges);
+roombarEl.addEventListener('wheel', e=>{ if (Math.abs(e.deltaY)>Math.abs(e.deltaX) && roombarEl.scrollWidth>roombarEl.clientWidth){ e.preventDefault(); roombarEl.scrollLeft+=e.deltaY; } }, {passive:false});
+function roombarShowHere(){ const b=roombarEl.querySelector('.here'); if (b && roombarEl.scrollWidth>roombarEl.clientWidth){ const L=b.offsetLeft, R=L+b.offsetWidth; if (L<roombarEl.scrollLeft || R>roombarEl.scrollLeft+roombarEl.clientWidth) roombarEl.scrollTo({left:Math.max(0,L-24), behavior:'smooth'}); } roombarEdges(); }
 for (const b of roombarEl.querySelectorAll('[data-go]')) b.addEventListener('click', ()=>{ ensureAudio(); const r=b.dataset.go;
   if (!joined) return; if (r===curRoom){ localMsg(`You're already in ${ROOM_NAMES[r]}.`); return; }
   showSwap(r); });
@@ -4843,6 +4866,17 @@ function openJobs(){ closeAll(); const order=[curRoom, ...ROOMS.filter(r=>r!==cu
   jobsEl.style.display='block'; }
 document.getElementById('jobsbtn').addEventListener('click', ()=>{ ensureAudio(); openJobs(); });
 document.getElementById('jobs_close').addEventListener('click', ()=>{ jobsEl.style.display='none'; });
+
+// ======================= ✕ CLOSE BUTTON ON EVERY POP-UP =======================
+for (const el of document.querySelectorAll('.gb.sheet, #pmenu')){
+  const x=document.createElement('button'); x.className='sheetx'; x.type='button'; x.setAttribute('aria-label','Close'); x.textContent='✕';
+  x.addEventListener('pointerdown', e=>e.stopPropagation());
+  x.addEventListener('click', e=>{ e.stopPropagation(); ensureAudio();
+    if (el===arBox) arenaClose(); else if (el===bwBox) bowlClose();
+    else if (el===rulesEl){ if (joined) rulesEl.style.display='none'; }
+    else if (el===pick){ if (joined) pick.style.display='none'; }
+    else closeAll(); });
+  el.insertBefore(x, el.firstChild); }
 
 startGate();
 let last = performance.now();
