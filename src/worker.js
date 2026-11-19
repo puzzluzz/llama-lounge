@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-22k";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-22l";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -81,6 +81,7 @@ const ITEMS = {
   bandana: { s: "neck", p: 12 }, bowtie: { s: "neck", p: 15 }, scarf: { s: "neck", p: 18 }, lei: { s: "neck", p: 15 },
   tee_smile: { s: "shirt", p: 25 }, tee_cancelled: { s: "shirt", p: 25 }, tee_wild: { s: "shirt", p: 25 }, tee_cancel: { s: "shirt", p: 25 }, tee_woke: { s: "shirt", p: 25 },
   tee_lounge: { s: "shirt", p: 25 }, tee_acres: { s: "shirt", p: 25 }, tee_arena: { s: "shirt", p: 25 },
+  poncho: { s: "shirt", p: 35 }, poncho_orange: { s: "shirt", p: 35 },
 };
 // ---------- player rooms ----------
 // One room per player. Only the owner can change it. Public rooms are open to everyone; private ones let in the owner,
