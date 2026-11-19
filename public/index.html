@@ -654,7 +654,7 @@
   <div id="catbox" class="gb sheet"><div class="slt">🛍️ LLAMA STORE</div><div class="jsub">La Llama P.I.C. shirts. Tap one to see it, or VIEW to open it on the store website.</div><div id="cat_body"></div><div class="srow"><button class="gbbtn y" id="cat_clothes">👕 IN-GAME CLOTHES</button><button class="gbbtn y" id="cat_furn">🛋️ FURNITURE</button><button class="gbbtn" id="cat_close">DONE</button></div></div>
   <div id="wardbox" class="gb sheet"><div class="slt" id="wd_title">👕 WARDROBE</div>
     <div class="wdtop"><canvas id="wd_prev" width="28" height="46" title="Tap to turn around"></canvas><div class="wdinfo"><b id="wd_name"></b><small id="wd_sub"></small><div class="srow" id="wd_acts"></div></div></div>
-    <div class="autabs" id="wd_tabs"><button type="button" data-t="clothing">👕 CLOTHING</button><button type="button" data-t="storage">📦 STORAGE</button></div>
+    <div class="autabs" id="wd_tabs"><button type="button" data-t="clothing">👕 CLOTHING</button><button type="button" data-t="storage">📦 ITEMS</button></div>
     <div id="wd_msg"></div><div id="wd_body"></div></div>
   <div id="roomsbox" class="gb sheet"><div class="slt" id="pr_title">🏠 ROOMS</div><div id="pr_body"></div></div>
   <div id="dmbox" class="gb sheet"><div class="dmhead"><button class="dmback" id="dm_back" aria-label="Back">‹</button><div class="slt" id="dm_title">💬 MESSAGES</div></div>
@@ -754,7 +754,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-21e";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-21f";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1167,6 +1167,8 @@ const STORE_COUNTER=[[8,2],[9,2],[10,2]], STORE_TABLE=[], STORE_VEND=[5,0];
 // two long racks across the shop; every spot holds one item you can buy (same art as when you wear it)
 const RACK_A=['tee_smile','tee_cancelled','tee_wild','tee_cancel','tee_woke','bandana','bowtie','scarf','lei'], RACK_B=['cap','cowboy','beanie','party','tophat','flowers','tee_lounge','tee_acres','tee_arena'];
 // glass accessories case next to the register: two tiles, each item sits on the velvet at its spot
+// furniture showroom: one piece from each category on display (tap one to shop for furniture)
+const STORE_SHOW=[['chair',1,0],['armchair',2,0],['bed',3,0],['plant',4,0],['bookshelf',11,0],['tv',12,0],['table',12,1],['lamp',12,2]];
 const STORE_CASE=[[6,2],[7,2]], CASE_ITEMS=[['shades',6.3],['hearts',6.82],['stars',7.42]];
 const STORE_RACKS=[...RACK_A.map((id,i)=>[2+i,5,id,i===0?-1:i===RACK_A.length-1?1:0]), ...RACK_B.map((id,i)=>[2+i,8,id,i===0?-1:i===RACK_B.length-1?1:0])];
 const rackItemAt=(x,y)=>{ const r=STORE_RACKS.find(([a,b])=>a===x&&b===y); return r?r[2]:null; };
@@ -1177,8 +1179,8 @@ function buildStoreWorld(){
   for (const [x,y,item,end] of STORE_RACKS){ FURN.push({t:'rack',gx:x,gy:y,item,end}); block(x,y); }
   STORE_CASE.forEach(([x,y],k)=>{ FURN.push({t:'glasscase',gx:x,gy:y,end:k===0?-1:1}); block(x,y); });
   FURN.push({t:'vending',gx:STORE_VEND[0],gy:STORE_VEND[1]}); block(STORE_VEND[0],STORE_VEND[1]);
-  for (const [x,y,d] of [[11,10,'fr'],[12,9,'fr']]){ SEATS.push({gx:x,gy:y,dir:d,lift:5}); FURN.push({t:'cushion',gx:x,gy:y,col:['#f85888','#b83068','#f8a8c8']}); }
-  FURN.push({t:'fern',gx:12,gy:0,flip:true}); block(12,0);
+
+  for (const [item,x,y] of STORE_SHOW){ FURN.push({...FURN_DEF[item].mk(1), gx:x, gy:y, show:item}); block(x,y); }
   FURN.push({t:'fern',gx:12,gy:11,flip:true}); block(12,11);
   FURN.push({t:'fern',gx:0,gy:11}); block(0,11);
 }
@@ -1486,7 +1488,13 @@ const FURN_DEF = {
   fern:{n:'POTTED FERN',p:6,mk:rot=>({t:'fern',flip:rot%2===1})}, hay:{n:'HAY BALE',p:4,mk:()=>({t:'hay'})},
   keg:{n:'BARREL',p:8,mk:()=>({t:'keg'})}, cabinet:{n:'CABINET',p:15,mk:()=>({t:'cabinet'})},
   counter:{n:'COUNTER',p:10,mk:()=>({t:'counter',end:0})}, vending:{n:'VENDING MACHINE',p:30,mk:()=>({t:'vending'})},
+  chair:{n:'WOODEN CHAIR',p:8,seat:8,cat:'seating',mk:rot=>({t:'chair',rot})}, armchair:{n:'ARMCHAIR',p:15,seat:7,cat:'sofas',mk:rot=>({t:'armchair',rot})},
+  bed:{n:'COZY BED',p:25,seat:11,cat:'beds',mk:rot=>({t:'bed',rot})}, bookshelf:{n:'BOOKSHELF',p:18,cat:'shelves',mk:()=>({t:'bookshelf'})},
+  tv:{n:'TV',p:22,cat:'electronics',mk:()=>({t:'tv'})}, plant:{n:'BIG PLANT',p:7,cat:'plants',mk:()=>({t:'plant'})},
 };
+FURN_DEF.table.cat='tables'; FURN_DEF.lamp.cat='lighting';
+// what the store sells, by category (one of each for now; add more pieces to a category by giving them its cat)
+const FURN_CATS=[['seating','🪑 SEATING'],['sofas','🛋️ SOFAS & ARMCHAIRS'],['beds','🛏️ BEDS'],['tables','🍽️ TABLES'],['lighting','💡 LIGHTING'],['shelves','📚 SHELVES'],['electronics','📺 ELECTRONICS'],['plants','🪴 PLANTS']];
 const SEAT_DIRS=['fr','fl','br','bl'];
 const PR_WALL={ lavender:['#b8a0f0','#d0b8f8','#7860c8','#8870d8'], cream:['#f2e2c8','#f8ecd6','#9a6436','#a86e3e'], mint:['#a8e0c8','#c0eed8','#4a9a7a','#58aa88'],
   pink:['#f8b8d0','#fcd0e0','#c86890','#d87aa0'], night:['#2a2450','#342c60','#141030','#1a1438'], wood:['#a87444','#b8834e','#6a4220','#7a4c26'] };
@@ -2053,6 +2061,42 @@ function drawFurn(f,t){
       const own=INV.owned.includes(f.item);
       g.fillStyle='#8a8aa0'; g.fillRect(tagX,tagY,2,1);
       g.fillStyle=OUT; g.fillRect(tagX+2,tagY-1,6,5); g.fillStyle=own?'#7fe0a0':'#fff8e0'; g.fillRect(tagX+3,tagY,4,3); g.fillStyle=own?'#1f8a4c':'#c89818'; g.fillRect(tagX+4,tagY+1,2,1);
+      break; }
+    case 'chair': case 'armchair': { // the back sits behind where the llama faces (rot: 0 faces +x, 1 faces +y, 2 faces -y, 3 faces -x)
+      const arm=f.t==='armchair', r=f.rot||0, x=f.gx, y=f.gy;
+      const W=arm?['#48b8a8','#2a8a7c','#1e6a5e']:['#c8905a','#9a6436','#7a4c26'];
+      if (!arm){ for (const [u,v] of [[0.28,0.28],[0.72,0.28],[0.28,0.72],[0.72,0.72]]){ const [lx,ly]=P(x+u,y+v,0), [tx,ty]=P(x+u,y+v,8); g.fillStyle=INK; g.fillRect(Math.round(lx)-1,Math.round(ty),2,Math.round(ly-ty)+1); } box(x+0.22,y+0.22,0.56,0.56,2,'#d8a468',W[1],W[2],0,8); }
+      else { box(x+0.12,y+0.12,0.76,0.76,8,W[0],W[1],W[2]); box(x+0.18,y+0.18,0.64,0.64,2,'#7fd8c8',W[1],W[2],0,8); }
+      const back = r===0 ? [x+0.14,y+0.18,0.12,0.64] : r===1 ? [x+0.18,y+0.14,0.64,0.12] : r===2 ? [x+0.18,y+0.74,0.64,0.12] : [x+0.74,y+0.18,0.12,0.64];
+      box(back[0],back[1],back[2],back[3],arm?12:13,arm?W[0]:'#d8a468',W[1],W[2],0,arm?8:10);
+      if (arm){ const side = (r%2===0) ? [[x+0.18,y+0.12,0.64,0.12],[x+0.18,y+0.76,0.64,0.12]] : [[x+0.12,y+0.18,0.12,0.64],[x+0.76,y+0.18,0.12,0.64]]; for (const sd of side) box(sd[0],sd[1],sd[2],sd[3],5,W[0],W[1],W[2],0,8); }
+      break; }
+    case 'bed': { // wooden frame, white sheets, a pillow at the head and a pink blanket
+      const r=f.rot||0, x=f.gx, y=f.gy;
+      box(x+0.06,y+0.06,0.88,0.88,6,'#c8905a','#9a6436','#7a4c26'); box(x+0.1,y+0.1,0.8,0.8,4,'#f8f4f0','#d8d0d8','#c0b8c8',0,6);
+      const head = r===0 ? [x+0.12,y+0.2,0.24,0.6] : r===1 ? [x+0.2,y+0.12,0.6,0.24] : r===2 ? [x+0.2,y+0.64,0.6,0.24] : [x+0.64,y+0.2,0.24,0.6];
+      const blank = r===0 ? [x+0.42,y+0.1,0.48,0.8] : r===1 ? [x+0.1,y+0.42,0.8,0.48] : r===2 ? [x+0.1,y+0.1,0.8,0.48] : [x+0.1,y+0.1,0.48,0.8];
+      box(blank[0],blank[1],blank[2],blank[3],1,'#f878a8','#d85888','#b84070',0,10); box(head[0],head[1],head[2],head[3],2,'#ffffff','#e0e0ea','#c8c8d8',0,10);
+      const hb = r===0 ? [x+0.04,y+0.06,0.08,0.88] : r===1 ? [x+0.06,y+0.04,0.88,0.08] : r===2 ? [x+0.06,y+0.88,0.88,0.08] : [x+0.88,y+0.06,0.08,0.88];
+      box(hb[0],hb[1],hb[2],hb[3],18,'#d8a468','#9a6436','#7a4c26');
+      break; }
+    case 'bookshelf': { // tall shelf, books in every colour on the side facing the room
+      const x=f.gx, y=f.gy; box(x+0.08,y+0.2,0.84,0.6,34,'#c8905a','#9a6436','#7a4c26');
+      const FL=(u,v)=>P(x+0.08+0.84*u, y+0.8, v), cols=['#e03048','#3a7ad8','#f8d030','#4aa04a','#8a48e0','#f08a30','#f4f0e8'];
+      for (const sv of [4,13,22]){ for (let k=0;k<7;k++){ const u0=0.06+k*0.125; const q=[FL(u0,sv),FL(u0+0.1,sv),FL(u0+0.1,sv+7+(k%3)),FL(u0,sv+7+(k%3))]; polyPx(q, cols[(k+sv)%cols.length]); }
+        const a2=FL(0,sv-1), b2=FL(1,sv-1); linePx(a2[0],a2[1],b2[0],b2[1],'#5a3418'); }
+      break; }
+    case 'tv': { // low stand with a flat TV, screen flickering through colours
+      const x=f.gx, y=f.gy; box(x+0.1,y+0.2,0.8,0.6,9,'#5a3e2a','#3a281a','#2a1c12');
+      box(x+0.14,y+0.42,0.72,0.12,17,'#2a2a3a','#1a1a26','#121220',0,9);
+      const FL=(u,v)=>P(x+0.16+0.68*u, y+0.54, v), ph=Math.floor(t*1.3)%4, sc=['#58c8f0','#f878a8','#7fe0a0','#f8d030'][ph];
+      polyPx([FL(0.06,11),FL(0.94,11),FL(0.94,24),FL(0.06,24)], sc); const hl=FL(0.15,22), hl2=FL(0.4,22); linePx(hl[0],hl[1],hl2[0],hl2[1],'rgba(255,255,255,0.6)');
+      break; }
+    case 'plant': { // big leafy plant in a terracotta pot
+      const x=f.gx, y=f.gy; box(x+0.28,y+0.28,0.44,0.44,9,'#6a3a1a','#c8642e','#a04a1c');
+      const [cx,cy]=P(x+0.5,y+0.5,9); const X=Math.round(cx), Y=Math.round(cy);
+      for (const [dx,dy,rx,ry,c] of [[0,-14,6,9,'#2e7a2e'],[-6,-9,5,7,'#3a8f3a'],[6,-10,5,7,'#3a8f3a'],[-3,-19,4,6,'#4aa04a'],[4,-18,4,6,'#4aa04a'],[0,-23,3,4,'#6ac06a']]){ ellPx(X+dx,Y+dy,rx+1,ry+1,INK); ellPx(X+dx,Y+dy,rx,ry,c); }
+      g.fillStyle='#8ad88a'; g.fillRect(X-4,Y-21,1,2); g.fillRect(X+3,Y-16,1,2);
       break; }
     case 'glasscase': { // accessories case: wood base, purple velvet top, glasses laid out under glass
       const a=f.gx+(f.end===-1?0.06:0), c=f.gx+(f.end===1?0.94:1), b=f.gy+0.14, e=f.gy+0.86, Hb=11, Hg=20;
@@ -2642,6 +2686,7 @@ function doAction(a){
   if (a==='arena'){ openArena(); return; }
   if (a==='bowl'){ openBowl(); return; }
   if (a==='shop'){ openCatalog(); return; }
+  if (a==='leaveroom'){ prLeaveNow(); return; }
   if (a==='vend'){ openFw('vend'); return; }
   if (a==='clothes'){ const r=STORE_RACKS.find(([x,y])=>near(x,y)); openWardrobe('shop', r ? r[2] : STORE_CASE.some(([x,y])=>near(x,y)) ? 'shades' : null); return; }
   if (a==='dunk'){ openDunk(); return; }
@@ -3515,7 +3560,7 @@ const marquee = document.createElement('canvas'), dunkSignCv = document.createEl
 const arenaBoardCv = document.createElement('canvas'), arenaTitleCv = document.createElement('canvas');
 const laneMonCv = [0,1,2,3].map(()=>document.createElement('canvas')), lanesTitleCv=document.createElement('canvas');
 let laneMonHit = [];
-const storeTitleCv=document.createElement('canvas');
+const storeTitleCv=document.createElement('canvas'), storeFurnCv=document.createElement('canvas');
 // PENNY the cashier: scans for a few seconds, pauses, and stops to wave when someone walks up to the counter
 function clerkState(t){ const custom = curRoom==='store' && joined && STORE_COUNTER.some(([x,y])=>near(x,y)); return { custom, scanning: !custom && (t%4)<2.6 }; }
 function drawStoreSigns(t){
@@ -3523,6 +3568,8 @@ function drawStoreSigns(t){
   { const sc=2, txt='LLAMA STORE', tw=pfW(txt,sc), W=tw+16, H=5*sc+12; if (storeTitleCv.width!==W){ storeTitleCv.width=W; storeTitleCv.height=H; }
     const m=storeTitleCv.getContext('2d'); m.clearRect(0,0,W,H); m.fillStyle=INK; m.fillRect(0,0,W,H); m.fillStyle='#f85888'; m.fillRect(1,1,W-2,H-2); m.fillStyle='#b83068'; m.fillRect(1,H-3,W-2,2);
     pfDraw(m,txt,9,7,'#7a1838',sc); pfDraw(m,txt,8,6,(Math.floor(t*2)%6===0)?'#ffffff':'#fff4d8',sc); wallPlate(storeTitleCv, 78, 96, 1); }
+  { if (!storeFurnCv.width){ const txt='FURNITURE', W=pfW(txt,1)+10; storeFurnCv.width=W; storeFurnCv.height=11; const m=storeFurnCv.getContext('2d'); m.fillStyle=INK; m.fillRect(0,0,W,11); m.fillStyle='#4aa04a'; m.fillRect(1,1,W-2,9); pfDraw(m,txt,5,3,'#ffffff',1); }
+    wallPlate(storeFurnCv, 50, 62, 1); }
 }
 function drawLanesSigns(t){
   { const sc=2, txt='LLAMA LANES', tw=pfW(txt,sc), W=tw+16, H=5*sc+12; if (lanesTitleCv.width!==W){ lanesTitleCv.width=W; lanesTitleCv.height=H; }
@@ -3726,7 +3773,7 @@ function render(t){
   items.sort((a,b)=>a.d-b.d);
   overlayItems.length = 0; llamaHits.length = 0; cupHits.length = 0; itemHits.length = 0; vendHit = null;
   for (const it of items){
-    if (it.f) drawFurn(it.f, t);
+    if (it.f){ drawFurn(it.f, t); if (it.f.show) showroomTag(it.f); }
     else { const fa = (!it.me && it.l.leaving) ? Math.max(0, Math.min(1, 1-(performance.now()-it.l.leaving)/LEAVE_T)) : 1; g.globalAlpha=fa; const pos = drawLlama(it.l, t, it.me); g.globalAlpha=1; overlayItems.push({l:it.l, x:pos[0], y:pos[1], me:it.me, balloon:pos[2], fa}); }
   }
   drawSpits(t); drawDunk(t);
@@ -4092,11 +4139,16 @@ function switchRoom(r){
   localMsg(r==='barn' ? 'You stepped outside to LLAMA ACRES!' : r==='casino' ? 'Welcome to the LLAMA CASINO! Feeling lucky?' : r==='arena' ? 'Welcome to the SPIT ARENA! Press PLAY to start a round.' : r==='lanes' ? 'Welcome to LLAMA LANES! Press BOWL to roll a game.' : r==='store' ? 'Welcome to the LLAMA STORE! Tap a shirt on the wall, or the counter to see them all.' : 'You headed back into the LLAMA LOUNGE!');
   setTimeout(()=>walkTo(...spawnSpot(r)), 400);
 }
+// showroom pieces: a price tag and a tap area that opens the furniture shop
+function showroomTag(f){ const [bx,by]=P(f.gx+0.5,f.gy+0.95,0), X=Math.round(bx), Y=Math.round(by);
+  g.fillStyle=OUT; g.fillRect(X-6,Y-3,12,7); g.fillStyle='#fff8e0'; g.fillRect(X-5,Y-2,10,5); pfDraw(g, String(FURN_DEF[f.show].p), X-4, Y-2, '#a06808', 1);
+  const top=P(f.gx+0.5,f.gy+0.5,36), l=P(f.gx,f.gy+1,0), r=P(f.gx+1,f.gy,0), b=P(f.gx+1,f.gy+1,0);
+  itemHits.push({id:f.show, furn:true, x0:Math.round(l[0]), x1:Math.round(r[0]), y0:Math.round(top[1]), y1:Math.round(b[1])+4}); }
 // tap the vending machine: open it if you're next to it, otherwise walk over and open it when you get there
 function vendGo(){ if (me.p!=='sit' && nearStand(STANDS.vend)){ openFw('vend'); return; } if (me.p==='sit') doAction('stand'); if (!walkTo(STORE_VEND[0],STORE_VEND[1]+1,'vend')) localMsg('Walk up to the vending machine.'); }
 function storePointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
-  for (let i=itemHits.length-1;i>=0;i--){ const h=itemHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ openWardrobe('shop', h.id); return; } }
+  for (let i=itemHits.length-1;i>=0;i--){ const h=itemHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if (h.furn) openWardrobe('shop', null, 'furn'); else openWardrobe('shop', h.id); return; } }
   if (vendHit && lx>=vendHit.x0&&lx<=vendHit.x1&&ly>=vendHit.y0&&ly<=vendHit.y1){ vendGo(); return; }
   for (const h of shopHit){ if (lx>=h.x0&&lx<h.x1&&ly>=h.y0&&ly<=h.y1){ openShop(h.i); return; } }
   { const lcx=OX-210, lcy=OY+105-75.5; if (Math.abs(lx-lcx)<=13 && Math.abs(ly-lcy)<=13){ openLogo(); return; } }
@@ -4784,14 +4836,17 @@ function wdDraw(){
   let h='';
   if (shop) h+=`<div class="autabs" id="wd_kind"><button type="button" data-k="clothes" class="${WD.kind==='clothes'?'on':''}">👕 CLOTHES</button><button type="button" data-k="furn" class="${WD.kind==='furn'?'on':''}">🛋️ FURNITURE</button></div>`;
   if (shop && WD.kind==='furn'){ const own=k=>{ const r=WD.furn.find(x=>x.item===k); return r?r.n:0; };
-    h+='<div class="fre">Furniture goes into your 🎒 STORAGE. Place it in your own room from 🏠 ROOMS > SETTINGS > EDIT FURNITURE.</div><div class="wdg">';
-    h+=Object.keys(FURN_DEF).map(k=>`<div class="wi fi" data-f="${k}"><canvas width="48" height="48" data-fk="${k}"></canvas><b>${esc(FURN_DEF[k].n)}</b><small>${FURN_DEF[k].p} 🪙${own(k)?` · <span class="own">YOU HAVE ${own(k)}</span>`:''}</small><button class="gbbtn y" data-buyf="${k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button></div>`).join('')+'</div>'; }
+    h+='<div class="fre">Furniture goes into 🎒 INVENTORY > ITEMS. Place it in your own room from 🏠 ROOMS > SETTINGS > EDIT FURNITURE.</div>';
+    for (const [cat,label] of FURN_CATS){ const ks=Object.keys(FURN_DEF).filter(k=>FURN_DEF[k].cat===cat); if (!ks.length) continue; h+=`<div class="wdh">${label}</div><div class="wdg">`;
+    h+=ks.map(k=>`<div class="wi fi" data-f="${k}"><canvas width="48" height="48" data-fk="${k}"></canvas><b>${esc(FURN_DEF[k].n)}</b><small>${FURN_DEF[k].p} 🪙${own(k)?` · <span class="own">YOU HAVE ${own(k)}</span>`:''}</small><button class="gbbtn y" data-buyf="${k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button></div>`).join('')+'</div>'; } }
   else if (WD.tab==='shop'){ for (const s2 of WEAR_SLOTS){ h+=`<div class="wdh">${SLOT_NAMES[s2]}</div><div class="wdg">`+Object.keys(ITEMS).filter(k=>ITEMS[k].s===s2).map(wdCard).join('')+'</div>'; }
     if (curRoom!=='store') h='<div class="fre">Browse and try things on here. To buy, visit the 🛍️ LLAMA STORE.</div>'+h;
     h+='<div class="srow"><button class="gbbtn" id="wd_toinv">🎒 MY INVENTORY</button></div>'; }
   else if (WD.tab==='storage'){ const list=WD.furn.filter(x=>FURN_DEF[x.item]&&x.n>0), inMine=isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine;
-    if (!list.length) h='<div class="wdstore"><div class="wdbox">📦</div><b>STORAGE IS EMPTY</b><small>Buy furniture at the 🛍️ LLAMA STORE, then place it in your room.</small></div>';
-    else { h='<div class="fre">Furniture you own. Pieces in your room come back here when you put them away.</div><div class="wdg">'+list.map(x=>`<div class="wi fi"><canvas width="48" height="48" data-fk="${x.item}"></canvas><b>${esc(FURN_DEF[x.item].n)}</b><small class="own">${x.n-x.placed} IN STORAGE${x.placed?` · ${x.placed} PLACED`:''}</small></div>`).join('')+'</div>';
+    if (!list.length) h='<div class="wdstore"><div class="wdbox">📦</div><b>NO ITEMS YET</b><small>Buy furniture at the 🛍️ LLAMA STORE, then place it in your room.</small></div>';
+    else { const card=x=>`<div class="wi fi"><canvas width="48" height="48" data-fk="${x.item}"></canvas><b>${esc(FURN_DEF[x.item].n)}</b><small class="own">${x.n-x.placed} LEFT${x.placed?` · ${x.placed} PLACED`:''}</small></div>`;
+      h='<div class="fre">Furniture you own. Pieces in your room come back here when you put them away.</div>';
+      for (const [cat,label] of [...FURN_CATS,[null,'📦 OTHER']]){ const ls=list.filter(x=>(FURN_DEF[x.item].cat||null)===cat); if (ls.length) h+=`<div class="wdh">${label}</div><div class="wdg">${ls.map(card).join('')}</div>`; }
       h+=`<div class="srow"><button class="gbbtn y" id="wd_place">${inMine?'🛋️ PLACE FURNITURE':'🏠 GO TO MY ROOM'}</button></div>`; } }
   else { const mine=INV.owned.filter(k=>ITEMS[k]);
     if (!mine.length) h='<div class="fre">No clothes yet. Buy some at the 🛍️ LLAMA STORE, then wear them anywhere.</div>';
@@ -4806,7 +4861,7 @@ function wdDraw(){
   wdPreview(); wdInfo();
 }
 $id('wd_body').addEventListener('click', e=>{
-  const bf=e.target.closest('[data-buyf]'); if (bf){ const k=bf.dataset.buyf; wdMsg('BUYING...'); NET.act('furn_buy',{item:k}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); WD.furn=r.furn; tkSet(r.tk, `You bought a ${FURN_DEF[k].n}! It's in your storage.`); wdMsg(`Bought a ${FURN_DEF[k].n}! It's in your 🎒 STORAGE.`, true); wdDraw(); }); return; }
+  const bf=e.target.closest('[data-buyf]'); if (bf){ const k=bf.dataset.buyf; wdMsg('BUYING...'); NET.act('furn_buy',{item:k}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); WD.furn=r.furn; tkSet(r.tk, `You bought a ${FURN_DEF[k].n}! It's in your items.`); wdMsg(`Bought a ${FURN_DEF[k].n}! It's in your 🎒 ITEMS.`, true); wdDraw(); }); return; }
   const c=e.target.closest('.wi'); if (!c || c.classList.contains('fi')) return; ensureAudio(); WD.pick = WD.pick===c.dataset.id ? null : c.dataset.id; wdMsg(''); wdDraw(); });
 for (const b of $id('wd_tabs').children) b.addEventListener('click', ()=>{ WD.tab=b.dataset.t; wdDraw(); });
 $id('wd_prev').addEventListener('click', ()=>{ WD.dir=(WD.dir+1)%4; wdPreview(); });
@@ -4907,7 +4962,7 @@ function prEditStop(){ if (!PRED.on) return; PRED.on=false; PRED.item=null; PRED
 function prEditBar(){ const el=$id('eb_items'), bar=$id('editbar'); bar.classList.toggle('piece', !!PRED.piece);
   if (PRED.piece){ const D=FURN_DEF[PRED.piece.item]; $id('eb_piece').innerHTML=`<button class="gbbtn" id="eb_rot">↻ TURN</button><button class="gbbtn" id="eb_pick">📦 PUT AWAY</button><button class="gbbtn" id="eb_cancel">✕</button>`; return; }
   const list=PRED.storage.filter(x=>FURN_DEF[x.item]);
-  if (!list.length){ el.innerHTML='<div class="fre">Storage is empty. Buy furniture at the 🛍️ LLAMA STORE.</div>'; return; }
+  if (!list.length){ el.innerHTML='<div class="fre">No items yet. Buy furniture at the 🛍️ LLAMA STORE.</div>'; return; }
   el.innerHTML=list.map(x=>{ const left=x.n-x.placed; return `<button class="ebi${PRED.item===x.item?' on':''}" data-it="${x.item}" title="${esc(FURN_DEF[x.item].n)}" ${left<=0?'disabled':''}><canvas width="48" height="48" data-fi="${x.item}"></canvas><i>×${left}</i></button>`; }).join('');
   for (const cv of el.querySelectorAll('canvas[data-fi]')) cv.getContext('2d').drawImage(furnIcon(cv.dataset.fi),0,0); }
 $id('editbar').addEventListener('pointerdown', e=>e.stopPropagation());
@@ -4919,6 +4974,8 @@ $id('editbar').addEventListener('click', e=>{ const b=e.target.closest('button')
 function prFurnAt(gx,gy){ return FURN.find(f=>f.fid && f.gx===gx && f.gy===gy); }
 function playerPointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
+  // the door (left wall, by tile 0,10): walk out, then pick where to go next
+  if (!PRED.on && lx>=OX-222 && lx<=OX-198 && ly>=OY+100-50 && ly<=OY+111){ prLeave(); return; }
   if (!PRED.on) for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
   const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
   if (PRED.on){ const f=prFurnAt(gx,gy);
@@ -4929,6 +4986,8 @@ function playerPointer(e){
   let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } }
   if (best) walkTo(best.gx,best.gy);
 }
+function prLeave(){ if (me.p==='sit') doAction('stand'); if (!walkTo(0,10,'leaveroom')) prLeaveNow(); }
+function prLeaveNow(){ if (!isP(curRoom)) return; entryFrom=curRoom; setRoom('lounge'); flash(); sendPresence(true); setTimeout(()=>{ closeAll(); roomPickEl.style.display='flex'; }, 250); }
 function drawPlayerRoom(t){
   if (!PRED.on) return;
   // edit mode: faint grid and a highlight on the chosen piece

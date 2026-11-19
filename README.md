@@ -213,3 +213,5 @@ No API keys or passwords are involved.
 - Mods and the owner can give tokens with 🪙 GIVE in the dashboard (online players, or a line in the CHAT LOG). Each gift is 1 to 1000 tokens.
 - Mods can't give to themselves and can give up to 500 tokens a day in total (`STAFF_GIVE_DAY`). The owner has no limit.
 - Every gift is written to the token ledger and listed in the dashboard's 🪙 TOKEN GIFTS section, with each mod's total for today. It also appears in the staff log.
+- **Furniture shop categories** (`FURN_CATS` in `public/index.html`; on sale = `FURN_SALE` in `src/worker.js`): Seating, Sofas & Armchairs, Beds, Tables, Lighting, Shelves, Electronics and Plants, one piece each for now. The Store's back wall has a showroom with one of each, and tapping one opens the furniture shop. Owned furniture lives in 🎒 INVENTORY > ITEMS, grouped by category.
+- **Leaving a player room:** tap the door to walk out, and the room selector pops up.

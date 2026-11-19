@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-21e";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-21f";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -87,7 +87,9 @@ const ITEMS = {
 const PR = { w: 13, h: 12, maxFurn: 60, clear: ["0,10", "1,10", "2,10", "3,10"], knockGap: 20000, letInMs: 3 * 3600e3, nameMax: 24 };
 const PR_WALLS = ["lavender", "cream", "mint", "pink", "night", "wood"], PR_FLOORS = ["wood", "checker", "carpet", "marble", "grass"];
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
-const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30 };
+const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7 };
+// what the store sells right now: one piece per category (the rest stay placeable for anyone who already owns them)
+const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant"]);
 const prId = (rm) => { const m = /^p:(\d{1,9})$/.exec(String(rm || "")); return m ? +m[1] : 0; };
 const cleanRoomName = (n) => String(n || "").replace(/[^A-Za-z0-9 '!?&.,:-]/g, "").replace(/\s+/g, " ").trim().slice(0, PR.nameMax);
 const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
@@ -685,7 +687,7 @@ export class Lounge extends DurableObject {
   }
   async furnBuy(a, m) {
     await this.prTables();
-    const k = String(m.item || ""); const price = Object.hasOwn(FURN_ITEMS, k) ? FURN_ITEMS[k] : 0; if (!price) return { ok: false, msg: "The store doesn't sell that." };
+    const k = String(m.item || ""); const price = Object.hasOwn(FURN_ITEMS, k) && FURN_SALE.has(k) ? FURN_ITEMS[k] : 0; if (!price) return { ok: false, msg: "The store doesn't sell that." };
     if (!a.pres || a.pres.rm !== "store") return { ok: false, msg: "Visit the LLAMA STORE to buy furniture." };
     const have = await this.env.DB.prepare("SELECT n FROM finv WHERE uid = ? AND item = ?").bind(a.uid, k).first(); if (have && have.n >= 20) return { ok: false, msg: "You have plenty of those." };
     const tk = await this.debit(a.uid, price, "furniture " + k); if (tk === null) return { ok: false, msg: `That costs ${price} TOKENS. Play some games to earn more!` };
