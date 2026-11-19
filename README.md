@@ -248,3 +248,4 @@ No API keys or passwords are involved.
 - **Shop and bag pictures:** furniture pictures are drawn once and blown up by whole numbers only, using the screen's real pixel density, so every pixel stays square and crisp (no warped or uneven pixels). Pieces get a soft floor shadow; rugs and wall pictures don't. Wallpaper and floor swatches are doubled the same way.
 - **Bar counter:** in the lounge, tapping anywhere on the bar counter (top, front, or just around it) walks you to the nearest stool and opens the bar menu, not just the small cup.
 - **Fishing and name tags:** while the bite "!" or a just-caught fish shows over a llama's head, its name tag moves up out of the way, the same as for emote bubbles.
+- **Acres benches:** a llama sitting on either end of a two-seat bench is drawn after the bench, so the backrest stays behind it instead of cutting across it.

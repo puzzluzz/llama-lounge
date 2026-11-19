@@ -793,7 +793,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22s";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22t";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -4228,6 +4228,10 @@ function render(t){
   if (isP(curRoom)){ const sitters=[]; if (joined && me.p==='sit') sitters.push([me.gx,me.gy,me.x+me.y+0.02]); for (const o of others.values()) if (sameRoom(o) && o.p==='sit') sitters.push([Math.floor(o.x),Math.floor(o.y),o.x+o.y+0.01]);
     for (const [sx2,sy2,d] of sitters){ const f=FURN.find(q=>q.fid && (q.t==='couch'||q.t==='armchair'||q.t==='chair'||q.t==='bed'||q.t==='dbed') && furnTiles(q.item,q.gx,q.gy,q.rot).some(([x,y])=>x===sx2&&y===sy2)); if (f){ const su=furnTiles(f.item,f.gx,f.gy,f.rot).findIndex(([x,y])=>x===sx2&&y===sy2); items.push({d:d+0.005, f:{...f, part:'front', su, st:[sx2,sy2]}}); } } }
   for (const o of others.values()) if (sameRoom(o)) items.push({d: o.x+o.y+0.01, l: o});
+  /* a two-seat bench is sorted as one long piece, so whoever sits on its near end would be drawn under it: draw sitters right after their bench */
+  for (const it of items){ if (!it.l || it.l.p!=='sit') continue; const tx=Math.floor(it.l.x), ty=Math.floor(it.l.y);
+    const b=FURN.find(f=>f.t==='bench' && (f.ax==='x' ? (ty===f.gy && tx>=f.gx && tx<f.gx+(f.len||1)) : (tx===f.gx && ty>=f.gy && ty<f.gy+(f.len||1))));
+    if (b) it.d=Math.max(it.d, b.gx+b.gy+1+(b.dz||0)+0.01); }
   items.sort((a,b)=>a.d-b.d);
   overlayItems.length = 0; llamaHits.length = 0; cupHits.length = 0; itemHits.length = 0; vendHit = null; pvHits.length = 0;
   for (const it of items){
