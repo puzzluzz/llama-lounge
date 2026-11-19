@@ -805,7 +805,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22u";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22v";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -865,7 +865,7 @@ const HAT = ['#7a4216','#55290b','#a8642e'];
 const hash = (x,y) => (((x*73856093) ^ (y*19349663)) >>> 0);
 
 // ======================= WARDROBE ITEMS (the server keeps the same slots and prices) =======================
-const WEAR_SLOTS=['hat','eyes','neck','shirt'], SLOT_NAMES={hat:'HATS', eyes:'GLASSES', neck:'NECK', shirt:'SHIRTS'};
+const WEAR_SLOTS=['hat','eyes','neck','shirt','hands','legs'], SLOT_NAMES={hat:'HATS', eyes:'GLASSES', neck:'NECK', shirt:'SHIRTS', hands:'GLOVES', legs:'SHORTS'};
 const ITEMS={
   cap:{s:'hat',p:20,n:'PINK CAP',c:['#f85888','#c8306a','#ffa0c0']}, cowboy:{s:'hat',p:30,n:'COWBOY HAT',c:['#b07438','#7a4a1c','#d8a060']},
   beanie:{s:'hat',p:15,n:'TEAL BEANIE',c:['#3fb8a8','#22806e','#8ae8d8']}, party:{s:'hat',p:10,n:'PARTY HAT',c:['#f8d030','#f85888','#ffffff']},
@@ -880,6 +880,9 @@ const ITEMS={
   tee_arena:{s:'shirt',p:25,n:'SPIT ARENA TEE',c:['#3a7ad8','#28589e','#6aa8f0'],pr:'arena'},
   // ponchos: a woven serape draped over the shoulders, striped, with a V hem and fringe. st = the stripe bands from the shoulders down, fr = fringe colour
   poncho:{s:'shirt',p:35,n:'CLASSIC PONCHO',c:['#e03048','#a81830','#ff7088'],pon:true, st:['#e03048','#f8d030','#2e8a4a','#f08a30','#2a5aa8','#f8f0e0','#e03048','#8a48e0','#f8d030','#2e8a4a'], fr:'#f8f0e0'},
+  // boxing kit: c = main, shade, shine; cuff = the band at the wrist or waist
+  gloves:{s:'hands',p:30,n:'BOXING GLOVES',c:['#e8303c','#a8141e','#ff8a90'],cuff:'#f8f4ea'},
+  shorts:{s:'legs',p:30,n:'BOXING SHORTS',c:['#2a5ad8','#1a3a98','#78a0ff'],cuff:'#f8f4ea'},
   poncho_orange:{s:'shirt',p:35,n:'ORANGE PONCHO',c:['#f08a30','#b85a18','#ffb870'],pon:true, st:['#f08a30','#f08a30','#5a3418','#f8e8c8','#f08a30','#f08a30','#b85a18','#f8e8c8','#f08a30','#f08a30'], fr:'#f8e8c8'},
 };
 // shirt prints, 6 x 4 pixels, used for the worn shirt and the one on the hanger
@@ -930,6 +933,18 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
   if (L){ rect(10,18+oy,8,9,OUT); rect(11,18+oy,6,9,fur(13.5,22+oy,3,5)); }
   // torso
   if (L || TEE) oell(13.5,31.5+oy,6.8,5.6,bodyFn(13.5,31.5+oy,6.8,5.6));
+  if (W.legs){ const C=ITEMS[W.legs].c, CF=ITEMS[W.legs].cuff, bot=sit?37:40;   // satin boxing trunks: wide white waistband, a stripe down each side, split between the legs
+    for (let y=34;y<=bot;y++){ const x0=y<=35?7:8, x1=y<=35?20:19, gap = !sit && y>=38;
+      for (let x=x0;x<=x1;x++){ if (gap && x>=13 && x<=14) continue; let c = y<=35 ? CF : (x>=16?C[1]:C[0]);
+        if (y>35 && (x===x0+1 || x===x1-1)) c = CF;                       // side stripe
+        if (y>35 && x>=x0+2 && x<=x0+3 && y<=bot-1) c = c===CF?c:C[2];      // satin shine
+        if (y===35 && (x===12||x===15)) c=C[1];                              // drawstring dimples
+        put(x,y+oy,c); }
+      put(x0-1,y+oy,OUT); put(x1+1,y+oy,OUT); if (gap){ put(12,y+oy,OUT); put(15,y+oy,OUT); } }
+    for (let x=7;x<=20;x++) put(x,33+oy,OUT);
+    for (let x=8;x<=19;x++) if (sit || x<12 || x>15) put(x,bot+1+oy,OUT);
+    if (!sit) for (let x=12;x<=15;x++) put(x,38+oy,OUT);
+    if (front) { put(13,36+oy,CF); put(14,37+oy,CF); } }
   if (TEE && TEE.pon){   // poncho: drapes from a neck hole over both arms, woven stripes, a V hem with fringe; hooves peek out under it
     const ST=TEE.st, rows={24:[11,16],25:[9,18],26:[7,20],27:[5,22],28:[4,23],29:[3,24],30:[3,24],31:[3,24],32:[3,24],33:[3,24],34:[4,23],35:[5,22],36:[6,21],37:[8,19],38:[10,17],39:[12,15]}, sp=y=>rows[y];   // sloped shoulders, widest at the arms, a deep V at the front
     for (let y=24;y<=39;y++){ const [x0,x1]=sp(y), band=ST[Math.min(ST.length-1,Math.max(0,y-27<0?0:Math.floor((y-27)/1.3)))];
@@ -959,6 +974,12 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
     else { for (let x=11;x<=16;x++) put(x,25+oy,C[1]); } }
   // tail (back)
   if (L && !front) oell(13.5,37.5+oy,1.6,1.3,fur(13.5,37.5+oy,1.6,1.3));
+  if (W.hands){ const C=ITEMS[W.hands].c, CF=ITEMS[W.hands].cuff;   // big round boxing gloves over the front hooves: padded mitt, thumb, white cuff
+    const glove=(cx,dy)=>{ const cy=35.5+oy+dy; oell(cx,cy,2.6,2.3,(x,y)=>{ const nx=(flip?-(x-cx):(x-cx)), ny=y-cy; return (nx<-0.8&&ny<-0.6)?C[2]:(nx>0.9||ny>1)?C[1]:C[0]; });
+      const tx=Math.round(cx+(front?1.6:-1.6)), ty=Math.round(cy-1); if (front){ put(tx,ty,C[1]); put(tx,ty+1,OUT); }
+      for (let x=Math.round(cx-2);x<=Math.round(cx+2);x++){ put(x,Math.round(cy-3),OUT); put(x,Math.round(cy-2.5)+0,CF); }
+      put(Math.round(cx-3),Math.round(cy-2.5),OUT); put(Math.round(cx+3),Math.round(cy-2.5),OUT); };
+    glove(5.5,swing); glove(21.5,-swing); }
   // outfit details (a worn shirt covers the character's own outfit)
   if (!L || TEE) {}
   else if (ch.outfit==='furcoat') {
@@ -1099,6 +1120,10 @@ function teeIcon(id){ const k='tee:'+id; let c=itemIconCache.get(k); if (c) retu
 // one item on its own, cropped to its pixels (store racks)
 const itemIconCache=new Map();
 function itemIcon(id){ let c=itemIconCache.get(id); if (c) return c; const it=ITEMS[id];
+  if (it.s==='hands'){ const M=['.oooo....','oaccao...','oacaaaoo.','oaaaaaabo','oaaaaoabo','oaaaabbo.','.obbbbo..','.owwwwo..','.owwwwo..','.oooooo..'];   // a padded mitt with its thumb tucked in, white cuff
+    c=document.createElement('canvas'); c.width=19; c.height=10; const x=c.getContext('2d'), C=it.c, col={o:OUT,a:C[0],b:C[1],c:C[2],w:it.cuff};
+    M.forEach((row,yy)=>{ for (let i2=0;i2<9;i2++){ const ch=row[i2]; if (ch==='.') continue; x.fillStyle=col[ch]; x.fillRect(i2,yy,1,1); x.fillStyle=ch==='c'?C[0]:col[ch]; x.fillRect(18-i2,yy,1,1); } });
+    itemIconCache.set(id,c); return c; }
   const full=buildSprite('twotone','fr',0,'stand',{[it.s]:id},true), x=full.getContext('2d'), d=x.getImageData(0,0,SW,SH).data;
   let x0=SW,y0=SH,x1=-1,y1=-1; for (let y=0;y<SH;y++) for (let i=0;i<SW;i++) if (d[(y*SW+i)*4+3]){ if(i<x0)x0=i; if(i>x1)x1=i; if(y<y0)y0=y; if(y>y1)y1=y; }
   c=document.createElement('canvas'); c.width=Math.max(1,x1-x0+1); c.height=Math.max(1,y1-y0+1); c.getContext('2d').drawImage(full,-x0,-y0); itemIconCache.set(id,c); return c; }
@@ -1242,7 +1267,7 @@ function buildLanesWorld(){
 // LLAMA STORE: the shirts hang framed on the left wall; a checkout counter, two clothing racks and a table of folded shirts
 const STORE_COUNTER=[[8,2],[9,2],[10,2]], STORE_TABLE=[], STORE_VEND=[5,0];
 // two long racks across the shop; every spot holds one item you can buy (same art as when you wear it)
-const RACK_ROWS=[['poncho','tee_smile','tee_cancelled','tee_wild','tee_cancel','tee_woke','tee_lounge'],['poncho_orange','tee_acres','tee_arena','bandana','bowtie','scarf','lei'],['cap','cowboy','beanie','party','tophat','flowers']];
+const RACK_ROWS=[['poncho','tee_smile','tee_cancelled','tee_wild','tee_cancel','tee_woke','tee_lounge'],['poncho_orange','tee_acres','tee_arena','bandana','bowtie','scarf','lei'],['cap','cowboy','beanie','party','tophat','flowers','gloves','shorts']];
 const RACK_UNUSED=['cap','cowboy','beanie','party','tophat','flowers','tee_lounge','tee_acres','tee_arena'];
 // glass accessories case next to the register: two tiles, each item sits on the velvet at its spot
 // furniture showroom: one piece from each category on display (tap one to shop for furniture)
@@ -3958,7 +3983,8 @@ function drawLlama(o, t, isMe){
     { const C2=CHARS[o.c]||CHARS[isMe?me.c:o.c]||{}, fur=(C2.fur&&C2.fur.a)||['#efe1c8','#c6b08d'], sh = [hand[0]<12 ? 6 : 17, (front?25:24)+oy];   // shoulder on the same side as the hoof
       const ax=x0+sh[0], ay=y0+sh[1], bx=X+(FOOD_PX[h] ? (flip?1:2) : (flip?3:0)), by=Y+(FOOD_PX[h]?2:3);
       for (const [dx,dy] of [[-1,0],[2,0],[0,-1],[1,-1],[0,1],[1,1]]) linePx(ax+dx,ay+dy,bx+dx,by+dy,INK);
-      linePx(ax,ay,bx,by,fur[0]); linePx(ax+1,ay,bx+1,by,fur[1]||fur[0]); g.fillStyle='#3a2a1a'; g.fillRect(bx,by+1,2,1); }
+      linePx(ax,ay,bx,by,fur[0]); linePx(ax+1,ay,bx+1,by,fur[1]||fur[0]); g.fillStyle='#3a2a1a'; g.fillRect(bx,by+1,2,1);
+      { const GW=(isMe?me.w:o.w)||{}, GI=GW.hands&&ITEMS[GW.hands]; if (GI){ g.fillStyle=INK; g.fillRect(bx-2,by-1,6,5); g.fillStyle=GI.c[0]; g.fillRect(bx-1,by,4,3); g.fillStyle=GI.c[2]; g.fillRect(bx-1,by,1,1); g.fillStyle=GI.cuff; g.fillRect(bx-1,by-1,4,1); } } }
     if (FOOD_PX[h]){ const rows=FOOD_PX[h], H=rows.length, keep=Math.max(2,Math.round(H*lvl/5)), bx=X+(flip?-2:0), by=Y+6-H;
       rows.forEach((row,j)=>{ if (j<H-keep) return; for (let i=0;i<row.length;i++){ const ch=row[i]; if (ch==='.') continue; g.fillStyle=FOOD_PAL[ch]; g.fillRect(bx+i,by+j,1,1); } });
       if (keep<H){ g.fillStyle=INK; g.fillRect(bx+1,by+H-keep,rows[0].length-2,1); }

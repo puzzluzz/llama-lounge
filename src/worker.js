@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-22u";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-22v";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -74,7 +74,7 @@ const FOOD = { soda: { th: 30 }, juice: { th: 35, hu: 5 }, shake: { th: 25, hu: 
   chips: { hu: 25, th: -3 }, candy: { hu: 20 }, cookie: { hu: 30 } };
 // ---------- wardrobe: clothes you buy in the LLAMA STORE and wear anywhere ----------
 // s = the slot it goes in (one item per slot), p = price in tokens. The game draws each one; this list is the source of truth.
-const WEAR_SLOTS = ["hat", "eyes", "neck", "shirt"];
+const WEAR_SLOTS = ["hat", "eyes", "neck", "shirt", "hands", "legs"];
 const ITEMS = {
   cap: { s: "hat", p: 20 }, cowboy: { s: "hat", p: 30 }, beanie: { s: "hat", p: 15 }, party: { s: "hat", p: 10 }, tophat: { s: "hat", p: 40 }, flowers: { s: "hat", p: 25 },
   shades: { s: "eyes", p: 20 }, hearts: { s: "eyes", p: 25 }, stars: { s: "eyes", p: 25 },
@@ -82,6 +82,7 @@ const ITEMS = {
   tee_smile: { s: "shirt", p: 25 }, tee_cancelled: { s: "shirt", p: 25 }, tee_wild: { s: "shirt", p: 25 }, tee_cancel: { s: "shirt", p: 25 }, tee_woke: { s: "shirt", p: 25 },
   tee_lounge: { s: "shirt", p: 25 }, tee_acres: { s: "shirt", p: 25 }, tee_arena: { s: "shirt", p: 25 },
   poncho: { s: "shirt", p: 35 }, poncho_orange: { s: "shirt", p: 35 },
+  gloves: { s: "hands", p: 30 }, shorts: { s: "legs", p: 30 },
 };
 // ---------- player rooms ----------
 // One room per player. Only the owner can change it. Public rooms are open to everyone; private ones let in the owner,
@@ -817,6 +818,7 @@ export class Lounge extends DurableObject {
   async invTables() { if (this.invReady) return;
     await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS inv (uid INTEGER NOT NULL, item TEXT NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (uid, item))").run();
     await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS wear (uid INTEGER PRIMARY KEY, hat TEXT, eyes TEXT, neck TEXT, shirt TEXT)").run();
+    for (const col of ["hands", "legs"]) { try { await this.env.DB.prepare(`ALTER TABLE wear ADD COLUMN ${col} TEXT`).run(); } catch (e) {} }   // added later: gloves and shorts
     this.invReady = true; }
   async wearLoad(uid) { await this.invTables(); const r = await this.env.DB.prepare("SELECT * FROM wear WHERE uid = ?").bind(uid).first(); const w = {};
     if (r) for (const s of WEAR_SLOTS) if (r[s] && ITEMS[r[s]] && ITEMS[r[s]].s === s) w[s] = r[s]; return w; }
