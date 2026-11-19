@@ -586,7 +586,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-19q";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-19r";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1524,15 +1524,41 @@ function drawFurn(f,t){
       break; }
     case 'dunktank': {
       const dp=dunkDepth(), sitter=dunkSitter();
-      // back of the tank, water, then DUNKY if nobody is brave enough to sit
-      box(f.gx,f.gy,1,1,24,'#8ad0f8','#58a8e0','#3888c8',0.06);
-      { const [lx,ly]=P(f.gx+0.06,f.gy+1-0.06,18), [rx,ry]=P(f.gx+1-0.06,f.gy+1-0.06,18); g.fillStyle='#c8ecff'; for (let x=Math.round(lx);x<Math.round(rx);x++){ const wv=Math.round(Math.sin(t*4+x*0.5)*(dp>0?1.5:0.5)); g.fillRect(x, Math.round(ly+(x-lx)*(ry-ly)/(rx-lx))+wv, 1, 1); } }
-      // plank and ladder
-      { const [ax,ay]=P(f.gx+0.15,f.gy+0.5,26-(dp>0?6:0)), [bx,by]=P(f.gx+0.85,f.gy+0.5,26-(dp>0?6:0)); g.fillStyle=INK; g.fillRect(Math.round(ax)-1, Math.round(Math.min(ay,by))-1, Math.round(bx-ax)+3, 4); g.fillStyle='#c88a4a'; g.fillRect(Math.round(ax), Math.round(Math.min(ay,by)), Math.round(bx-ax)+1, 2); }
-      { const [lx,ly]=P(f.gx+1,f.gy+0.2,0); g.fillStyle='#8a5426'; g.fillRect(Math.round(lx)+1, Math.round(ly)-28, 1, 28); g.fillRect(Math.round(lx)+5, Math.round(ly)-26, 1, 26); for (let k=0;k<26;k+=5){ g.fillRect(Math.round(lx)+1, Math.round(ly)-k-2, 5, 1); } }
+      const a=f.gx+0.04, b=f.gy+0.04, c=f.gx+0.96, e=f.gy+0.96;
+      const FL=(u,v)=>P(a+(c-a)*u, e, v), FR=(u,v)=>P(c, b+(e-b)*u, v), quad=(F,u0,u1,v0,v1,col)=>polyPx([F(u0,v0),F(u1,v0),F(u1,v1),F(u0,v1)],col);
+      // carnival base: red skirt with white stripes
+      box(a,b,c-a,e-b,6,'#d8d0e0','#e03048','#c02838');
+      for (let k=0;k<8;k+=2){ quad(FL,k/8+0.02,(k+1)/8,0.5,5.5,'#f8f0f0'); quad(FR,k/8+0.02,(k+1)/8,0.5,5.5,'#e8e0e8'); }
+      // mesh safety screen behind the seat
+      { const v0=27, v1=56, pb=(u,v)=>P(a+0.08+(c-a-0.16)*u, b+0.1, v);
+        for (let v=v0; v<=v1; v+=4){ const p0=pb(0,v), p1=pb(1,v); linePx(p0[0],p0[1],p1[0],p1[1],'rgba(70,80,104,0.55)'); }
+        for (let u=0; u<=1.001; u+=0.125){ const p0=pb(u,v0), p1=pb(u,v1); linePx(p0[0],p0[1],p1[0],p1[1],'rgba(70,80,104,0.55)'); }
+        for (const u of [0,1]){ const p0=pb(u,6), p1=pb(u,v1+2); linePx(p0[0],p0[1],p1[0],p1[1],'#4a5468'); linePx(p0[0]+1,p0[1],p1[0]+1,p1[1],'#8a96ac'); }
+        { const p0=pb(0,v1+2), p1=pb(1,v1+2); linePx(p0[0],p0[1],p1[0],p1[1],'#e03048'); linePx(p0[0],p0[1]-1,p1[0],p1[1]-1,'#c02838'); } }
+      // the water: deeper and darker toward the bottom, an empty strip of glass at the top
+      const W0=6, W1=22, TOP=26;
+      for (const [v0,v1,cl,cr] of [[W0,11,'#1c5aa8','#164a90'],[11,16,'#2a78d0','#2066b8'],[16,W1,'#4a9ae8','#3a86d8'],[W1,TOP,'#c8ecfa','#b0dcf0']]){ quad(FL,0,1,v0,v1,cl); quad(FR,0,1,v0,v1,cr); }
+      polyPx([P(a,b,W1),P(c,b,W1),P(c,e,W1),P(a,e,W1)],'#6ab8f0');   // water surface seen through the glass
+      { const ripple=dp>0?1.5:0.5; for (let u=0; u<=1; u+=0.04){ const [x,y]=FL(u,W1); g.fillStyle='#e8f8ff'; g.fillRect(Math.round(x), Math.round(y+Math.sin(t*4+u*20)*ripple), 1, 1); const [x2,y2]=FR(u,W1); g.fillRect(Math.round(x2), Math.round(y2+Math.sin(t*4+u*20+2)*ripple), 1, 1); } }
+      // bubbles drifting up
+      for (let k=0;k<6;k++){ const F=k%2?FR:FL, u=0.15+((k*0.37)%0.7), v=W0+1+((t*(4+k)+k*3.7)%(W1-W0-2)); const [x,y]=F(u,v); g.fillStyle='rgba(232,248,255,0.85)'; g.fillRect(Math.round(x),Math.round(y),1,1); if (k<2){ g.fillRect(Math.round(x)+1,Math.round(y)-1,1,1); } }
+      // glass glints
+      { const g1=FL(0.12,8), g2=FL(0.3,TOP-2), g3=FL(0.2,8), g4=FL(0.36,TOP-6); linePx(g1[0],g1[1],g2[0],g2[1],'rgba(255,255,255,0.55)'); linePx(g3[0],g3[1],g4[0],g4[1],'rgba(255,255,255,0.35)');
+        const g5=FR(0.7,9), g6=FR(0.85,TOP-3); linePx(g5[0],g5[1],g6[0],g6[1],'rgba(255,255,255,0.4)'); }
+      // steel frame: corner posts and a rim round the top
+      const steel=(p,q,dark)=>{ linePx(p[0],p[1],q[0],q[1],dark?'#3a4458':'#5a6478'); linePx(p[0]+1,p[1],q[0]+1,q[1],dark?'#5a6478':'#a8b4c8'); };
+      steel(P(a,e,6),P(a,e,TOP)); steel(P(c,e,6),P(c,e,TOP),true); steel(P(c,b,6),P(c,b,TOP),true);
+      for (const [p,q] of [[P(a,e,TOP),P(c,e,TOP)],[P(c,b,TOP),P(c,e,TOP)],[P(a,b,TOP),P(c,b,TOP)],[P(a,b,TOP),P(a,e,TOP)]]){ linePx(p[0],p[1]-1,q[0],q[1]-1,'#a8b4c8'); linePx(p[0],p[1],q[0],q[1],'#3a4458'); }
+      { const L=(p,q)=>linePx(p[0],p[1],q[0],q[1],INK); L(P(a,e,0),P(c,e,0)); L(P(c,b,0),P(c,e,0)); }
+      // silver ladder up the right side
+      { const r0=P(c+0.06,f.gy+0.22,0), r1=P(c+0.06,f.gy+0.48,0); for (const [x,y] of [r0,r1]){ g.fillStyle=INK; g.fillRect(Math.round(x)-1,Math.round(y)-30,3,30); g.fillStyle='#c8d0e0'; g.fillRect(Math.round(x),Math.round(y)-30,1,30); }
+        for (let v=4; v<30; v+=5){ const p=[r0[0],r0[1]-v], q=[r1[0],r1[1]-v]; linePx(p[0],p[1],q[0],q[1],'#8a96ac'); } }
+      // seat plank on steel brackets (drops when someone gets dunked)
+      { const lift=dp>0?18:27; box(f.gx+0.2,f.gy+0.34,0.6,0.32,2,'#e0a868','#c88a4a','#a86a34',0,lift);
+        const k1=P(f.gx+0.24,f.gy+0.66,lift), k2=P(f.gx+0.76,f.gy+0.66,lift); g.fillStyle='#4a5468'; g.fillRect(Math.round(k1[0]),Math.round(k1[1]),2,3); g.fillRect(Math.round(k2[0])-1,Math.round(k2[1]),2,3); }
       if (!sitter){ const [px,py]=P(f.gx+0.5,f.gy+0.5,0); const x0=Math.round(px)-14, y0=Math.round(py)-45-26+6+dp;
-        dunkClip(Math.round(py)-18, ()=>g.drawImage(sprite('poophat', 'fl', 0, 'sit'), x0, y0));
-        if (dp>0) dunkSplash(Math.round(px), Math.round(py)-18, t); else pfDraw(g,'DUNKY',x0+3,y0-7,'#ffd23f'); }
+        dunkClip(Math.round(py)-21, ()=>g.drawImage(sprite('poophat', 'fl', 0, 'sit'), x0, y0));
+        if (dp>0) dunkSplash(Math.round(px), Math.round(py)-21, t); else pfDraw(g,'DUNKY',x0+3,y0-7,'#ffd23f'); }
       break; }
     case 'dunksign': { // carnival sign on two posts: striped border, chasing bulbs, big DUNK!
       const tw=pfW('1 COIN')+8, W=tw+12, H=23, cv=dunkSignCv; if (cv.width!==W){ cv.width=W; cv.height=H; }
@@ -2879,7 +2905,7 @@ function drawLlama(o, t, isMe){
     if (u>0.15 && u<0.85){ g.fillStyle='#f8f8f8'; g.fillRect(x0+14+Math.round(Math.cos(u*12)*14), y0+20-jump+Math.round(Math.sin(u*12)*10), 2, 2); } }
   else {
     if (fe>=FLIP_T && fe<FLIP_T+350){ const k=(fe-FLIP_T)/350; g.fillStyle=k<0.5?'#f8f070':'#f8f8f8'; for(let a=0;a<6;a++){ const r=4+k*10; g.fillRect(x0+14+Math.round(Math.cos(a*1.05)*r), y0+44+Math.round(Math.sin(a*1.05)*r*0.4), 2, 1); } }
-    if (seat && seat.dunk){ const dp=dunkDepth(); dunkClip(sy-18, ()=>g.drawImage(sprite(o.c, dir, fr, pose), x0+jit, y0-gulp+dp)); if (dp>0) dunkSplash(sx, sy-18, t); }
+    if (seat && seat.dunk){ const dp=dunkDepth(); dunkClip(sy-21, ()=>g.drawImage(sprite(o.c, dir, fr, pose), x0+jit, y0-gulp+dp)); if (dp>0) dunkSplash(sx, sy-21, t); }
     else g.drawImage(sprite(o.c, dir, fr, pose), x0+jit, y0-gulp); }
   if (jit){ g.fillStyle='#a8e0f8'; g.fillRect(x0+22,y0+6,2,3); g.fillStyle='#f8f8f8'; g.fillRect(x0+22,y0+6,1,1); }
   if (!o.leaving) llamaHits.push({id: isMe?null:o.id, x0:x0+4, x1:x0+24, y0:y0, y1:y0+46});
