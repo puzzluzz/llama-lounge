@@ -695,7 +695,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-20d";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-20e";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -745,7 +745,9 @@ const CHARS = {
   tweed:   { label:'The Professor', blurb:'Tweed jacket and a fancy ascot.', ears:'droop', tuft:true,
     fur:{ a:['#3f8fd4','#285f9a','#7cbcec'] }, outfit:'tweed', tag:'#5ab0ff' }
 };
-const CHAR_IDS = Object.keys(CHARS);
+// PENNY works the LLAMA STORE register; she's drawn like everyone else but isn't a llama players can pick
+CHARS.penny = { label:'Penny', blurb:'Runs the LLAMA STORE.', ears:'up', npc:true, outfit:'apron', hat:'visor', fur:{ a:['#c9b6f0','#9f8ad6','#ece2ff'] }, tag:'#c9b6f0' };
+const CHAR_IDS = Object.keys(CHARS).filter(k=>!CHARS[k].npc);
 const SW = 28, SH = 46;
 const RED = ['#e3263f','#a3132b','#ff6b7d'];
 const TWEED = ['#7a5838','#5a3e25','#9a7651'];
@@ -803,6 +805,13 @@ function buildSprite(cid, dir, frame, pose) {
       const asc = (x,y) => ((x+y)%3===0) ? '#f3d1a2' : '#c7452f';
       rect(11,24+oy,6,1,OUT); rect(11,25+oy,6,2,asc); rect(13,27+oy,2,4,asc); rect(12,31+oy,4,2,asc); put(11,31+oy,OUT); put(16,31+oy,OUT); rect(12,33+oy,4,1,OUT);
     } else { rect(10,25+oy,8,1,'#c7452f'); }
+  } else if (ch.outfit==='apron') {
+    const AP=['#2fbf63','#1f8a4c','#7fe0a0'];
+    if (front) {
+      rect(9,25+oy,10,1,OUT); for (let y=26;y<=36;y++){ const w=y<29?3:5; rect(13-w,y+oy,2*w+2,1,(x,yy)=> (x===13-w||x===14+w) ? OUT : (x>=16?AP[1]:AP[0])); }
+      rect(8,37+oy,12,1,OUT); put(10,25+oy,AP[2]); put(17,25+oy,AP[2]);
+      rect(11,31+oy,4,3,'#f8f8f0'); rect(11,31+oy,4,1,'#d8d8d0'); put(16,28+oy,'#f85888'); put(17,28+oy,'#f85888');   // pocket and a pink name badge
+    } else { for (let x=10;x<=17;x++){ put(x,25+oy,AP[1]); } for (let y=26;y<=33;y++){ put(10+Math.floor((y-26)/1.2),y+oy,AP[1]); put(17-Math.floor((y-26)/1.2),y+oy,AP[1]); } }
   } else if (ch.outfit==='chain') {
     if (front) {
       for (let x=9;x<=18;x++){ const t=(x-13.5)/4.5; const y=Math.round(25+5*(1-t*t)); put(x,y+oy,(x%2)?'#f6c945':'#c8951c'); }
@@ -848,6 +857,13 @@ function buildSprite(cid, dir, frame, pose) {
     oell(13.5,2.3+oy,3.6,1.5,hf(13.5,2.3+oy,3.6,1.5));
     put(15,1+oy,HAT[2]);
     if (front) { put(11,5+oy,'#fff'); put(12,5+oy,OUT); put(15,5+oy,'#fff'); put(16,5+oy,OUT); put(13,8+oy,OUT); put(14,8+oy,OUT); put(13,9+oy,'#ff8a96'); put(14,9+oy,'#ff8a96'); }
+  }
+  // pink store visor: a band round the head and a brim over the snout
+  if (ch.hat==='visor') {
+    const V=['#f85888','#c8306a','#ffa0c0'];
+    for (let x=7;x<=20;x++){ const y=Math.round(8.4+oy-Math.abs(x-13.5)*0.08); put(x,y-1,OUT); put(x,y,(x%3)?V[0]:V[2]); put(x,y+1,V[1]); }
+    if (front){ for (let x=17;x<=23;x++){ put(x,9+oy,OUT); put(x,10+oy,V[0]); put(x,11+oy,OUT); } put(23,10+oy,OUT); }
+    else { for (let x=4;x<=9;x++){ put(x,9+oy,OUT); put(x,10+oy,V[1]); } }
   }
   // folded legs when sitting
   if (sit && front) {
@@ -1754,21 +1770,11 @@ function drawFurn(f,t){
       const hitNow = DK.flash && performance.now()-DK.flash<400; const cy=Y-38;
       for (const [r,c] of [[9,INK],[8,'#f8f8f8'],[6,'#e03048'],[4,'#f8f8f8'],[2,'#e03048']]){ g.fillStyle = hitNow && c!==INK ? '#ffd23f' : c; for (let yy=-r;yy<=r;yy++){ const w=Math.round(Math.sqrt(r*r-yy*yy)); g.fillRect(X-w, cy+yy, w*2+1, 1); } }
       break; }
-    case 'clerk': { // body only; the working front leg is drawn with the register so it rests on the counter top // PENNY the cashier: a lavender llama in a green store apron and pink visor, working the register
-      const X=Math.round(sx), Y=Math.round(sy), fur='#c9b6f0', furS='#a48fd6', furD='#7a66b0', snout='#ece2ff';
-      const R=(x,y,w,h,c)=>{ g.fillStyle=c; g.fillRect(X+x,Y+y,w,h); };
-      const {scanning}=clerkState(t), bob=scanning ? Math.round(Math.sin(t*6)) : 0;
-      // torso with apron (mostly hidden by the counter, the top shows above it)
-      R(-8,-29,15,22,INK); R(-7,-28,13,20,fur); R(2,-28,4,20,furS);
-      R(-6,-27,10,19,'#1f8a4c'); R(-5,-26,8,17,'#2fbf63'); R(-3,-21,4,3,'#ffffff'); R(-2,-20,2,1,'#f85888');   // apron with a little name badge
-      // neck leaning toward the register, then the head
-      const hy=-46+bob;
-      R(-8,hy+6,7,18,INK); R(-7,hy+7,5,17,fur); R(-3,hy+7,1,17,furS);
-      R(-13,hy-1,14,10,INK); R(-12,hy,12,8,fur); R(-4,hy,4,8,furS);                 // head
-      R(-17,hy+3,6,6,INK); R(-16,hy+4,5,4,snout); R(-16,hy+6,1,1,furD);           // snout and nostril
-      const blink = (t%3.1)<0.12; if (blink) R(-9,hy+3,3,1,INK); else { R(-9,hy+2,2,2,INK); R(-9,hy+2,1,1,'#ffffff'); }
-      R(-7,hy-6,3,6,INK); R(-6,hy-5,1,5,fur); R(-3,hy-6,3,6,INK); R(-2,hy-5,1,5,furS);   // ears
-      R(-13,hy-2,14,3,INK); R(-12,hy-1,12,1,'#f85888'); R(-18,hy,7,2,INK); R(-17,hy,6,1,'#ff8aaa');   // pink visor and brim
+    case 'clerk': { // PENNY, drawn with the same sprite code as the players; her working front leg is drawn with the register
+      const {scanning, custom}=clerkState(t), fr = scanning ? (Math.floor(t*3.2)%2 ? 1 : 0) : custom ? (Math.floor(t*5)%2 ? 1 : 0) : 0;
+      const blink=(t%3.1)<0.12, X=Math.round(sx)-14, Y=Math.round(sy)-45;
+      g.drawImage(sprite('penny','fl',fr,'stand'), X, Y);
+      if (blink){ g.fillStyle='#9f8ad6'; g.fillRect(X+SW-1-11,Y+12+(fr===1?1:0),3,1); g.fillRect(X+SW-1-17,Y+12+(fr===1?1:0),3,1); }
       break; }
     case 'counter': { // checkout counter: wooden front, cream top, cash register in the middle
       box(f.gx,f.gy,1,1,20,'#f4e6c8','#b07a48','#8a5a30');
@@ -1777,14 +1783,15 @@ function drawFurn(f,t){
         const [x,y]=P(f.gx+0.5,f.gy+0.35,31); const X=Math.round(x), Y=Math.round(y);
         const beat=Math.floor(t*4);
         g.fillStyle=INK; g.fillRect(X-5,Y-6,10,7); g.fillStyle='#48e078'; g.fillRect(X-4,Y-5,8,5); g.fillStyle='#e8fff0'; for (let k=0;k<3;k++) if ((beat+k)%4) g.fillRect(X-3+k*2,Y-4,1,1+((beat*7+k*3)%3));
-        // PENNY's front leg: scans items across the counter, or waves when someone walks up
-        { const {custom, scanning}=clerkState(t), [bx,by]=P(8.5,1.5,0), BX=Math.round(bx), BY=Math.round(by), bob=scanning ? Math.round(Math.sin(t*6)) : 0;
-          const sh=[BX-5, BY-24+bob]; let hp;
-          if (custom){ const [x,y]=P(8.75,1.9,44); hp=[Math.round(x+Math.sin(t*10)*2), Math.round(y)]; }
+        // PENNY's front leg: scans items across the counter, or waves when someone walks up (same outline and shading as the sprites)
+        { const {custom, scanning}=clerkState(t), [bx,by]=P(8.5,1.5,0), fr = scanning ? (Math.floor(t*3.2)%2 ? 1 : 0) : 0;
+          const sh=[Math.round(bx)-14+6, Math.round(by)-45+28+fr]; let hp;
+          if (custom){ hp=[sh[0]-4+Math.round(Math.sin(t*10)*2), sh[1]-20]; }
           else if (scanning){ const u=Math.sin(t*Math.PI*1.6); const [x,y]=P(8.95+u*0.22, 2.38, 22+Math.abs(u)*2); hp=[Math.round(x),Math.round(y)]; }
           else { const [x,y]=P(8.9,2.2,24); hp=[Math.round(x),Math.round(y)]; }
-          for (const w of [3,1]){ g.fillStyle = w===3 ? INK : '#c9b6f0'; for (let k=0;k<=10;k++){ const x=Math.round(sh[0]+(hp[0]-sh[0])*k/10), y=Math.round(sh[1]+(hp[1]-sh[1])*k/10); g.fillRect(x-(w>>1),y-(w>>1),w,w); } }
-          g.fillStyle=INK; g.fillRect(hp[0]-2,hp[1]-1,4,3); g.fillStyle='#7a66b0'; g.fillRect(hp[0]-1,hp[1],2,1);
+          const seg=(r,col)=>{ for (let k=0;k<=12;k++){ const x=sh[0]+(hp[0]-sh[0])*k/12, y=sh[1]+(hp[1]-sh[1])*k/12; ellPx(x,y,r,r,col); } };
+          seg(2.6,OUT); seg(1.6,'#c9b6f0'); { const k=0.5, x=sh[0]+(hp[0]-sh[0])*k, y=sh[1]+(hp[1]-sh[1])*k; g.fillStyle='#ece2ff'; g.fillRect(Math.round(x)-1,Math.round(y)-1,1,1); }
+          g.fillStyle=OUT; g.fillRect(hp[0]-2,hp[1]-1,5,3); g.fillStyle=HOOF; g.fillRect(hp[0]-1,hp[1],3,1);
           if (scanning){ const u=Math.sin(t*Math.PI*1.6); const [gx2,gy2]=P(9.0,2.62,20); const GX=Math.round(gx2), GY=Math.round(gy2);
             g.fillStyle=INK; g.fillRect(GX-4,GY-1,8,3); g.fillStyle='#2a2a40'; g.fillRect(GX-3,GY,6,1);   // scanner glass
             if (Math.abs(u)<0.3){ g.fillStyle='rgba(255,40,60,0.95)'; g.fillRect(GX-3,GY,6,1); g.fillStyle='rgba(255,60,80,0.45)'; g.fillRect(GX-1,GY-6,1,6); } } }
