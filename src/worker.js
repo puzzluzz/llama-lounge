@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-20l";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-21b";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -18,6 +18,7 @@ const FRIENDS = { max: 100, inbox: 50 };
 const DM = { len: 300, burst: 8, perDay: 300 };   // private messages: longest message, most per 10 seconds, most a day (kept forever)
 // the staff chat log is kept forever too
 const ROOM_IDS = new Set(["lounge", "barn", "casino", "arena", "lanes", "store"]);
+const STAFF_GIVE_DAY = 500;   // most tokens a mod can give out in a day (the owner has no limit)
 const AFK_MS = 12 * 60000;   // no moving, chatting or "I'm still here" for this long: no more fishing or bar tips until they're back
 const SIPS = 5;                                   // sips or bites in every drink and snack   // friends plus sent requests per llama; requests waiting for one llama
 const RESET_MS = 30 * 60 * 1000, VERIFY_MS = 48 * 3600 * 1000;
@@ -80,6 +81,15 @@ const ITEMS = {
   tee_smile: { s: "shirt", p: 25 }, tee_cancelled: { s: "shirt", p: 25 }, tee_wild: { s: "shirt", p: 25 }, tee_cancel: { s: "shirt", p: 25 }, tee_woke: { s: "shirt", p: 25 },
   tee_lounge: { s: "shirt", p: 25 }, tee_acres: { s: "shirt", p: 25 }, tee_arena: { s: "shirt", p: 25 },
 };
+// ---------- player rooms ----------
+// One room per player. Only the owner can change it. Public rooms are open to everyone; private ones let in the owner,
+// people on the owner's invite list, people the owner let in after they knocked (for a few hours), and staff.
+const PR = { w: 13, h: 12, maxFurn: 60, clear: ["0,10", "1,10", "2,10", "3,10"], knockGap: 20000, letInMs: 3 * 3600e3, nameMax: 24 };
+const PR_WALLS = ["lavender", "cream", "mint", "pink", "night", "wood"], PR_FLOORS = ["wood", "checker", "carpet", "marble", "grass"];
+// furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
+const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30 };
+const prId = (rm) => { const m = /^p:(\d{1,9})$/.exec(String(rm || "")); return m ? +m[1] : 0; };
+const cleanRoomName = (n) => String(n || "").replace(/[^A-Za-z0-9 '!?&.,:-]/g, "").replace(/\s+/g, " ").trim().slice(0, PR.nameMax);
 const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
 
 // ---------- helpers ----------
@@ -497,12 +507,20 @@ export class Lounge extends DurableObject {
     const wear = await this.wearLoad(uid);
     server.serializeAttachment({ uid, name, staff, peer, pres: null, rate: [Date.now(), 0], nd, wear, act: Date.now() });
     // greet with everyone already here, the leaderboard and table states
-    const peers = this.sockets().filter((w) => w !== server && w.readyState === 1).map((w) => w.deserializeAttachment()).filter((a) => a && a.pres && a.uid !== uid).map((a) => ({ peer: a.peer, presence: a.pres }));
+    const peers = this.sockets().filter((w) => w !== server && w.readyState === 1).map((w) => w.deserializeAttachment()).filter((a) => a && a.pres && a.uid !== uid).map((a) => ({ peer: a.peer, presence: (prId(a.pres.rm) && (!this.prPriv || this.prPriv.get(prId(a.pres.rm)) !== false)) ? { ...a.pres, s: undefined, e: undefined } : a.pres }));   // never show what's said in a private room
     server.send(JSON.stringify({ t: "hello", v: VERSION, peer, peers, board: await this.board(), nd: { hu: nd.hu, th: nd.th, rate: { hu: 100 / NEEDS.hungerMs, th: 100 / NEEDS.thirstMs } } }));
     return new Response(null, { status: 101, webSocket: client });
   }
 
   sockets() { return this.ctx.getWebSockets(); }
+  // presence goes to everyone, but what's said inside a private player room only reaches the people in it
+  peersOut(ws, a, kind) {
+    const full = JSON.stringify({ t: "peers", [kind]: [{ peer: a.peer, presence: a.pres }] });
+    const id = prId(a.pres && a.pres.rm);
+    if (!id || !(this.prPriv && this.prPriv.get(id))) { for (const w of this.sockets()) if (w !== ws) { try { w.send(full); } catch (e) {} } return; }
+    const lite = JSON.stringify({ t: "peers", [kind]: [{ peer: a.peer, presence: { ...a.pres, s: undefined, e: undefined } }] });
+    for (const w of this.sockets()) { if (w === ws) continue; const x = w.deserializeAttachment(); try { w.send(x && x.pres && x.pres.rm === a.pres.rm ? full : lite); } catch (e) {} }
+  }
   send(ws, obj) { try { ws.send(JSON.stringify(obj)); } catch (e) {} }
   broadcast(obj, except) { const s = JSON.stringify(obj); for (const w of this.sockets()) if (w !== except) { try { w.send(s); } catch (e) {} } }
 
@@ -518,6 +536,7 @@ export class Lounge extends DurableObject {
       // balance / mute / ban are cached for a few seconds so moving around doesn't hit the database every step
       if (!a.uc || now - a.uc.t > 5000){ const u = await this.user(a.uid); if (!u || u.banned) { ws.close(4003, "banned"); return; } a.uc = { t: now, tk: u.tk, muted: u.muted, c: u.c || null }; a.staff = staffRole(this.env, u); }
       const first = !a.pres;
+      if (m.p && prId(m.p.rm) && prId(m.p.rm) !== a.proom) return;   // you have to be let in (pr_enter) before you can be in a player room
       // anything a person does (walking, changing rooms, chatting) counts as being here
       if (m.p && (first || +m.p.x !== a.pres.x || +m.p.y !== a.pres.y || m.p.rm !== a.pres.rm || (m.p.s && typeof m.p.s === "object" && +m.p.s.k !== a.ck))) a.act = now;
       // chat log for staff: every new line, muted ones too (marked); action lines like "sat down" are marked as actions
@@ -528,7 +547,8 @@ export class Lounge extends DurableObject {
       a.pres = cleanPresence(m.p, a.name, a.uc.tk, !!a.uc.muted, a.staff); if (a.uc.c) a.pres.c = a.uc.c;   // everyone sees the llama the account picked
       if (a.wear && Object.keys(a.wear).length) a.pres.w = a.wear;   // and the clothes it owns and has on
       ws.serializeAttachment(a);
-      this.broadcast({ t: "peers", [first ? "joined" : "updated"]: [{ peer: a.peer, presence: a.pres }] }, ws);
+      { const pid = prId(a.pres.rm); if (pid && !(this.prPriv && this.prPriv.has(pid))) await this.prRoom(pid); }   // know if it's private before sending anything
+      this.peersOut(ws, a, first ? "joined" : "updated");
       return;
     }
     if (m.t === "ar") { this.arenaRelay(ws, a, m, now); return; }
@@ -543,6 +563,151 @@ export class Lounge extends DurableObject {
   async webSocketClose(ws) { this.left(ws); try { const a = ws.deserializeAttachment(); if (a && a.nd) { this.needsDrain(a, Date.now()); await this.needsSave(a); } } catch (e) {} }
   async webSocketError(ws) { this.left(ws); }
   left(ws) { const a = ws.deserializeAttachment(); if (a && a.pres) this.broadcast({ t: "peers", left: [{ peer: a.peer }] }, ws); }
+
+  // ---------- player rooms ----------
+  async prTables() { if (this.prReady) return;
+    for (const q of ["CREATE TABLE IF NOT EXISTS prooms (id INTEGER PRIMARY KEY AUTOINCREMENT, owner INTEGER NOT NULL UNIQUE, name TEXT NOT NULL, priv INTEGER NOT NULL DEFAULT 0, wall TEXT NOT NULL DEFAULT 'lavender', floor TEXT NOT NULL DEFAULT 'wood', t INTEGER NOT NULL)",
+      "CREATE TABLE IF NOT EXISTS pinv (room INTEGER NOT NULL, uid INTEGER NOT NULL, PRIMARY KEY (room, uid))",
+      "CREATE TABLE IF NOT EXISTS pfurn (id INTEGER PRIMARY KEY AUTOINCREMENT, room INTEGER NOT NULL, item TEXT NOT NULL, gx INTEGER NOT NULL, gy INTEGER NOT NULL, rot INTEGER NOT NULL DEFAULT 0)",
+      "CREATE INDEX IF NOT EXISTS pfurn_room ON pfurn (room)",
+      "CREATE TABLE IF NOT EXISTS finv (uid INTEGER NOT NULL, item TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (uid, item))"]) await this.env.DB.prepare(q).run();
+    this.prReady = true; this.prPriv = this.prPriv || new Map(); this.letIn = this.letIn || new Map(); this.knocks = this.knocks || new Map(); }
+  async prRoom(id) { await this.prTables(); const r = await this.env.DB.prepare("SELECT r.*, u.name AS oname FROM prooms r JOIN users u ON u.id = r.owner WHERE r.id = ?").bind(id).first(); if (r) this.prPriv.set(r.id, !!r.priv); return r; }
+  async prCanEnter(a, r) {
+    if (!r) return false; if (r.owner === a.uid || !r.priv) return true;
+    if (a.staff === "owner" || a.staff === "mod") return true;
+    const li = this.letIn.get(r.id); if (li && (li.get(a.uid) || 0) > Date.now()) return true;
+    return !!(await this.env.DB.prepare("SELECT 1 FROM pinv WHERE room = ? AND uid = ?").bind(r.id, a.uid).first());
+  }
+  prOut(r) { return { id: r.id, name: r.name, owner: r.oname.toUpperCase(), priv: !!r.priv, wall: r.wall, floor: r.floor }; }
+  prCount(id) { const rm = "p:" + id, seen = new Set(); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === rm) seen.add(x.uid); } return seen.size; }
+  toRoom(rm, obj) { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === rm) { try { w.send(s); } catch (e) {} } } }
+  async prFurn(id) { return ((await this.env.DB.prepare("SELECT id, item, gx, gy, rot FROM pfurn WHERE room = ? ORDER BY id").bind(id).all()).results || []).filter((f) => FURN_ITEMS[f.item]); }
+  async prList(a) {
+    await this.prTables(); await this.frTable();
+    const mine = await this.env.DB.prepare("SELECT r.*, u.name AS oname FROM prooms r JOIN users u ON u.id = r.owner WHERE r.owner = ?").bind(a.uid).first();
+    const rows = (await this.env.DB.prepare(`SELECT r.*, u.name AS oname,
+        EXISTS(SELECT 1 FROM friends f WHERE f.st = 'ok' AND ((f.a = ? AND f.b = r.owner) OR (f.b = ? AND f.a = r.owner))) AS fr,
+        EXISTS(SELECT 1 FROM pinv i WHERE i.room = r.id AND i.uid = ?) AS inv
+      FROM prooms r JOIN users u ON u.id = r.owner WHERE u.banned = 0 AND r.owner != ? ORDER BY r.t DESC LIMIT 200`).bind(a.uid, a.uid, a.uid, a.uid).all()).results || [];
+    const out = [];
+    for (const r of rows) { this.prPriv.set(r.id, !!r.priv); const n = this.prCount(r.id); if (!r.fr && !r.inv && r.priv && !n) continue;   // strangers' private rooms only show while someone's in them
+      const li = this.letIn.get(r.id); const can = !r.priv || !!r.inv || (li && (li.get(a.uid) || 0) > Date.now()) || a.staff === "owner" || a.staff === "mod";
+      out.push({ ...this.prOut(r), n, friend: !!r.fr, invited: !!r.inv, can: !!can }); }
+    out.sort((x, y) => (y.friend - x.friend) || (y.n - x.n));
+    return { ok: true, mine: mine ? { ...this.prOut(mine), n: this.prCount(mine.id) } : null, rooms: out.slice(0, 60), staff: a.staff === "owner" || a.staff === "mod" };
+  }
+  async prCreate(a, m) {
+    await this.prTables();
+    const have = await this.env.DB.prepare("SELECT id FROM prooms WHERE owner = ?").bind(a.uid).first(); if (have) return { ok: false, msg: "You already have a room. One per llama for now." };
+    const name = cleanRoomName(m.name) || (a.name + "'S ROOM").slice(0, PR.nameMax);
+    try { await this.env.DB.prepare("INSERT INTO prooms (owner, name, priv, wall, floor, t) VALUES (?, ?, 0, 'lavender', 'wood', ?)").bind(a.uid, name, Date.now()).run(); }
+    catch (e) { if (String(e).includes("UNIQUE")) return { ok: false, msg: "You already have a room." }; throw e; }
+    return this.prList(a);
+  }
+  async prMine(a) { await this.prTables(); const r = await this.env.DB.prepare("SELECT r.*, u.name AS oname FROM prooms r JOIN users u ON u.id = r.owner WHERE r.owner = ?").bind(a.uid).first(); if (r) this.prPriv.set(r.id, !!r.priv); return r; }
+  async prInfo(a) { const r = await this.prMine(a); if (!r) return { ok: false, msg: "You don't have a room yet." };
+    const inv = ((await this.env.DB.prepare("SELECT u.name FROM pinv i JOIN users u ON u.id = i.uid WHERE i.room = ? ORDER BY u.name").bind(r.id).all()).results || []).map((x) => x.name.toUpperCase());
+    return { ok: true, room: this.prOut(r), invites: inv }; }
+  async prSet(a, m) {
+    const r = await this.prMine(a); if (!r) return { ok: false, msg: "You don't have a room yet." };
+    const name = m.name !== undefined ? cleanRoomName(m.name) : r.name; if (!name) return { ok: false, msg: "Give your room a name." };
+    const priv = m.priv !== undefined ? (m.priv ? 1 : 0) : r.priv, wall = PR_WALLS.includes(m.wall) ? m.wall : r.wall, floor = PR_FLOORS.includes(m.floor) ? m.floor : r.floor;
+    await this.env.DB.prepare("UPDATE prooms SET name = ?, priv = ?, wall = ?, floor = ? WHERE id = ?").bind(name, priv, wall, floor, r.id).run();
+    const nr = await this.prRoom(r.id); this.toRoom("p:" + r.id, { t: "prr", room: this.prOut(nr) });
+    if (priv) await this.prKickUnwelcome(nr);
+    return { ok: true, room: this.prOut(nr) };
+  }
+  async prKickUnwelcome(r) {   // a room just went private: anyone inside who isn't allowed goes back to the lounge
+    for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (!x || !x.pres || x.pres.rm !== "p:" + r.id) continue;
+      if (!(await this.prCanEnter(x, r))) { x.proom = 0; w.serializeAttachment(x); this.send(w, { t: "prkick", msg: `${r.name} is private now, so you headed back to the lounge.` }); } } }
+  async prEnter(ws, a, m) {
+    const id = Math.floor(+m.rid || 0); const r = id > 0 ? await this.prRoom(id) : null; if (!r) return { ok: false, msg: "That room doesn't exist anymore." };
+    const owner = await this.user(r.owner); if (!owner || owner.banned) return { ok: false, msg: "That room is closed." };
+    if (!(await this.prCanEnter(a, r))) return { ok: false, locked: true, msg: `${r.name} is private. Knock and the owner can let you in.` };
+    a.proom = r.id; ws.serializeAttachment(a);
+    return { ok: true, room: this.prOut(r), mine: r.owner === a.uid, furn: await this.prFurn(r.id) };
+  }
+  async prKnock(a, m, now) {
+    const r = await this.prRoom(Math.floor(+m.rid || 0)); if (!r) return { ok: false, msg: "That room doesn't exist anymore." };
+    if (await this.prCanEnter(a, r)) return { ok: true, open: true };
+    const k = r.id + ":" + a.uid; if (now - (this.knocks.get(k) || 0) < PR.knockGap) return { ok: false, msg: "You just knocked. Give them a moment." };
+    let sent = false; for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.uid === r.owner) { this.send(w, { t: "knock", room: r.id, uid: a.uid, n: a.name }); sent = true; } }
+    if (!sent) return { ok: false, msg: `${r.oname.toUpperCase()} isn't online right now, so nobody can answer.` };
+    this.knocks.set(k, now); return { ok: true, msg: `You knocked on ${r.name}. Waiting for ${r.oname.toUpperCase()} to answer...` };
+  }
+  async prAnswer(a, m, now) {
+    const r = await this.prMine(a); if (!r) return { ok: false };
+    const uid = Math.floor(+m.uid || 0); if (!this.knocks.has(r.id + ":" + uid)) return { ok: false, msg: "That knock expired." };
+    this.knocks.delete(r.id + ":" + uid);
+    if (m.yes) { let li = this.letIn.get(r.id); if (!li) { li = new Map(); this.letIn.set(r.id, li); } li.set(uid, now + PR.letInMs); }
+    this.toUid(uid, { t: "knockans", room: r.id, yes: !!m.yes, name: r.name });
+    return { ok: true };
+  }
+  async prInvite(a, m) {
+    const r = await this.prMine(a); if (!r) return { ok: false, msg: "You don't have a room yet." };
+    const n = String(m.n || "").trim(); if (!/^[A-Za-z0-9_]{3,12}$/.test(n)) return { ok: false, msg: "No llama has that name." };
+    const u = await this.env.DB.prepare("SELECT id, name FROM users WHERE name = ? AND banned = 0").bind(n).first(); if (!u) return { ok: false, msg: "No llama has that name." };
+    if (u.id === a.uid) return { ok: false, msg: "It's your room, you're always invited!" };
+    if (m.add) { const c = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM pinv WHERE room = ?").bind(r.id).first(); if (c.n >= 100) return { ok: false, msg: "Your invite list is full." };
+      await this.env.DB.prepare("INSERT OR IGNORE INTO pinv (room, uid) VALUES (?, ?)").bind(r.id, u.id).run(); this.toUid(u.id, { t: "prinvited", room: r.id, name: r.name, by: a.name }); }
+    else { await this.env.DB.prepare("DELETE FROM pinv WHERE room = ? AND uid = ?").bind(r.id, u.id).run(); const li = this.letIn.get(r.id); if (li) li.delete(u.id); if (r.priv) await this.prKickUnwelcome(r); }
+    return this.prInfo(a);
+  }
+  async prKick(a, m) {
+    const r = await this.prMine(a); if (!r) return { ok: false };
+    const n = String(m.n || "").toUpperCase(); let done = false;
+    for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (!x || !x.pres || x.pres.rm !== "p:" + r.id || x.uid === a.uid || x.name !== n) continue;
+      x.proom = 0; w.serializeAttachment(x); this.send(w, { t: "prkick", msg: `${a.name} asked you to leave ${r.name}.` }); done = true;
+      const li = this.letIn.get(r.id); if (li) li.delete(x.uid); }
+    return { ok: done, msg: done ? `${n} left your room.` : `${n} isn't in your room.` };
+  }
+  async furnStorage(uid) {
+    await this.prTables();
+    const own = (await this.env.DB.prepare("SELECT item, n FROM finv WHERE uid = ?").bind(uid).all()).results || [];
+    const mine = await this.env.DB.prepare("SELECT id FROM prooms WHERE owner = ?").bind(uid).first();
+    const placed = new Map(); if (mine) for (const f of await this.prFurn(mine.id)) placed.set(f.item, (placed.get(f.item) || 0) + 1);
+    return own.filter((r) => FURN_ITEMS[r.item]).map((r) => ({ item: r.item, n: r.n, placed: placed.get(r.item) || 0 }));
+  }
+  async furnBuy(a, m) {
+    await this.prTables();
+    const k = String(m.item || ""); const price = Object.hasOwn(FURN_ITEMS, k) ? FURN_ITEMS[k] : 0; if (!price) return { ok: false, msg: "The store doesn't sell that." };
+    if (!a.pres || a.pres.rm !== "store") return { ok: false, msg: "Visit the LLAMA STORE to buy furniture." };
+    const have = await this.env.DB.prepare("SELECT n FROM finv WHERE uid = ? AND item = ?").bind(a.uid, k).first(); if (have && have.n >= 20) return { ok: false, msg: "You have plenty of those." };
+    const tk = await this.debit(a.uid, price, "furniture " + k); if (tk === null) return { ok: false, msg: `That costs ${price} TOKENS. Play some games to earn more!` };
+    await this.env.DB.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, k).run();
+    return { ok: true, tk, furn: await this.furnStorage(a.uid) };
+  }
+  async prOwnRoomHere(a) {   // editing: only the owner, standing in their own room
+    const r = await this.prMine(a); if (!r) return null; if (!a.pres || a.pres.rm !== "p:" + r.id) return null; return r; }
+  async prPlace(a, m) {
+    const r = await this.prOwnRoomHere(a); if (!r) return { ok: false, msg: "Go into your own room to place furniture." };
+    const k = String(m.item || ""); if (!Object.hasOwn(FURN_ITEMS, k)) return { ok: false, msg: "That's not furniture." };
+    const gx = Math.floor(+m.gx), gy = Math.floor(+m.gy), rot = ((Math.floor(+m.rot) || 0) % 4 + 4) % 4;
+    if (!(gx >= 0 && gy >= 0 && gx < PR.w && gy < PR.h) || PR.clear.includes(gx + "," + gy)) return { ok: false, msg: "Keep the doorway clear." };
+    const furn = await this.prFurn(r.id); if (furn.length >= PR.maxFurn) return { ok: false, msg: `Rooms hold up to ${PR.maxFurn} pieces.` };
+    if (furn.some((f) => f.gx === gx && f.gy === gy)) return { ok: false, msg: "Something is already there." };
+    const own = await this.env.DB.prepare("SELECT n FROM finv WHERE uid = ? AND item = ?").bind(a.uid, k).first();
+    if (!own || furn.filter((f) => f.item === k).length >= own.n) return { ok: false, msg: "You don't have one of those in storage." };
+    await this.env.DB.prepare("INSERT INTO pfurn (room, item, gx, gy, rot) VALUES (?, ?, ?, ?, ?)").bind(r.id, k, gx, gy, rot).run();
+    const nf = await this.prFurn(r.id); this.toRoom("p:" + r.id, { t: "prf", room: r.id, furn: nf });
+    return { ok: true, furn: nf, storage: await this.furnStorage(a.uid) };
+  }
+  async prEditPiece(a, m, what) {
+    const r = await this.prOwnRoomHere(a); if (!r) return { ok: false, msg: "Go into your own room to change furniture." };
+    const id = Math.floor(+m.fid || 0); const f = await this.env.DB.prepare("SELECT * FROM pfurn WHERE id = ? AND room = ?").bind(id, r.id).first(); if (!f) return { ok: false, msg: "That piece is gone." };
+    if (what === "rot") await this.env.DB.prepare("UPDATE pfurn SET rot = (rot + 1) % 4 WHERE id = ?").bind(id).run();
+    else await this.env.DB.prepare("DELETE FROM pfurn WHERE id = ?").bind(id).run();
+    const nf = await this.prFurn(r.id); this.toRoom("p:" + r.id, { t: "prf", room: r.id, furn: nf });
+    return { ok: true, furn: nf, storage: await this.furnStorage(a.uid) };
+  }
+  async prStaff(a, m) {   // staff can reset a room's name (and make it private) if it breaks the rules
+    if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can do that." };
+    const r = await this.prRoom(Math.floor(+m.rid || 0)); if (!r) return { ok: false, msg: "No such room." };
+    await this.env.DB.prepare("UPDATE prooms SET name = ? WHERE id = ?").bind((r.oname.toUpperCase() + "'S ROOM").slice(0, PR.nameMax), r.id).run();
+    await this.logStaff(a.name, "roomreset", r.oname.toUpperCase());
+    const nr = await this.prRoom(r.id); this.toRoom("p:" + r.id, { t: "prr", room: this.prOut(nr) }); return { ok: true, msg: "Room name reset." };
+  }
 
   // ---------- wardrobe and inventory ----------
   async invTables() { if (this.invReady) return;
@@ -571,7 +736,7 @@ export class Lounge extends DurableObject {
       const have = await this.env.DB.prepare("SELECT 1 FROM inv WHERE uid = ? AND item = ?").bind(a.uid, k).first(); if (!have) return { ok: false, msg: "You don't own that yet." }; }
     await this.env.DB.prepare(`INSERT INTO wear (uid, ${slot}) VALUES (?, ?) ON CONFLICT(uid) DO UPDATE SET ${slot} = excluded.${slot}`).bind(a.uid, k).run();
     a.wear = { ...(a.wear || {}) }; if (k) a.wear[slot] = k; else delete a.wear[slot];
-    if (a.pres){ if (Object.keys(a.wear).length) a.pres.w = a.wear; else delete a.pres.w; this.broadcast({ t: "peers", updated: [{ peer: a.peer, presence: a.pres }] }, ws); }
+    if (a.pres){ if (Object.keys(a.wear).length) a.pres.w = a.wear; else delete a.pres.w; this.peersOut(ws, a, "updated"); }
     ws.serializeAttachment(a);
     return { ok: true, w: a.wear };
   }
@@ -593,7 +758,7 @@ export class Lounge extends DurableObject {
   async chatLog(a, rm, text, muted) {
     await this.chatTable();
     const now = Date.now();
-    await this.env.DB.prepare("INSERT INTO chatlog (t, uid, name, rm, text, mu) VALUES (?, ?, ?, ?, ?, ?)").bind(now, a.uid, a.name, ROOM_IDS.has(rm) ? rm : "lounge", text, muted ? 1 : 0).run();
+    await this.env.DB.prepare("INSERT INTO chatlog (t, uid, name, rm, text, mu) VALUES (?, ?, ?, ?, ?, ?)").bind(now, a.uid, a.name, (ROOM_IDS.has(rm) || prId(rm)) ? rm : "lounge", text, muted ? 1 : 0).run();
   }
   async dashChat(a, m) {
     if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can see the chat log." };
@@ -836,6 +1001,21 @@ export class Lounge extends DurableObject {
       case "bowl_start": return this.bowlStart(a, now);
       case "bowl_roll": return this.bowlRoll(a, m, now);
       case "dash_chat": return this.dashChat(a, m);
+      case "pr_list": return this.prList(a);
+      case "pr_create": return this.prCreate(a, m);
+      case "pr_info": return this.prInfo(a);
+      case "pr_set": return this.prSet(a, m);
+      case "pr_enter": return this.prEnter(ws, a, m);
+      case "pr_knock": return this.prKnock(a, m, now);
+      case "pr_answer": return this.prAnswer(a, m, now);
+      case "pr_invite": return this.prInvite(a, m);
+      case "pr_kick": return this.prKick(a, m);
+      case "pr_place": return this.prPlace(a, m);
+      case "pr_rot": return this.prEditPiece(a, m, "rot");
+      case "pr_pick": return this.prEditPiece(a, m, "pick");
+      case "pr_staff": return this.prStaff(a, m);
+      case "furn_info": return { ok: true, furn: await this.furnStorage(uid) };
+      case "furn_buy": return this.furnBuy(a, m);
       case "inv_info": return { ok: true, ...(await this.invInfo(uid)), w: a.wear || {} };
       case "inv_buy": return this.invBuy(ws, a, m);
       case "inv_wear": return this.invWear(ws, a, m);
@@ -1146,6 +1326,24 @@ export class Lounge extends DurableObject {
   }
 
   // ---------- staff tools: mods mute, unmute and kick; the owner can also ban, unban and make or remove mods ----------
+  // staff can add tokens to a player. Mods: not to themselves, and at most STAFF_GIVE_DAY a day in total. The owner has no limit.
+  async staffGive(a, target, amount) {
+    const n = Math.floor(+amount); if (!(n >= 1 && n <= 1000)) return { ok: false, msg: "Give between 1 and 1000 tokens." };
+    if (!/^[A-Za-z0-9_]{3,12}$/.test(target)) return { ok: false, msg: "No player with that name." };
+    const u = await this.env.DB.prepare("SELECT id, name, banned FROM users WHERE name = ?").bind(target).first();
+    if (!u || u.banned) return { ok: false, msg: "No player named " + target.toUpperCase() };
+    if (a.staff !== "owner" && u.id === a.uid) return { ok: false, msg: "Mods can't give tokens to themselves." };
+    if (a.staff !== "owner") {
+      const since = Date.parse(etDay(Date.now()) + "T00:00:00Z") - 12 * 3600e3;
+      const rows = (await this.env.DB.prepare("SELECT delta, t FROM ledger WHERE reason = ? AND t > ?").bind("staff gift by " + a.name, since).all()).results || [];
+      const today = rows.filter((r) => etDay(r.t) === etDay(Date.now())).reduce((x, r) => x + r.delta, 0);
+      if (today + n > STAFF_GIVE_DAY) return { ok: false, msg: `Mods can give up to ${STAFF_GIVE_DAY} tokens a day. You have ${Math.max(0, STAFF_GIVE_DAY - today)} left today.` };
+    }
+    const tk = await this.credit(u.id, n, "staff gift by " + a.name);
+    for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.uid === u.id) { if (x.uc) { x.uc.tk = tk; w.serializeAttachment(x); } this.send(w, { t: "tk", tk, msg: `🎁 ${a.name} gave you ${n} TOKENS!` }); } }
+    await this.logStaff(a.name, "give", `${u.name.toUpperCase()} ${n}`);
+    return { ok: true, msg: `Gave ${u.name.toUpperCase()} ${n} TOKENS.` };
+  }
   async logStaff(by, cmd, target) {
     const log = (await this.ctx.storage.get("modlog")) || [];
     log.unshift({ t: Date.now(), by, cmd, target }); await this.ctx.storage.put("modlog", log.slice(0, 40));
@@ -1161,7 +1359,11 @@ export class Lounge extends DurableObject {
     const staff = await rows("SELECT name, role FROM users WHERE role IN ('admin','mod') ORDER BY role, name");
     const muted = await rows("SELECT name, role FROM users WHERE muted = 1 ORDER BY name LIMIT 50");
     const banned = await rows("SELECT name, role FROM users WHERE banned = 1 ORDER BY name LIMIT 50");
-    return { ok: true, me: a.staff, online, staff, muted, banned, log: (await this.ctx.storage.get("modlog")) || [] };
+    // every token gift by staff, from the permanent ledger (newest first), plus what each mod has given today
+    const gifts = ((await this.env.DB.prepare("SELECT l.delta, l.t, l.reason, u.name FROM ledger l JOIN users u ON u.id = l.uid WHERE l.reason LIKE 'staff gift by %' ORDER BY l.id DESC LIMIT 100").all()).results || [])
+      .map((r) => ({ by: r.reason.slice(14).toUpperCase(), to: r.name.toUpperCase(), n: r.delta, t: r.t }));
+    const today = {}; for (const g2 of gifts) if (etDay(g2.t) === etDay(Date.now())) today[g2.by] = (today[g2.by] || 0) + g2.n;
+    return { ok: true, me: a.staff, online, staff, muted, banned, gifts, giftsToday: today, giftCap: STAFF_GIVE_DAY, log: (await this.ctx.storage.get("modlog")) || [] };
   }
   async admin(a, m) {
     if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can do that." };
@@ -1169,6 +1371,7 @@ export class Lounge extends DurableObject {
     const sr = (this.staffRate.get(a.uid) || []).filter((t) => now - t < 60000);
     if (sr.length >= 20) return { ok: false, msg: "Slow down. Too many staff actions in a minute." }; sr.push(now); this.staffRate.set(a.uid, sr);
     const cmd = String(m.cmd || ""), target = String(m.target || "").trim();
+    if (cmd === "give") return this.staffGive(a, target, m.amount);
     const ownerOnly = ["unban", "mod", "unmod"];   // mods can mute, kick and ban players; only the owner can unban or change mods
     if (![...ownerOnly, "mute", "unmute", "kick", "ban"].includes(cmd) || !/^[A-Za-z0-9_]{3,12}$/.test(target)) return { ok: false, msg: a.staff === "owner" ? "Use /mute, /unmute, /kick, /ban, /unban, /mod or /unmod NAME" : "Use /mute, /unmute, /kick or /ban NAME" };
     if (ownerOnly.includes(cmd) && a.staff !== "owner") return { ok: false, msg: "Only the owner can do that." };

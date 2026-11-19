@@ -367,8 +367,30 @@
   #wd_body .wi b{font:800 11px/1.2 var(--ui);text-align:center;color:var(--ink)} #wd_body .wi small{font:700 11px var(--ui);color:#a06808} #wd_body .wi small.own{color:#1f8a4c} #wd_body .wi small.on{color:#5a48b0}
   #wd_body .fre{font:500 14px/1.45 var(--ui);color:var(--sub);padding:4px 2px}
   #wd_body .srow{margin-top:12px}
+  #wd_body .wi.fi{cursor:default} #wd_body .wi.fi canvas{width:72px;height:72px} #wd_body .wi.fi .gbbtn{min-height:32px;padding:0 14px;font-size:12px;margin-top:2px} #wd_body .wi small .own,#wd_body .wi small.own{color:#1f8a4c}
+  #wd_kind{margin:0 0 8px}
   #wd_body .wdstore{display:flex;flex-direction:column;align-items:center;gap:4px;padding:30px 10px;background:#f6f4fb;border-radius:18px;margin-top:6px} #wd_body .wdbox{font-size:40px} #wd_body .wdstore b{font:800 15px var(--ui)} #wd_body .wdstore small{font:600 13px var(--ui);color:var(--sub)}
-  #frbox,#acctbox,#dmbox,#catbox,#wardbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);max-height:86vh;z-index:6;animation:popIn .18s ease-out}
+  #roomsbox{width:min(calc(100% - 24px),460px)}
+  #pr_body .prsec{font:800 12px var(--ui);letter-spacing:.06em;color:var(--sub);margin:14px 0 6px}
+  #pr_body .prr{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:#f6f4fb;margin-bottom:6px}
+  #pr_body .prr .prn{flex:1;min-width:0} #pr_body .prr b{display:block;font:800 14px var(--ui);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis} #pr_body .prr small{font:600 12px var(--ui);color:var(--sub)}
+  #pr_body .prr .gbbtn{min-height:36px;padding:0 12px;font-size:13px;flex:none} #pr_body .prcnt{font:800 11px var(--ui);color:#1f8a4c;flex:none}
+  #pr_body .fre{font:500 14px/1.45 var(--ui);color:var(--sub);padding:4px 2px}
+  #pr_body input{display:block;width:100%;box-sizing:border-box;font:16px var(--ui);padding:11px 13px;border:2px solid var(--line);border-radius:12px;background:#fff;outline:none;margin:6px 0} #pr_body input:focus{border-color:var(--yel)}
+  #pr_body .srow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px} #pr_body .srow .gbbtn{flex:1;min-height:42px}
+  #pr_body .sw{display:flex;gap:6px;flex-wrap:wrap} #pr_body .sw button{width:44px;height:34px;border-radius:10px;border:3px solid transparent;cursor:pointer;padding:0} #pr_body .sw button.on{border-color:var(--ink)}
+  #pr_body .seg{display:flex;gap:4px;padding:4px;border-radius:14px;background:#efecf7} #pr_body .seg button{flex:1;height:38px;border:0;border-radius:11px;background:transparent;font:800 13px var(--ui);color:var(--sub);cursor:pointer} #pr_body .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(40,20,80,.15)}
+  #pr_body .prmsg{min-height:16px;font:600 13px var(--ui);color:#e02838;margin-top:6px} #pr_body .prmsg.good{color:#1f8a4c}
+  #pr_body .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;border-radius:999px;background:#efecf7;font:700 12px var(--ui);margin:0 6px 6px 0} #pr_body .chip button{border:0;background:transparent;cursor:pointer;font:800 12px var(--ui);color:var(--sub)}
+  #editbar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--dockh) + 18px + var(--sab));z-index:4;display:none;align-items:center;gap:8px;max-width:calc(100% - 16px);padding:8px;border-radius:18px;background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  body.editing #editbar{display:flex} body.editing #signs{visibility:hidden}
+  body.editing #tbox{bottom:calc(var(--dockh) + 100px + var(--sab))!important}
+  #eb_items{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;max-width:min(560px,70vw)} #eb_items::-webkit-scrollbar{display:none}
+  #eb_items .ebi{position:relative;flex:none;width:58px;height:58px;border-radius:12px;border:2px solid transparent;background:rgba(255,255,255,.12);cursor:pointer;padding:0} #eb_items .ebi.on{border-color:var(--yel);background:rgba(255,210,63,.18)} #eb_items .ebi:disabled{opacity:.35}
+  #eb_items .ebi canvas{width:48px;height:48px;image-rendering:pixelated} #eb_items .ebi i{position:absolute;right:3px;bottom:2px;font:800 11px var(--ui);color:#fff;font-style:normal;text-shadow:0 1px 2px #000}
+  #eb_items .fre{color:#fff;font:600 13px var(--ui);padding:0 6px;white-space:nowrap}
+  #eb_piece{display:none;gap:6px} #editbar.piece #eb_piece{display:flex} #editbar.piece #eb_items{display:none} #eb_piece .gbbtn,#eb_done{min-height:44px;padding:0 14px;white-space:nowrap}
+  #frbox,#acctbox,#dmbox,#catbox,#wardbox,#roomsbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);max-height:86vh;z-index:6;animation:popIn .18s ease-out}
   #frbox{width:min(calc(100% - 24px),420px)}
   #dmbox{width:min(calc(100% - 24px),440px)}
   #dmbox .dmhead{display:flex;align-items:center;gap:6px;margin-bottom:8px} #dmbox .dmhead .slt{flex:1;text-align:left;margin:0}
@@ -603,7 +625,7 @@
   <div id="logbox" class="gb sheet"><span class="x" id="logx">✕</span><div id="loglines"></div></div>
   <div id="tbox" class="gb"><span id="ttext"></span><span id="tarrow">▼</span></div>
   <div id="dock">
-  <div id="rbwrap"><button class="rbarrow" id="rb_l" type="button" aria-label="Scroll rooms left">‹</button><div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button><button class="pbtn" data-go="arena">💦 ARENA</button><button class="pbtn" data-go="lanes">🎳 LANES</button><button class="pbtn" data-go="store">🛍️ STORE</button></div><button class="rbarrow" id="rb_r" type="button" aria-label="Scroll rooms right">›</button></div>
+  <div id="rbwrap"><button class="rbarrow" id="rb_l" type="button" aria-label="Scroll rooms left">‹</button><div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button><button class="pbtn" data-go="arena">💦 ARENA</button><button class="pbtn" data-go="lanes">🎳 LANES</button><button class="pbtn" data-go="store">🛍️ STORE</button><button class="pbtn" data-go="rooms">🏠 ROOMS</button></div><button class="rbarrow" id="rb_r" type="button" aria-label="Scroll rooms right">›</button></div>
   <div id="bottom">
     <form id="chatrow" autocomplete="off"><input id="chatin" maxlength="120" placeholder="Say something..." enterkeyhint="send"><button class="pbtn y" id="saybtn" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10 15 12 3.4 14z" fill="currentColor"/></svg></button></form>
     <button class="pbtn" id="abtn" title="Action (Space)"><b id="alabel">SIT</b></button>
@@ -628,16 +650,19 @@
   <div id="frbox" class="gb sheet"><div class="slt">⭐ FRIENDS</div>
     <form class="fradd" id="fr_form" autocomplete="off"><input id="fr_name" maxlength="12" placeholder="Add a friend by llama name" autocapitalize="off" spellcheck="false"><button class="gbbtn y" type="submit">ADD</button></form>
     <div class="frmsg" id="fr_msg"></div><div id="fr_body"></div><div class="srow"><button class="gbbtn" id="fr_close">DONE</button></div></div>
-  <div id="catbox" class="gb sheet"><div class="slt">🛍️ LLAMA STORE</div><div class="jsub">La Llama P.I.C. shirts. Tap one to see it, or VIEW to open it on the store website.</div><div id="cat_body"></div><div class="srow"><button class="gbbtn y" id="cat_clothes">👕 IN-GAME CLOTHES</button><button class="gbbtn" id="cat_close">DONE</button></div></div>
+  <div id="catbox" class="gb sheet"><div class="slt">🛍️ LLAMA STORE</div><div class="jsub">La Llama P.I.C. shirts. Tap one to see it, or VIEW to open it on the store website.</div><div id="cat_body"></div><div class="srow"><button class="gbbtn y" id="cat_clothes">👕 IN-GAME CLOTHES</button><button class="gbbtn y" id="cat_furn">🛋️ FURNITURE</button><button class="gbbtn" id="cat_close">DONE</button></div></div>
   <div id="wardbox" class="gb sheet"><div class="slt" id="wd_title">👕 WARDROBE</div>
     <div class="wdtop"><canvas id="wd_prev" width="28" height="46" title="Tap to turn around"></canvas><div class="wdinfo"><b id="wd_name"></b><small id="wd_sub"></small><div class="srow" id="wd_acts"></div></div></div>
     <div class="autabs" id="wd_tabs"><button type="button" data-t="clothing">👕 CLOTHING</button><button type="button" data-t="storage">📦 STORAGE</button></div>
     <div id="wd_msg"></div><div id="wd_body"></div></div>
+  <div id="roomsbox" class="gb sheet"><div class="slt" id="pr_title">🏠 ROOMS</div><div id="pr_body"></div></div>
   <div id="dmbox" class="gb sheet"><div class="dmhead"><button class="dmback" id="dm_back" aria-label="Back">‹</button><div class="slt" id="dm_title">💬 MESSAGES</div></div>
     <div id="dm_list"></div>
     <div id="dm_thread"><div id="dm_msgs"></div><form id="dm_form" autocomplete="off"><input id="dm_in" maxlength="300" placeholder="Message..." enterkeyhint="send"><button class="pbtn y" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10 15 12 3.4 14z" fill="currentColor"/></svg></button></form><div class="dmnote" id="dm_note"></div></div></div>
   <div id="acctbox" class="gb sheet"><div class="slt" id="ac_title">🔐 ACCOUNT</div><div id="ac_body"></div></div>
   <div id="kicked"></div>
+  <div id="knockbox" class="afk"><div class="afkc"><div class="afki">🚪</div><b id="kn_t"></b><small>Let them into your room?</small><div class="srow" style="display:flex;gap:8px"><button class="gbbtn y" id="kn_yes">LET IN</button><button class="gbbtn" id="kn_no">NO THANKS</button></div></div></div>
+  <div id="editbar"><div id="eb_items"></div><div id="eb_piece"></div><button class="gbbtn y" id="eb_done">DONE</button></div>
   <div id="afkbox" class="afk"><div class="afkc"><div class="afki">⏰</div><b>Are you still there?</b><small>You haven't moved in a while. You'll be logged out of the room in <span id="afk_left">2:00</span>.</small><button class="gbbtn y" id="afk_here">I'M STILL HERE</button></div></div>
   <div id="afkout" class="afk"><div class="afkc"><div class="afki">💤</div><b>You were away, so we logged you out.</b><small>Your tokens and stuff are all saved.</small><button class="gbbtn y" id="afk_back">COME BACK</button></div></div>
   <div id="roompick" class="gb sheet"><div class="rpt" id="rp_title">WHERE TO?</div>
@@ -728,7 +753,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-20l";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-21b";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1013,6 +1038,12 @@ const block = (x,y) => { BLOCK[y*N+x] = 1; };
 let curRoom = 'lounge';
 const ROOM_NAMES = { lounge:'LLAMA LOUNGE', barn:'LLAMA ACRES', casino:'LLAMA CASINO', arena:'SPIT ARENA', lanes:'LLAMA LANES', store:'LLAMA STORE' };
 const ROOMS = ['lounge','barn','casino','arena','lanes','store'];
+// player rooms are 'p:<id>'; their name, door and layout get registered when you go in
+const isP = r => /^p:\d{1,9}$/.test(String(r||''));
+const validRoom = r => ROOMS.includes(r) || isP(r);
+const PRD = {};   // player room data you've been let into, by room key
+const PRN = {};   // player room names you've seen (for "X went to ...")
+const roomName = r => ROOM_NAMES[r] || (isP(r) ? (PRN[r] || 'a player room') : 'the lounge');
 const CASINO_SLOT_X = [1,3,5,7,9,11];   // six machines on the casino's back wall with a gap between each, two of each kind; stools one tile in front (the server checks the same spots)
 const slotKind = x => x<=3 ? 'fruit' : x<=7 ? 'classic' : 'gold';
 // what each kind looks like and pays (three of a kind, times the bet); the server holds the same table and decides every spin
@@ -1150,7 +1181,7 @@ function buildStoreWorld(){
   FURN.push({t:'fern',gx:12,gy:11,flip:true}); block(12,11);
   FURN.push({t:'fern',gx:0,gy:11}); block(0,11);
 }
-function buildWorld(){ if (curRoom==='store') buildStoreWorld(); else if (curRoom==='barn') buildBarnWorld(); else if (curRoom==='casino') buildCasinoWorld(); else if (curRoom==='arena') buildArenaWorld(); else if (curRoom==='lanes') buildLanesWorld(); else buildLoungeWorld(); }
+function buildWorld(){ if (isP(curRoom)) buildPlayerWorld(); else if (curRoom==='store') buildStoreWorld(); else if (curRoom==='barn') buildBarnWorld(); else if (curRoom==='casino') buildCasinoWorld(); else if (curRoom==='arena') buildArenaWorld(); else if (curRoom==='lanes') buildLanesWorld(); else buildLoungeWorld(); }
 buildLoungeWorld();
 const seatAt = (x,y) => SEATS.find(s=>s.gx===x&&s.gy===y);
 const walkable = (x,y) => x>=0&&y>=0&&x<N&&y<NY&&!BLOCK[y*N+x];
@@ -1442,6 +1473,60 @@ function buildStoreBG(){
     g.putImageData(img,x0,y0); }
 }
 
+// ======================= PLAYER ROOMS: furniture, world and walls/floors =======================
+// furniture you buy in the LLAMA STORE (prices match the server); mk turns a placed piece into what the room draws
+const FURN_DEF = {
+  cushion_pink:{n:'PINK CUSHION',p:5,seat:5,mk:()=>({t:'cushion',col:['#f85888','#b83068','#f8a8c8']})},
+  cushion_teal:{n:'TEAL CUSHION',p:5,seat:5,mk:()=>({t:'cushion',col:['#48c8b8','#208878','#a8f0e0']})},
+  cushion_gold:{n:'GOLD CUSHION',p:5,seat:5,mk:()=>({t:'cushion',col:['#f8b830','#c07818','#f8e880']})},
+  stool:{n:'BAR STOOL',p:6,seat:9,mk:()=>({t:'stool'})}, hayseat:{n:'HAY SEAT',p:6,seat:10,mk:()=>({t:'hayseat'})},
+  log:{n:'LOG SEAT',p:5,seat:6,mk:rot=>({t:'log',ax:rot%2?'x':'y'})},
+  table:{n:'CANDLE TABLE',p:12,mk:()=>({t:'table'})}, lamp:{n:'SIDE LAMP',p:12,mk:()=>({t:'sidetable'})},
+  fern:{n:'POTTED FERN',p:6,mk:rot=>({t:'fern',flip:rot%2===1})}, hay:{n:'HAY BALE',p:4,mk:()=>({t:'hay'})},
+  keg:{n:'BARREL',p:8,mk:()=>({t:'keg'})}, cabinet:{n:'CABINET',p:15,mk:()=>({t:'cabinet'})},
+  counter:{n:'COUNTER',p:10,mk:()=>({t:'counter',end:0})}, vending:{n:'VENDING MACHINE',p:30,mk:()=>({t:'vending'})},
+};
+const SEAT_DIRS=['fr','fl','br','bl'];
+const PR_WALL={ lavender:['#b8a0f0','#d0b8f8','#7860c8','#8870d8'], cream:['#f2e2c8','#f8ecd6','#9a6436','#a86e3e'], mint:['#a8e0c8','#c0eed8','#4a9a7a','#58aa88'],
+  pink:['#f8b8d0','#fcd0e0','#c86890','#d87aa0'], night:['#2a2450','#342c60','#141030','#1a1438'], wood:['#a87444','#b8834e','#6a4220','#7a4c26'] };
+const PR_FLOOR={ wood:['#d8a468','#cf9a5e','#a87440'], checker:['#f4f0f8','#3a3458','#d8d0e8'], carpet:['#4a64c8','#3a54b0','#6a84e0'], marble:['#ece8f0','#d8d2e2','#b8b0c8'], grass:['#6ab04a','#5aa040','#88c860'] };
+function buildPlayerWorld(){
+  clearWorld(); const R=PRD[curRoom]; if (!R) return;
+  for (const f of R.furn||[]){ const D=FURN_DEF[f.item]; if (!D) continue; FURN.push({...D.mk(f.rot||0), gx:f.gx, gy:f.gy, fid:f.id, item:f.item}); if (D.seat) SEATS.push({gx:f.gx,gy:f.gy,dir:SEAT_DIRS[f.rot||0],lift:D.seat}); else block(f.gx,f.gy); }
+}
+function buildPlayerBG(){
+  g = bg.getContext('2d'); g.clearRect(0,0,bg.width,bg.height);
+  const ox=BGX, oy=BGY, R=PRD[curRoom]||{}, Wc=PR_WALL[R.wall]||PR_WALL.lavender, Fc=PR_FLOOR[R.floor]||PR_FLOOR.wood;
+  for (let x=-NY*20; x<N*20; x++){
+    const left=x<0, ax=left?-x:x, base=Math.floor(ax/2), top=base-WH;
+    g.fillStyle = left ? Wc[0] : Wc[1]; g.fillRect(ox+x, oy+top, 1, WH+2);
+    if ((ax%10)<1){ g.fillStyle = left ? Wc[2] : Wc[3]; g.globalAlpha=0.25; g.fillRect(ox+x, oy+top+6, 1, WH-34); g.globalAlpha=1; }
+    g.fillStyle = left ? Wc[2] : Wc[3]; g.fillRect(ox+x, oy+base-26, 1, 28);
+    g.fillStyle = '#f8f8f8'; g.fillRect(ox+x, oy+base-28, 1, 2);
+    g.fillStyle = INK; g.fillRect(ox+x, oy+base-29, 1, 1);
+    g.fillStyle = Wc[2]; g.fillRect(ox+x, oy+top-4, 1, 5);
+    g.fillStyle = INK; g.fillRect(ox+x, oy+top-5, 1, 1); g.fillRect(ox+x, oy+base, 1, 1);
+  }
+  g.fillStyle=INK; g.fillRect(ox-1, oy-WH-5, 2, WH+6); g.fillRect(ox-NY*20-1, oy+NY*10-WH-5, 1, WH+6); g.fillRect(ox+N*20, oy+N*10-WH-5, 1, WH+6);
+  drawDoor(ox, oy, -220, -200, -1, -205);
+  { const x0=ox-NY*20, x1=ox+N*20, y0=oy, y1=oy+(N+NY)*10; const img=g.getImageData(x0,y0,x1-x0,y1-y0), D=img.data, W=x1-x0;
+    const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)], F=Fc.map(hex), mat=hex('#3f8a5a'), mat2=hex('#2f6e46');
+    for (let py=0; py<y1-y0; py++) for (let px=0; px<W; px++){ const wx=px+x0-ox, wy=py+y0-oy; const gx=(wx/20+wy/10)/2, gy=(wy/10-wx/20)/2;
+      if (gx<0||gy<0||gx>=N||gy>=NY) continue; let c;
+      if (R.floor==='checker') c = ((Math.floor(gx)+Math.floor(gy))%2) ? F[1] : F[0];
+      else if (R.floor==='wood'){ const row=Math.floor(gy*3), u=(gx+(row*0.73)%2)%2; c=[F[0],F[1],F[0]][row%3]; if ((gy*3)%1<0.07 || u<0.035) c=F[2]; }
+      else if (R.floor==='marble'){ c = ((Math.floor(gx)+Math.floor(gy))%2) ? F[1] : F[0]; if ((gx%1)<0.04||(gy%1)<0.04) c=F[2]; }
+      else if (R.floor==='grass'){ const h2=((Math.floor(gx*7)*31+Math.floor(gy*7)*17)%7); c = h2===0 ? F[2] : h2===1 ? F[1] : F[0]; }
+      else { c = (((Math.floor(gx*4)+Math.floor(gy*4))%2)?F[0]:F[1]); }
+      if (gx>=0.6 && gx<2.6 && gy>=9.4 && gy<10.8) c = ((gx-0.6)<0.12||(gx-0.6)>1.88||(gy-9.4)<0.1||(gy-9.4)>1.3) ? mat2 : mat;
+      const i=(py*W+px)*4; D[i]=c[0]; D[i+1]=c[1]; D[i+2]=c[2]; D[i+3]=255; }
+    g.putImageData(img,x0,y0); }
+  // the room's name on a plaque on the right wall
+  { const nm=(R.name||'').toUpperCase(), sc=1, tw=Math.max(20,pfW(nm,sc)), cv=document.createElement('canvas'); cv.width=tw+12; cv.height=13; const m=cv.getContext('2d');
+    m.fillStyle=INK; m.fillRect(0,0,cv.width,13); m.fillStyle='#f8e8b0'; m.fillRect(1,1,cv.width-2,11); m.fillStyle='#c8a050'; m.fillRect(1,10,cv.width-2,2); pfDraw(m,nm,6,4,'#5a3418',sc);
+    const wx=Math.round(120-cv.width/2); for (let x=0;x<cv.width;x++){ const X=wx+x; g.drawImage(cv, x,0,1,13, ox+X, oy+Math.floor(X/2)-74, 1, 13); } }
+}
+
 // ======================= FURNITURE DRAW =======================
 let OX=0, OY=0;
 
@@ -1512,7 +1597,7 @@ function buildBarnBG(){
   g = null;
 }
 function barnSky(){ const per=(typeof period==='string')?period:'day'; return per==='day' ? ['#78b8f0','#98ccf8','#b8e0f8'] : per==='dusk' ? ['#d86858','#f09868','#f8c890'] : ['#181c50','#222a68','#2c3a80']; }
-function rebuildBG(){ sizeBG(); if (curRoom==='store') buildStoreBG(); else if (curRoom==='barn') buildBarnBG(); else if (curRoom==='casino') buildCasinoBG(); else if (curRoom==='arena') buildArenaBG(); else if (curRoom==='lanes') buildLanesBG(); else buildBG(); }
+function rebuildBG(){ sizeBG(); if (isP(curRoom)) buildPlayerBG(); else if (curRoom==='store') buildStoreBG(); else if (curRoom==='barn') buildBarnBG(); else if (curRoom==='casino') buildCasinoBG(); else if (curRoom==='arena') buildArenaBG(); else if (curRoom==='lanes') buildLanesBG(); else buildBG(); }
 
 function P(gx,gy,h=0){ const [x,y]=proj(gx,gy); return [OX+x, OY+y-h]; }
 function box(gx,gy,w,d,h,top,lf,rf,inset=0,lift=0){
@@ -2491,6 +2576,7 @@ function context(){
   }
   if (curRoom==='arena') return me.h ? (DRINKS[me.h].food ? 'bite' : 'sip') : 'arena';
   if (curRoom==='lanes') return me.h ? (DRINKS[me.h].food ? 'bite' : 'sip') : 'bowl';
+  if (isP(curRoom)){ if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip'; return me.p==='sit' ? 'stand' : 'sit'; }
   if (curRoom==='store'){
     if (me.p!=='sit' && STORE_COUNTER.some(([x,y])=>near(x,y))) return 'shop';
     if (standNear()==='vend') return 'vend';
@@ -2921,7 +3007,7 @@ function readPeer(peer){
   const bj = Array.isArray(pr.bj) ? pr.bj.slice(0,8).map(v=>Math.max(0,Math.min(51,Math.floor(+v||0)))) : null;
   const ea = (pr.ea&&typeof pr.ea==='object'&&/^a\d{1,2},\d{1,2}$/.test(String(pr.ea.a))) ? {k:+pr.ea.k||0, a:String(pr.ea.a)} : null;
   return { w: cleanWear(pr.w), st: ['owner','mod'].includes(pr.st) ? pr.st : '', bj, ea, l, c:pr.c, n:clean(pr.n,12)||'LLAMA', x:Math.min(40,Math.max(0,x)), y:Math.min(40,Math.max(0,y)), d:['fr','fl','br','bl'].includes(pr.d)?pr.d:'fr',
-    p:['sit','dance','bar'].includes(pr.p)?pr.p:'stand', s, e, j, h: DRINK_IDS.includes(pr.h)?pr.h:null, hl:Math.max(0,Math.min(5,Math.floor(+pr.hl||5))), sk:+pr.sk||0, a: pr.a==='arcade'?'arcade':null, sp, td, g:gsc, tg, fk:+pr.fk||0, tk:Math.max(0,Math.min(1e6,Math.floor(+pr.tk||0))), rm: ROOMS.includes(pr.rm)?pr.rm:'lounge', fs: (pr.fs&&typeof pr.fs==='object'&&['cast','bite','got'].includes(pr.fs.st)) ? {k:+pr.fs.k||0, st:pr.fs.st, f:Math.max(0,Math.min(2,Math.floor(+pr.fs.f||0))), bx:Math.max(0,Math.min(40,+pr.fs.bx||0)), by:Math.max(0,Math.min(40,+pr.fs.by||0))} : null, sl: (pr.sl&&typeof pr.sl==='object'&&Array.isArray(pr.sl.r)) ? {k:+pr.sl.k||0, r:pr.sl.r.slice(0,3).map(v=>Math.max(0,Math.min(SLOT_SYMS.length-1,Math.floor(+v||0))))} : null };
+    p:['sit','dance','bar'].includes(pr.p)?pr.p:'stand', s, e, j, h: DRINK_IDS.includes(pr.h)?pr.h:null, hl:Math.max(0,Math.min(5,Math.floor(+pr.hl||5))), sk:+pr.sk||0, a: pr.a==='arcade'?'arcade':null, sp, td, g:gsc, tg, fk:+pr.fk||0, tk:Math.max(0,Math.min(1e6,Math.floor(+pr.tk||0))), rm: validRoom(pr.rm)?pr.rm:'lounge', fs: (pr.fs&&typeof pr.fs==='object'&&['cast','bite','got'].includes(pr.fs.st)) ? {k:+pr.fs.k||0, st:pr.fs.st, f:Math.max(0,Math.min(2,Math.floor(+pr.fs.f||0))), bx:Math.max(0,Math.min(40,+pr.fs.bx||0)), by:Math.max(0,Math.min(40,+pr.fs.by||0))} : null, sl: (pr.sl&&typeof pr.sl==='object'&&Array.isArray(pr.sl.r)) ? {k:+pr.sl.k||0, r:pr.sl.r.slice(0,3).map(v=>Math.max(0,Math.min(SLOT_SYMS.length-1,Math.floor(+v||0))))} : null };
 }
 function upsertPeer(peer){
   if (peer.isMe && peer.sameTab) return;
@@ -2931,7 +3017,7 @@ function upsertPeer(peer){
   if (joined && me.n && st.n.toUpperCase()===String(me.n).toUpperCase()){ const o=others.get(id); if (o) others.delete(id); return; }   // never draw yourself twice
   let o = others.get(id); const now=performance.now();
   if (o && o.leaving){ others.delete(id); o=null; }
-  if (!o){ o = { id, x:st.x, y:st.y, anim:0, lastK: st.s?st.s.k:0, lastE: st.e?st.e.k:0, lastSk: st.sk, lastSp: st.sp?st.sp.k:0, lastTd: st.td?st.td.k:0, lastG: st.g?st.g.k:0, lastTG: st.tg?st.tg.k:0, lastFk: st.fk||0, lastEa: st.ea?st.ea.k:0, flipStart:-9999, bubble:null, emote:null, sipStart:-9999, flinch:0 }; others.set(id,o); if (isFriend(st.n)) localMsg(`⭐ Your friend ${st.n.toUpperCase()} is online in ${ROOM_NAMES[st.rm]||'the lounge'}!`); else sysMsg(`${st.n.toUpperCase()} is online in ${ROOM_NAMES[st.rm]||'the lounge'}!`); }
+  if (!o){ o = { id, x:st.x, y:st.y, anim:0, lastK: st.s?st.s.k:0, lastE: st.e?st.e.k:0, lastSk: st.sk, lastSp: st.sp?st.sp.k:0, lastTd: st.td?st.td.k:0, lastG: st.g?st.g.k:0, lastTG: st.tg?st.tg.k:0, lastFk: st.fk||0, lastEa: st.ea?st.ea.k:0, flipStart:-9999, bubble:null, emote:null, sipStart:-9999, flinch:0 }; others.set(id,o); if (isFriend(st.n)) localMsg(`⭐ Your friend ${st.n.toUpperCase()} is online in ${roomName(st.rm)}!`); else sysMsg(`${st.n.toUpperCase()} is online in ${roomName(st.rm)}!`); }
   else {
     const here = st.rm===curRoom;
     if (st.sl && st.sl.k !== o.lastSl){ o.lastSl = st.sl.k; if (here) slotRemote(st.sl.r, Math.floor(st.x)); }
@@ -2950,7 +3036,7 @@ function upsertPeer(peer){
   o.j = st.j;
   if (st.l && st.l.ts > lamp.ts){ lamp.on=st.l.on; lamp.ts=st.l.ts; }
   if (st.fs && st.fs.st==='got' && (!o.fs || o.fs.st!=='got' || o.fs.k!==st.fs.k)) o.fishShow={f:st.fs.f, until:performance.now()+2200};
-  if (o.rm && st.rm && o.rm!==st.rm) sysMsg(`${st.n.toUpperCase()} went to ${ROOM_NAMES[st.rm]}.`);
+  if (o.rm && st.rm && o.rm!==st.rm) sysMsg(`${st.n.toUpperCase()} went to ${roomName(st.rm)}.`);
   o.w=st.w; o.st=st.st; o.bj=st.bj; o.tk=st.tk; o.rm=st.rm; o.fs=st.fs; o.c=st.c; o.n=st.n; o.tx=st.x; o.ty=st.y; o.d=st.d; o.p=st.p; o.h=st.h; o.hl=st.hl; o.a=st.a;
   if (Math.hypot(o.tx-o.x,o.ty-o.y)>3){ o.x=o.tx; o.y=o.ty; }
 }
@@ -3087,7 +3173,7 @@ function items(m){ return [...m.children].filter(c=>!c.classList.contains('sheet
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; const dmb=document.getElementById('dmbox'); if (dmb) dmb.style.display='none'; const ctb=document.getElementById('catbox'); if (ctb) ctb.style.display='none'; const wdb=document.getElementById('wardbox'); if (wdb) wdb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; const dmb=document.getElementById('dmbox'); if (dmb) dmb.style.display='none'; const ctb=document.getElementById('catbox'); if (ctb) ctb.style.display='none'; const wdb=document.getElementById('wardbox'); if (wdb) wdb.style.display='none'; const prb=document.getElementById('roomsbox'); if (prb) prb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
   const a=el.dataset.a;
@@ -3205,6 +3291,7 @@ cv.addEventListener('pointerdown', e => {
   if (curRoom==='arena'){ arenaPointer(e); return; }
   if (curRoom==='lanes'){ lanesPointer(e); return; }
   if (curRoom==='store'){ storePointer(e); return; }
+  if (isP(curRoom)){ playerPointer(e); return; }
   { const lx=e.clientX/S, ly=e.clientY/S; for (const h of shopHit){ if(lx>=h.x0&&lx<h.x1&&ly>=h.y0&&ly<=h.y1){ openShop(h.i); return; } }
     const lcx=OX-210, lcy=OY+105-75.5; if (SHOW_MERCH && Math.abs(lx-lcx)<=13 && Math.abs(ly-lcy)<=13){ openLogo(); return; } }
   { const lx=e.clientX/S, ly=e.clientY/S;
@@ -3629,7 +3716,7 @@ function render(t){
   if (curRoom==='barn'){ const sk=barnSky(); const top=OY-BGY; ctx.fillStyle=sk[2]; ctx.fillRect(0,0,LW,LH); ctx.fillStyle=sk[1]; ctx.fillRect(0,0,LW,top+140); ctx.fillStyle=sk[0]; ctx.fillRect(0,0,LW,top+70); }
   else { ctx.fillStyle='#100c1c'; ctx.fillRect(0,0,LW,LH); }
   ctx.drawImage(bg, OX-BGX, OY-BGY);
-  if (curRoom==='lounge'){ drawSkySign(t); drawSigns(t); drawBoardWall(t); drawDanceFloor(t); } else { shopHit=[]; boardHit=null; if (curRoom==='store') drawStoreSigns(t); else if (curRoom==='casino') drawCasinoSigns(t); else if (curRoom==='arena') drawArenaSigns(t); else if (curRoom==='lanes') drawLanesSigns(t); }
+  if (curRoom==='lounge'){ drawSkySign(t); drawSigns(t); drawBoardWall(t); drawDanceFloor(t); } else { shopHit=[]; boardHit=null; if (isP(curRoom)) drawPlayerRoom(t); else if (curRoom==='store') drawStoreSigns(t); else if (curRoom==='casino') drawCasinoSigns(t); else if (curRoom==='arena') drawArenaSigns(t); else if (curRoom==='lanes') drawLanesSigns(t); }
   const items = [];
   for (const f of FURN) items.push({d: f.gx+f.gy+1+(f.dz||0), f});
   if (joined) items.push({d: me.x+me.y+0.02, l: me, me:true});
@@ -3962,21 +4049,22 @@ for (const b of document.querySelectorAll('#roompick [data-r]')) b.addEventListe
 document.getElementById('rp_close').addEventListener('click', ()=>{ roomPickEl.style.display='none'; });
 
 function setRoom(r){ if (me.fish) stopFish(true); if (typeof AR!=='undefined' && AR.on) arenaClose(true); if (typeof BW!=='undefined' && BW.on) bowlClose(true);
-  curRoom = ROOMS.includes(r) ? r : 'lounge'; store.room=curRoom; saveStore();
+  curRoom = (ROOMS.includes(r) || (isP(r) && PRD[r])) ? r : 'lounge'; store.room = isP(curRoom) ? 'lounge' : curRoom; saveStore();
+  if (typeof prEditStop==='function') prEditStop();
   buildWorld(); rebuildBG();
   me.bar=false; me.path=[]; me.moving=false; me.p='stand'; me.pending=null; me.after=null; me.prog=0;
   const [sx,sy]=entryFor(curRoom).at; me.gx=sx; me.gy=sy; me.x=sx+0.5; me.y=sy+0.5; me.d='fr';
   tgState[0]=tgState[1]=null; tableFx[0]=tableFx[1]=null; camInit=false;
-  document.getElementById('stitle').textContent = ROOM_NAMES[curRoom]; updateStatus(); updateRoombar(); setTimeout(roombarShowHere, 50);
+  document.getElementById('stitle').textContent = roomName(curRoom); updateStatus(); updateRoombar(); setTimeout(roombarShowHere, 50);
 }
 // ---- bottom-left room selector: walk to the doorway, then confirm the swap ----
 const swapEl=document.getElementById('swapbox'), roombarEl=document.getElementById('roombar'); let swapTo=null;
 const DOORWAY = { lounge:[0,10], barn:[14,1], casino:[0,10], arena:[0,10], lanes:[0,10], store:[0,10] };   // each room has one door; you walk to it whichever room you're going to
-function showSwap(r){ if (!joined || r===curRoom || !ROOMS.includes(r)) return; closeAll(); swapTo=r; document.getElementById('sw_text').textContent=`GO TO ${ROOM_NAMES[r]}?`; swapEl.style.display='block'; }
-document.getElementById('sw_go').addEventListener('click', ()=>{ swapEl.style.display='none'; const r=swapTo; swapTo=null; if (!r) return; if (arcade.on) exitArcade(); localMsg(`Heading to ${ROOM_NAMES[r]}...`); goThroughDoor(r); });
-function goThroughDoor(r){ const [dx,dy]=DOORWAY[curRoom]; if (me.gx===dx && me.gy===dy && !me.moving && !me.bar){ switchRoom(r); return; } me.travelTo=r; if (!walkTo(dx,dy,'travel')){ me.travelTo=null; switchRoom(r); } }
+function showSwap(r){ if (!joined || r===curRoom || !validRoom(r)) return; if (isP(r) && !PRD[r]){ prGo(+r.slice(2)); return; } closeAll(); swapTo=r; document.getElementById('sw_text').textContent=`GO TO ${roomName(r)}?`; swapEl.style.display='block'; }
+document.getElementById('sw_go').addEventListener('click', ()=>{ swapEl.style.display='none'; const r=swapTo; swapTo=null; if (!r) return; if (arcade.on) exitArcade(); localMsg(`Heading to ${roomName(r)}...`); goThroughDoor(r); });
+function goThroughDoor(r){ const [dx,dy]=DOORWAY[curRoom]||[0,10]; if (me.gx===dx && me.gy===dy && !me.moving && !me.bar){ switchRoom(r); return; } me.travelTo=r; if (!walkTo(dx,dy,'travel')){ me.travelTo=null; switchRoom(r); } }
 document.getElementById('sw_stay').addEventListener('click', ()=>{ swapEl.style.display='none'; swapTo=null; });
-function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; document.getElementById('dock').classList.toggle('on', !!joined); document.body.classList.toggle('joined', !!joined); for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n=roomCount(r); const [ic,lb]=({lounge:['🍸','LOUNGE'], barn:['🌾','ACRES'], casino:['🎰','CASINO'], arena:['💦','ARENA'], lanes:['🎳','LANES'], store:['🛍️','STORE']})[r]; b.innerHTML = `<span class="ri">${ic}</span><span class="rl">${lb}</span>` + (n ? `<span class="cnt">${n}</span>` : ''); } }
+function updateRoombar(){ roombarEl.style.display = joined ? 'flex' : 'none'; document.getElementById('dock').classList.toggle('on', !!joined); document.body.classList.toggle('joined', !!joined); for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom || (r==='rooms' && isP(curRoom))); const n = r==='rooms' ? [...others.values()].filter(o=>!o.leaving && isP(o.rm)).length + (isP(curRoom)?1:0) : roomCount(r); const [ic,lb]=({lounge:['🍸','LOUNGE'], barn:['🌾','ACRES'], casino:['🎰','CASINO'], arena:['💦','ARENA'], lanes:['🎳','LANES'], store:['🛍️','STORE'], rooms:['🏠','ROOMS']})[r]; b.innerHTML = `<span class="ri">${ic}</span><span class="rl">${lb}</span>` + (n ? `<span class="cnt">${n}</span>` : ''); } }
 // fades show which side has more rooms; a mouse wheel scrolls the bar sideways; your room's tab stays in view
 function roombarEdges(){ const el=roombarEl, max=el.scrollWidth-el.clientWidth; el.classList.toggle('fl', el.scrollLeft>2); el.classList.toggle('fr', max>2 && el.scrollLeft<max-2);
   const w=document.getElementById('rbwrap'); if (w){ w.classList.toggle('over', max>2); document.getElementById('rb_l').disabled = el.scrollLeft<=2; document.getElementById('rb_r').disabled = el.scrollLeft>=max-2; } }
@@ -3992,12 +4080,13 @@ roombarEl.addEventListener('scroll', roombarEdges, {passive:true}); addEventList
 roombarEl.addEventListener('wheel', e=>{ if (Math.abs(e.deltaY)>Math.abs(e.deltaX) && roombarEl.scrollWidth>roombarEl.clientWidth){ e.preventDefault(); roombarEl.scrollLeft+=e.deltaY; } }, {passive:false});
 function roombarShowHere(){ const b=roombarEl.querySelector('.here'); if (b && roombarEl.scrollWidth>roombarEl.clientWidth){ const L=b.offsetLeft, R=L+b.offsetWidth; if (L<roombarEl.scrollLeft || R>roombarEl.scrollLeft+roombarEl.clientWidth) roombarEl.scrollTo({left:Math.max(0,L-24), behavior:'smooth'}); } roombarEdges(); }
 for (const b of roombarEl.querySelectorAll('[data-go]')) b.addEventListener('click', ()=>{ ensureAudio(); const r=b.dataset.go;
-  if (!joined) return; if (r===curRoom){ localMsg(`You're already in ${ROOM_NAMES[r]}.`); return; }
+  if (!joined) return; if (r==='rooms'){ openRooms(); return; } if (r===curRoom){ localMsg(`You're already in ${ROOM_NAMES[r]}.`); return; }
   showSwap(r); });
 function switchRoom(r){
-  if (r===curRoom){ localMsg(`You're already in ${ROOM_NAMES[r]}.`); return; }
+  if (r===curRoom){ localMsg(`You're already in ${roomName(r)}.`); return; }
   if (arcade.on) exitArcade();
   entryFrom = curRoom; setRoom(r); flash(); sendPresence(true);
+  if (isP(r)){ localMsg(`Welcome to ${roomName(r)}!`); setTimeout(()=>walkTo(...spawnSpot(r)), 400); if (PRED.pending){ PRED.pending=false; setTimeout(prEditStart, 600); } return; }
   localMsg(r==='barn' ? 'You stepped outside to LLAMA ACRES!' : r==='casino' ? 'Welcome to the LLAMA CASINO! Feeling lucky?' : r==='arena' ? 'Welcome to the SPIT ARENA! Press PLAY to start a round.' : r==='lanes' ? 'Welcome to LLAMA LANES! Press BOWL to roll a game.' : r==='store' ? 'Welcome to the LLAMA STORE! Tap a shirt on the wall, or the counter to see them all.' : 'You headed back into the LLAMA LOUNGE!');
   setTimeout(()=>walkTo(...spawnSpot(r)), 400);
 }
@@ -4388,6 +4477,7 @@ function drawFishing(t){
 
 // ======================= CONTEXT TIPS =======================
 const TIPS = {
+  myroom:'<b>YOUR ROOM</b> Open 🏠 ROOMS > SETTINGS to name it, change the walls and floor, make it private, invite friends, or EDIT FURNITURE.',
   counter:'<b>CHECKOUT</b> Press SHOP or tap the counter to see the real La Llama P.I.C. shirts.',
   racks:'<b>CLOTHES</b> Tap anything on the racks or in the glass case to try it on and buy it with tokens. Change outfits any time in MENU > WARDROBE.',
   arcade:'<b>ARCADE</b> Tap the cabinet to play HAY CATCH or LLAMA DASH.',
@@ -4425,6 +4515,7 @@ function tipContext(){
     if (me.p!=='sit' && CROPS.some(c=>near(c.gx,c.gy))) return 'crops';
     const sb=(me.p==='sit')?seatAt(me.gx,me.gy):null; if (sb && sb.gy>=10) return 'campfire';
     return null; }
+  if (isP(curRoom)) return (PRD[curRoom] && PRD[curRoom].mine && !PRED.on && me.p!=='sit') ? 'myroom' : null;
   if (curRoom==='store'){ if (me.p!=='sit' && STORE_COUNTER.some(([x,y])=>near(x,y))) return 'counter'; if (me.p!=='sit' && (STORE_RACKS.some(([x,y])=>near(x,y)) || STORE_CASE.some(([x,y])=>near(x,y)))) return 'racks'; if (me.p!=='sit' && me.gx<=1 && me.gy>=1 && me.gy<=9) return 'merch'; return null; }
   if (curRoom==='casino') return me.p!=='sit' ? null : isSlotSeat(me.gx,me.gy) ? 'slots' : seatIn(ROUL_SEATS,me.gx,me.gy) ? 'roulette' : seatIn(BJ_SEATS,me.gx,me.gy) ? 'blackjack' : null;
   if (me.p!=='sit' && me.gx===0 && me.gy===10) return 'door';
@@ -4626,7 +4717,7 @@ function frDraw(){
   h+=`<div class="frh">FRIENDS · ${FR.friends.filter(n=>frWhere(n)).length} ONLINE</div>`;
   if (!list.length) h+='<div class="fre">No friends yet. Tap another llama and press ⭐ ADD, or type their name above.</div>';
   for (const n of list){ const rm=frWhere(n);
-    h+=row(n, rm ? (rm===curRoom ? 'Here with you' : 'In '+ROOM_NAMES[rm]) : 'Offline', !!rm, `<button class="gbbtn frm" data-dm="${esc(n)}" aria-label="Message ${esc(n)}">💬</button>` + (rm && rm!==curRoom ? `<button class="gbbtn y" data-go2="${rm}">GO ▶</button>` : '') + `<button class="gbbtn frx" data-fa="fr_remove" data-n="${esc(n)}" aria-label="Remove friend">✕</button>`); }
+    h+=row(n, rm ? (rm===curRoom ? 'Here with you' : 'In '+roomName(rm)) : 'Offline', !!rm, `<button class="gbbtn frm" data-dm="${esc(n)}" aria-label="Message ${esc(n)}">💬</button>` + (rm && rm!==curRoom ? `<button class="gbbtn y" data-go2="${rm}">GO ▶</button>` : '') + `<button class="gbbtn frx" data-fa="fr_remove" data-n="${esc(n)}" aria-label="Remove friend">✕</button>`); }
   if (FR.out.length){ h+='<div class="frh">SENT</div>'; for (const n of FR.out) h+=row(n, 'waiting for them to accept', !!frWhere(n), `<button class="gbbtn" data-fa="fr_remove" data-n="${esc(n)}">CANCEL</button>`); }
   frBody.innerHTML=h;
 }
@@ -4661,7 +4752,8 @@ $id('cat_body').addEventListener('click', e=>{ if (e.target.closest('a')) return
 $id('cat_close').addEventListener('click', ()=>{ $id('catbox').style.display='none'; });
 // ---- wardrobe: buy clothes in the LLAMA STORE, wear them anywhere ----
 const INV={owned:[]}; me.w={};
-const WD={tab:'shop', pick:null, dir:0}; const WD_DIRS=['fr','fl','bl','br'];
+const WD={tab:'shop', pick:null, dir:0, kind:'clothes', furn:[]};
+function wdFurnLoad(){ return NET.act('furn_info').then(r=>{ if (r.ok){ WD.furn=r.furn; if ($id('wardbox').style.display==='block') wdDraw(); } }); } const WD_DIRS=['fr','fl','bl','br'];
 function wdLoad(){ return NET.act('inv_info').then(r=>{ if (r.ok){ INV.owned=r.owned||[]; me.w=cleanWear(r.w); if ($id('wardbox').style.display==='block') wdDraw(); } }); }
 function wdMsg(t,good){ const el=$id('wd_msg'); el.textContent=t||''; el.classList.toggle('good',!!good); }
 function wdPreview(){ const c=$id('wd_prev'), x=c.getContext('2d'); x.clearRect(0,0,SW,SH); const w={...me.w}; if (WD.pick) w[ITEMS[WD.pick].s]=WD.pick; x.drawImage(sprite(me.c, WD_DIRS[WD.dir], 0, 'stand', w), 0, 0); }
@@ -4679,33 +4771,163 @@ function wdCard(id){ const it=ITEMS[id], own=INV.owned.includes(id), on=me.w[it.
 function wdDraw(){
   const shop=WD.tab==='shop';
   for (const b of $id('wd_tabs').children) b.classList.toggle('on', b.dataset.t===WD.tab);
-  $id('wd_tabs').style.display = shop ? 'none' : ''; $id('wardbox').querySelector('.wdtop').style.display = WD.tab==='storage' ? 'none' : '';
+  $id('wd_tabs').style.display = shop ? 'none' : ''; $id('wardbox').querySelector('.wdtop').style.display = (WD.tab==='storage' || (shop && WD.kind==='furn')) ? 'none' : '';
   $id('wd_title').textContent = shop ? '🛍️ LLAMA STORE CLOTHES' : '🎒 INVENTORY';
   let h='';
-  if (WD.tab==='shop'){ for (const s2 of WEAR_SLOTS){ h+=`<div class="wdh">${SLOT_NAMES[s2]}</div><div class="wdg">`+Object.keys(ITEMS).filter(k=>ITEMS[k].s===s2).map(wdCard).join('')+'</div>'; }
+  if (shop) h+=`<div class="autabs" id="wd_kind"><button type="button" data-k="clothes" class="${WD.kind==='clothes'?'on':''}">👕 CLOTHES</button><button type="button" data-k="furn" class="${WD.kind==='furn'?'on':''}">🛋️ FURNITURE</button></div>`;
+  if (shop && WD.kind==='furn'){ const own=k=>{ const r=WD.furn.find(x=>x.item===k); return r?r.n:0; };
+    h+='<div class="fre">Furniture goes into your 🎒 STORAGE. Place it in your own room from 🏠 ROOMS > SETTINGS > EDIT FURNITURE.</div><div class="wdg">';
+    h+=Object.keys(FURN_DEF).map(k=>`<div class="wi fi" data-f="${k}"><canvas width="48" height="48" data-fk="${k}"></canvas><b>${esc(FURN_DEF[k].n)}</b><small>${FURN_DEF[k].p} 🪙${own(k)?` · <span class="own">YOU HAVE ${own(k)}</span>`:''}</small><button class="gbbtn y" data-buyf="${k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button></div>`).join('')+'</div>'; }
+  else if (WD.tab==='shop'){ for (const s2 of WEAR_SLOTS){ h+=`<div class="wdh">${SLOT_NAMES[s2]}</div><div class="wdg">`+Object.keys(ITEMS).filter(k=>ITEMS[k].s===s2).map(wdCard).join('')+'</div>'; }
     if (curRoom!=='store') h='<div class="fre">Browse and try things on here. To buy, visit the 🛍️ LLAMA STORE.</div>'+h;
     h+='<div class="srow"><button class="gbbtn" id="wd_toinv">🎒 MY INVENTORY</button></div>'; }
-  else if (WD.tab==='storage'){ h='<div class="wdstore"><div class="wdbox">📦</div><b>STORAGE</b><small>Coming soon.</small></div>'; }
+  else if (WD.tab==='storage'){ const list=WD.furn.filter(x=>FURN_DEF[x.item]&&x.n>0), inMine=isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine;
+    if (!list.length) h='<div class="wdstore"><div class="wdbox">📦</div><b>STORAGE IS EMPTY</b><small>Buy furniture at the 🛍️ LLAMA STORE, then place it in your room.</small></div>';
+    else { h='<div class="fre">Furniture you own. Pieces in your room come back here when you put them away.</div><div class="wdg">'+list.map(x=>`<div class="wi fi"><canvas width="48" height="48" data-fk="${x.item}"></canvas><b>${esc(FURN_DEF[x.item].n)}</b><small class="own">${x.n-x.placed} IN STORAGE${x.placed?` · ${x.placed} PLACED`:''}</small></div>`).join('')+'</div>';
+      h+=`<div class="srow"><button class="gbbtn y" id="wd_place">${inMine?'🛋️ PLACE FURNITURE':'🏠 GO TO MY ROOM'}</button></div>`; } }
   else { const mine=INV.owned.filter(k=>ITEMS[k]);
     if (!mine.length) h='<div class="fre">No clothes yet. Buy some at the 🛍️ LLAMA STORE, then wear them anywhere.</div>';
     h+='<div class="srow"><button class="gbbtn" id="wd_toshop">🛍️ BROWSE THE STORE</button></div>';
     for (const s2 of WEAR_SLOTS){ const list=mine.filter(k=>ITEMS[k].s===s2); if (list.length) h+=`<div class="wdh">${SLOT_NAMES[s2]}</div><div class="wdg">`+list.map(wdCard).join('')+'</div>'; } }
   const body=$id('wd_body'); body.innerHTML=h;
   { const ti=$id('wd_toinv'); if (ti) ti.onclick=()=>{ WD.tab='clothing'; WD.pick=null; wdDraw(); }; const ts=$id('wd_toshop'); if (ts) ts.onclick=()=>{ WD.tab='shop'; WD.pick=null; wdDraw(); }; }
+  for (const cv of body.querySelectorAll('canvas[data-fk]')) cv.getContext('2d').drawImage(furnIcon(cv.dataset.fk),0,0);
+  { const kk=$id('wd_kind'); if (kk) for (const b of kk.children) b.onclick=()=>{ WD.kind=b.dataset.k; WD.pick=null; wdMsg(''); wdDraw(); }; }
+  { const pl=$id('wd_place'); if (pl) pl.onclick=()=>{ if (isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine){ closeAll(); prEditStart(); } else { closeAll(); NET.act('pr_list').then(r=>{ if (r.ok && r.mine){ PRED.pending=true; prGo(r.mine.id); } else openRooms(); }); } }; }
   for (const cv of body.querySelectorAll('canvas[data-ic]')){ const id=cv.dataset.ic, ic=ITEMS[id].s==='shirt'?teeIcon(id):itemIcon(id), x=cv.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(ic, Math.floor((20-ic.width)/2), Math.floor((16-ic.height)/2)); }
   wdPreview(); wdInfo();
 }
-$id('wd_body').addEventListener('click', e=>{ const c=e.target.closest('.wi'); if (!c) return; ensureAudio(); WD.pick = WD.pick===c.dataset.id ? null : c.dataset.id; wdMsg(''); wdDraw(); });
+$id('wd_body').addEventListener('click', e=>{
+  const bf=e.target.closest('[data-buyf]'); if (bf){ const k=bf.dataset.buyf; wdMsg('BUYING...'); NET.act('furn_buy',{item:k}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); WD.furn=r.furn; tkSet(r.tk, `You bought a ${FURN_DEF[k].n}! It's in your storage.`); wdMsg(`Bought a ${FURN_DEF[k].n}! It's in your 🎒 STORAGE.`, true); wdDraw(); }); return; }
+  const c=e.target.closest('.wi'); if (!c || c.classList.contains('fi')) return; ensureAudio(); WD.pick = WD.pick===c.dataset.id ? null : c.dataset.id; wdMsg(''); wdDraw(); });
 for (const b of $id('wd_tabs').children) b.addEventListener('click', ()=>{ WD.tab=b.dataset.t; wdDraw(); });
 $id('wd_prev').addEventListener('click', ()=>{ WD.dir=(WD.dir+1)%4; wdPreview(); });
-function openWardrobe(tab, pick){ closeAll(); WD.tab = tab==='closet' ? 'clothing' : (tab||'clothing'); WD.pick=pick||null; WD.dir=0; wdMsg(''); $id('wardbox').style.display='block'; wdDraw(); wdLoad(); }
+function openWardrobe(tab, pick, kind){ closeAll(); WD.tab = tab==='closet' ? 'clothing' : (tab||'clothing'); WD.kind = kind || 'clothes'; wdFurnLoad(); WD.pick=pick||null; WD.dir=0; wdMsg(''); $id('wardbox').style.display='block'; wdDraw(); wdLoad(); }
 function wdBuy(id){ wdMsg('BUYING...'); NET.act('inv_buy',{item:id}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.');
   INV.owned=r.owned||INV.owned; tkSet(r.tk, `You bought the ${ITEMS[id].n}!`); wdWear(ITEMS[id].s, id, `Bought the ${ITEMS[id].n} and put it on!`); }); }
 function wdWear(slot, id, msg){ NET.act('inv_wear',{slot, item:id}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); me.w=cleanWear(r.w); sendPresence(true); wdMsg(msg || (id ? `You put on the ${ITEMS[id].n}.` : 'Taken off.'), true); wdDraw(); }); }
 $id('cat_clothes').addEventListener('click', ()=>openWardrobe('shop'));
+$id('cat_furn').addEventListener('click', ()=>openWardrobe('shop', null, 'furn'));
 $id('afk_here').addEventListener('click', e=>{ e.stopPropagation(); afkHere(); });
 $id('afk_back').addEventListener('click', ()=>location.reload());
 $id('invbtn').addEventListener('click', ()=>{ ensureAudio(); openWardrobe('clothing'); });
+
+// ======================= PLAYER ROOMS (UI) =======================
+// one room per llama; only its owner can change it. Public rooms are open; private ones need an invite or a knock.
+const PRUI={view:'list', list:null, info:null};
+const furnIconCache=new Map();
+function furnIcon(item){ let c=furnIconCache.get(item); if (c) return c; const D=FURN_DEF[item]; c=document.createElement('canvas'); c.width=48; c.height=48;
+  const sg=g, sOX=OX, sOY=OY; try { g=c.getContext('2d'); g.imageSmoothingEnabled=false; OX=24; OY=24; drawFurn({...D.mk(0), gx:0, gy:0}, 0); } catch(e){} finally { g=sg; OX=sOX; OY=sOY; }
+  furnIconCache.set(item,c); return c; }
+function prMsg(t,good){ const el=document.querySelector('#pr_body .prmsg'); if (el){ el.textContent=t||''; el.classList.toggle('good',!!good); } }
+function openRooms(view){ closeAll(); PRUI.view=view||'list'; $id('roomsbox').style.display='block'; prDraw(); prRefresh(); }
+function prRefresh(){ NET.act('pr_list').then(r=>{ if (r.ok){ PRUI.list=r; if (r.mine) PRN['p:'+r.mine.id]=r.mine.name; for (const x of r.rooms) PRN['p:'+x.id]=x.name; if ($id('roomsbox').style.display==='block' && PRUI.view==='list') prDraw(); } });
+  if (PRUI.view==='settings') NET.act('pr_info').then(r=>{ if (r.ok){ PRUI.info=r; if (PRUI.view==='settings') prDraw(); } }); }
+const lock = p => p ? ' 🔒' : '';
+function prRow(x, btns){ return `<div class="prr"><div class="prn"><b>${esc(x.name)}${lock(x.priv)}</b><small>by ${esc(x.owner)}${x.friend?' · ⭐ friend':''}${x.invited?' · invited':''}</small></div>${x.n?`<span class="prcnt">● ${x.n}</span>`:''}${btns}</div>`; }
+function prDraw(){
+  const B=$id('pr_body'); let h='';
+  if (PRUI.view==='settings') return prDrawSettings();
+  $id('pr_title').textContent='🏠 ROOMS';
+  const L=PRUI.list; if (!L){ B.innerHTML='<div class="fre">Loading...</div>'; return; }
+  h+='<div class="prsec">YOUR ROOM</div>';
+  if (L.mine){ const here=curRoom==='p:'+L.mine.id; h+=prRow(L.mine, (here?'':`<button class="gbbtn y" data-go="${L.mine.id}">GO ▶</button>`)+`<button class="gbbtn" data-set="1">SETTINGS</button>`); }
+  else h+=`<div class="fre">Make a room of your own! Fill it with furniture from the LLAMA STORE and invite your friends.</div><input id="pr_newname" maxlength="24" placeholder="${esc((me.n||'').toUpperCase())}'S ROOM"><div class="srow"><button class="gbbtn y" id="pr_create">CREATE MY ROOM</button></div>`;
+  const fr=L.rooms.filter(x=>x.friend), open=L.rooms.filter(x=>!x.friend);
+  const btn=x=> curRoom==='p:'+x.id ? '<span class="prcnt">YOU\'RE HERE</span>' : x.can ? `<button class="gbbtn y" data-go="${x.id}">GO ▶</button>` : `<button class="gbbtn" data-knock="${x.id}">🚪 KNOCK</button>`;
+  const staffBtn=x=> L.staff ? `<button class="gbbtn" data-reset="${x.id}" title="Staff: reset this room's name">↺</button>` : '';
+  if (fr.length){ h+='<div class="prsec">FRIENDS\' ROOMS</div>'; for (const x of fr) h+=prRow(x, btn(x)+staffBtn(x)); }
+  h+='<div class="prsec">OPEN ROOMS</div>'; if (!open.length) h+='<div class="fre">No other rooms yet.</div>'; for (const x of open) h+=prRow(x, btn(x)+staffBtn(x));
+  h+='<div class="prmsg"></div>';
+  B.innerHTML=h;
+}
+$id('pr_body').addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; ensureAudio();
+  if (b.dataset.go){ prGo(+b.dataset.go); return; }
+  if (b.dataset.knock){ prMsg('KNOCKING...'); NET.act('pr_knock',{rid:+b.dataset.knock}).then(r=>{ if (r.open){ prGo(+b.dataset.knock); return; } prMsg(r.msg||'', r.ok); }); return; }
+  if (b.dataset.reset){ if (!confirm('Reset this room\'s name?')) return; NET.act('pr_staff',{rid:+b.dataset.reset}).then(r=>{ prMsg(r.msg||'', r.ok); prRefresh(); }); return; }
+  if (b.dataset.set){ PRUI.view='settings'; PRUI.info=null; prDraw(); prRefresh(); return; }
+  if (b.id==='pr_create'){ const n=($id('pr_newname').value||'').trim(); prMsg('BUILDING...'); NET.act('pr_create',{name:n}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.list=r; prDraw(); if (r.mine) prGo(r.mine.id); }); return; }
+  if (b.id==='pr_back'){ PRUI.view='list'; prDraw(); prRefresh(); return; }
+  if (b.dataset.wall||b.dataset.floor||b.dataset.priv!==undefined){ const upd = b.dataset.wall?{wall:b.dataset.wall}:b.dataset.floor?{floor:b.dataset.floor}:{priv:b.dataset.priv==='1'};
+    NET.act('pr_set',upd).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.info.room=r.room; prApplyRoom(r.room); prDraw(); }); return; }
+  if (b.id==='pr_savename'){ const n=$id('pr_name').value.trim(); NET.act('pr_set',{name:n}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.info.room=r.room; prApplyRoom(r.room); prDraw(); prMsg('Saved!',true); }); return; }
+  if (b.id==='pr_inv'){ const n=$id('pr_invname').value.trim(); if (!n) return; NET.act('pr_invite',{n, add:true}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.info=r; prDraw(); prMsg('Invited!',true); }); return; }
+  if (b.dataset.uninv){ NET.act('pr_invite',{n:b.dataset.uninv, add:false}).then(r=>{ if (r.ok){ PRUI.info=r; prDraw(); } }); return; }
+  if (b.dataset.kickp){ NET.act('pr_kick',{n:b.dataset.kickp}).then(r=>prMsg(r.msg||'', r.ok)); return; }
+  if (b.id==='pr_edit'){ const L=PRUI.list; if (!L||!L.mine) return; if (curRoom!=='p:'+L.mine.id){ PRED.pending=true; prGo(L.mine.id); } else { closeAll(); prEditStart(); } return; }
+});
+$id('pr_body').addEventListener('keydown', e=>e.stopPropagation());
+function prDrawSettings(){
+  const B=$id('pr_body'), I=PRUI.info; $id('pr_title').textContent='⚙️ ROOM SETTINGS';
+  if (!I){ B.innerHTML='<div class="fre">Loading...</div>'; return; } const R=I.room;
+  const here=curRoom==='p:'+R.id; const inside=[...others.values()].filter(o=>!o.leaving && o.rm==='p:'+R.id).map(o=>o.n.toUpperCase());
+  let h=`<div class="prsec">NAME</div><input id="pr_name" maxlength="24" value="${esc(R.name)}"><div class="srow"><button class="gbbtn" id="pr_savename">SAVE NAME</button></div>`;
+  h+=`<div class="prsec">WHO CAN COME IN</div><div class="seg"><button data-priv="0" class="${R.priv?'':'on'}">🌍 PUBLIC</button><button data-priv="1" class="${R.priv?'on':''}">🔒 PRIVATE</button></div>`;
+  h+=`<div class="fre" style="margin-top:6px">${R.priv?'Only you, people you invite, and people you let in when they knock.':'Anyone can come in.'}</div>`;
+  h+='<div class="prsec">WALLS</div><div class="sw">'+Object.keys(PR_WALL).map(k=>`<button data-wall="${k}" class="${R.wall===k?'on':''}" title="${k}" style="background:linear-gradient(90deg,${PR_WALL[k][0]} 50%,${PR_WALL[k][2]} 50%)"></button>`).join('')+'</div>';
+  h+='<div class="prsec">FLOOR</div><div class="sw">'+Object.keys(PR_FLOOR).map(k=>`<button data-floor="${k}" class="${R.floor===k?'on':''}" title="${k}" style="background:linear-gradient(135deg,${PR_FLOOR[k][0]} 50%,${PR_FLOOR[k][1]} 50%)"></button>`).join('')+'</div>';
+  h+=`<div class="prsec">INVITED (${I.invites.length})</div>`+(I.invites.length?I.invites.map(n=>`<span class="chip">${esc(n)}<button data-uninv="${esc(n)}" aria-label="Remove ${esc(n)}">✕</button></span>`).join(''):'<div class="fre">Nobody yet. Invited llamas can always come in, even when it\'s private.</div>');
+  h+=`<input id="pr_invname" maxlength="12" placeholder="Invite by llama name" autocapitalize="off" spellcheck="false"><div class="srow"><button class="gbbtn" id="pr_inv">INVITE</button></div>`;
+  if (inside.length){ h+='<div class="prsec">IN YOUR ROOM NOW</div>'+inside.map(n=>`<div class="prr"><div class="prn"><b>${esc(n)}</b></div><button class="gbbtn" data-kickp="${esc(n)}">ASK TO LEAVE</button></div>`).join(''); }
+  h+=`<div class="srow"><button class="gbbtn y" id="pr_edit">🛋️ EDIT FURNITURE</button><button class="gbbtn" id="pr_back">◀ ROOMS</button></div><div class="prmsg"></div>`;
+  B.innerHTML=h;
+}
+function prApplyRoom(room){ const key='p:'+room.id; PRN[key]=room.name; ROOM_NAMES[key]=room.name; if (PRD[key]){ Object.assign(PRD[key], room); if (curRoom===key){ rebuildBG(); document.getElementById('stitle').textContent=room.name; } } }
+// going to a player room: ask the server first (it decides who gets in), then walk out the door
+function prGo(id){ NET.act('pr_enter',{rid:id}).then(r=>{
+  if (!r.ok){ if (r.locked){ if ($id('roomsbox').style.display!=='block') openRooms(); prMsg(r.msg); } else localMsg(r.msg||'That room is closed.'); PRED.pending=false; return; }
+  const key='p:'+id; PRD[key]={...r.room, furn:r.furn, mine:r.mine}; PRN[key]=r.room.name; ROOM_NAMES[key]=r.room.name; ROOM_DIMS[key]=[13,12]; ENTRY[key]={any:{at:[1,10],to:[3,10]}}; DOORWAY[key]=[0,10]; ROOM_SHORT[key]='ROOM';
+  closeAll(); if (curRoom===key){ buildWorld(); if (PRED.pending){ PRED.pending=false; prEditStart(); } return; }
+  if (arcade.on) exitArcade(); localMsg(`Heading to ${r.room.name}...`); goThroughDoor(key); }); }
+// ---- edit mode (owner only; the server checks every change) ----
+const PRED={on:false, item:null, piece:null, storage:[], pending:false};
+function prEditStart(){ const R=PRD[curRoom]; if (!R || !R.mine) return; PRED.on=true; PRED.item=null; PRED.piece=null; document.body.classList.add('editing'); prEditBar(); NET.act('furn_info').then(r=>{ if (r.ok){ PRED.storage=r.furn; prEditBar(); } }); localMsg('EDIT MODE: pick furniture below, then tap the floor. Tap a piece to turn it or put it away.'); }
+function prEditStop(){ if (!PRED.on) return; PRED.on=false; PRED.item=null; PRED.piece=null; document.body.classList.remove('editing'); $id('editbar').classList.remove('piece'); }
+function prEditBar(){ const el=$id('eb_items'), bar=$id('editbar'); bar.classList.toggle('piece', !!PRED.piece);
+  if (PRED.piece){ const D=FURN_DEF[PRED.piece.item]; $id('eb_piece').innerHTML=`<button class="gbbtn" id="eb_rot">↻ TURN</button><button class="gbbtn" id="eb_pick">📦 PUT AWAY</button><button class="gbbtn" id="eb_cancel">✕</button>`; return; }
+  const list=PRED.storage.filter(x=>FURN_DEF[x.item]);
+  if (!list.length){ el.innerHTML='<div class="fre">Storage is empty. Buy furniture at the 🛍️ LLAMA STORE.</div>'; return; }
+  el.innerHTML=list.map(x=>{ const left=x.n-x.placed; return `<button class="ebi${PRED.item===x.item?' on':''}" data-it="${x.item}" title="${esc(FURN_DEF[x.item].n)}" ${left<=0?'disabled':''}><canvas width="48" height="48" data-fi="${x.item}"></canvas><i>×${left}</i></button>`; }).join('');
+  for (const cv of el.querySelectorAll('canvas[data-fi]')) cv.getContext('2d').drawImage(furnIcon(cv.dataset.fi),0,0); }
+$id('editbar').addEventListener('pointerdown', e=>e.stopPropagation());
+$id('editbar').addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; ensureAudio();
+  if (b.id==='eb_done'){ prEditStop(); localMsg('Room saved.'); return; }
+  if (b.dataset.it){ PRED.item = PRED.item===b.dataset.it ? null : b.dataset.it; prEditBar(); return; }
+  if (b.id==='eb_cancel'){ PRED.piece=null; prEditBar(); return; }
+  if (b.id==='eb_rot' || b.id==='eb_pick'){ const fid=PRED.piece.fid; NET.act(b.id==='eb_rot'?'pr_rot':'pr_pick',{fid}).then(r=>{ if (!r.ok) return localMsg(r.msg||'That did not work.'); if (r.storage) PRED.storage=r.storage; if (b.id==='eb_pick') PRED.piece=null; prEditBar(); }); return; } });
+function prFurnAt(gx,gy){ return FURN.find(f=>f.fid && f.gx===gx && f.gy===gy); }
+function playerPointer(e){
+  const lx=e.clientX/S, ly=e.clientY/S;
+  if (!PRED.on) for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
+  const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return;
+  if (PRED.on){ const f=prFurnAt(gx,gy);
+    if (f){ PRED.piece={fid:f.fid, item:f.item, gx, gy}; PRED.item=null; prEditBar(); return; }
+    if (PRED.item){ const rot=0; NET.act('pr_place',{item:PRED.item, gx, gy, rot}).then(r=>{ if (!r.ok) return localMsg(r.msg||'Can\'t put that there.'); if (r.storage){ PRED.storage=r.storage; const s2=r.storage.find(x=>x.item===PRED.item); if (!s2 || s2.n-s2.placed<=0) PRED.item=null; } prEditBar(); }); return; }
+    PRED.piece=null; prEditBar(); return; }
+  if (walkable(gx,gy) && !seatAt(gx,gy)){ walkTo(gx,gy); return; }
+  let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } }
+  if (best) walkTo(best.gx,best.gy);
+}
+function drawPlayerRoom(t){
+  if (!PRED.on) return;
+  // edit mode: faint grid and a highlight on the chosen piece
+  for (let gx=0; gx<N; gx++) for (let gy=0; gy<NY; gy++){ const a=P(gx,gy), b=P(gx+1,gy), c=P(gx+1,gy+1), d=P(gx,gy+1); g.globalAlpha=0.18; linePx(a[0],a[1],b[0],b[1],'#ffffff'); linePx(a[0],a[1],d[0],d[1],'#ffffff'); g.globalAlpha=1; }
+  for (const k of ['0,10','1,10','2,10','3,10']){ const [gx,gy]=k.split(',').map(Number); g.globalAlpha=0.25; polyPx([P(gx,gy),P(gx+1,gy),P(gx+1,gy+1),P(gx,gy+1)],'#e03048'); g.globalAlpha=1; }
+  if (PRED.piece){ const {gx,gy}=PRED.piece, a=P(gx,gy), b=P(gx+1,gy), c=P(gx+1,gy+1), d=P(gx,gy+1), on=Math.floor(t*4)%2; const col=on?'#ffd23f':'#ffffff'; linePx(a[0],a[1],b[0],b[1],col); linePx(b[0],b[1],c[0],c[1],col); linePx(c[0],c[1],d[0],d[1],col); linePx(d[0],d[1],a[0],a[1],col); }
+}
+// ---- server pushes for player rooms ----
+NET.handlers.prf = m => { const key='p:'+m.room; if (!PRD[key]) return; PRD[key].furn=m.furn; if (curRoom===key){ buildWorld(); if (PRED.piece && !m.furn.some(f=>f.id===PRED.piece.fid)) { PRED.piece=null; prEditBar(); } else if (PRED.piece){ const f=m.furn.find(f=>f.id===PRED.piece.fid); if (f){ PRED.piece.gx=f.gx; PRED.piece.gy=f.gy; } }
+  if (!walkable(me.gx,me.gy) && !seatAt(me.gx,me.gy) && !me.moving){ const [x,y]=spawnSpot(key); me.gx=x; me.gy=y; me.x=x+0.5; me.y=y+0.5; sendPresence(true); } } };
+NET.handlers.prr = m => prApplyRoom(m.room);
+NET.handlers.prkick = m => { localMsg(m.msg||'You left the room.'); if (isP(curRoom)){ setRoom('lounge'); flash(); sendPresence(true); setTimeout(()=>walkTo(...spawnSpot('lounge')), 400); } };
+NET.handlers.knockans = m => { if (m.yes){ localMsg(`You were let into ${m.name}!`); prGo(m.room); } else localMsg(`Nobody let you into ${m.name} this time.`); };
+NET.handlers.prinvited = m => localMsg(`🏠 ${String(m.by).toUpperCase()} invited you to ${m.name}! Find it in 🏠 ROOMS.`);
+const KNQ=[];   // knocks waiting for the owner to answer
+NET.handlers.knock = m => { KNQ.push(m); knShow(); try{ ensureAudio(); if (actx){ const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.value=520; gn.gain.value=0.06*(svol/100); o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime+0.12); } }catch(_){} };
+function knShow(){ const el=$id('knockbox'); if (!KNQ.length){ el.style.display='none'; return; } $id('kn_t').textContent=`${String(KNQ[0].n).toUpperCase()} is knocking on your room!`; el.style.display='flex'; }
+function knAnswer(yes){ const k=KNQ.shift(); if (k) NET.act('pr_answer',{uid:k.uid, yes}); knShow(); }
+$id('kn_yes').addEventListener('click', e=>{ e.stopPropagation(); knAnswer(true); });
+$id('kn_no').addEventListener('click', e=>{ e.stopPropagation(); knAnswer(false); });
 
 // ---- private messages between friends ----
 const DMS = { inbox:[], with:null, unread:0 }; const dmEl=$id('dmbox'), dmMsgs=$id('dm_msgs');
@@ -4810,6 +5032,8 @@ const esc = s => String(s).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':
 const badgeHtml = st => st==='owner' ? '<span class="badge" title="Owner">👑</span>' : st==='mod' ? '<span class="badge" title="Mod">💛</span>' : '<span class="badge"></span>';
 function openDash(){ if (!me.st) return; closeAll(); dsBody.innerHTML='<div class="dl">LOADING...</div>'; dashEl.style.display='block'; loadDash(); }
 function dashDo(cmd, target){
+  if (cmd==='give'){ const v=prompt(`How many tokens to give ${target}? (1 to 1000)`, '10'); if (v===null) return; const n=Math.floor(+v); if (!(n>=1 && n<=1000)){ localMsg('Give between 1 and 1000 tokens.'); return; }
+    NET.act('admin',{cmd:'give', target, amount:n}).then(r=>{ localMsg(r.msg||(r.ok?'Done.':'That did not work.')); loadDash(); }); return; }
   if ((cmd==='ban'||cmd==='mod'||cmd==='unmod') && !confirm(`${{ban:'Ban',mod:'Make',unmod:'Remove'}[cmd]} ${target}${cmd==='mod'?' a mod':cmd==='unmod'?' as a mod':''}?`)) return;
   NET.act('admin',{cmd, target}).then(r=>{ localMsg(r.msg||(r.ok?'Done.':'That did not work.')); loadDash(); }); }
 let dsTab='players', dsChat={lines:[], open:null, q:'', more:true}, dsTimer=null;
@@ -4835,7 +5059,7 @@ function drawChatLog(meSt){
   for (const l of dsChat.lines){ const act=l.text.startsWith('* ');
     h+=`<button class="cl${act?' act':''}${l.mu?' mu':''}${dsChat.open===l.id?' open':''}" data-id="${l.id}"><span class="ct">${chatWhen(l.t)} · ${ROOM_SHORT[l.rm]||''}</span>${badgeHtml(l.st)}<b>${esc(l.n)}</b>${act?' ':': '}${esc(act?l.text.slice(2):l.text)}${l.mu?'<span class="tag m">MUTED</span>':''}${l.banned?'<span class="tag">BANNED</span>':''}</button>`;
     if (dsChat.open===l.id){ const can = l.n!==myName && l.st!=='owner' && (owner || l.st!=='mod');
-      h+= `<div class="clacts">${can ? (l.muted?btn('UNMUTE','unmute',l.n):btn('MUTE','mute',l.n)) + btn('KICK','kick',l.n,'bad') + (l.banned ? (owner?btn('UNBAN','unban',l.n):'') : btn('BAN','ban',l.n,'bad')) + btn('SHOW ONLY '+l.n,'filter',l.n) : `<div class="dl">${l.n===myName?"That's you.":"You can't moderate "+esc(l.n)+'.'}</div>`}</div>`; } }
+      h+= `<div class="clacts">${can ? (l.muted?btn('UNMUTE','unmute',l.n):btn('MUTE','mute',l.n)) + btn('KICK','kick',l.n,'bad') + (l.banned ? (owner?btn('UNBAN','unban',l.n):'') : btn('BAN','ban',l.n,'bad')) + btn('🪙 GIVE','give',l.n,'gd') + btn('SHOW ONLY '+l.n,'filter',l.n) : `<div class="dl">${l.n===myName?"That's you.":"You can't moderate "+esc(l.n)+'.'}</div>`}</div>`; } }
   if (!dsChat.lines.length) h+=`<div class="dl">${dsChat.q?'NO CHAT FROM PLAYERS STARTING WITH '+esc(dsChat.q.toUpperCase())+'.':'NO CHAT YET.'}</div>`;
   if (dsChat.more && dsChat.lines.length) h+='<div class="srow"><button class="gbbtn" id="ds_older">LOAD OLDER</button></div>';
   const sc=dashEl.scrollTop; dsBody.innerHTML=h; dashEl.scrollTop=sc;
@@ -4859,7 +5083,7 @@ function loadDash(){
     const btn=(label,cmd,name,cls)=>`<button class="gbbtn s ${cls||''}" data-cmd="${cmd}" data-name="${esc(name)}">${label}</button>`;
     const canAct = (n, st) => n!==myName && st!=='owner' && (owner || st!=='mod');
     h+=`<h4>ONLINE NOW (${r.online.length})</h4>`;
-    for (const p of r.online){ const acts = !canAct(p.n,p.st) ? '' : (p.muted?btn('UNMUTE','unmute',p.n):btn('MUTE','mute',p.n)) + btn('KICK','kick',p.n,'bad') + btn('BAN','ban',p.n,'bad') + (owner ? (p.st==='mod'?btn('UNMOD','unmod',p.n):btn('MOD','mod',p.n,'gd')) : '');
+    for (const p of r.online){ const acts = !canAct(p.n,p.st) ? '' : (p.muted?btn('UNMUTE','unmute',p.n):btn('MUTE','mute',p.n)) + btn('KICK','kick',p.n,'bad') + btn('BAN','ban',p.n,'bad') + btn('🪙 GIVE','give',p.n,'gd') + (owner ? (p.st==='mod'?btn('UNMOD','unmod',p.n):btn('MOD','mod',p.n,'gd')) : '');
       h+=`<div class="dr">${badgeHtml(p.st)}<span class="nm">${esc(p.n)} <small>${ROOM_SHORT[p.rm]||''}${p.muted?' · MUTED':''}</small></span>${acts}</div>`; }
     if (!r.online.length) h+='<div class="dl">NOBODY ONLINE.</div>';
     h+='<h4>STAFF</h4>';
@@ -4871,8 +5095,12 @@ function loadDash(){
     h+=`<h4>BANNED (${r.banned.length})</h4>`;
     for (const p of r.banned) h+=`<div class="dr">${badgeHtml('')}<span class="nm">${esc(p.n)}</span>${owner?btn('UNBAN','unban',p.n):''}</div>`;
     if (!r.banned.length) h+='<div class="dl">NOBODY IS BANNED.</div>';
+    h+='<h4>🪙 TOKEN GIFTS</h4>';
+    { const td=Object.entries(r.giftsToday||{}); h+=`<div class="dl">TODAY: ${td.length ? td.map(([by,n])=>`${esc(by)} gave ${n}`).join(' · ') : 'no gifts yet'}. Mods can give up to ${r.giftCap||500} a day.</div>`; }
+    for (const gf of (r.gifts||[]).slice(0,30)){ const d=new Date(gf.t); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(gf.by)} gave ${esc(gf.to)} <b>${gf.n}</b> 🪙</div>`; }
+    if (!(r.gifts||[]).length) h+='<div class="dl">NO TOKEN GIFTS YET.</div>';
     h+='<h4>STAFF LOG</h4>';
-    const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:'};
+    const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:',give:'gave tokens to',roomreset:'reset the room name of'};
     for (const e of r.log.slice(0,20)){ const d=new Date(e.t); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(e.by)} ${WORD[e.cmd]||esc(e.cmd)} ${esc(e.target)}</div>`; }
     if (!r.log.length) h+='<div class="dl">NO STAFF ACTIONS YET.</div>';
     dsBody.innerHTML=h;

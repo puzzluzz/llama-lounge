@@ -192,3 +192,24 @@ No API keys or passwords are involved.
 - Fishing keeps going in a background tab. A tiny worker keeps a steady tick, because browsers slow normal timers in hidden tabs. The server also allows up to a minute to reel in a bite.
 - After 10 minutes with no input (clicks, keys, walking, chat), an "Are you still there?" pop-up appears with a 2-minute countdown, and the tab title flashes. I'M STILL HERE carries on (and recasts if you were fishing). No answer logs you out of the room, with a COME BACK button. Nothing is lost.
 - The server enforces this too. A llama that hasn't moved, chatted or confirmed for 12 minutes can't cast or earn bar tips until it does, so a tampered game can't farm tokens unattended.
+
+## Player rooms
+
+- **One room per llama:** create it from the 🏠 ROOMS tab in the room bar. Rooms are the same size as the Lounge (13 x 12 tiles) with the door in the same place.
+- **Only the owner can change it.** The server checks every change. In 🏠 ROOMS > SETTINGS the owner can rename it, pick walls (6 colors) and a floor (5 styles), switch PUBLIC / PRIVATE, manage the invite list, ask someone to leave, and EDIT FURNITURE.
+- **Furniture:** 14 pieces bought with tokens in the LLAMA STORE (counter > 🛋️ FURNITURE, or the FURNITURE tab in the store's shop), kept in 🎒 INVENTORY > STORAGE. In edit mode, pick a piece from the strip and tap the floor. Tap a placed piece to ↻ TURN it or 📦 PUT AWAY. Seats (cushions, stools, hay seats, logs) can be sat on. Rooms hold up to 60 pieces, and the doorway stays clear.
+- **Getting in:**
+  - Public rooms are open to everyone.
+  - Private rooms (🔒 in the list) let in the owner, invited llamas, and staff.
+  - Anyone else can 🚪 KNOCK. The owner gets a LET IN / NO THANKS pop-up, and a let-in visitor can come and go for 3 hours.
+  - Making a room private sends out anyone who isn't allowed.
+  - The server refuses presence in a player room you weren't let into.
+- **Privacy:** what's said inside a private room only reaches the people in it.
+- **Staff:** mods and the owner can enter any room, and can reset a room's name from the rooms list (↺) if it breaks the rules.
+- **Stored in:** `prooms` (rooms), `pinv` (invites), `pfurn` (placed furniture) and `finv` (furniture owned).
+
+## Staff token gifts
+
+- Mods and the owner can give tokens with 🪙 GIVE in the dashboard (online players, or a line in the CHAT LOG). Each gift is 1 to 1000 tokens.
+- Mods can't give to themselves and can give up to 500 tokens a day in total (`STAFF_GIVE_DAY`). The owner has no limit.
+- Every gift is written to the token ledger and listed in the dashboard's 🪙 TOKEN GIFTS section, with each mod's total for today. It also appears in the staff log.
