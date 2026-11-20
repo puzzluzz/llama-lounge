@@ -659,6 +659,9 @@ function cleanPresence(p, name, tk, muted, staff) {
   return o;
 }
 
+// what a player can report someone for (the key is stored; staff see the label)
+const REPORT_REASONS = { rude: "Rude or bullying", hate: "Hate speech or slurs", spam: "Spam", scam: "Scam or trade trouble", name: "Bad name, room or outfit", other: "Something else" };
+
 export class Lounge extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
@@ -873,12 +876,14 @@ export class Lounge extends DurableObject {
   async prEnter(ws, a, m) {
     const id = Math.floor(+m.rid || 0); const r = id > 0 ? await this.prRoom(id) : null; if (!r) return { ok: false, msg: "That room doesn't exist anymore." };
     const owner = await this.user(r.owner); if (!owner || owner.banned) return { ok: false, msg: "That room is closed." };
+    if (r.owner !== a.uid && !a.staff && await this.blockedBy(r.owner, a.uid)) return { ok: false, msg: `You can't go into ${r.name}.` };
     if (!(await this.prCanEnter(a, r))) return { ok: false, locked: true, msg: `${r.name} is private. Knock and the owner can let you in.` };
     a.proom = r.id; ws.serializeAttachment(a);
     return { ok: true, room: { ...this.prOut(r), ...(await this.prLikes(r.id, a.uid)) }, mine: r.owner === a.uid, furn: await this.prFurn(r.id) };
   }
   async prKnock(a, m, now) {
     const r = await this.prRoom(Math.floor(+m.rid || 0)); if (!r) return { ok: false, msg: "That room doesn't exist anymore." };
+    if (r.owner !== a.uid && !a.staff && await this.blockedBy(r.owner, a.uid)) return { ok: false, msg: `You can't go into ${r.name}.` };
     if (await this.prCanEnter(a, r)) return { ok: true, open: true };
     const k = r.id + ":" + a.uid; if (now - (this.knocks.get(k) || 0) < PR.knockGap) return { ok: false, msg: "You just knocked. Give them a moment." };
     let sent = false; for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.uid === r.owner) { this.send(w, { t: "knock", room: r.id, uid: a.uid, n: a.name }); sent = true; } }
@@ -898,6 +903,7 @@ export class Lounge extends DurableObject {
     const n = String(m.n || "").trim(); if (!/^[A-Za-z0-9_]{3,12}$/.test(n)) return { ok: false, msg: "No llama has that name." };
     const u = await this.env.DB.prepare("SELECT id, name FROM users WHERE name = ? AND banned = 0").bind(n).first(); if (!u) return { ok: false, msg: "No llama has that name." };
     if (u.id === a.uid) return { ok: false, msg: "It's your room, you're always invited!" };
+    if (m.add && await this.blockedPair(a.uid, u.id)) return { ok: false, msg: `You can't invite ${u.name.toUpperCase()}.` };
     if (m.add) { const c = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM pinv WHERE room = ?").bind(r.id).first(); if (c.n >= 100) return { ok: false, msg: "Your invite list is full." };
       await this.env.DB.prepare("INSERT OR IGNORE INTO pinv (room, uid) VALUES (?, ?)").bind(r.id, u.id).run(); this.toUid(u.id, { t: "prinvited", room: r.id, name: r.name, by: a.name }); }
     else { await this.env.DB.prepare("DELETE FROM pinv WHERE room = ? AND uid = ?").bind(r.id, u.id).run(); const li = this.letIn.get(r.id); if (li) li.delete(u.id); if (r.priv) await this.prKickUnwelcome(r); }
@@ -1189,6 +1195,7 @@ export class Lounge extends DurableObject {
     if (!them || !a.pres || them.pres.rm !== a.pres.rm) return { ok: false, msg: `${n} has to be in the same room as you to trade.` };
     const now = Date.now(); if (now - (a.tq || 0) < 5000) return { ok: false, msg: "Wait a moment before asking again." }; a.tq = now; ws.serializeAttachment(a);
     if (this.tradeOf.has(a.uid)) this.tradeDrop(a.uid, "The trade was cancelled.");
+    if (await this.blockedPair(a.uid, them.uid)) return { ok: false, msg: `You can't trade with ${n}.` };
     if (this.tradeOf.has(them.uid)) return { ok: false, msg: `${n} is already trading with someone.` };
     const T = { id: crypto.randomUUID().slice(0, 12), open: false, t: now, side: [{ uid: a.uid, name: a.name, offer: { items: {}, rares: [], tk: 0 }, ok: false }, { uid: them.uid, name: them.name, offer: { items: {}, rares: [], tk: 0 }, ok: false }] };
     this.trades.set(T.id, T); this.tradeOf.set(a.uid, T.id); this.tradeOf.set(them.uid, T.id);
@@ -1394,6 +1401,7 @@ export class Lounge extends DurableObject {
     const now = Date.now(); if (!a.fr || now - a.fr[0] > 60000) a.fr = [now, 0]; if (++a.fr[1] > 10) { ws.serializeAttachment(a); return { ok: false, msg: "Slow down on the friend requests. Try again in a minute." }; } ws.serializeAttachment(a);
     const T = await this.frTarget(a, m); if (T.err) return { ok: false, msg: T.err };
     const { u, row } = T, them = u.name.toUpperCase();
+    if (await this.blockedPair(a.uid, u.id)) return { ok: false, msg: `You can't add ${them}.` };
     if (row && row.st === "ok") return { ok: false, msg: `You and ${them} are already friends.` };
     if (row && row.a === a.uid) return { ok: false, msg: `You already asked ${them}. Waiting for them to accept.` };
     if (row) return this.frAccept(a, m);   // they already asked you, so this just accepts
@@ -1616,6 +1624,12 @@ export class Lounge extends DurableObject {
       case "admin": return this.admin(a, m);
       case "dash": return this.dashboard(a);
       case "bug_report": return this.bugReport(a, m);
+      case "block": return this.blockSet(a, m);
+      case "block_list": return { ok: true, blocks: await this.blockList(a.uid) };
+      case "report": return this.reportSend(a, m);
+      case "report_list": return this.reportList(a);
+      case "report_done": return this.reportDone(a, m);
+      case "mod_info": return this.modInfo(a, m);
       case "wf_hit": { const now2 = Date.now(); if (a.wfT && now2 - a.wfT < 1500) return { ok: true }; a.wfT = now2; ws.serializeAttachment(a); await this.wfHit(ws, a, "blocked"); return { ok: true }; }
       case "kit_buy": return this.kitBuy(a, m);
       case "mkt_list": return this.mktList(a);
@@ -2039,6 +2053,75 @@ export class Lounge extends DurableObject {
     await this.bugTable(); const id = Math.floor(+m.bid || 0);
     if (del) await this.env.DB.prepare("DELETE FROM bugs WHERE id = ?").bind(id).run(); else await this.env.DB.prepare("UPDATE bugs SET done = ? WHERE id = ?").bind(m.done ? 1 : 0, id).run();
     return { ok: true };
+  }
+  // ---------- BLOCK: a player you block can't friend you, message you, trade with you, invite you or come into your rooms; their chat is hidden on your screen ----------
+  async blockTable() { if (this.blockReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS blocks (uid INTEGER NOT NULL, bid INTEGER NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (uid, bid))").run(); await this.env.DB.prepare("CREATE INDEX IF NOT EXISTS blocks_bid ON blocks (bid)").run(); this.blockReady = true; }
+  async blockedPair(x, y) { await this.blockTable(); return !!(await this.env.DB.prepare("SELECT 1 FROM blocks WHERE (uid = ? AND bid = ?) OR (uid = ? AND bid = ?)").bind(x, y, y, x).first()); }
+  async blockedBy(owner, uid) { await this.blockTable(); return !!(await this.env.DB.prepare("SELECT 1 FROM blocks WHERE uid = ? AND bid = ?").bind(owner, uid).first()); }
+  async blockList(uid) { await this.blockTable(); return ((await this.env.DB.prepare("SELECT u.name FROM blocks b JOIN users u ON u.id = b.bid WHERE b.uid = ? ORDER BY u.name").bind(uid).all()).results || []).map((r) => r.name.toUpperCase()); }
+  async blockSet(a, m) {
+    await this.blockTable(); const n = String(m.n || "").trim();
+    if (!/^[A-Za-z0-9_]{3,12}$/.test(n)) return { ok: false, msg: "No llama has that name." };
+    const u = await this.env.DB.prepare("SELECT id, name, role FROM users WHERE name = ?").bind(n).first(); if (!u) return { ok: false, msg: "No llama has that name." };
+    if (u.id === a.uid) return { ok: false, msg: "You can't block yourself." };
+    const them = u.name.toUpperCase();
+    if (!m.on) { await this.env.DB.prepare("DELETE FROM blocks WHERE uid = ? AND bid = ?").bind(a.uid, u.id).run(); return { ok: true, blocks: await this.blockList(a.uid), msg: `${them} is unblocked.` }; }
+    if (staffRole(this.env, u)) return { ok: false, msg: "You can't block staff. If they did something wrong, tap REPORT." };   // staff have to be able to reach everyone
+    const c = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM blocks WHERE uid = ?").bind(a.uid).first(); if (c && c.n >= 200) return { ok: false, msg: "Your block list is full. Unblock someone first." };
+    await this.env.DB.prepare("INSERT OR IGNORE INTO blocks (uid, bid, t) VALUES (?, ?, ?)").bind(a.uid, u.id, Date.now()).run();
+    try { await this.frDrop(a, { n: u.name }, "remove"); } catch (e) {}   // no longer friends (or asking to be)
+    if (this.tradeOf && this.tradeOf.has(a.uid)) { const T = this.trades.get(this.tradeOf.get(a.uid)); if (T && T.side.some((x) => x.uid === u.id)) this.tradeDrop(a.uid, "The trade was cancelled."); }
+    // if they're in one of your rooms right now, they head back to the lounge
+    for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (!x || x.uid !== u.id || !x.pres) continue; const pid = prId(x.pres.rm); if (!pid) continue;
+      const r = await this.prRoom(pid); if (r && r.owner === a.uid) { x.proom = 0; w.serializeAttachment(x); this.send(w, { t: "prkick", msg: `You can't stay in ${r.name}, so you headed back to the lounge.` }); } }
+    return { ok: true, blocks: await this.blockList(a.uid), msg: `${them} is blocked. You won't see their chat, and they can't message you, trade with you or come into your rooms.` };
+  }
+  // ---------- REPORT a player: goes to the staff dashboard with their recent chat attached by the server (it can't be faked from the browser) ----------
+  async reportTable() { if (this.reportReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, uid INTEGER NOT NULL, name TEXT NOT NULL, tuid INTEGER NOT NULL, target TEXT NOT NULL, tstaff TEXT NOT NULL DEFAULT '', t INTEGER NOT NULL, room TEXT, reason TEXT NOT NULL, note TEXT, chat TEXT, done INTEGER NOT NULL DEFAULT 0, by TEXT)").run(); this.reportReady = true; }
+  async reportSend(a, m) {
+    await this.reportTable(); await this.chatTable();
+    const n = String(m.n || "").trim(); if (!/^[A-Za-z0-9_]{3,12}$/.test(n)) return { ok: false, msg: "No llama has that name." };
+    const u = await this.env.DB.prepare("SELECT id, name, role FROM users WHERE name = ?").bind(n).first(); if (!u) return { ok: false, msg: "No llama has that name." };
+    if (u.id === a.uid) return { ok: false, msg: "You can't report yourself." };
+    const reason = String(m.reason || ""); if (!Object.hasOwn(REPORT_REASONS, reason)) return { ok: false, msg: "Pick what happened first." };
+    const note = WF.mask(String(m.note || "").replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, " ").trim().slice(0, 400));
+    const now = Date.now();
+    const day = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM reports WHERE uid = ? AND t > ?").bind(a.uid, now - 864e5).first(); if (day && day.n >= 10) return { ok: false, msg: "You've sent 10 reports today. Staff will look at them soon." };
+    const dup = await this.env.DB.prepare("SELECT 1 FROM reports WHERE uid = ? AND tuid = ? AND done = 0 AND t > ?").bind(a.uid, u.id, now - 36e5).first(); if (dup) return { ok: false, msg: `You already reported ${u.name.toUpperCase()}. Staff will look at it soon.` };
+    const lines = ((await this.env.DB.prepare("SELECT t, rm, text FROM chatlog WHERE uid = ? AND t > ? ORDER BY id DESC LIMIT 15").bind(u.id, now - 2 * 36e5).all()).results || []).reverse();
+    const s2 = (v, k) => String(v || "").replace(/[^\x20-\x7e]/g, "").slice(0, k);
+    await this.env.DB.prepare("INSERT INTO reports (uid, name, tuid, target, tstaff, t, room, reason, note, chat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .bind(a.uid, a.name, u.id, u.name.toUpperCase(), staffRole(this.env, u), now, s2(m.room, 24), reason, note, JSON.stringify(lines)).run();
+    // tell staff who are online right now (a report about a mod or the owner only goes to the owner)
+    const tst = staffRole(this.env, u);
+    for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (!x || !x.staff || x.uid === u.id) continue; if (tst && x.staff !== "owner") continue; this.send(w, { t: "toast", msg: `New player report: ${u.name.toUpperCase()}. Open DASHBOARD > REPORTS.` }); }
+    return { ok: true, msg: `Thanks. Your report about ${u.name.toUpperCase()} went to the staff.` };
+  }
+  async reportList(a) {
+    const st = await this.staffNow(a); if (!st) return { ok: false, msg: "Only staff can see reports." };
+    await this.reportTable();
+    // mods never see reports about staff (mods or the owner); only the owner does
+    const rows = (await this.env.DB.prepare(`SELECT r.*, u.muted, u.banned FROM reports r LEFT JOIN users u ON u.id = r.tuid ${st === "owner" ? "" : "WHERE r.tstaff = ''"} ORDER BY r.done, r.id DESC LIMIT 80`).all()).results || [];
+    return { ok: true, me: st, reports: rows.map((r) => { let chat = []; try { chat = JSON.parse(r.chat || "[]"); } catch (e) {}
+      return { id: r.id, by: r.name.toUpperCase(), n: r.target, st: r.tstaff, t: r.t, room: r.room || "", reason: r.reason, note: r.note || "", chat, done: !!r.done, doneBy: r.by || "", muted: !!r.muted, banned: !!r.banned }; }) };
+  }
+  async reportDone(a, m) {
+    const st = await this.staffNow(a); if (!st) return { ok: false, msg: "Only staff can do that." };
+    await this.reportTable(); const id = Math.floor(+m.rpid || 0);
+    const r = await this.env.DB.prepare("SELECT tstaff FROM reports WHERE id = ?").bind(id).first(); if (!r) return { ok: false, msg: "That report is gone." };
+    if (r.tstaff && st !== "owner") return { ok: false, msg: "Only the owner can handle that one." };
+    await this.env.DB.prepare("UPDATE reports SET done = ?, by = ? WHERE id = ?").bind(m.done ? 1 : 0, m.done ? a.name : null, id).run();
+    return { ok: true };
+  }
+  // staff only: what the MOD section of a player's card needs (re-checks the caller's role in the database first)
+  async modInfo(a, m) {
+    const st = await this.staffNow(a); if (!st) return { ok: false, msg: "Only staff can do that." };
+    const n = String(m.n || "").trim(); if (!/^[A-Za-z0-9_]{3,12}$/.test(n)) return { ok: false, msg: "No llama has that name." };
+    const u = await this.env.DB.prepare("SELECT * FROM users WHERE name = ?").bind(n).first(); if (!u) return { ok: false, msg: "No llama has that name." };
+    await this.reportTable(); const tst = staffRole(this.env, u);
+    const reps = (tst && st !== "owner") ? 0 : ((await this.env.DB.prepare("SELECT COUNT(*) AS n FROM reports WHERE tuid = ? AND done = 0").bind(u.id).first()) || {}).n || 0;
+    const can = u.id !== a.uid && tst !== "owner" && (st === "owner" || tst !== "mod");
+    return { ok: true, me: st, n: u.name.toUpperCase(), st: tst, muted: !!u.muted, banned: !!u.banned, wfn: +u.wfn || 0, reports: reps, can };
   }
   async logStaff(by, cmd, target) {
     const log = (await this.ctx.storage.get("modlog")) || [];

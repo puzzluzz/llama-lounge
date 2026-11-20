@@ -250,7 +250,7 @@
   #needs .nd{display:flex;align-items:center;gap:4px;font-size:11px;line-height:1}
   #needs .nd i{display:block;width:44px;height:6px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden}
   #needs .nd b{display:block;height:100%;border-radius:999px;background:#7ce07c;transition:width .6s}
-  #needs .nd.mid b{background:#ffd23f} #needs .nd.low b{background:#ff5c8a} #needs .nd.empty{animation:pulse .5s ease-in-out infinite alternate} #needs .nd.empty i{box-shadow:0 0 0 1px #ff5c8a}
+  #needs .nd.mid b{background:#ffd23f} #needs .nd.low b{background:#ff5c8a} #needs .nd.empty{animation:pulse .5s ease-in-out infinite alternate;flex-direction:row;padding:0;gap:4px;text-align:left;color:inherit}   /* not the pop-up .empty box style */ #needs .nd.empty i{box-shadow:0 0 0 1px #ff5c8a}
   @media (max-width:640px){ #needs .nd i{width:30px} }
   #tokn{color:#ffe28a} #tokrow .tkl{font-size:10px;font-weight:700;opacity:.75;letter-spacing:.06em}
   #topbtns{right:calc(10px + env(safe-area-inset-right,0px));top:calc(10px + var(--sat));gap:8px;align-items:center}
@@ -416,6 +416,24 @@
   #eb_items .fre{color:#fff;font:600 13px var(--ui);padding:0 6px;white-space:nowrap}
   #eb_piece{display:none;gap:6px} #editbar.piece #eb_piece{display:flex} #editbar.piece #eb_items{display:none} #eb_piece .gbbtn,#eb_done{min-height:44px;padding:0 14px;white-space:nowrap}
   #bugbox,#wfbox{width:min(calc(100% - 24px),440px)} #wfbox .fre{font-size:15px!important;line-height:1.5!important} #bug_text{width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radius:8px;padding:10px;font:500 15px var(--ui);resize:vertical;margin:6px 0 4px}
+  #pmenu .pmb2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px} #pmenu .pmb2 .gbbtn{min-height:38px!important;font-size:12px!important;padding:6px 4px;gap:6px;flex-direction:row} #pmenu .pmb2 .gbbtn .pi{width:16px;height:16px}
+  #pmenu .pmb2 #pm_block.on{background:#ffe1e6}
+  #pmenu{max-height:calc(100vh - 86px);max-height:calc(100dvh - 86px);overflow-y:auto}
+  #pmenu .pmmod{display:none;margin-top:8px;border:2px dashed #e0b400;border-radius:7px;padding:8px;background:#fffbe8} #pmenu .pmmod.on{display:block}
+  #pmenu .pmmod .mh{display:flex;align-items:center;gap:6px;font:800 12px var(--ui);letter-spacing:.05em;color:#8a5a00;margin-bottom:4px} #pmenu .pmmod .mh .pi{width:16px;height:16px}
+  #pmenu .pmmod .mi{font:600 12px/1.5 var(--ui);color:var(--sub);margin-bottom:6px} #pmenu .pmmod .mi b{color:var(--ink)}
+  #pmenu .pmmod .mb{display:grid;grid-template-columns:repeat(3,1fr);gap:6px} #pmenu .pmmod .mb .gbbtn{min-height:36px!important;font-size:12px!important;padding:5px 2px;margin:0}
+  #repbox{width:min(calc(100% - 24px),440px)} #repbox .rpr{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+  #repbox .rpr button{font:700 13px/1.25 var(--ui);text-align:left;padding:9px 10px;border:2px solid var(--cardln);border-radius:7px;background:#fff;color:var(--ink);cursor:pointer;min-height:44px}
+  #repbox .rpr button.on{border-color:var(--ink);background:#fff3c8;box-shadow:0 3px 0 var(--ink)}
+  #rp_note{width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radius:8px;padding:10px;font:500 15px var(--ui);resize:vertical;margin:2px 0 4px}
+  #repbox .rpsmall{font-size:12px!important;opacity:.8} #repbox .prmsg{min-height:18px;font-weight:700;color:#c03050} #repbox .prmsg.good{color:#1f8a4c}
+  @media (max-width:420px){ #repbox .rpr{grid-template-columns:1fr} }
+  .rep{border:2px solid var(--cardln);border-radius:7px;padding:8px 10px;margin:0 0 8px;background:#fff} .rep.done{opacity:.55} .rep .rh{font:700 13px/1.4 var(--ui)} .rep .rh small{font-weight:600;color:var(--sub)}
+  .rep .rwhy{display:inline-block;font:800 11px var(--ui);background:#ffe1e6;color:#a01c34;border-radius:999px;padding:2px 8px;margin:4px 0} .rep .rnote{font:500 13.5px/1.4 var(--ui);margin:2px 0 4px}
+  .rep .rchat{background:var(--soft);border-radius:6px;padding:6px 8px;font:500 12.5px/1.45 var(--ui);margin:4px 0;max-height:180px;overflow:auto} .rep .rchat div{word-break:break-word} .rep .rchat small{color:var(--sub);font-weight:700}
+  .rep .racts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .acblk{display:flex;align-items:center;gap:8px;padding:4px 0} .acblk span{flex:1;font:700 14px var(--ui)}
   #bugbox .prmsg{min-height:18px;font-weight:700;color:#c03050} #bugbox .prmsg.good{color:#1f8a4c}
   #mktbox{width:min(calc(100% - 24px),480px)} #mktbox .prmsg{min-height:18px;font-weight:700;color:#c03050;margin-top:6px} #mktbox .prmsg.good{color:#1f8a4c}
   .mkr{display:flex;align-items:center;gap:10px;padding:8px;margin:0 0 8px;border:2px solid var(--cardln);border-radius:7px;background:#fff;box-shadow:0 3px 0 var(--cardln)}
@@ -430,7 +448,7 @@
   #tourbox .tbr{display:flex;gap:6px;align-items:center} #tourbox .tbr small{flex:1;font:600 12px var(--pxf);color:var(--sub)} #tourbox .gbbtn{padding:6px 10px!important;min-height:0!important;font-size:13px!important}
   #tourring{position:fixed;z-index:8;pointer-events:none;display:none;border:4px solid #ffd23f;border-radius:16px;box-shadow:0 0 0 4px rgba(29,21,48,.85),0 0 22px 6px rgba(255,210,63,.75);animation:tourPulse 1.1s ease-in-out infinite}
   body.touring #tourring.on{display:block} @keyframes tourPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.08);opacity:.75}}
-  #frbox,#acctbox,#dmbox,#catbox,#wardbox,#roomsbox,#bugbox,#mktbox,#wfbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);max-height:86vh;z-index:6;animation:popIn .18s ease-out}
+  #frbox,#acctbox,#dmbox,#catbox,#wardbox,#roomsbox,#bugbox,#repbox,#mktbox,#wfbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);max-height:86vh;z-index:6;animation:popIn .18s ease-out}
   #frbox{width:min(calc(100% - 24px),420px)}
   #dmbox{width:min(calc(100% - 24px),440px)}
   #dmbox .dmhead{display:flex;align-items:center;gap:6px;margin-bottom:8px} #dmbox .dmhead .slt{flex:1;text-align:left;margin:0}
@@ -929,9 +947,9 @@
   <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button class="pbtn ic" id="zout" title="Zoom out" aria-label="Zoom out">−</button><button class="pbtn ic" id="zin" title="Zoom in" aria-label="Zoom in">+</button><button class="pbtn ic" id="musicbtn" title="Music" aria-label="Music">♪</button><button class="pbtn y" id="menubtn" aria-label="Menu"><span class="hamb"><i></i><i></i><i></i></span><span class="mtx">MENU</span></button></div>
   <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
   <div id="keys">CLICK TO WALK · SPACE ACTION · ENTER TALK<br>M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
-  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">ROOMS</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="market" data-i="🏪">MARKETPLACE</div><div data-a="bug" data-i="🐞">REPORT A BUG</div><div data-a="tour" data-i="💡">TAKE THE TOUR</div><div data-a="terms" data-i="📜">TERMS &amp; PRIVACY</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
+  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">ROOMS</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="market" data-i="🏪">MARKETPLACE</div><div data-a="bug" data-i="🐞">REPORT A BUG</div><div data-a="tour" data-i="🦙">ASK GUS FOR A TOUR</div><div data-a="terms" data-i="📜">TERMS &amp; PRIVACY</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
   <div id="emenu" class="gb menu sheet"><div class="slt">😄 EMOTES</div><div data-e="heart"><span class="pi pi-heart" aria-hidden="true"></span><b>HEART</b></div><div data-e="bang"><span class="pi pi-em_wow" aria-hidden="true"></span><b>WOW</b></div><div data-e="huh"><span class="pi pi-em_huh" aria-hidden="true"></span><b>HUH</b></div><div data-e="note"><span class="pi pi-music" aria-hidden="true"></span><b>SING</b></div><div data-e="lol"><span class="pi pi-em_lol" aria-hidden="true"></span><b>LOL</b></div><div data-e="zzz"><span class="pi pi-em_zzz" aria-hidden="true"></span><b>SLEEP</b></div><div data-e="wave"><span class="pi pi-hand" aria-hidden="true"></span><b>WAVE</b></div><div data-e="flex"><span class="pi pi-muscle" aria-hidden="true"></span><b>FLEX</b></div><div data-e="palm"><span class="pi pi-em_palm" aria-hidden="true"></span><b>FACEPALM</b></div></div>
-  <div id="pmenu" class="gb"><div class="pmtop"><div id="pm_pic" class="pmpic"></div><div class="pmx"><div id="pm_name" class="pmn"></div><div id="pm_meta" class="pmmeta"></div></div><button class="gbbtn pmclose" id="pm_close" aria-label="Close">✕</button></div><div id="pm_info"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_trade">🤝 TRADE</button></div></div>
+  <div id="pmenu" class="gb"><div class="pmtop"><div id="pm_pic" class="pmpic"></div><div class="pmx"><div id="pm_name" class="pmn"></div><div id="pm_meta" class="pmmeta"></div></div><button class="gbbtn pmclose" id="pm_close" aria-label="Close">✕</button></div><div id="pm_info"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_trade">🤝 TRADE</button></div><div class="pmb2"><button class="gbbtn" id="pm_block">🚫 BLOCK</button><button class="gbbtn" id="pm_report">🚩 REPORT</button></div><div class="pmmod" id="pm_mod"></div></div>
   <div id="tmenu" class="gb sheet"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
   <div id="lboard" class="gb sheet"><div class="lbt">🏆 HIGH SCORES</div><div class="lbcols"><div><div class="lbh">HAY CATCH</div><div id="lb_hay"></div></div><div><div class="lbh">LLAMA DASH</div><div id="lb_dash"></div></div></div><div class="srow"><button class="gbbtn" id="lbclose">CLOSE</button></div></div>
   <div id="shop" class="gb sheet"><img id="shopimg" alt=""><div id="shopname"></div><div id="shopprice"></div><div id="shopsub"></div><div class="srow"><a id="shoplink" class="gbbtn" href="#" target="_blank" rel="noopener noreferrer">VIEW PRODUCT ▶</a><button class="gbbtn" id="shopclose">CLOSE</button></div></div>
@@ -981,6 +999,7 @@
   <div id="mktbox" class="gb sheet"><div class="slt">🏪 MARKETPLACE</div><div class="autabs" id="mk_tabs"><button type="button" data-t="buy">BUY</button><button type="button" data-t="sell">SELL</button><button type="button" data-t="mine">MY LISTINGS</button></div><div id="mk_body"></div><div class="prmsg" id="mk_msg"></div></div>
   <div id="wfbox" class="gb sheet"><div class="slt">⚠️ WATCH YOUR LANGUAGE</div><p class="fre" id="wf_text"></p><div class="srow"><button class="gbbtn y" id="wf_ok">I UNDERSTAND</button></div></div>
   <div id="bugbox" class="gb sheet"><div class="slt">🐞 REPORT A BUG</div><div class="fre">Something broken or weird? Tell us what you were doing and what happened. The owner reads every report.</div><textarea id="bug_text" maxlength="800" rows="6" placeholder="What happened? What did you expect?"></textarea><div class="srow"><button class="gbbtn y" id="bug_send">SEND REPORT</button></div><div class="prmsg" id="bug_msg"></div></div>
+  <div id="repbox" class="gb sheet"><div class="slt" id="rp_title">🚩 REPORT</div><div class="fre" id="rp_who"></div><div class="rpr" id="rp_reasons"></div><textarea id="rp_note" maxlength="400" rows="3" placeholder="Anything else staff should know? (optional)"></textarea><div class="fre rpsmall">Staff also see what they said in chat lately, so you don't need to copy it.</div><div class="prmsg" id="rp_msg"></div><div class="srow"><button class="gbbtn y" id="rp_send">SEND REPORT</button><button class="gbbtn" id="rp_cancel">CANCEL</button></div></div>
   <div id="acctbox" class="gb sheet"><div class="slt" id="ac_title">🔐 ACCOUNT</div><div id="ac_body"></div></div>
   <div id="kicked"></div>
   <div id="knockbox" class="afk"><div class="afkc"><div class="afki">🚪</div><b id="kn_t"></b><small>Let them into your room?</small><div class="srow" style="display:flex;gap:8px"><button class="gbbtn y" id="kn_yes">LET IN</button><button class="gbbtn" id="kn_no">NO THANKS</button></div></div></div>
@@ -1014,7 +1033,7 @@
   <div id="tradeask" class="gb sheet"><div class="dpt">🤝 TRADE?</div><div class="dpsub" id="ta_txt"></div><div class="srow"><button class="gbbtn y" id="ta_yes">LET'S TRADE</button><button class="gbbtn" id="ta_no">NO THANKS</button></div></div>
   <div id="tradebox" class="gb sheet"><div class="slt" id="tr_title">🤝 TRADE</div><div id="tr_body"></div><div id="tr_msg"></div><div class="srow"><button class="gbbtn y" id="tr_ready">✓ READY</button><button class="gbbtn" id="tr_cancel">CANCEL</button></div></div>
   <div id="jobsbox" class="gb sheet"><div class="slt">💰 JOB BOARD</div><div class="jsub">Ways to earn coins. Keep your 🍔 and 💧 up, or most jobs pay half.</div><div id="jobs_body"></div><div class="srow"><button class="gbbtn" id="jobs_close">CLOSE</button></div></div>
-  <div id="dashbox" class="gb sheet"><div class="slt" id="ds_title">STAFF DASHBOARD</div><div class="autabs" id="ds_tabs"><button type="button" data-t="players" class="on">PLAYERS</button><button type="button" data-t="chat">CHAT LOG</button></div><div id="ds_body"></div><div class="srow"><button class="gbbtn" id="ds_refresh">REFRESH</button><button class="gbbtn" id="ds_close">CLOSE</button></div></div>
+  <div id="dashbox" class="gb sheet"><div class="slt" id="ds_title">STAFF DASHBOARD</div><div class="autabs" id="ds_tabs"><button type="button" data-t="players" class="on">PLAYERS</button><button type="button" data-t="chat">CHAT LOG</button><button type="button" data-t="reports">REPORTS<b class="mbadge" id="ds_repn"></b></button></div><div id="ds_body"></div><div class="srow"><button class="gbbtn" id="ds_refresh">REFRESH</button><button class="gbbtn" id="ds_close">CLOSE</button></div></div>
   <div id="tblbox" class="gb sheet"><div class="slt" id="tb_title"></div><canvas id="tbcv" width="150" height="66"></canvas><div id="tb_msg"></div>
     <div class="tbopts" id="tb_opts"></div>
     <div class="slbet" id="tb_bet"><span>BET</span><button class="gbbtn" data-bet="1">1</button><button class="gbbtn" data-bet="2">2</button><button class="gbbtn" data-bet="5">5</button><button class="gbbtn" data-bet="10">10</button></div>
@@ -1207,6 +1226,8 @@ const PIXSRC={
   broom:'............/..........kk/.........knk/........knk./.......knk../..kkkkknk.../.kyyyykk..../kyyyyyyk..../kyYyYyyk..../kyYyYyk...../kYYYYk....../kkkkk.......',
   key:'............/..kkkk....../.kyyyyk...../kyykkyyk..../kykk.kyk..../kyykkyykkkkk/.kyyyyyyyyyk/..kkkkkkykyk/........kkkk/............/............/............',
   bell:'.....kk...../....kyyk..../...kyyyyk.../..kywyyyYk../..kywyyyYk../..kywyyyYk../.kyyyyyyyYk./.kyyyyyyyYk./kkkkkkkkkkkk/kYYYYYYYYYYk/kkkkkkkkkkkk/.....kk.....',
+  noentry:'....kkkk..../..kkrrrrkk../.krrrrrrrrk./.krrrwwwrrk./krrrrrwwwrRk/krrwrrrwwrRk/krrwwrrrwrRk/krrwwwrrrrRk/.krrwwwrrRk./.krrrrrrRRk./..kkRRRRkk../....kkkk....',
+  flag:'.kk........./.kwkkkkkkk../.kwkrrrrrrk./.kwkrrrrrrrk/.kwkrrrrrrRk/.kwkrrrrrRRk/.kwkkkkkkkkk/.kwk......../.kwk......../.kwk......../.kwk......../.kkk........',
   eye:'............/............/...kkkkkk.../..kwwwwwwk../.kwwkkkkwwk./kwwkbbwbkwwk/kwwkbbbbkwwk/.kwwkkkkwwk./..kwwwwwwk../...kkkkkk.../............/............',
   arrowr:'............/......kk..../......kgk.../......kggk../kkkkkkkgggk./kgggggggggGk/kgggggggggGk/kkkkkkkgggk./......kggk../......kgk.../......kk..../............',
   people:'............/..kkk...kkk./.kpppk.kbbbk/.kpppk.kbbbk/.kpppk.kbbbk/..kkk...kkk./.kpppkkkbbbk/kpppppkbbbbk/kpppppkbbbbk/kppppppkbbbk/kkkkkkkkkkkk/............',
@@ -1242,7 +1263,7 @@ const PIXSRC={
   back:'............/......kk..../.....kkk..../....kkk...../...kkk....../..kkk......./..kkk......./...kkk....../....kkk...../.....kkk..../......kk..../............'
 };
 const PIXURL={}, PIXIMG={};
-const EMO={'⚠️':'warn','⚠':'warn','🐞':'bug','🏪':'stall','🪙':'coin','💰':'coin','⭐':'star','💦':'splash','💧':'drop','🛍':'bag','🎒':'backpack','🏠':'house','🍔':'burger','🎳':'bowl','💬':'chat','🔐':'lock','🔒':'lock','🎰':'slots','🎁':'gift','🏆':'trophy','🚪':'door','🛡':'shield','🤝':'handshake','🍸':'cocktail','🥤':'cup','👕':'shirt','📦':'box','🎨':'palette','🔥':'fire','✅':'check','✔':'check','✓':'check','🌾':'wheat','👑':'crown','💛':'goldheart','📨':'envelope','📧':'envelope','🌶':'pepper','✳':'sparkle','🪑':'chair','💡':'bulb','✋':'hand','👋':'hand','🎲':'dice','⚾':'ball','🎡':'wheel','⏳':'hourglass','⏰':'clock','💾':'disk','🥇':'gold1','🥈':'silver2','🥉':'bronze3','🔴':'reddot','📈':'chart','💯':'hundred','😄':'smile','📜':'scroll','📋':'scroll','💪':'muscle','🦙':'llama','💤':'zzz','🔊':'speaker','🎵':'music','🛏':'bed','🍽':'plate','📚':'books','📺':'tv','🪴':'plant','🧶':'yarn','🍎':'apple','🌽':'corn','🍪':'cookie','⚠':'warn','🔍':'search','⚙':'gear','🌍':'globe','⬆':'up','🦃':'turkey','🕹':'joystick','🥕':'carrot','🎣':'fish','📍':'pin','🛋':'sofa','🃏':'cards','✕':'x','👥':'people','🎫':'ticket','🔨':'hammer','🧹':'broom','🔑':'key','🔔':'bell','👁':'eye','➡':'arrowr','🕐':'clock','🎯':'plinko','▶':'play','◀':'playl','↩':'undo','♥':'heart'};
+const EMO={'⚠️':'warn','⚠':'warn','🐞':'bug','🏪':'stall','🪙':'coin','💰':'coin','⭐':'star','💦':'splash','💧':'drop','🛍':'bag','🎒':'backpack','🏠':'house','🍔':'burger','🎳':'bowl','💬':'chat','🔐':'lock','🔒':'lock','🎰':'slots','🎁':'gift','🏆':'trophy','🚪':'door','🛡':'shield','🤝':'handshake','🍸':'cocktail','🥤':'cup','👕':'shirt','📦':'box','🎨':'palette','🔥':'fire','✅':'check','✔':'check','✓':'check','🌾':'wheat','👑':'crown','💛':'goldheart','📨':'envelope','📧':'envelope','🌶':'pepper','✳':'sparkle','🪑':'chair','💡':'bulb','✋':'hand','👋':'hand','🎲':'dice','⚾':'ball','🎡':'wheel','⏳':'hourglass','⏰':'clock','💾':'disk','🥇':'gold1','🥈':'silver2','🥉':'bronze3','🔴':'reddot','📈':'chart','💯':'hundred','😄':'smile','📜':'scroll','📋':'scroll','💪':'muscle','🦙':'llama','💤':'zzz','🔊':'speaker','🎵':'music','🛏':'bed','🍽':'plate','📚':'books','📺':'tv','🪴':'plant','🧶':'yarn','🍎':'apple','🌽':'corn','🍪':'cookie','⚠':'warn','🔍':'search','⚙':'gear','🌍':'globe','⬆':'up','🦃':'turkey','🕹':'joystick','🥕':'carrot','🎣':'fish','📍':'pin','🛋':'sofa','🃏':'cards','✕':'x','👥':'people','🎫':'ticket','🔨':'hammer','🧹':'broom','🔑':'key','🔔':'bell','👁':'eye','➡':'arrowr','🕐':'clock','🎯':'plinko','▶':'play','◀':'playl','↩':'undo','♥':'heart','🚫':'noentry','🚩':'flag'};
 (function(){ const c=document.createElement('canvas'), x=c.getContext('2d'); let css='';
   for (const [n,src] of Object.entries(PIXSRC)){ const rows=src.split('/'); c.width=rows[0].length; c.height=rows.length; x.clearRect(0,0,c.width,c.height); src.split('/').forEach((r,j)=>{ for (let i=0;i<r.length;i++){ const col=PIXPAL[r[i]]; if (col){ x.fillStyle=col; x.fillRect(i,j,1,1); } } }); PIXURL[n]=c.toDataURL(); { const im=new Image(); im.src=PIXURL[n]; PIXIMG[n]=im; } css+=`.pi-${n}{background-image:url(${PIXURL[n]})}`; }
   /* sizes are whole multiples of the 12px art in real screen pixels, so every art pixel stays square */
@@ -2598,14 +2619,22 @@ function drawJukebox(f, sx, sy, t){
     g.fillStyle='#8878a0'; g.fillRect(Math.round(cx+Math.cos(ang)*3.4),Math.round(cy+Math.sin(ang)*3),1,1); g.fillRect(Math.round(cx-Math.cos(ang)*3.4),Math.round(cy-Math.sin(ang)*3),1,1); }
   // song-select buttons under the window
   for (let k=0;k<4;k++){ const [X,Y]=P(x0+0.22+k*0.12,yF,15); g.fillStyle=(on && Math.floor(t*2)%4===k)?'#f8d030':'#f8f8f8'; g.fillRect(Math.round(X),Math.round(Y)-1,1,1); }
-  // floating music notes while it plays
-  // a stream of music notes drifting up while it plays: single and double notes in the tube colours, swaying and fading out
+}
+// a stream of music notes drifting up while it plays: single and double notes in the tube colours, swaying and fading out.
+// Drawn after the jukebox's ink outline so the notes stay borderless.
+function drawJukeNotes(sx, sy, t){ const on=jukeOn();
   if (on){ for (let k=0;k<5;k++){ const ph=(t*0.35+k/5)%1; const nx=Math.round(sx-14+((k*11)%26)+Math.sin(t*2.2+k*1.7)*5+ph*8), ny=Math.round(sy-48-ph*54);
       g.globalAlpha = ph>0.75 ? (1-ph)/0.25 : Math.min(1,ph*6); const col=JUKE[k%JUKE.length], dbl=k%3===1;
-      const note=(x,y)=>{ g.fillStyle=INK; g.fillRect(x-1,y-1,4,4); g.fillRect(x+2,y-7,2,8); g.fillStyle=col; g.fillRect(x,y,2,2); g.fillRect(x+2,y-6,1,7); };
-      note(nx,ny); if (dbl){ note(nx+5,ny-1); g.fillStyle=INK; g.fillRect(nx+2,ny-8,6,2); g.fillStyle=col; g.fillRect(nx+3,ny-7,4,1); } else { g.fillStyle=INK; g.fillRect(nx+3,ny-7,3,2); g.fillStyle=col; g.fillRect(nx+4,ny-6,1,1); }
+      // borderless pixel notes: the tube colour, a light highlight on the head and a darker shade underneath (single = flag, double = beamed pair)
+      const spr = dbl ? JNOTE2 : JNOTE1, shades={c:col, d:jShade(col,-0.38), h:jShade(col,0.55)};
+      for (let r=0;r<spr.length;r++) for (let q=0;q<spr[r].length;q++){ const ch=spr[r][q]; if (ch==='.') continue; g.fillStyle=shades[ch]; g.fillRect(nx+q-3, ny+r-7, 1, 1); }
       g.globalAlpha=1; } }
 }
+// jukebox note sprites (c = colour, h = highlight, d = shade) and a colour helper
+const JNOTE1=['...cc.','...cdc','...c.d','...c..','...c..','.ccc..','chcc..','cccd..','.dd...'];
+const JNOTE2=['...cccccc','...dddddd','...c....c','...c....c','...c....c','.ccc..ccc','chcc.chcc','cccd.cccd','.dd...dd.'];
+function jShade(hex, f){ const n=parseInt(hex.slice(1),16); let r=n>>16, g2=(n>>8)&255, b=n&255; const m=v=>Math.max(0,Math.min(255,Math.round(f<0 ? v*(1+f) : v+(255-v)*f)));
+  return '#'+[m(r),m(g2),m(b)].map(v=>v.toString(16).padStart(2,'0')).join(''); }
 // upright arcade cabinet: side profile with an overhanging marquee, slanted screen, control panel with stick and buttons
 function drawArcade3D(f, sx, sy, t){
   const gx=f.gx, gy=f.gy, x0=gx+0.14, x1=gx+0.86;
@@ -3389,7 +3418,7 @@ function drawFurn(f,t){
       // fanned cards
       g.fillStyle=INK; g.fillRect(sx+2,ty+1,5,4); g.fillRect(sx+5,ty,5,4); g.fillStyle='#f8f8f8'; g.fillRect(sx+3,ty+2,3,2); g.fillRect(sx+6,ty+1,3,2); g.fillStyle='#f84848'; g.fillRect(sx+4,ty+2,1,1); g.fillStyle=INK; g.fillRect(sx+7,ty+1,1,1);
       drawTableFx(f,sx,sy+1); break; }
-    case 'jukebox': inkOutline(sx, sy, ()=>drawJukebox(f, sx, sy, t)); break;
+    case 'jukebox': inkOutline(sx, sy, ()=>drawJukebox(f, sx, sy, t)); drawJukeNotes(sx, sy, t); break;
     case 'arcade': inkOutline(sx, sy, ()=>drawArcade3D(f, sx, sy, t)); break;
     case 'sofa': { const T='#e05888', L='#b83868', R='#902850', gy=f.gy;
       box(0.02,gy,0.24,1,26,T,L,R);
@@ -4330,7 +4359,7 @@ function upsertPeer(peer){
   else {
     const here = st.rm===curRoom;
     if (st.sl && st.sl.k !== o.lastSl){ o.lastSl = st.sl.k; if (here) slotRemote(st.sl.r, Math.floor(st.x)); }
-    if (st.s && st.s.k !== o.lastK){ o.lastK = st.s.k; if (st.s.t){ if(st.s.f){ if (here) sysMsg(`${st.n.toUpperCase()} ${st.s.t}`); } else if (!here) chatMsg(st.n, st.s.t, st.s.y); else { o.bubble=mkBubble(st.s.t); chatMsg(st.n, st.s.t, st.s.y); addBar(st.n, st.s.t, st.c, o.x, o.y, false, st.s.y); } } }
+    if (st.s && st.s.k !== o.lastK){ o.lastK = st.s.k; if (st.s.t && !BLOCKS.has(String(st.n||'').toUpperCase())){   /* blocked players' chat never shows */ if(st.s.f){ if (here) sysMsg(`${st.n.toUpperCase()} ${st.s.t}`); } else if (!here) chatMsg(st.n, st.s.t, st.s.y); else { o.bubble=mkBubble(st.s.t); chatMsg(st.n, st.s.t, st.s.y); addBar(st.n, st.s.t, st.c, o.x, o.y, false, st.s.y); } } }
     if (st.e && st.e.k !== o.lastE){ o.lastE = st.e.k; o.emote={t:st.e.t, until:now+3000}; }
     if (st.sk !== o.lastSk){ o.lastSk = st.sk; o.sipStart = now; }
     if (st.sp && st.sp.k !== o.lastSp && here){ o.lastSp = st.sp.k; const tgt = st.sp.to===myPeer ? me : others.get(st.sp.to);
@@ -4510,6 +4539,7 @@ document.getElementById('chatrow').addEventListener('submit', e => {
   if (cmd==='/flip'){ const h=Math.random()<0.5; const ti=nearTable(); if(ti>=0){ me.tdK=(me.tdK||0)+1; me.lastTable={k:me.tdK,i:ti,v:h?1:2,coin:true}; tableShow(ti,h?1:2,true); } action(`flipped a coin: ${h?'HEADS':'TAILS'}!`); return; }
   { const mm=/^\/(mute|unmute|ban|unban|kick|mod|unmod)\s+(\S+)/.exec(cmd); if (mm){ NET.act('admin',{cmd:mm[1], target:mm[2]}).then(r=>localMsg(r.msg||'Done.')); return; } }
   if (WF.slur(raw)){ localMsg("That message has a word that isn't allowed here, so it wasn't sent."); NET.act('wf_hit',{}); return; }   // the server checks too
+  if (cmd==='/tour' || cmd==='/gus'){ if (TOUR.on) return; tourStart(); return; }   // GUS comes back for another tour
   if (cmd.startsWith('/yell ')){ const t2=WF.mask(raw.slice(6).trim()); if(!t2) return; me.sayK=(me.sayK+1)%100000; me.lastSay={k:me.sayK, t:t2, y:1}; chatMsg(me.n||'YOU', t2, true); addBar(me.n||'YOU', t2, me.c, me.x, me.y, true, true); sendPresence(true); return; }
   const said=WF.mask(raw); me.sayK = (me.sayK+1) % 100000; me.lastSay = {k:me.sayK, t:raw};   /* the server masks it for everyone else (and counts it) */
   me.bubble = mkBubble(said); chatMsg(me.n||'YOU', said); addBar(me.n||'YOU', said, me.c, me.x, me.y, true);
@@ -4532,7 +4562,7 @@ function items(m){ return [...m.children].filter(c=>!c.classList.contains('sheet
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ { const dp=document.getElementById('dailypop'); if (dp) dp.style.display='none'; const ib=document.getElementById('itembox'); if (ib) ib.style.display='none'; } if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; { const pk=document.getElementById('plkbox'); if (pk) pk.style.display='none'; } if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; { const wb=document.getElementById('wfbox'); if (wb) wb.style.display='none'; const bb=document.getElementById('bugbox'); if (bb) bb.style.display='none'; const mk=document.getElementById('mktbox'); if (mk) mk.style.display='none'; } const dmb=document.getElementById('dmbox'); if (dmb) dmb.style.display='none'; const ctb=document.getElementById('catbox'); if (ctb) ctb.style.display='none'; const wdb=document.getElementById('wardbox'); if (wdb) wdb.style.display='none'; const prb=document.getElementById('roomsbox'); if (prb && joined) prb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+function closeAll(){ { const dp=document.getElementById('dailypop'); if (dp) dp.style.display='none'; const ib=document.getElementById('itembox'); if (ib) ib.style.display='none'; } if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; { const pk=document.getElementById('plkbox'); if (pk) pk.style.display='none'; } if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; { const wb=document.getElementById('wfbox'); if (wb) wb.style.display='none'; const bb=document.getElementById('bugbox'); if (bb) bb.style.display='none'; { const rb=document.getElementById('repbox'); if (rb) rb.style.display='none'; } const mk=document.getElementById('mktbox'); if (mk) mk.style.display='none'; } const dmb=document.getElementById('dmbox'); if (dmb) dmb.style.display='none'; const ctb=document.getElementById('catbox'); if (ctb) ctb.style.display='none'; const wdb=document.getElementById('wardbox'); if (wdb) wdb.style.display='none'; const prb=document.getElementById('roomsbox'); if (prb && joined) prb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
   const a=el.dataset.a;
@@ -5406,9 +5436,15 @@ function cupClick(gx){ const st=(me.p==='sit'&&!me.moving)?seatAt(me.gx,me.gy):n
 // ======================= PLAYER MENU (tap another llama) =======================
 const pmenuEl=document.getElementById('pmenu'); let pmTarget=null;
 function openPlayerMenu(id, cx, cy){ const o=others.get(id); if(!o) return; closeAll(); pmTarget=id;
-  document.getElementById('pm_name').textContent=o.n.toUpperCase(); if (typeof pmFriendBtn==='function') pmFriendBtn(); pmCard(o); pmLoad(o);
+  document.getElementById('pm_name').textContent=o.n.toUpperCase(); if (typeof pmFriendBtn==='function') pmFriendBtn(); if (typeof pmBlockBtn==='function') pmBlockBtn(); if (typeof pmModLoad==='function') pmModLoad(o); pmCard(o); pmLoad(o);
   pmenuEl.style.display='block'; const r=pmenuEl.getBoundingClientRect();
-  pmenuEl.style.left=Math.max(8,Math.min(innerWidth-r.width-8, cx-r.width/2))+'px'; pmenuEl.style.top=Math.max(8,Math.min(innerHeight-r.height-70, cy-r.height-12))+'px'; }
+  pmenuEl.style.left=Math.max(8,Math.min(innerWidth-r.width-8, cx-r.width/2))+'px'; pmenuEl.style.top=Math.max(8,Math.min(innerHeight-r.height-70, cy-r.height-12))+'px'; pmFit(); }
+// the card grows once the stats and the MOD TOOLS arrive: keep it on screen (it scrolls if the screen is short)
+function pmFit(){ if (pmenuEl.style.display!=='block') return;
+  // the lowest the card may reach: above the dock buttons and the chat bar (whichever is higher on screen)
+  let lim=innerHeight-70; for (const id of ['signs','dock','chatrow','bottom']){ const e=document.getElementById(id); if (e && getComputedStyle(e).display!=='none' && getComputedStyle(e).visibility!=='hidden'){ const b=e.getBoundingClientRect(); if (b.height && b.top>innerHeight*0.4) lim=Math.min(lim, b.top-8); } }
+  pmenuEl.style.maxHeight=Math.max(200, lim-8)+'px'; const r=pmenuEl.getBoundingClientRect();
+  if (r.bottom > lim) pmenuEl.style.top=Math.max(8, lim-r.height)+'px'; }
 document.getElementById('pm_spit').addEventListener('click', ()=>{ const id=pmTarget; closeAll(); if(id) spitAt(id); });
 document.getElementById('pm_wave').addEventListener('click', ()=>{ const id=pmTarget; closeAll(); const o=others.get(id); if(o && !me.moving && me.p!=='sit') me.d=dirFrom(Math.round(o.x-me.x), Math.round(o.y-me.y), me.d); emote('wave'); });
 document.getElementById('pm_close').addEventListener('click', ()=>closeAll());
@@ -6501,14 +6537,14 @@ $id('roomsbtn').addEventListener('click', ()=>{ ensureAudio(); if (joined) openR
 // ---- GUIDED FIRST VISIT: GUS stands next to you and walks you through the game, one card at a time ----
 const TOUR_STEPS=[
   {t:'HI, I\'M GUS!', p:'Welcome to the Llama Lounge! I\'ll show you around. Tap anywhere on the floor and your llama walks there.', el:null},
-  {t:'FOOD AND DRINKS', p:'Your llama gets hungry and thirsty. These bars show how full it is. Tap a cup on the bar to order a drink, or grab a snack in LLAMA ACRES.', el:'#status'},
-  {t:'SAY HI', p:'Type here and press enter to talk. Everyone in the room sees it in a bubble over your llama.', el:'#chatrow'},
+  {t:'FOOD AND DRINKS', p:'Your llama gets hungry and thirsty. These bars show how full it is. Tap a cup on the bar to order a drink. Snacks are in LLAMA ACRES and the LLAMA STORE.', el:'#status'},
+  {t:'SAY HI', p:'Type here and press enter to talk. Everyone in the room sees it in a bubble over your llama. Tap the smiley button next to it to wave, flex, laugh and more.', el:'#chatrow'},
   {t:'JOBS AND TOKENS', p:'TOKENS buy clothes, furniture and more. Earn them from jobs, games and your daily reward. JOBS shows what you can do in this room.', el:'#jobsbtn'},
-  {t:'ROOMS', p:'MAP takes you to the CASINO, SPIT ARENA, LANES, ACRES and the STORE. PLAYER ROOMS is where you make your own room and visit other llamas.', el:'#roomsbtn'},
+  {t:'ROOMS', p:'Tap ROOMS to go anywhere. The MAP tab takes you to the CASINO, SPIT ARENA, LANES, ACRES and the STORE. The PLAYER ROOMS tab is where you make your own room and visit other llamas.', el:'#roomsbtn'},
   {t:'SHOP', p:'Furniture, wallpaper, floors and whole ROOM KITS. Everything you buy goes into your bag, ready for your room.', el:'#shopbtn'},
-  {t:'YOUR BAG', p:'Your clothes and items live here. Clothes are sold at the LLAMA STORE.', el:'#invbtn'},
-  {t:'FRIENDS', p:'Tap another llama to see their card, add them as a friend, or trade. Friends can message you and visit your room.', el:'#frbtn'},
-  {t:'THE MENU', p:'Emotes, the MARKETPLACE, rules, REPORT A BUG and more. You can take this tour again from here any time. Have fun!', el:'#menubtn'}];
+  {t:'YOUR BAG', p:'Your clothes, furniture, wallpaper and floors live here. Buy clothes at the LLAMA STORE, or trade with other llamas.', el:'#invbtn'},
+  {t:'FRIENDS', p:'Tap another llama to see their card. You can add them as a friend or trade. If someone is being mean, BLOCK or REPORT them from there. Friends can send you messages.', el:'#frbtn'},
+  {t:'THE MENU', p:'The MARKETPLACE, your ACCOUNT, rules, REPORT A BUG and more. Want me again? Pick ASK GUS FOR A TOUR here, or type /tour in chat. Have fun!', el:'#menubtn'}];
 const TOUR={on:false, i:0, raf:0};
 function tourWanted(){ return !store.toured && acct && acct.since && Date.now()-acct.since < 3*864e5; }
 function tourStart(){ if (!joined) return; closeAll(); TOUR.on=true; TOUR.i=0; document.body.classList.add('touring'); $id('tour_pic').innerHTML=llamaPic('gus', {hat:'cap'}, 60); tourGuide(true); tourShow(); tourTrack(); }
@@ -6659,7 +6695,7 @@ function pmCard(o){ const P=PM.p&&PM.p.n===o.n.toUpperCase() ? PM.p : null;
   $id('pm_info').innerHTML=h;
   { const b=$id('pm_visit'); if (b) b.onclick=()=>{ const R2=P.room; closeAll(); if (!R2.priv) prGo(R2.id); else { localMsg('KNOCKING...'); NET.act('pr_knock',{rid:R2.id}).then(r=>{ if (r.open) prGo(R2.id); else if (r.msg) localMsg(r.msg); }); } }; }
 }
-function pmLoad(o){ const n=o.n.toUpperCase(); if (PM.p && PM.p.n===n && Date.now()-PM.t<30000) return; NET.act('who',{n:o.n}).then(r=>{ if (r.ok && r.p){ PM.p=r.p; PM.t=Date.now(); const cur=others.get(pmTarget); if (cur && cur.n.toUpperCase()===r.p.n && pmenuEl.style.display==='block') pmCard(cur); } }); }
+function pmLoad(o){ const n=o.n.toUpperCase(); if (PM.p && PM.p.n===n && Date.now()-PM.t<30000) return; NET.act('who',{n:o.n}).then(r=>{ if (r.ok && r.p){ PM.p=r.p; PM.t=Date.now(); const cur=others.get(pmTarget); if (cur && cur.n.toUpperCase()===r.p.n && pmenuEl.style.display==='block'){ pmCard(cur); pmFit(); } } }); }
 
 // ======================= PLAYER ROOMS (UI) =======================
 // one room per llama; only its owner can change it. Public rooms are open; private ones need an invite or a knock.
@@ -7011,7 +7047,12 @@ function openAccount(ask){
         <input id="ac_op" type="password" autocomplete="current-password" placeholder="Current password" maxlength="72">
         <input id="ac_np" type="password" autocomplete="new-password" placeholder="New password (8+ characters)" maxlength="72">
         <div class="srow"><button class="gbbtn" id="ac_pw">CHANGE PASSWORD</button></div></div>
+      <div class="acsec"><div class="ach">BLOCKED LLAMAS</div><div id="ac_blocks"><div class="acv">LOADING...</div></div></div>
       <div class="acmsg"></div><div class="srow"><button class="gbbtn" id="ac_close">DONE</button></div>`;
+    const drawBlocks=()=>{ const el=$id('ac_blocks'); if (!el) return; const list=[...BLOCKS].sort();
+      el.innerHTML = list.length ? list.map(n=>`<div class="acblk"><span>${esc(n)}</span><button class="gbbtn s" data-unb="${esc(n)}">UNBLOCK</button></div>`).join('') : '<div class="acv">Nobody. To block someone, tap their llama and press BLOCK.</div>';
+      for (const b of el.querySelectorAll('[data-unb]')) b.addEventListener('click', ()=>{ b.disabled=true; blockDo(b.dataset.unb, false).then(drawBlocks); }); };
+    NET.act('block_list').then(r=>{ if (r && r.ok) blocksSet(r.blocks); drawBlocks(); });
     $id('ac_close').onclick=()=>{ acctEl.style.display='none'; };
     $id('ac_pw').onclick=async ()=>{ const o=$id('ac_op').value, n=$id('ac_np').value; if (n.length<8) return acMsg('New passwords need 8+ characters.');
       acMsg('SAVING...'); const r=await apiPost('/api/password',{old:o,p:n}); if (!r.ok) return acMsg(r.error||'That did not work.');
@@ -7048,7 +7089,7 @@ function dashDo(cmd, target){
     NET.act('admin',{cmd:'give', target, amount:n}).then(r=>{ localMsg(r.msg||(r.ok?'Done.':'That did not work.')); loadDash(); }); return; }
   if ((cmd==='ban'||cmd==='mod'||cmd==='unmod') && !confirm(`${{ban:'Ban',mod:'Make',unmod:'Remove'}[cmd]} ${target}${cmd==='mod'?' a mod':cmd==='unmod'?' as a mod':''}?`)) return;
   NET.act('admin',{cmd, target}).then(r=>{ localMsg(r.msg||(r.ok?'Done.':'That did not work.')); loadDash(); }); }
-let dsTab=(store.dsTab==='chat'?'chat':'players'), dsChat={lines:[], open:null, q:'', more:true}, dsTimer=null;
+let dsTab=(['chat','reports'].includes(store.dsTab)?store.dsTab:'players'), dsChat={lines:[], open:null, q:'', more:true}, dsTimer=null;
 for (const b of document.querySelectorAll('#ds_tabs button')) b.addEventListener('click', ()=>{ dsTab=b.dataset.t; store.dsTab=dsTab; saveStore(); for (const x of document.querySelectorAll('#ds_tabs button')) x.classList.toggle('on', x===b); dsChat={lines:[], open:null, q:dsChat.q, more:true}; loadDash(); });
 function chatWhen(t){ const d=new Date(t), today=new Date().toDateString()===d.toDateString(); return (today?'':d.toLocaleDateString([], {month:'short',day:'numeric'})+' ')+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }
 function loadChatLog(older){
@@ -7084,8 +7125,31 @@ function drawChatLog(meSt){
     dashDo(c, n); });
   const old=$id('ds_older'); if (old) old.addEventListener('click', ()=>loadChatLog(true));
 }
+// REPORTS tab: player reports with the reported llama's recent chat (attached by the server). Mods never get reports about staff.
+const REP_WHY={rude:'Rude or bullying', hate:'Hate speech or slurs', spam:'Spam', scam:'Scam or trade trouble', name:'Bad name, room or outfit', other:'Something else'};
+function repBadge(list){ const n=(list||[]).filter(r=>!r.done).length, b=$id('ds_repn'); if (b){ b.textContent=n?String(n):''; b.style.display=n?'':'none'; } }
+function loadReports(){
+  NET.act('report_list').then(r=>{ if (dsTab!=='reports' || dashEl.style.display!=='block') { if (r&&r.ok) repBadge(r.reports); return; }
+    if (!r.ok){ dsBody.innerHTML=`<div class="dl">${esc(r.msg||'Could not load reports.')}</div>`; return; }
+    repBadge(r.reports); const owner=r.me==='owner', myName=(me.n||'').toUpperCase();
+    const btn=(label,cmd,name,cls)=>`<button class="gbbtn s ${cls||''}" data-cmd="${cmd}" data-name="${esc(name)}">${label}</button>`;
+    const open=r.reports.filter(x=>!x.done).length;
+    let h=`<div class="dl">${open} OPEN. Newest first. Mute, kick or ban right from a report, then mark it handled.${owner?'':' Reports about staff go to the owner.'}</div>`;
+    for (const x of r.reports){ const d=new Date(x.t), can = x.n!==myName && x.st!=='owner' && (owner || x.st!=='mod');
+      h+=`<div class="rep${x.done?' done':''}"><div class="rh">${badgeHtml(x.st)}<b>${esc(x.n)}</b>${x.muted?' <small>· MUTED</small>':''}${x.banned?' <small>· BANNED</small>':''}<br><small>reported by ${esc(x.by)} · ${chatWhen(x.t)}${x.room?' · '+esc(roomName(x.room)||ROOM_SHORT[x.room]||x.room):''}</small></div>
+        <span class="rwhy">${esc(REP_WHY[x.reason]||x.reason)}</span>${x.note?`<div class="rnote">"${esc(x.note)}"</div>`:''}
+        <div class="rchat">${x.chat.length ? x.chat.map(l=>`<div><small>${chatWhen(l.t)}</small> ${esc(l.text)}</div>`).join('') : `<div><small>NO CHAT FROM ${esc(x.n)} IN THE 2 HOURS BEFORE THE REPORT.</small></div>`}</div>
+        <div class="racts">${can && !x.done ? (x.muted?btn('UNMUTE','unmute',x.n):btn('MUTE','mute',x.n)) + btn('KICK','kick',x.n,'bad') + (x.banned ? '' : btn('BAN','ban',x.n,'bad')) : ''}
+          ${x.done ? `<small class="dl">HANDLED${x.doneBy?' BY '+esc(String(x.doneBy).toUpperCase()):''}</small> <button class="gbbtn s" data-rep="${x.id}" data-on="0">REOPEN</button>` : `<button class="gbbtn s gd" data-rep="${x.id}" data-on="1">✓ HANDLED</button>`}</div></div>`; }
+    if (!r.reports.length) h+='<div class="dl">NO REPORTS. NICE!</div>';
+    const sc=dashEl.scrollTop; dsBody.innerHTML=h; dashEl.scrollTop=sc;
+    for (const b of dsBody.querySelectorAll('[data-cmd]')) b.addEventListener('click', ()=>dashDo(b.dataset.cmd, b.dataset.name));
+    for (const b of dsBody.querySelectorAll('[data-rep]')) b.addEventListener('click', ()=>{ b.disabled=true; NET.act('report_done',{rpid:+b.dataset.rep, done:b.dataset.on==='1'}).then(r2=>{ if (!r2.ok) localMsg(r2.msg||'That did not work.'); loadReports(); }); });
+  }); }
 function loadDash(){
   clearInterval(dsTimer); dsTimer=null;
+  if (dsTab==='reports'){ dsBody.innerHTML='<div class="dl">LOADING...</div>'; loadReports(); return; }
+  NET.act('report_list').then(r=>{ if (r && r.ok) repBadge(r.reports); });   // keep the REPORTS count fresh on the other tabs
   if (dsTab==='chat'){ if (!dsChat.lines.length) dsBody.innerHTML='<div class="dl">LOADING...</div>'; loadChatLog();
     dsTimer=setInterval(()=>{ if (dashEl.style.display!=='block' || dsTab!=='chat'){ clearInterval(dsTimer); return; } if (dsChat.open==null && !(document.activeElement && document.activeElement.id==='ds_q')) loadChatLog(); }, 6000); return; }
   NET.act('dash').then(r=>{
@@ -7153,7 +7217,7 @@ document.getElementById('ds_refresh').addEventListener('click', loadDash);
 document.getElementById('ds_close').addEventListener('click', ()=>{ dashEl.style.display='none'; });
 NET.handlers.tg = m => tgServer(m);
 NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; renderBoard(); };
-NET.handlers.hello = m => { setTimeout(()=>dailyLoad(true), 2500); setTimeout(()=>{ if (!joined || ($id('roomsbox').style.display==='block' && PRUI.view==='list')) prRefresh(); }, 0);   /* the ROOMS pop-up may have opened before the connection was ready */ if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true);
+NET.handlers.hello = m => { setTimeout(()=>dailyLoad(true), 2500); setTimeout(blocksLoad, 300); setTimeout(()=>{ if (!joined || ($id('roomsbox').style.display==='block' && PRUI.view==='list')) prRefresh(); }, 0);   /* the ROOMS pop-up may have opened before the connection was ready */ if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true);
   // load friends, unread messages and the outfit every time we (re)connect
   setTimeout(()=>{ frLoad(); wdLoad(); dmLoad(); }, 150); };
 NET.handlers.kick = m => showKicked(m.msg);
@@ -7932,6 +7996,45 @@ $id('tr_body').addEventListener('click', e=>{ const b=e.target.closest('button')
   if (b.dataset.rr){ const id=+b.dataset.rr, r=((TR.rares&&TR.rares.mine)||[]).find(x=>x.id===id); const on=(M.rares||[]).some(x=>x.id===id); M.rares = on ? M.rares.filter(x=>x.id!==id) : [...(M.rares||[]), r]; trDraw(); trSend(); } });
 $id('tr_ready').addEventListener('click', ()=>{ ensureAudio(); NET.act('trade_ready',{tid:TR.tid, on:!TR.ok[0]}).then(r=>{ if (!r.ok) trSay(r.msg||'Not yet.'); }); });
 $id('tr_cancel').addEventListener('click', ()=>{ if (TR.tid) NET.act('trade_cancel',{tid:TR.tid}); $id('tradebox').style.display='none'; TR.tid=null; });
+// ---- BLOCK and REPORT (the server enforces blocks; this keeps the list so their chat stays hidden here) ----
+const BLOCKS=new Set();
+function blocksSet(list){ BLOCKS.clear(); for (const n of (list||[])) BLOCKS.add(String(n).toUpperCase()); for (const o of others.values()) if (BLOCKS.has(String(o.n||'').toUpperCase())) o.bubble=null; }
+function blocksLoad(){ NET.act('block_list').then(r=>{ if (r && r.ok) blocksSet(r.blocks); }); }
+function pmBlockBtn(){ const b=$id('pm_block'), o=pmTarget&&others.get(pmTarget); if (!b||!o) return; const on=BLOCKS.has(o.n.toUpperCase()); b.textContent = on ? '🚫 UNBLOCK' : '🚫 BLOCK'; b.classList.toggle('on', on);
+  const st=o.st||''; b.style.display = st ? 'none' : ''; }
+function blockDo(n, on){ n=String(n).toUpperCase();
+  if (on && !confirm(`Block ${n}? You won't see their chat, and they can't message you, trade with you, add you as a friend or come into your rooms.`)) return Promise.resolve(null);
+  return NET.act('block',{n, on:!!on}).then(r=>{ if (r.ok) blocksSet(r.blocks); localMsg(r.msg||(r.ok?'Done.':'That did not work.')); if (r.ok && typeof frLoad==='function') try{ frLoad(); }catch(e){} return r; }); }
+// MOD section on a player's card: only for staff, filled from the server (which re-checks your role and checks again on every button)
+function pmModLoad(o){ const el=$id('pm_mod'); el.classList.remove('on'); el.innerHTML=''; if (!me.st || !o) return; const n=o.n.toUpperCase();
+  NET.act('mod_info',{n}).then(r=>{ if (!r || !r.ok || pmenuEl.style.display!=='block' || !pmTarget || (others.get(pmTarget)||{}).n?.toUpperCase()!==n) return;
+    const owner=r.me==='owner', b=(label,cmd,cls)=>`<button class="gbbtn ${cls||''}" data-mc="${cmd}">${label}</button>`;
+    let h=`<div class="mh">${pix('crown')} ${owner?'OWNER':'MOD'} TOOLS</div><div class="mi">${r.muted?'<b>MUTED</b> · ':''}${r.st?`<b>${r.st==='owner'?'OWNER':'MOD'}</b> · `:''}OPEN REPORTS: <b>${r.reports}</b> · FILTER CATCHES: <b>${r.wfn}</b></div>`;
+    if (r.can){ h+='<div class="mb">'+(r.muted?b('UNMUTE','unmute'):b('MUTE','mute'))+b('KICK','kick','bad')+b('BAN','ban','bad')+b('🪙 GIVE','give','gd')+b('CHAT LOG','chat')+b('REPORTS','reports')+(owner?(r.st==='mod'?b('UNMOD','unmod'):b('MAKE MOD','mod','gd')):'')+'</div>'; }
+    else h+=`<div class="mi">${r.st==='owner'?'Nobody can moderate the owner.':'Mods can\'t moderate other mods.'}</div><div class="mb">${b('CHAT LOG','chat')}</div>`;
+    el.innerHTML=h; el.classList.add('on'); pmFit();
+    for (const x of el.querySelectorAll('[data-mc]')) x.addEventListener('click', ()=>{ const c=x.dataset.mc;
+      if (c==='chat'){ closeAll(); dsTab='chat'; store.dsTab='chat'; saveStore(); dsChat={lines:[], open:null, q:n, more:true}; openDash(); return; }
+      if (c==='reports'){ closeAll(); dsTab='reports'; store.dsTab='reports'; saveStore(); openDash(); return; }
+      closeAll(); dashDo(c, n); }); }); }
+$id('pm_block').addEventListener('click', ()=>{ const o=pmTarget&&others.get(pmTarget); if (!o) return; const n=o.n.toUpperCase(), on=!BLOCKS.has(n); closeAll(); blockDo(n, on); });
+const REPORT_WHY=[['rude','Rude or bullying'],['hate','Hate speech or slurs'],['spam','Spam'],['scam','Scam or trade trouble'],['name','Bad name, room or outfit'],['other','Something else']];
+let rpName='', rpWhy='';
+function openReport(n){ closeAll(); rpName=String(n).toUpperCase(); rpWhy='';
+  $id('rp_title').textContent='🚩 REPORT '+rpName; $id('rp_who').textContent=`What did ${rpName} do? Pick one. Only staff see reports, and ${rpName} won't know who sent it.`;
+  $id('rp_reasons').innerHTML=REPORT_WHY.map(([k,l])=>`<button type="button" data-k="${k}">${esc(l)}</button>`).join('');
+  for (const b of $id('rp_reasons').querySelectorAll('button')) b.addEventListener('click', ()=>{ rpWhy=b.dataset.k; for (const x of $id('rp_reasons').querySelectorAll('button')) x.classList.toggle('on', x===b); $id('rp_msg').textContent=''; });
+  $id('rp_note').value=''; $id('rp_msg').textContent=''; $id('rp_msg').className='prmsg'; $id('rp_send').disabled=false;
+  const box=$id('repbox'); box.style.display='block'; if (typeof sheetHead==='function') sheetHead(box); }
+$id('pm_report').addEventListener('click', ()=>{ const o=pmTarget&&others.get(pmTarget); if (!o) return; openReport(o.n); });
+$id('rp_note').addEventListener('keydown', e=>e.stopPropagation());
+$id('rp_cancel').addEventListener('click', ()=>{ $id('repbox').style.display='none'; });
+$id('rp_send').addEventListener('click', ()=>{ const m=$id('rp_msg'); if (!rpWhy){ m.className='prmsg'; m.textContent='Pick what happened first.'; return; }
+  const b=$id('rp_send'); b.disabled=true; m.className='prmsg'; m.textContent='SENDING...';
+  NET.act('report',{n:rpName, reason:rpWhy, note:$id('rp_note').value.trim(), room:curRoom}).then(r=>{ b.disabled=false;
+    if (!r.ok){ m.className='prmsg'; m.textContent=r.msg||'That did not work.'; return; }
+    m.className='prmsg good'; m.textContent=r.msg||'Sent. Thanks!'; setTimeout(()=>{ $id('repbox').style.display='none';
+      if (!BLOCKS.has(rpName) && others && [...others.values()].some(o=>String(o.n||'').toUpperCase()===rpName) && confirm(`Do you also want to block ${rpName}?`)) blockDo(rpName, true).catch(()=>{}); }, 900); }); });
 $id('pm_trade').addEventListener('click', ()=>{ const id=pmTarget; closeAll(); const o=others.get(id); if (!o) return; NET.act('trade_req',{n:o.n}).then(r=>localMsg(r.msg||(r.ok?'Asked to trade.':'Could not ask to trade.'))); });
 NET.handlers.tradereq = m => { TR.ask=m.tid; $id('ta_txt').textContent=`${m.from} wants to trade with you.`; $id('tradeask').style.display='block'; };
 $id('ta_yes').addEventListener('click', ()=>{ $id('tradeask').style.display='none'; NET.act('trade_answer',{tid:TR.ask, yes:true}).then(r=>{ if (!r.ok) localMsg(r.msg||'That trade request expired.'); }); });
