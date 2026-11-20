@@ -312,6 +312,22 @@ function staffyName(name) {
   if (/(admin|owner|moderat|staff|official|support|llamalounge|system|helpdesk)/.test(flat)) return true;
   return parts.some((w) => ["mod", "mods", "gus", "penny", "dev", "devs"].includes(w)) || /^(mod|gus|penny)(s)?$/.test(flat) || /^mod[a-z]?$|mod$/.test(flat) && flat.length <= 6;
 }
+// extra check for ACCOUNT names only (they're permanent and on screen for everyone), on top of WF.nameOk: hate words, spelled-around swears
+// and self-harm phrases anywhere in the name, after turning look-alike digits into letters. A few innocent words that contain a swear are let through.
+const NAME_BAD = ["nazi", "hitler", "kkk", "fvck", "fuk", "phuck", "phuk", "fck", "biatch", "btch", "nigg", "nigr", "niqq", "killyourself", "killurself", "kyslol", "suicide",
+  "cumlord", "cumslut", "pedophile", "pedobear", "molest", "incest", "hentai", "porn", "retard", "rapist", "whore", "slut", "cunt", "penis", "vagina", "dildo", "boob", "titty", "nude", "naked", "horny", "sexy", "milf", "jizz", "semen", "anus", "isisfighter", "jihad", "terrorist", "shooter", "school_shooter"];
+const NAME_OK_WORDS = ["scunthorpe", "shitake", "shiitake", "cockatoo", "peacock", "hancock", "hitchcock", "therapist", "analyst", "grape", "cumin", "assassin", "classic", "bass", "pass", "sussex", "dickens", "skunk", "nazir", "nazira"];
+function badName(name) {
+  let l = String(name).toLowerCase().replace(/0/g, "o").replace(/[1!|]/g, "i").replace(/4|@/g, "a").replace(/3/g, "e").replace(/5|\$/g, "s").replace(/7/g, "t").replace(/8/g, "b").replace(/9/g, "g");
+  if (/^kys$|^kys_|_kys$/.test(l)) return true;
+  let flat = l.replace(/[^a-z]/g, ""); for (const w of NAME_OK_WORDS) flat = flat.split(w).join("");
+  return NAME_BAD.some((w) => flat.includes(w.replace(/_/g, "")));
+}
+function nameAllowed(name) {
+  if (badName(name)) return false;
+  let rest = String(name); for (const w of NAME_OK_WORDS) rest = rest.replace(new RegExp(w, "ig"), "");
+  return rest.replace(/[^A-Za-z]/g, "") === "" ? true : WF.nameOk(rest);
+}
 // TIMED BANS: a ban with ban_until > 0 lifts itself once that time passes. Checked whenever the person tries to get in, and swept for everyone about once a minute.
 let banSweepAt = 0;
 async function sweepBans(env) { const now = Date.now(); if (now - banSweepAt < 60000) return; banSweepAt = now;
@@ -389,7 +405,7 @@ async function api(req, env, url, ctx) {
   if (path === "/api/signup") {
     const name = String(body.u || "").trim(), pw = String(body.p || ""), email = normEmail(body.e);
     if (!/^[A-Za-z0-9_]{3,12}$/.test(name)) return json({ error: "Names are 3 to 12 letters, numbers or _." }, 400);
-    if (!WF.nameOk(name)) return json({ error: "That name isn't allowed. Pick a different one." }, 400);
+    if (!nameAllowed(name)) return json({ error: "That name isn't allowed. Pick a different one." }, 400);
     if (staffyName(name)) return json({ error: "That name sounds like staff. Pick a different one." }, 400);
     if (body.t !== 1 && body.t !== true) return json({ error: "Please confirm you're 13 or older and agree to the Terms." }, 400);
     if (!emailOk(email)) return json({ error: "Enter a real email. It's how you reset your password." }, 400);

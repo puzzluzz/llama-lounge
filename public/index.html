@@ -429,7 +429,9 @@
   #banbox .bnopts button.perm{grid-column:1/-1;flex-direction:row;gap:6px} #banbox .bnopts button.perm.on{background:#ffd0d8}
   #banbox .bnrow{display:flex;align-items:center;gap:8px;margin:2px 0 4px} #banbox .bnrow input{flex:1;min-width:0;box-sizing:border-box;border:3px solid var(--ink);border-radius:8px;padding:9px 10px;font:600 15px var(--ui)} #banbox .bnrow span{font:800 12px var(--ui);color:var(--sub)}
   #banbox .prmsg{min-height:18px;font-weight:700;color:#c03050}
-  #banbox #bn_go{background:#ff5c7a!important;color:#fff!important} #banbox #bn_go:disabled{opacity:.6}
+  #banbox #bn_go,#banbox #bn_yes{background:#ff5c7a!important;color:#fff!important} #banbox #bn_go:disabled,#banbox #bn_yes:disabled{opacity:.6}
+  #banbox .bnsure{display:none;text-align:center;padding:6px 0 0} #banbox.sure .bnsure{display:block} #banbox.sure #bn_who,#banbox.sure .bnopts,#banbox.sure .bnrow,#banbox.sure #bn_row1{display:none}
+  #banbox .bnq{font:800 19px/1.35 var(--ui);color:var(--ink);margin:8px 0 6px} #banbox .bnq b{color:#d02848} #banbox .bnsub{font:500 14px/1.45 var(--ui);color:var(--sub);margin-bottom:10px}
   #repbox{width:min(calc(100% - 24px),440px)} #repbox .rpr{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
   #repbox .rpr button{font:700 13px/1.25 var(--ui);text-align:left;padding:9px 10px;border:2px solid var(--cardln);border-radius:7px;background:#fff;color:var(--ink);cursor:pointer;min-height:44px}
   #repbox .rpr button.on{border-color:var(--ink);background:#fff3c8;box-shadow:0 3px 0 var(--ink)}
@@ -1006,7 +1008,7 @@
   <div id="mktbox" class="gb sheet"><div class="slt">🏪 MARKETPLACE</div><div class="autabs" id="mk_tabs"><button type="button" data-t="buy">BUY</button><button type="button" data-t="sell">SELL</button><button type="button" data-t="mine">MY LISTINGS</button></div><div id="mk_body"></div><div class="prmsg" id="mk_msg"></div></div>
   <div id="wfbox" class="gb sheet"><div class="slt">⚠️ WATCH YOUR LANGUAGE</div><p class="fre" id="wf_text"></p><div class="srow"><button class="gbbtn y" id="wf_ok">I UNDERSTAND</button></div></div>
   <div id="bugbox" class="gb sheet"><div class="slt">🐞 REPORT A BUG</div><div class="fre">Something broken or weird? Tell us what you were doing and what happened. The owner reads every report.</div><textarea id="bug_text" maxlength="800" rows="6" placeholder="What happened? What did you expect?"></textarea><div class="srow"><button class="gbbtn y" id="bug_send">SEND REPORT</button></div><div class="prmsg" id="bug_msg"></div></div>
-  <div id="banbox" class="gb sheet"><div class="slt" id="bn_title">🔨 BAN</div><div class="fre" id="bn_who"></div><div class="bnopts" id="bn_opts"></div><div class="bnrow"><input id="bn_hours" type="number" inputmode="numeric" min="1" max="8760" step="1" placeholder="Or type hours (1 to 8760)"><span>HOURS</span></div><div class="prmsg" id="bn_msg"></div><div class="srow"><button class="gbbtn bad" id="bn_go">BAN</button><button class="gbbtn" id="bn_cancel">CANCEL</button></div></div>
+  <div id="banbox" class="gb sheet"><div class="slt" id="bn_title">🔨 BAN</div><div class="fre" id="bn_who"></div><div class="bnopts" id="bn_opts"></div><div class="bnrow"><input id="bn_hours" type="number" inputmode="numeric" min="1" max="8760" step="1" placeholder="Or type hours (1 to 8760)"><span>HOURS</span></div><div class="prmsg" id="bn_msg"></div><div class="srow" id="bn_row1"><button class="gbbtn bad" id="bn_go">BAN</button><button class="gbbtn" id="bn_cancel">CANCEL</button></div><div class="bnsure" id="bn_sure"><div class="bnq" id="bn_q"></div><div class="bnsub" id="bn_qs"></div><div class="srow"><button class="gbbtn bad" id="bn_yes">YES, BAN</button><button class="gbbtn" id="bn_back">GO BACK</button></div></div></div>
   <div id="repbox" class="gb sheet"><div class="slt" id="rp_title">🚩 REPORT</div><div class="fre" id="rp_who"></div><div class="rpr" id="rp_reasons"></div><textarea id="rp_note" maxlength="400" rows="3" placeholder="Anything else staff should know? (optional)"></textarea><div class="fre rpsmall">Staff also see what they said in chat lately, so you don't need to copy it.</div><div class="prmsg" id="rp_msg"></div><div class="srow"><button class="gbbtn y" id="rp_send">SEND REPORT</button><button class="gbbtn" id="rp_cancel">CANCEL</button></div></div>
   <div id="acctbox" class="gb sheet"><div class="slt" id="ac_title">🔐 ACCOUNT</div><div id="ac_body"></div></div>
   <div id="kicked"></div>
@@ -4545,7 +4547,7 @@ document.getElementById('chatrow').addEventListener('submit', e => {
   const cmd = raw.toLowerCase();
   if (cmd==='/roll'){ const v=1+Math.floor(Math.random()*6); const ti=nearTable(); if(ti>=0){ me.tdK=(me.tdK||0)+1; me.lastTable={k:me.tdK,i:ti,v,coin:false}; tableShow(ti,v,false); } action(`rolled a ${v}!`); return; }
   if (cmd==='/flip'){ const h=Math.random()<0.5; const ti=nearTable(); if(ti>=0){ me.tdK=(me.tdK||0)+1; me.lastTable={k:me.tdK,i:ti,v:h?1:2,coin:true}; tableShow(ti,h?1:2,true); } action(`flipped a coin: ${h?'HEADS':'TAILS'}!`); return; }
-  { const bm=/^\/ban\s+(\S+)\s*$/.exec(cmd); if (bm && me.st){ openBan(bm[1]); return; } }   // no length given: pick one in the pop-up
+  { const bm=/^\/ban\s+(\S+)(?:\s+(\d+|perm|permanent))?\s*$/.exec(cmd); if (bm && me.st){ openBan(bm[1], bm[2]===undefined ? undefined : (/^\d+$/.test(bm[2]) ? +bm[2] : 0)); return; } }   // every ban goes through the pop-up and its are-you-sure step
   { const mm=/^\/(mute|unmute|ban|unban|kick|mod|unmod)\s+(\S+)(?:\s+(\d+|perm|permanent))?/.exec(cmd); if (mm){ NET.act('admin',{cmd:mm[1], target:mm[2], hours: mm[3] && /^\d+$/.test(mm[3]) ? +mm[3] : 0}).then(r=>localMsg(r.msg||'Done.')); return; } }
   if (WF.slur(raw)){ localMsg("That message has a word that isn't allowed here, so it wasn't sent."); NET.act('wf_hit',{}); return; }   // the server checks too
   if (cmd==='/tour' || cmd==='/gus'){ if (TOUR.on) return; tourStart(); return; }   // GUS comes back for another tour
@@ -7096,20 +7098,26 @@ function openDash(){ if (!me.st) return; closeAll(); for (const x of document.qu
 // BAN pop-up: pick a length in hours or PERMANENT (the server checks who can ban whom and the length again)
 const BAN_OPTS=[[1,'1 HOUR',''],[6,'6 HOURS',''],[24,'24 HOURS','1 day'],[72,'72 HOURS','3 days'],[168,'168 HOURS','1 week'],[720,'720 HOURS','30 days'],[0,'PERMANENT','']];
 let banName='', banHrs=null;
-function openBan(n){ banName=String(n).toUpperCase(); banHrs=null; const box=$id('banbox');
+function openBan(n, preset){ banName=String(n).toUpperCase(); banHrs=null; const box=$id('banbox');
   $id('bn_title').textContent='🔨 BAN '+banName; $id('bn_who').textContent=`How long should ${banName} be banned? They're removed right away and can't log in until it ends.`;
   $id('bn_opts').innerHTML=BAN_OPTS.map(([h,l,sub])=>`<button type="button" data-h="${h}" class="${h?'':'perm'}">${h?'':pix('hammer')}${l}${sub?`<small>${sub}</small>`:''}</button>`).join('');
   const pick=h=>{ banHrs=h; for (const x of $id('bn_opts').querySelectorAll('button')) x.classList.toggle('on', +x.dataset.h===h && $id('bn_hours').value===''); $id('bn_msg').textContent='';
     $id('bn_go').textContent = h===0 ? 'BAN PERMANENTLY' : h ? `BAN FOR ${h} ${h===1?'HOUR':'HOURS'}` : 'BAN'; };
   for (const b of $id('bn_opts').querySelectorAll('button')) b.addEventListener('click', ()=>{ $id('bn_hours').value=''; pick(+b.dataset.h); });
   const hi=$id('bn_hours'); hi.value=''; hi.onkeydown=e=>e.stopPropagation(); hi.oninput=()=>{ const v=Math.floor(+hi.value); pick(hi.value===''?null:(v>=1&&v<=8760?v:NaN)); };
-  pick(null); $id('bn_go').disabled=false; box.style.display='block'; if (typeof sheetHead==='function') sheetHead(box); }
+  pick(null); box.classList.remove('sure'); $id('bn_go').disabled=false; $id('bn_yes').disabled=false; box.style.display='block'; if (typeof sheetHead==='function') sheetHead(box);
+  if (preset!==undefined){ const known=BAN_OPTS.some(o=>o[0]===preset); if (known) pick(preset); else { hi.value=String(preset); hi.oninput(); } $id('bn_go').click(); } }
 $id('bn_cancel').addEventListener('click', ()=>{ $id('banbox').style.display='none'; });
 $id('bn_go').addEventListener('click', ()=>{ const m=$id('bn_msg');
   if (banHrs===null){ m.textContent='Pick how long first.'; return; } if (Number.isNaN(banHrs)){ m.textContent='Type a whole number of hours from 1 to 8760.'; return; }
-  if (banHrs===0 && !confirm(`Ban ${banName} PERMANENTLY? Only the owner can undo it.`)) return;
-  const b=$id('bn_go'); b.disabled=true;
-  NET.act('admin',{cmd:'ban', target:banName, hours:banHrs}).then(r=>{ b.disabled=false; if (!r.ok){ m.textContent=r.msg||'That did not work.'; return; }
+  // are you sure? (same pop-up, so it works the same on phones and computers)
+  const len = banHrs===0 ? '<b>PERMANENTLY</b>' : `for <b>${banHrs} ${banHrs===1?'HOUR':'HOURS'}</b>`;
+  $id('bn_q').innerHTML=`Ban <b>${esc(banName)}</b> ${len}?`;
+  $id('bn_qs').textContent = banHrs===0 ? "They're removed right away and can't come back. Only the owner can undo a permanent ban." : `They're removed right away and can't log in until the ban ends.${banHrs>=24 ? (()=>{ const d=Math.round(banHrs/24*10)/10; return ` That's ${banHrs%24?'about ':''}${d} ${d===1?'day':'days'}.`; })() : ''}`;
+  $id('banbox').classList.add('sure'); });
+$id('bn_back').addEventListener('click', ()=>{ $id('banbox').classList.remove('sure'); });
+$id('bn_yes').addEventListener('click', ()=>{ const m=$id('bn_msg'); const b=$id('bn_yes'); b.disabled=true;
+  NET.act('admin',{cmd:'ban', target:banName, hours:banHrs}).then(r=>{ b.disabled=false; if (!r.ok){ $id('banbox').classList.remove('sure'); m.textContent=r.msg||'That did not work.'; return; }
     $id('banbox').style.display='none'; localMsg(r.msg||'Banned.'); if (dashEl.style.display==='block') loadDash(); }); });
 function dashDo(cmd, target){
   if (cmd==='give'){ const v=prompt(`How many tokens to give ${target}? (1 to 1000)`, '10'); if (v===null) return; const n=Math.floor(+v); if (!(n>=1 && n<=1000)){ localMsg('Give between 1 and 1000 tokens.'); return; }
