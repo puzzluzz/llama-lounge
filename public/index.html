@@ -9,6 +9,7 @@
 <meta name="description" content="Llama Lounge: hang out, chat and play games as a llama.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preload" href="/fonts/pixelify-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/pressstart-400.woff2" as="font" type="font/woff2" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root{--px:2;--ink:#181020}
@@ -793,7 +794,9 @@
   @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:600;font-display:swap;src:url(/fonts/pixelify-600.woff2) format('woff2')}
   @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/pixelify-700.woff2) format('woff2')}
   /* ===== modern + pixel look for pop-ups ===== */
-  :root{--pxf:'Pixelify Sans','Press Start 2P',monospace;--cardln:#ddd5ec}
+  /* digits come from Press Start 2P (SIL OFL, /fonts/PressStart2P-OFL.txt): its 2 and 5 can't be mistaken for Z and S. Letters stay Pixelify Sans. */
+  @font-face{font-family:'PixDigits';font-style:normal;font-weight:400 800;font-display:swap;src:url(/fonts/pressstart-400.woff2) format('woff2');unicode-range:U+0030-0039;size-adjust:72%}
+  :root{--pxf:'PixDigits','Pixelify Sans','Press Start 2P',monospace;--cardln:#ddd5ec}
   .gb.sheet.hasband{padding-top:0!important}
   .shead.band{margin-top:0!important;box-shadow:none!important}
   .gb.sheet,#pmenu,#evpop{border-radius:10px!important;box-shadow:8px 8px 0 rgba(12,6,28,.55)!important}
@@ -865,6 +868,7 @@
   @keyframes holdfill{to{stroke-dashoffset:0}}
   canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
   .m-shop .mchip{background:linear-gradient(160deg,#5ee0d0,#1fa58a);color:#fff}
+  .slbet .gbbtn,#plk_bet .gbbtn{font-family:var(--pxf)!important;font-size:17px!important;min-width:52px}
 </style>
 </head>
 <body>
@@ -1024,7 +1028,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24o";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24p";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
