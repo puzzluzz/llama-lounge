@@ -241,13 +241,13 @@ No API keys or passwords are involved.
 ## PLINKO (casino)
 
 - A PLINKO cabinet stands against the casino's left wall (tiles 0,3 and 0,4). Tap it to walk up and open the game; bet 1, 2 or 5 tokens and press DROP.
-- The server decides the ball's path (8 fair left/right bounces, action `plinko`) and pays `bet x bucket`, rounded: 9X, 3X, 1.3X, .7X, .4X from the edges in. That pays back about 91 to 98% depending on the bet. `PLK` in the page and `PLINKO` in the worker must match.
+- You can keep pressing DROP while balls are falling (up to 8 at once; the server only refuses two in the same instant). The server decides each ball's path (8 fair left/right bounces, action `plinko`) and pays `bet x bucket`, rounded: 9X, 3X, 1.3X, .7X, .4X from the edges in. That pays back about 91 to 98% depending on the bet. `PLK` in the page and `PLINKO` in the worker must match.
 
 ## SHOP (furniture) and the LLAMA STORE (clothes)
 
 - Furniture, wallpaper and floors are bought from the **SHOP** button in the dock, from any room (the server no longer checks where you are for `furn_buy` and `deco_buy`).
 - In your own room, drag any picture from the SHOP into the room to buy it and put it down in one go (`furn_buy` then `pr_place`; if it doesn't fit, it waits in ITEMS).
-- The **LLAMA STORE** is for clothes. Its left side has a lounge corner (the sofa and armchair are real seats), three model llamas wearing outfits (tap one to try the look on) and the **LIMITED RARES** showcase. Limited rares are only sold there (`rare_buy` still requires the store), from the rares view (`openWardrobe('shop', null, 'rares')`).
+- The **LLAMA STORE** is for clothes. The back corner holds the **LIMITED RARES** showcase on a red carpet; the left side has three model llamas wearing outfits, a table of folded tees and two hat stands (tap any of them to shop those clothes). A snack machine (`svend`) stands next to the drink machine. Limited rares are only sold there (`rare_buy` still requires the store), from the rares view (`openWardrobe('shop', null, 'rares')`).
 - The casino's third blackjack table runs along the left wall (`rot:1`): Ace deals from the wall side and the stools are on the right (seats 2,6 and 2,7).
 
 ## Staff token gifts

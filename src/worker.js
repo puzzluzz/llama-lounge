@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-24q";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-24r";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -66,7 +66,8 @@ const STANDS = {
   cider: { rm: "barn", x: 7.5, y: 4, items: { cider: 2, caramel: 3 } },     // two tiles wide: x is the middle of the stall
   snack: { rm: "barn", x: 10.5, y: 4, items: { capple: 2, corn: 2, pie: 3 } },
   bar:   { rm: "lounge", items: { soda: 1, juice: 1, shake: 2, nachos: 2, fries: 2, burger: 3 } },   // sit at the bar to order
-  vend:  { rm: "store", x: 5, y: 0.5, items: { soda: 1, juice: 1, shake: 2 } },   // vending machine on the LLAMA STORE's back wall
+  vend:  { rm: "store", x: 5, y: 0.5, items: { soda: 1, juice: 1, shake: 2 } },
+  svend: { rm: "store", x: 4, y: 0.5, items: { chips: 1, candy: 1, cookie: 2 } },   // snack machine next to it   // vending machine on the LLAMA STORE's back wall
 };
 // ---------- hunger and thirst ----------
 // Meters go from 100 (full) to 0. They only drain while you're online: thirst empties in about an hour, hunger in 75 minutes.
@@ -1337,7 +1338,7 @@ export class Lounge extends DurableObject {
         // the ball's path is decided here: 8 rows, each a fair left/right bounce; the bucket is the number of rights
         if (!this.near(a, "casino", (x, y, p) => p.p !== "sit" && Math.round(x) <= 1 && Math.round(y) >= PLINKO.y - 1 && Math.round(y) <= PLINKO.y + 2)) return { ok: false, msg: "Walk up to the PLINKO machine first." };
         const bet = PLINKO.bets.includes(+m.bet) ? +m.bet : 1;
-        if (now - (await this.timer(uid, "plinko")) < 2400) return { ok: false, msg: "Wait for the ball to land." };
+        if (now - (await this.timer(uid, "plinko")) < 300) return { ok: false, msg: "One ball at a time!" };   // several can be falling; just not two in the same instant
         await this.setTimer(uid, "plinko", now);
         let tk = await this.debit(uid, bet, "plinko"); if (tk === null) return { ok: false, msg: `YOU NEED ${bet} TOKEN${bet > 1 ? "S" : ""} TO DROP A BALL.` };
         const path = Array.from({ length: PLINKO.rows }, () => (Math.random() < 0.5 ? 0 : 1)), slot = path.reduce((s, v) => s + v, 0), pay = Math.round(bet * PLINKO.mult[slot]);

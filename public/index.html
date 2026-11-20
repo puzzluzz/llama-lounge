@@ -1035,7 +1035,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24q";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24r";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1704,9 +1704,11 @@ const RACK_UNUSED=['cap','cowboy','beanie','party','tophat','flowers','tee_loung
 // [item, gx, gy, rot, notag] - notag hides the price tag on repeats (the dining chairs)
 // the LLAMA STORE sells clothes (and LIMITED RARES); furniture is bought from the SHOP pop-up anywhere.
 // left side of the store: a lounge corner to sit in, the LIMITED RARES showcase, and model llamas wearing outfits from the racks
-const STORE_DECO=[['plant',0,0],['bigtv',1,0,0],['lamp',3,0],['plant',4,0],['rug_shag',1,2,0],['sofa',1,3,2],['armchair',4,2,3],['lamp',0,4,0]];   // [item, x, y, turn]; the sofa and armchair are real seats
-const STORE_SHOW=[['rug_round',1,6,0,1],['statue',1,6,0],['throne',2,7,3]];   // LIMITED RARES on show: tap them to buy (store only)
-const STORE_MODELS=[{gx:4,gy:5,pick:'cowboy',w:{hat:'cowboy',neck:'bandana',shirt:'poncho'}},{gx:4,gy:8,pick:'tophat',w:{hat:'tophat',eyes:'shades',neck:'bowtie',shirt:'tee_lounge'}},{gx:1,gy:9,pick:'flowers',w:{hat:'flowers',eyes:'hearts',neck:'lei',shirt:'tee_smile'}}];
+const STORE_DECO=[['plant',0,0],['floorlamp',0,3]];   // [item, x, y, turn]
+const STORE_SHOW=[['rug_persian',1,1,0,1],['statue',1,1,0],['throne',3,1,0]];   // LIMITED RARES on a red carpet in the back corner: tap them to buy (store only)
+const STORE_SNACK=[4,0];   // snack machine, next to the drink machine
+const STORE_DISPLAY=[{t:'teetable',gx:1,gy:6,w:2,items:['tee_smile','tee_lounge','tee_acres','tee_arena','tee_woke','tee_cancel'],pick:'tee_smile'},{t:'hatstand',gx:3,gy:4,items:['cowboy','cap','beanie','tophat'],pick:'cap'},{t:'hatstand',gx:2,gy:9,items:['party','flowers','beanie','cowboy'],pick:'flowers'}];
+const STORE_MODELS=[{gx:4,gy:6,pick:'cowboy',w:{hat:'cowboy',neck:'bandana',shirt:'poncho'}},{gx:4,gy:8,pick:'tophat',w:{hat:'tophat',eyes:'shades',neck:'bowtie',shirt:'tee_lounge'}},{gx:1,gy:4,pick:'flowers',w:{hat:'flowers',eyes:'hearts',neck:'lei',shirt:'tee_smile'}}];
 const STORE_CASE=[[6,2],[7,2]], CASE_ITEMS=[['shades',6.3],['hearts',6.82],['stars',7.42]];
 const STORE_RACKS=RACK_ROWS.flatMap((row,j)=>row.map((id,i)=>[13-row.length+i,4+3*j,id,i===0?-1:i===row.length-1?1:0]));   // rows end at the right wall
 const rackItemAt=(x,y)=>{ const r=STORE_RACKS.find(([a,b])=>a===x&&b===y); return r?r[2]:null; };
@@ -1722,6 +1724,8 @@ function buildStoreWorld(){
     if (D.seat) for (const [tx,ty] of (D.seatAll ? tl : tl.slice(0,1))) SEATS.push({gx:tx,gy:ty,dir:SEAT_DIRS[ro],lift:D.seat}); for (const [tx,ty] of (D.seat ? (D.seatAll ? [] : tl.slice(1)) : tl)) block(tx,ty); }
   for (const [item,x,y,rt,nt] of STORE_SHOW){ const ro=rt===undefined?1:rt; FURN.push({...FURN_DEF[item].mk(ro), gx:x, gy:y, show:item, notag:!!nt}); if (!FURN_DEF[item].rug) for (const [tx,ty] of furnTiles(item,x,y,ro)) block(tx,ty); }
   for (const M of STORE_MODELS){ FURN.push({t:'model',gx:M.gx,gy:M.gy,pick:M.pick,w:M.w}); block(M.gx,M.gy); }
+  for (const D of STORE_DISPLAY){ FURN.push({...D}); for (let i=0;i<(D.w||1);i++) block(D.gx+i,D.gy); }
+  FURN.push({t:'snackvend',gx:STORE_SNACK[0],gy:STORE_SNACK[1],svend:true}); block(STORE_SNACK[0],STORE_SNACK[1]);
   FURN.push({t:'fern',gx:12,gy:11,flip:true}); block(12,11);
   FURN.push({t:'fern',gx:0,gy:11}); block(0,11);
 }
@@ -3042,7 +3046,7 @@ function drawFurn(f,t){
       const snack=f.t==='snackvend', {RB,FP,face}=frm(f), H=46, K=RB(0.12,0.12,0.76,0.74), a=K[0], b=K[1], c=K[0]+K[2], e=K[1]+K[3];
       if (snack) box(...K,H,'#f0f0f8','#3a7ad8','#2a5aa8'); else box(...K,H,'#f0f0f8','#e03048','#b0203a');
       { const q=[P(a,e,0),P(c,e,0),P(c,b,0),P(a,b,H),P(c,e,H)], hb={x0:Math.min(...q.map(v=>v[0]))-2, x1:Math.max(...q.map(v=>v[0]))+2, y0:Math.min(...q.map(v=>v[1]))-2, y1:Math.max(...q.map(v=>v[1]))+2};
-        if (curRoom==='store' && !f.fid && !f.show) vendHit=hb; else if (f.fid) pvHits.push({...hb, f}); }
+        if (curRoom==='store' && !f.fid && !f.show){ if (f.svend) svendHit=hb; else vendHit=hb; } else if (f.fid) pvHits.push({...hb, f}); }
       if (!face){ const BK=(u,v)=>FP(0.12+0.76*u, 0.12, v); for (let v=30; v<=40; v+=3){ const a2=BK(0.25,v), b2=BK(0.75,v); linePx(a2[0],a2[1],b2[0],b2[1],snack?'#2a4a88':'#8a1a2c'); } const a2=BK(0.5,6), b2=BK(0.55,1); linePx(a2[0],a2[1],b2[0],b2[1],'#121220'); break; }
       const FL=(u,v)=>FP(0.12+0.76*u, 0.86, v), quad=(u0,u1,v0,v1,col)=>polyPx([FL(u0,v0),FL(u1,v0),FL(u1,v1),FL(u0,v1)],col);
       quad(0.08,0.66,12,40,INK); quad(0.11,0.63,13,39,snack?'#1a2030':'#1e2a40');
@@ -3171,10 +3175,27 @@ function drawFurn(f,t){
       else { const at=(x,y)=>f.rot ? x===f.tx+1 && (y===f.ty||y===f.ty+1) : y===f.ty+1 && (x===f.tx||x===f.tx+1); busy = (me.bj && me.p==='sit' && at(me.gx,me.gy)) || [...others.values()].some(o=>sameRoom(o) && o.bj && o.p==='sit' && at(Math.floor(o.x),Math.floor(o.y))); }
       const fr = busy ? (Math.floor(t*(f.game==='roul'?6:2.5))%2) : ((t+f.gy*0.7)%5 < 0.35 ? 1 : 0);
       g.drawImage(sprite(f.c,f.dir||'fl',fr,'stand'), Math.round(px)-14, Math.round(py)-45); break; }
+    case 'teetable': { // a low wooden display table with stacks of folded tees; tap to shop the tees
+      box(f.gx+0.08,f.gy+0.15,f.w-0.16,0.7,9,'#c8905a','#a06838','#7a4a24');
+      { const [a,b]=[P(f.gx+0.08,f.gy+0.85,9),P(f.gx+f.w-0.08,f.gy+0.85,9)]; linePx(a[0],a[1],b[0],b[1],'#e8b878'); }
+      const TEES=[['#ff6e9c','#c8306a','#ffb0c8'],['#3fb8a8','#22806e','#8ae8d8'],['#ffd23f','#c88a10','#fff0a0'],['#2c2a34','#1a1820','#5a5866'],['#4aa8ff','#2060c0','#a8d8ff'],['#f4f0e8','#c8c0b0','#ffffff']];
+      TEES.forEach((C,i)=>{ const u=f.gx+0.32+(i%3)*((f.w-0.64)/2), v=f.gy+(i<3?0.33:0.67);
+        for (let k=0;k<3;k++){ box(u-0.14,v-0.11,0.28,0.22,1.8,C[0],C[1],C[1],0,9+k*2); const [a,b]=[P(u-0.14,v+0.11,9+k*2+1.8),P(u+0.14,v+0.11,9+k*2+1.8)]; linePx(a[0],a[1],b[0],b[1],C[2]); }
+        const [x,y]=P(u,v,9+6); g.fillStyle=C[2]; g.fillRect(Math.round(x)-1,Math.round(y)-1,3,1); g.fillStyle=C[1]; g.fillRect(Math.round(x),Math.round(y),1,1); });
+      { const l=P(f.gx,f.gy+1,0), r=P(f.gx+f.w,f.gy,0), top=P(f.gx+f.w/2,f.gy+0.5,20), b=P(f.gx+f.w,f.gy+1,0); itemHits.push({id:f.pick, x0:Math.round(l[0]), x1:Math.round(r[0]), y0:Math.round(top[1]), y1:Math.round(b[1])+2}); }
+      break; }
+    case 'hatstand': { // a brass hat stand with hats hung on its pegs; tap to shop the hats
+      const [px,py]=P(f.gx+0.5,f.gy+0.5); const X=Math.round(px), Y=Math.round(py);
+      ellPx(X,Y,7,3,INK); ellPx(X,Y-0.5,6,2.5,'#c88a10'); ellPx(X,Y-1,4.5,1.8,'#ffd23f');
+      g.fillStyle=INK; g.fillRect(X-2,Y-44,4,43); g.fillStyle='#ffd23f'; g.fillRect(X-1,Y-43,2,42); g.fillStyle='#fff2a0'; g.fillRect(X-1,Y-43,1,42);
+      ellPx(X,Y-45,2.5,2.5,INK); ellPx(X,Y-45,1.5,1.5,'#ffd23f');
+      f.items.forEach((id,i)=>{ const ic=itemIcon(id), side=i%2?1:-1, hy=Y-40+Math.floor(i/2)*13, hx=X+side*7;
+        g.fillStyle=INK; g.fillRect(Math.min(X,hx),hy+3,Math.abs(hx-X)+1,2); g.drawImage(ic, Math.round(hx-ic.width/2), Math.round(hy-ic.height/2)); });
+      itemHits.push({id:f.pick, x0:X-16, x1:X+16, y0:Y-50, y1:Y+3}); break; }
     case 'model': { // a model llama on a round stand, wearing an outfit from the racks; tap it to try the look on
       const [px,py]=P(f.gx+0.5,f.gy+0.5); const X=Math.round(px), Y=Math.round(py);
       ellPx(X,Y+1,11,5,INK); ellPx(X,Y,10,4.5,'#c88a10'); ellPx(X,Y-1,10,4.5,'#ffd23f'); ellPx(X,Y-1.5,8,3.4,'#fff2a0');
-      const spin=Math.floor(t/2.5+f.gx)%4, dir=['fr','fl','fl','fr'][spin];
+      const dir='fr';   /* display models stand still */
       g.drawImage(sprite('model',dir,0,'stand',f.w), X-14, Y-48);
       itemHits.push({id:f.pick, x0:X-12, x1:X+12, y0:Y-48, y1:Y+4}); break; }
     case 'roulette': drawRoulette(f, t); break;
@@ -3552,7 +3573,7 @@ let walletRef=null, walletReady=false, walletDelta=0, walletBusy=false, walletDi
 function walletSave(){}
 async function walletFlush(){}
 async function initWallet(){}
-function tkSet(v, why){ if (!Number.isFinite(v)) return; const d=v-wallet.get(); store.tk=v; saveStore(); tokUI(d>0?1:d<0?-1:0); if (why) localMsg(why); }
+function tkSet(v, why){ if (!Number.isFinite(v)) return; const d=v-wallet.get(); store.tk=v; saveStore(); tokUI(d>0?1:d<0?-1:0); if (why) localMsg(why); if (typeof sheetHead==='function') for (const el of document.querySelectorAll('.gb.sheet')) if (el.style.display==='block') sheetHead(el); }   /* keep 'YOU HAVE N TOKENS' in open pop-ups current */
 function tokUI(dir){ const el=document.getElementById('tokn'), row=document.getElementById('tokrow'); if(!el) return; el.textContent=wallet.get();
   if (dir){ row.classList.remove('up','down'); void row.offsetWidth; row.classList.add(dir>0?'up':'down'); }
   if (typeof sendPresence==='function' && joined) sendPresence(); }
@@ -3662,6 +3683,7 @@ function context(){
   if (curRoom==='store'){
     if (me.p!=='sit' && STORE_COUNTER.some(([x,y])=>near(x,y))) return 'shop';
     if (standNear()==='vend') return 'vend';
+    if (standNear()==='svend') return 'svend';
     if (me.p!=='sit' && (STORE_RACKS.some(([x,y])=>near(x,y)) || STORE_CASE.some(([x,y])=>near(x,y)))) return 'clothes';
     if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
     return me.p==='sit' ? 'stand' : 'sit'; }
@@ -3682,7 +3704,7 @@ function context(){
   if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
   return me.p==='sit' ? 'stand' : 'sit';
 }
-const ALABEL = {pvend:'BUY', vend:'DRINKS', clothes:'CLOTHES', shop:'SHOP', dunk:'THROW', grab:'ORDER', arena:'PLAY', bowl:'BOWL', fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
+const ALABEL = {pvend:'BUY', vend:'DRINKS', svend:'SNACKS', clothes:'CLOTHES', shop:'SHOP', dunk:'THROW', grab:'ORDER', arena:'PLAY', bowl:'BOWL', fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
 const alabel=document.getElementById('alabel'); let lastLabel='';
 function updateALabel(){ const c=context(); const l = arcade.on ? (arcade.mode==='menu'?'SELECT':arcade.over?'RETRY':arcade.mode==='dash'?'JUMP':'---') : (c?ALABEL[c]:'SIT'); if(l!==lastLabel){ alabel.textContent=l; lastLabel=l; } }
 // ---- bartending: slip past the rope, pace behind the bar pouring drinks ----
@@ -3724,6 +3746,7 @@ function doAction(a){
   if (a==='shop'){ openCatalog(); return; }
   if (a==='leaveroom'){ prLeaveNow(); return; }
   if (a==='vend'){ openFw('vend'); return; }
+  if (a==='svend'){ openFw('svend'); return; }
   if (a==='booth'){ openBooth(); return; }
   if (a==='acctdesk'){ openAccount(); return; }
   if (a==='plinko'){ openPlinko(); return; }
@@ -4682,13 +4705,13 @@ const storeTitleCv=document.createElement('canvas'), storeFurnCv=document.create
 function clerkState(t){ const custom = curRoom==='store' && joined && STORE_COUNTER.some(([x,y])=>near(x,y)); return { custom, scanning: !custom && (t%4)<2.6 }; }
 function drawStoreSigns(t){
   drawShopWall(t);
-  { const sc=2, txt='LLAMA STORE', tw=pfW(txt,sc), W=tw+16, H=5*sc+12; if (storeTitleCv.width!==W){ storeTitleCv.width=W; storeTitleCv.height=H; }
+  { const sc=3, txt='LLAMA STORE', tw=pfW(txt,sc), W=tw+20, H=5*sc+14; if (storeTitleCv.width!==W){ storeTitleCv.width=W; storeTitleCv.height=H; }
     const m=storeTitleCv.getContext('2d'); m.clearRect(0,0,W,H); m.fillStyle=INK; m.fillRect(0,0,W,H); m.fillStyle='#f85888'; m.fillRect(1,1,W-2,H-2); m.fillStyle='#b83068'; m.fillRect(1,H-3,W-2,2);
-    pfDraw(m,txt,9,7,'#7a1838',sc); pfDraw(m,txt,8,6,(Math.floor(t*2)%6===0)?'#ffffff':'#fff4d8',sc); wallPlate(storeTitleCv, 96, 100, 1); }
+    pfDraw(m,txt,11,8,'#7a1838',sc); pfDraw(m,txt,10,7,(Math.floor(t*2)%6===0)?'#ffffff':'#fff4d8',sc); wallPlate(storeTitleCv, 138, 86, 1); }   /* on the wall face, not sticking up over it */
   { if (!storeFurnCv.dataset.ok){ storeFurnCv.dataset.ok=1; const txt='LIMITED RARES', W=pfW(txt,1)+10; storeFurnCv.width=W; storeFurnCv.height=11; const m=storeFurnCv.getContext('2d'); m.fillStyle=INK; m.fillRect(0,0,W,11); m.fillStyle='#e0a418'; m.fillRect(1,1,W-2,9); pfDraw(m,txt,5,3,'#ffffff',1); }
-    wallPlate(storeFurnCv, 18, 96, 1); }
+    wallPlate(storeFurnCv, 32, 77, 1); }
   { if (!storeClothCv.dataset.ok){ storeClothCv.dataset.ok=1; const txt='CLOTHING', W=pfW(txt,1)+10; storeClothCv.width=W; storeClothCv.height=11; const m=storeClothCv.getContext('2d'); m.fillStyle=INK; m.fillRect(0,0,W,11); m.fillStyle='#f85888'; m.fillRect(1,1,W-2,9); pfDraw(m,txt,5,3,'#ffffff',1); }
-    wallPlate(storeClothCv, 200, 96, 1); }
+    wallPlate(storeClothCv, 235, 77, 1); }
 }
 function drawLanesSigns(t){
   { const sc=2, txt='LLAMA LANES', tw=pfW(txt,sc), W=tw+16, H=5*sc+12; if (lanesTitleCv.width!==W){ lanesTitleCv.width=W; lanesTitleCv.height=H; }
@@ -5032,7 +5055,7 @@ const plkEl=document.getElementById('plkbox'), plkCv=document.getElementById('pl
 const PLKB={cx:88, top:42, sp:16, rh:15, W:176, H:218};   // board layout in canvas pixels
 const PLK_COL=[['#ffd23f','#a06808'],['#48c060','#1f7a34'],['#4aa8ff','#1c5ab8'],['#a070e0','#5a2aa8'],['#e83850','#8a1c2c']];
 const plkBucketCol=k=>PLK_COL[Math.min(4, Math.abs(k-4)===4?0:Math.abs(k-4)===3?1:Math.abs(k-4)===2?2:Math.abs(k-4)===1?3:4)];
-const PLKS={bet:1, ball:null, last:[], busy:false};
+const PLKS={bet:1, balls:[], wait:false, seq:0};   // several balls can be falling at once
 try{ const b=+localStorage.getItem('ll_plkBet'); if (PLK.bets.includes(b)) PLKS.bet=b; }catch(_){}
 function plkHit(lx,ly){ if (curRoom!=='casino') return false; const [ax,ay]=P(PLK.gx+0.9,PLK.gy+1.9,0), [bx,by]=P(PLK.gx+0.9,PLK.gy+0.1,0); return lx>=Math.min(ax,bx)-2 && lx<=Math.max(ax,bx)+2 && ly>=Math.min(ay,by)-58 && ly<=Math.max(ay,by)+2; }
 function plkNear(){ return !me.moving && me.p!=='sit' && me.gx<=1 && me.gy>=PLK.gy-1 && me.gy<=PLK.gy+2; }
@@ -5040,13 +5063,16 @@ function plkGo(){ if (plkNear()){ openPlinko(); return; } if (me.p==='sit') doAc
 function plkMsg(t,good){ const el=$id('plk_msg'); el.textContent=t; el.classList.toggle('good',!!good); }
 function plkBetUI(){ for (const b of $id('plk_bet').querySelectorAll('[data-pb]')) b.classList.toggle('on', +b.dataset.pb===PLKS.bet); }
 function plkFit(){ const dpr=window.devicePixelRatio||1, room=Math.min(plkEl.clientWidth-44, 360), k=Math.max(1, Math.floor(room*dpr/PLKB.W)); plkCv.style.width=(PLKB.W*k/dpr)+'px'; plkCv.style.height=(PLKB.H*k/dpr)+'px'; }
-function openPlinko(){ closeAll(); plkEl.style.display='block'; plkBetUI(); plkFit(); if (!PLKS.ball) plkMsg(`PICK A BET, THEN DROP THE BALL. ${PLKS.bet} TOKEN${PLKS.bet>1?'S':''} A BALL.`); }
-document.getElementById('plk_bet').addEventListener('click', e=>{ const b=e.target.closest('[data-pb]'); if (!b || PLKS.busy) return; PLKS.bet=+b.dataset.pb; try{ localStorage.setItem('ll_plkBet', PLKS.bet); }catch(_){} plkBetUI(); plkMsg(`${PLKS.bet} TOKEN${PLKS.bet>1?'S':''} A BALL. GOOD LUCK!`); });
+function openPlinko(){ closeAll(); plkEl.style.display='block'; plkBetUI(); plkFit(); if (!PLKS.balls.length) plkMsg(`PICK A BET, THEN DROP THE BALL. ${PLKS.bet} TOKEN${PLKS.bet>1?'S':''} A BALL.`); }
+document.getElementById('plk_bet').addEventListener('click', e=>{ const b=e.target.closest('[data-pb]'); if (!b) return; PLKS.bet=+b.dataset.pb; try{ localStorage.setItem('ll_plkBet', PLKS.bet); }catch(_){} plkBetUI(); plkMsg(`${PLKS.bet} TOKEN${PLKS.bet>1?'S':''} A BALL. GOOD LUCK!`); });
 document.getElementById('plk_drop').addEventListener('click', ()=>{ ensureAudio(); plkDrop(); });
 addEventListener('resize', ()=>{ if (plkEl.style.display==='block') plkFit(); });
-function plkDrop(){ if (PLKS.busy) return; if (!plkNear()){ plkEl.style.display='none'; plkGo(); return; } PLKS.busy=true; $id('plk_drop').disabled=true; plkMsg('DROPPING...');
-  NET.act('plinko',{bet:PLKS.bet}).then(r=>{ if (Number.isFinite(r.tk) && !r.pay) tkSet(r.tk); if (!r.ok){ PLKS.busy=false; $id('plk_drop').disabled=false; plkMsg(r.msg||'That did not work.'); return; }
-    sfxTone(880,0.05,'square',0.1); PLKS.ball={path:r.path, slot:r.slot, pay:r.pay, bet:r.bet, tk:r.tk, t0:performance.now(), done:false}; }); }
+function plkDrop(){ if (PLKS.wait) return; if (!plkNear()){ plkEl.style.display='none'; plkGo(); return; }
+  if (PLKS.balls.filter(B=>!B.done).length>=8){ plkMsg('LET A FEW BALLS LAND FIRST!'); return; }
+  if (wallet.get()<PLKS.bet){ plkMsg(`YOU NEED ${PLKS.bet} TOKEN${PLKS.bet>1?'S':''} TO DROP A BALL.`); return; }
+  PLKS.wait=true; NET.act('plinko',{bet:PLKS.bet}).then(r=>{ PLKS.wait=false; if (!r.ok){ if (Number.isFinite(r.tk)) tkSet(r.tk); plkMsg(r.msg||'That did not work.'); return; }
+    tkSet(r.tk - r.pay);   /* the bet comes off now; any win is added when the ball lands */
+    sfxTone(880,0.05,'square',0.1); const seq=++PLKS.seq; PLKS.balls.push({path:r.path, slot:r.slot, pay:r.pay, bet:r.bet, tk:r.tk, seq, t0:performance.now(), done:false}); plkMsg('DROPPING... TAP DROP AGAIN FOR ANOTHER BALL!'); }).catch(()=>{ PLKS.wait=false; }); }
 // where the ball is at time s (seconds since the drop): a fall to the first peg, then one hop per row
 function plkBallPos(B, s){ const {cx,top,sp,rh}=PLKB, hop=0.2, fall=0.32;
   if (s<fall){ const u=s/fall; return [cx, top-18+u*u*13, -1]; }
@@ -5067,29 +5093,29 @@ function drawPlinko(t){ if (plkEl.style.display!=='block') return; const c=plkCx
   // marquee sign
   { const w=86, x=cx-w/2; R2(x-1,9,w+2,19,'#1d1530'); R2(x,10,w,17,'#ffd23f'); R2(x,10,w,2,'#fff2a0'); R2(x,24,w,3,'#c88a10'); for (let k=0;k<w;k+=6) R2(x+k+2,13,1,1,(k/6+fl)%2?'#ffffff':'#ff9ab8');
     const txt='PLINKO'; const tw=pfW(txt,2); pfDraw(c,txt,cx-tw/2+1,14,'#c8306a',2); pfDraw(c,txt,cx-tw/2,13,'#5a1c80',2); }
-  const B=PLKS.ball, s=B ? (performance.now()-B.t0)/1000 : -1, cur=B ? plkBallPos(B,s) : null;
-  // pegs: round gold studs with a shine, flashing white when the ball bounces off them
-  for (let r=0;r<PLK.rows;r++) for (let j=0;j<r+3;j++){ const x=Math.round(cx+(j-(r+2)/2)*sp), y=top+r*rh; const lit = cur && cur[2]===r && Math.abs(cur[0]-x)<sp/2+1 && ((s-0.32)%0.2)<0.07;
+  const NOW=performance.now(); PLKS.balls=PLKS.balls.filter(B=>!B.done || NOW-B.doneAt<1400);
+  const live=PLKS.balls.map(B=>{ const s=(NOW-B.t0)/1000; return {B, s, cur:plkBallPos(B,s)}; });
+  // pegs: round gold studs with a shine, flashing white when a ball bounces off them
+  for (let r=0;r<PLK.rows;r++) for (let j=0;j<r+3;j++){ const x=Math.round(cx+(j-(r+2)/2)*sp), y=top+r*rh; const lit = live.some(L=>!L.B.done && L.cur[2]===r && Math.abs(L.cur[0]-x)<sp/2+1 && ((L.s-0.32)%0.2)<0.07);
     R2(x-2,y-1,4,4,'#1d1530'); R2(x-1,y-2,2,6,'#1d1530'); R2(x-1,y-1,2,3, lit?'#ffffff':'#ffd23f'); R2(x-2,y,4,1, lit?'#ffffff':'#ffd23f'); R2(x-1,y-1,1,1,'#fff6c8'); R2(x,y+1,1,1, lit?'#ffe070':'#c88a10'); }
-  // buckets: colored cups with dividers and their payouts
+  // buckets: colored cups with dividers and their payouts (they flash when a ball lands in them)
   const by=top+PLK.rows*rh+1, bw=sp-1;
-  for (let k=0;k<9;k++){ const x=Math.round(cx+(k-4)*sp-bw/2), [c0,c1]=plkBucketCol(k), hot = B && B.done && B.slot===k && Math.floor(t*8)%2;
+  for (let k=0;k<9;k++){ const x=Math.round(cx+(k-4)*sp-bw/2), [c0,c1]=plkBucketCol(k), hot = live.some(L=>L.B.done && L.B.slot===k) && Math.floor(t*8)%2;
     R2(x-1,by,bw+2,30,'#1d1530'); R2(x,by+1,bw,28, hot?'#ffffff':c0); R2(x,by+1,bw,2, hot?'#ffffff':'rgba(255,255,255,.35)'); R2(x,by+21,bw,8,c1);
     const m=PLK.mult[k], txt=(m===Math.floor(m) ? String(m) : String(m).replace(/^0/,''))+'X'; pfDraw(c, txt, x+Math.round((bw-pfW(txt))/2), by+8, hot?c1:'#1d1530'); }
   for (let k=0;k<=9;k++){ const x=Math.round(cx+(k-4.5)*sp); R2(x-1,by-4,2,6,'#1d1530'); R2(x-1,by-5,2,1,'#ffd23f'); }
-  // footer: how it pays
   { const t2='PAYOUT = BET X BUCKET'; pfDraw(c,t2,cx-pfW(t2)/2,H-15,'#8a7ac8'); }
-  // the ball, with a short fading trail
-  const ball=(x,y,a)=>{ c.globalAlpha=a; R2(x-3,y-2,6,4,'#1d1530'); R2(x-2,y-3,4,6,'#1d1530'); R2(x-2,y-2,4,4,'#ff6e9c'); R2(x-3,y-1,6,2,'#ff6e9c'); R2(x-2,y-2,2,1,'#ffffff'); R2(x-2,y-1,1,1,'#ffd0e0'); R2(x+1,y+1,1,1,'#c8306a'); R2(x,y+2,2,0,'#c8306a'); c.globalAlpha=1; };
-  if (cur){ if (B.done===false) for (const [dt,a] of [[0.09,0.18],[0.05,0.35]]){ if (s-dt>0){ const q=plkBallPos(B,s-dt); ball(q[0],q[1],a); } }
+  const ball=(x,y,a)=>{ c.globalAlpha=a; R2(x-3,y-2,6,4,'#1d1530'); R2(x-2,y-3,4,6,'#1d1530'); R2(x-2,y-2,4,4,'#ff6e9c'); R2(x-3,y-1,6,2,'#ff6e9c'); R2(x-2,y-2,2,1,'#ffffff'); R2(x-2,y-1,1,1,'#ffd0e0'); R2(x+1,y+1,1,1,'#c8306a'); c.globalAlpha=1; };
+  if (!live.some(L=>!L.B.done)) ball(cx, top-18+Math.round(Math.sin(t*3)), 1);
+  for (const {B,s,cur} of live){ if (B.done) continue;
+    for (const [dt,a] of [[0.09,0.18],[0.05,0.35]]) if (s-dt>0){ const q=plkBallPos(B,s-dt); ball(q[0],q[1],a); }
     ball(cur[0],cur[1],1);
-    if (cur[2]>=0 && cur[2]<PLK.rows){ const k=cur[2], u=((s-0.32)%0.2)/0.2; if (u<0.05 && B._tick!==k){ B._tick=k; sfxTone(660+k*50,0.04,'square',0.05); } } }
-  else ball(cx, top-18+Math.round(Math.sin(t*3)), 1);
-  // landing: pay out once
-  if (B && !B.done && cur && cur[2]>=PLK.rows && s>0.32+PLK.rows*0.2+0.25){ B.done=true; PLKS.busy=false; $id('plk_drop').disabled=false; tkSet(B.tk);
-    if (B.pay>B.bet){ sfxChime([523,659,784,1047]); plkMsg(`${PLK.mult[B.slot]}X! YOU WON ${B.pay} TOKEN${B.pay>1?'S':''}!`, true); }
-    else if (B.pay>0){ sfxChime([523,659]); plkMsg(`${PLK.mult[B.slot]}X. YOU GOT ${B.pay} BACK.`); }
-    else { sfxTone(220,0.2,'square',0.08); plkMsg('NO LUCK THIS TIME. TRY AGAIN!'); } }
+    if (cur[2]>=0 && cur[2]<PLK.rows){ const k=cur[2], u=((s-0.32)%0.2)/0.2; if (u<0.05 && B._tick!==k){ B._tick=k; sfxTone(660+k*50,0.04,'square',0.04); } }
+    // landing: pay out once
+    if (cur[2]>=PLK.rows && s>0.32+PLK.rows*0.2+0.25){ B.done=true; B.doneAt=NOW; if (B.pay) tkSet(B.seq===PLKS.seq ? B.tk : wallet.get()+B.pay);
+      if (B.pay>B.bet){ sfxChime([523,659,784,1047]); plkMsg(`${PLK.mult[B.slot]}X! YOU WON ${B.pay} TOKEN${B.pay>1?'S':''}!`, true); }
+      else if (B.pay>0){ sfxChime([523,659]); plkMsg(`${PLK.mult[B.slot]}X. YOU GOT ${B.pay} BACK.`); }
+      else { sfxTone(220,0.2,'square',0.08); plkMsg('NO LUCK THIS TIME. TRY AGAIN!'); } } }
 }
 
 // ======================= BAR DRINKING (tap the cup, tap to sip) =======================
@@ -5114,7 +5140,7 @@ document.getElementById('pm_close').addEventListener('click', ()=>closeAll());
 
 // ======================= SPIT =======================
 const llamaHits=[]; const spits=[];
-const itemHits=[]; let vendHit=null;   // the vending machine, so tapping anywhere on it works   // where each store item was drawn this frame, so tapping the item itself opens it
+const itemHits=[]; let vendHit=null, svendHit=null;   // the vending machine, so tapping anywhere on it works   // where each store item was drawn this frame, so tapping the item itself opens it
 function llamaWorld(l){ const seat=(l.p==='sit')?seatAt(Math.floor(l.x),Math.floor(l.y)):null; const [wx,wy]=proj(l.x,l.y); return [wx, wy-45-(seat?seat.lift:0)+(l.p==='sit'?6:0)]; }
 function launchSpit(from, to, dir){
   const [fx,fy]=llamaWorld(from); const fdir=dir||from.d||'fr';
@@ -5350,10 +5376,12 @@ function showroomTag(f){ const [bx,by]=P(f.gx+0.5,f.gy+0.95,0), X=Math.round(bx)
   const top=P(f.gx+0.5,f.gy+0.5,36), l=P(f.gx,f.gy+1,0), r=P(f.gx+1,f.gy,0), b=P(f.gx+1,f.gy+1,0);
   itemHits.push({id:f.show, furn:true, x0:Math.round(l[0]), x1:Math.round(r[0]), y0:Math.round(top[1]), y1:Math.round(b[1])+4}); }
 // tap the vending machine: open it if you're next to it, otherwise walk over and open it when you get there
+function svendGo(){ if (me.p!=='sit' && nearStand(STANDS.svend)){ openFw('svend'); return; } if (me.p==='sit') doAction('stand'); if (!walkTo(STORE_SNACK[0],STORE_SNACK[1]+1,'svend')) localMsg('Walk up to the snack machine.'); }
 function vendGo(){ if (me.p!=='sit' && nearStand(STANDS.vend)){ openFw('vend'); return; } if (me.p==='sit') doAction('stand'); if (!walkTo(STORE_VEND[0],STORE_VEND[1]+1,'vend')) localMsg('Walk up to the vending machine.'); }
 function storePointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
   for (let i=itemHits.length-1;i>=0;i--){ const h=itemHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if (h.furn) openWardrobe('shop', null, 'rares'); else openWardrobe('shop', h.id); return; } }
+  if (svendHit && lx>=svendHit.x0&&lx<=svendHit.x1&&ly>=svendHit.y0&&ly<=svendHit.y1){ svendGo(); return; }
   if (vendHit && lx>=vendHit.x0&&lx<=vendHit.x1&&ly>=vendHit.y0&&ly<=vendHit.y1){ vendGo(); return; }
   for (const h of shopHit){ if (lx>=h.x0&&lx<h.x1&&ly>=h.y0&&ly<=h.y1){ openShop(h.i); return; } }
   { const lcx=OX-210, lcy=OY+105-75.5; if (Math.abs(lx-lcx)<=13 && Math.abs(ly-lcy)<=13){ openLogo(); return; } }
@@ -5362,6 +5390,7 @@ function storePointer(e){
   { const it=rackItemAt(gx,gy); if (it){ openWardrobe('shop', it); return; } }
   if (STORE_CASE.some(([x,y])=>x===gx&&y===gy)){ openWardrobe('shop', gx===7 ? 'stars' : 'shades'); return; }
   if (gx===STORE_VEND[0] && gy===STORE_VEND[1]){ vendGo(); return; }
+  if (gx===STORE_SNACK[0] && gy===STORE_SNACK[1]){ svendGo(); return; }
   if (STORE_COUNTER.some(([x,y])=>x===gx&&y===gy)){ openCatalog(); return; }
   if (walkable(gx,gy)){ walkTo(gx,gy); return; }
   let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } }
@@ -5445,6 +5474,7 @@ function eatApple(k){
 const fwEl=document.getElementById('fwbox');
 const STANDS={ bar:{gx:0,gy:2, title:'🍸 THE BAR', note:'DRINKS FILL 💧 THIRST, FOOD FILLS 🍔 HUNGER. ENJOY IT ANYWHERE!', items:[['soda','HAY SODA',1],['juice','GRASS JUICE',1],['shake','BERRY SHAKE',2],['nachos','HAY NACHOS',2],['fries','ALFALFA FRIES',2],['burger','CLOVER BURGER',3]]},
   cider:{gx:7,gy:4, title:'🍎 APPLE CIDER', note:'FRESH PRESSED FROM THE ORCHARD. SIP IT ANYWHERE!', items:[['cider','HOT CIDER',2],['caramel','CARAMEL CIDER',3]]},
+  svend:{gx:4,gy:0, rm:'store', title:'🍪 SNACK MACHINE', note:'CRUNCHY, SWEET AND READY. EAT IT ANYWHERE!', items:[['chips','HAY CHIPS',1],['candy','CANDY BAR',1],['cookie','OAT COOKIE',2]]},
   vend:{gx:5,gy:0, rm:'store', title:'🥤 VENDING MACHINE', note:'ICE COLD AND READY. SIP IT ANYWHERE!', items:[['soda','HAY SODA',1],['juice','GRASS JUICE',1],['shake','BERRY SHAKE',2]]},
   snack:{gx:10,gy:4, title:'🌽 FARM SNACKS', note:'HOMEMADE TREATS FROM LLAMA ACRES. EAT IT ANYWHERE!', items:[['capple','CARAMEL APPLE',2],['corn','CORN ON THE COB',2],['pie','APPLE PIE',3]]} };
 let standOpen=null;
