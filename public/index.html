@@ -437,6 +437,12 @@
   #acctbox .pkcodes{margin-top:10px;background:#fffbe8;border:2px solid #000;border-radius:8px;padding:10px} #acctbox .pkcodes b{font:800 13px var(--pxf);display:block} #acctbox .pkcodes small{display:block;font:700 12px/1.4 var(--ui);color:var(--sub);margin:4px 0 8px}
   #acctbox .pkgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px} #acctbox .pkgrid code{font:800 14px ui-monospace,Menlo,Consolas,monospace;background:#fff;border:2px solid var(--cardln);border-radius:6px;padding:6px;text-align:center;letter-spacing:.06em}
   #acctbox .pkbtns{flex-wrap:wrap;gap:6px} #acctbox #pk_off.sure{background:#ff6a80;color:#fff}
+  #dashbox .dgrid{display:grid;column-gap:12px;align-items:center;font:600 13px var(--ui);color:var(--sub);margin-bottom:4px}
+  #dashbox .dgrid>*{padding:7px 0;border-bottom:1px solid #e4dcef;min-width:0} #dashbox .dgrid .dgh{font:800 10px var(--pxf);letter-spacing:.08em;color:#9a8ab8;padding:2px 0 5px;border-bottom:2px solid #d8cce8}
+  #dashbox .dgrid span{font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} #dashbox .dgrid .dgn{display:flex;align-items:center;gap:5px;color:var(--ink);font:800 13px var(--pxf);letter-spacing:.04em;white-space:nowrap}
+  #dashbox .dgrid .dgn .pi{flex:none} #dashbox .dgrid .dgnum{font-weight:800;color:var(--ink)} #dashbox .dgrid em.dgbad{font:800 11px var(--pxf);font-style:normal;color:#d62d6a}
+  #dashbox .dgrid .dga{display:flex;flex-wrap:wrap;gap:5px;white-space:normal;overflow:visible} #dashbox .dgrid .dga.r{justify-content:flex-end;flex-wrap:nowrap} #dashbox .dgrid .dga .gbbtn{padding:5px 9px;font-size:10px;line-height:1.1;margin:0;white-space:nowrap} #dashbox .dgrid .dga .gbbtn[data-undo]{padding:4px 7px!important;font-size:9px!important;min-width:0!important} #dashbox .dgrid .dgtok{padding-right:4px} #dashbox .dgrid span.dgw{white-space:normal;overflow:visible;line-height:1.35} #dashbox .dgrid .dgtok{display:inline-flex;align-items:center;gap:3px}
+  #dashbox .dgrid.wideacts .dga{grid-column:1/-1;padding-top:0;margin-top:-3px} #dashbox .dgrid.wideacts > :not(.dga):not(.dgh){border-bottom:none;padding-bottom:3px} #dashbox .dgrid.wideacts .dga{padding-bottom:8px}
   #dashbox .sugrid{display:grid;grid-template-columns:auto auto 1fr;column-gap:14px;row-gap:0;align-items:center;font:600 13px var(--ui);color:var(--sub)} #dashbox .sugrid>*{padding:6px 0;border-bottom:1px dashed var(--line)} #dashbox .sugrid span{font-variant-numeric:tabular-nums;white-space:nowrap} #dashbox .sugrid b{color:var(--ink);font:800 13px var(--pxf);letter-spacing:.04em} #dashbox .sugrid .suh{font:800 10px var(--pxf);color:var(--sub);letter-spacing:.08em;padding-top:2px}
   #dashbox .errrow .rh b{font:800 13px ui-monospace,Menlo,Consolas,monospace;word-break:break-word} #dashbox .errst{white-space:pre-wrap;word-break:break-all;font:600 11px/1.4 ui-monospace,Menlo,Consolas,monospace;background:#f4eef8;border-radius:6px;padding:8px;max-height:220px;overflow:auto} #dashbox details summary{cursor:pointer;font:800 11px var(--pxf);color:var(--sub);margin:4px 0}
   /* BOXING GYM: panel, challenge pop-up, fight HUD and move pad */
@@ -5804,12 +5810,13 @@ document.getElementById('abtn').addEventListener('click', ()=>pressA());
 addEventListener('keydown', e => {
   const ae=document.activeElement;
   if (ae===chatin){ if(e.key==='Escape') chatin.blur(); return; }
+  if (ae && (/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) || ae.isContentEditable)) return;   /* typing in any box (bug report, notes, search...) never moves your llama or starts a game */
   if (typeof bxMe==='function' && bxMe() && BXS.s && BXS.s.phase!=='over'){ const mk={KeyA:'jab',KeyS:'hook',KeyD:'block',KeyF:'dodge',KeyJ:'jab',KeyK:'hook',KeyL:'block',Semicolon:'dodge'}[e.code]; if (mk){ e.preventDefault(); if (!e.repeat) bxPick(mk); return; } if (/^(Arrow|Space|Key)/.test(e.code)) { e.preventDefault(); return; } }
   if (ae===pname) return;
   const k=KEYMAP[e.code];
   if (k){ e.preventDefault(); if (arcade.on){ if(arcadeNav(k)) return; if(k==='up' && !e.repeat) dashJump(); keys.add(k); return; } navArrow=e.code.startsWith('Arrow'); if(navKey(k)) return; return; }   /* walking is tap/click only; arrows still move through menus and arcade games */
   if (e.key==='Enter'){ e.preventDefault(); if(pick.style.display==='flex'||uiOpen()||arcade.on) pressA(); else chatin.focus(); return; }
-  if (e.code==='Space'||e.code==='KeyZ'){ e.preventDefault(); if(!e.repeat) pressA(); return; }
+  if (e.code==='Space'||e.code==='KeyZ'){ e.preventDefault(); if (!e.repeat && !(curRoom==='arena' && context()==='arena')) pressA(); return; }   /* the Spit Arena only opens with a click */
   if (e.code==='KeyX'||e.key==='Escape'){ e.preventDefault(); if(arcade.on) arcadeBack(); else if(uiOpen()&&pick.style.display!=='flex') closeAll(); return; }
   if (e.code==='KeyM'){ e.preventDefault(); openMenu(); return; }
   if (e.code==='KeyI' && joined){ e.preventDefault(); if ($id('wardbox').style.display==='block') closeAll(); else openWardrobe(bagTab()); return; }
@@ -8518,6 +8525,10 @@ function loadErrors(){ NET.act('err_list').then(r=>{ if (!r || !r.ok){ dsBody.in
   dsBody.innerHTML=h;
   for (const b of dsBody.querySelectorAll('[data-errk]')) b.addEventListener('click', ()=>{ b.disabled=true; NET.act('err_clear',{k:b.dataset.errk}).then(loadErrors); });
   const all=$id('err_all'); if (all) all.addEventListener('click', ()=>{ if (!confirm('Clear every error?')) return; NET.act('err_clear',{}).then(loadErrors); }); }); }
+// dashboard lists as aligned grids: a header row, one row per entry, buttons in their own column (or on a full row under the entry)
+const dgD=t=>new Date(t).toLocaleDateString([], {month:'short',day:'numeric'}), dgT=t=>new Date(t).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+const dgrid=(cols, heads, rows, wide)=>`<div class="dgrid${wide?' wideacts':''}" style="grid-template-columns:${cols}">${heads.map(h=>`<span class="dgh">${h}</span>`).join('')}${rows.join('')}</div>`;
+const dgName=(st,n)=>`<b class="dgn">${badgeHtml(st)}<span>${esc(n)}</span></b>`;
 function loadDash(){
   clearInterval(dsTimer); dsTimer=null;
   if (dsTab==='errors'){ dsBody.innerHTML='<div class="dl">LOADING...</div>'; loadErrors(); return; }
@@ -8533,30 +8544,31 @@ function loadDash(){
     const btn=(label,cmd,name,cls)=>`<button class="gbbtn s ${cls||''}" data-cmd="${cmd}" data-name="${esc(name)}">${label}</button>`;
     const canAct = (n, st) => n!==myName && st!=='owner' && (owner || st!=='mod');
     h+=`<h4>ONLINE NOW (${r.online.length})</h4>`;
-    for (const p of r.online){ const acts = !canAct(p.n,p.st) ? '' : (p.muted?btn('UNMUTE','unmute',p.n):btn('MUTE','mute',p.n)) + btn('KICK','kick',p.n,'bad') + btn('BAN','ban',p.n,'bad') + btn('🪙 GIVE','give',p.n,'gd') + (owner ? (p.st==='mod'?btn('UNMOD','unmod',p.n):btn('MOD','mod',p.n,'gd')) : '');
-      h+=`<div class="dr">${badgeHtml(p.st)}<span class="nm">${esc(p.n)} <small>${ROOM_SHORT[p.rm]||''}${p.muted?' · MUTED':''}</small></span>${acts}</div>`; }
+    if (r.online.length) h+=dgrid('auto auto 1fr', ['LLAMA','ROOM','STATUS'], r.online.map(p=>{ const acts = !canAct(p.n,p.st) ? '' : (p.muted?btn('UNMUTE','unmute',p.n):btn('MUTE','mute',p.n)) + btn('KICK','kick',p.n,'bad') + btn('BAN','ban',p.n,'bad') + btn('🪙 GIVE','give',p.n,'gd') + (owner ? (p.st==='mod'?btn('UNMOD','unmod',p.n):btn('MOD','mod',p.n,'gd')) : '');
+      return dgName(p.st,p.n)+`<span>${ROOM_SHORT[p.rm]||esc(roomName(p.rm)||'')}</span><span>${p.muted?'<em class="dgbad">MUTED</em>':(p.st?(p.st==='owner'?'OWNER':'MOD'):'')}</span>`+(acts?`<span class="dga">${acts}</span>`:''); }), true);
     if (!r.online.length) h+='<div class="dl">NOBODY ONLINE.</div>';
     if (owner && Array.isArray(r.signups)){   // OWNER ONLY: who made an account (the server never sends this to mods)
       const day=new Date().toDateString(), nToday=r.signups.filter(s2=>new Date(s2.t).toDateString()===day).length;
       h+=`<h4>NEW ACCOUNTS (${nToday} TODAY)</h4>`;
-      { const list=r.signups.slice(0,30); if (list.length){ h+='<div class="sugrid"><span class="suh">DATE</span><span class="suh">TIME</span><span class="suh">LLAMA</span>'; for (const s2 of list){ const d=new Date(s2.t); h+=`<span>${d.toLocaleDateString([], {month:'short',day:'numeric'})}</span><span>${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}</span><b>${esc(s2.n)}</b>`; } h+='</div>'; } }
+      { const list=r.signups.slice(0,30); if (list.length){ h+=dgrid('auto auto 1fr', ['DATE','TIME','LLAMA'], list.map(s2=>`<span>${dgD(s2.t)}</span><span>${dgT(s2.t)}</span><b class="dgn"><span>${esc(s2.n)}</span></b>`)); } }
       if (!r.signups.length) h+='<div class="dl">NO ACCOUNTS YET.</div>'; }
     h+='<h4>STAFF</h4>';
-    for (const p of r.staff){ const st=p.role==='admin'?'owner':'mod'; h+=`<div class="dr">${badgeHtml(st)}<span class="nm">${esc(p.n)} <small>${st==='owner'?'OWNER':'MOD'}</small></span>${owner&&st==='mod'?btn('RESET PASSKEY','pkreset',p.n)+btn('UNMOD','unmod',p.n):''}</div>`; }
+    h+=dgrid('auto auto 1fr', ['LLAMA','ROLE',''], r.staff.map(p=>{ const st=p.role==='admin'?'owner':'mod'; return dgName(st,p.n)+`<span>${st==='owner'?'OWNER':'MOD'}</span><span class="dga r">${owner&&st==='mod'?btn('RESET PASSKEY','pkreset',p.n)+btn('UNMOD','unmod',p.n):''}</span>`; }));
     if (owner) h+=`<div class="addrow" style="margin-top:4px"><input id="ds_new" maxlength="12" placeholder="PLAYER NAME" spellcheck="false" autocapitalize="off"><button class="gbbtn s gd" id="ds_addmod">MAKE MOD</button></div>`;
     h+=`<h4>MUTED (${r.muted.length})</h4>`;
-    for (const p of r.muted) h+=`<div class="dr">${badgeHtml('')}<span class="nm">${esc(p.n)}</span>${canAct(p.n, p.role==='mod'?'mod':'')?btn('UNMUTE','unmute',p.n):''}</div>`;
+    if (r.muted.length) h+=dgrid('auto 1fr', ['LLAMA',''], r.muted.map(p=>dgName('',p.n)+`<span class="dga r">${canAct(p.n, p.role==='mod'?'mod':'')?btn('UNMUTE','unmute',p.n):''}</span>`));
     if (!r.muted.length) h+='<div class="dl">NOBODY IS MUTED.</div>';
     h+=`<h4>BANNED (${r.banned.length})</h4>`;
-    for (const p of r.banned) h+=`<div class="dr">${badgeHtml('')}<span class="nm">${esc(p.n)} <small>${p.until ? 'UNTIL '+esc(chatWhen(p.until).toUpperCase()) : 'PERMANENT'}</small></span>${owner?btn('UNBAN','unban',p.n):''}</div>`;
+    if (r.banned.length) h+=dgrid('auto auto 1fr', ['LLAMA','UNTIL',''], r.banned.map(p=>dgName('',p.n)+`<span>${p.until ? esc(chatWhen(p.until).toUpperCase()) : '<em class="dgbad">PERMANENT</em>'}</span><span class="dga r">${owner?btn('UNBAN','unban',p.n):''}</span>`));
     if (!r.banned.length) h+='<div class="dl">NOBODY IS BANNED.</div>';
     h+='<h4>🪙 TOKEN GIFTS</h4>'+`<div class="dl">${btn('🪙 GIVE MYSELF TOKENS','give',me.n,'gd')}</div>`;
     { const td=Object.entries(r.giftsToday||{}); h+=`<div class="dl">TODAY: ${td.length ? td.map(([by,n])=>`${esc(by)} gave ${n}`).join(' · ') : 'no gifts yet'}. Mods can give up to ${r.giftCap||500} a day (gifts to themselves count too).</div>`; }
-    for (const gf of (r.gifts||[]).slice(0,30)){ const d=new Date(gf.t), mine=gf.by===(me.n||'').toUpperCase(); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(gf.by)} gave ${esc(gf.to)} <b>${gf.n}</b> 🪙 ${gf.undo ? `<s>UNDONE</s> <small>by ${esc(gf.undo.by)} (${gf.undo.n} taken back)</small>` : ((owner||mine) && gf.id ? `<button class="gbbtn s" data-undo="${gf.id}" data-to="${esc(gf.to)}" data-n="${gf.n}">↩ UNDO</button>` : '')}</div>`; }
+    { const G=(r.gifts||[]).slice(0,30); if (G.length) h+=dgrid('auto auto auto auto auto 1fr', ['DATE','TIME','FROM','TO','TOKENS',''], G.map(gf=>{ const mine=gf.by===(me.n||'').toUpperCase();
+      return `<span>${dgD(gf.t)}</span><span>${dgT(gf.t)}</span><b class="dgn"><span>${esc(gf.by)}</span></b><b class="dgn"><span>${esc(gf.to)}</span></b><span class="dgnum dgtok">${gf.n} 🪙</span><span class="dga r">${gf.undo ? `<s>UNDONE</s>` : ((owner||mine) && gf.id ? `<button class="gbbtn s" data-undo="${gf.id}" data-to="${esc(gf.to)}" data-n="${gf.n}">UNDO</button>` : '')}</span>`; })); }
     if (!(r.gifts||[]).length) h+='<div class="dl">NO TOKEN GIFTS YET.</div>';
     h+='<h4>STAFF LOG</h4>';
     const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:',pkreset:'cleared the passkeys of',give:'gave tokens to',undogift:'took back a gift from',roomreset:'reset the room name of', movefurn:'moved', turnfurn:'turned', wfwarn:'warned'};
-    for (const e of r.log.slice(0,20)){ const d=new Date(e.t); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(e.by)} ${WORD[e.cmd]||esc(e.cmd)} ${esc(e.target)}</div>`; }
+    if (r.log.length) h+=dgrid('auto auto auto 1fr', ['DATE','TIME','STAFF','ACTION'], r.log.slice(0,20).map(e=>`<span>${dgD(e.t)}</span><span>${dgT(e.t)}</span><b class="dgn"><span>${esc(e.by)}</span></b><span class="dgw">${WORD[e.cmd]||esc(e.cmd)} <b>${esc(e.target)}</b></span>`));
     if (!r.log.length) h+='<div class="dl">NO STAFF ACTIONS YET.</div>';
     if (owner && Array.isArray(r.bugs)){   // OWNER ONLY: bug reports from players
       const open=r.bugs.filter(b=>!b.done).length; h+=`<h4>🐞 BUG REPORTS (${open} OPEN)</h4>`;
@@ -8577,7 +8589,7 @@ function loadBackups(){ const el=$id('ds_bk'); if (!el) return;
   NET.act('backup_list').then(r=>{ if (!r.ok){ el.textContent=r.msg||'Could not load backups.'; return; }
     const kb=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
     let h='Saved automatically every 12 hours. The newest 4 (2 days) are kept.<br>';
-    for (const b of r.list){ const d=new Date(b.t); h+=`<div class="dr"><span class="nm">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} <small>${b.rows} ROWS · ${kb(b.bytes)} · ${esc(String(b.why).toUpperCase())}</small></span><button class="gbbtn s gd" data-bk="${b.id}">DOWNLOAD</button></div>`; }
+    if (r.list.length) h+=dgrid('auto auto auto auto 1fr', ['DATE','TIME','ROWS','SIZE',''], r.list.map(b=>`<span>${dgD(b.t)}</span><span>${dgT(b.t)}</span><span class="dgnum">${b.rows}</span><span class="dgnum">${kb(b.bytes)}</span><span class="dga r"><button class="gbbtn s gd" data-bk="${b.id}">DOWNLOAD</button></span>`));
     if (!r.list.length) h+='No backups yet. The first one is saved at the next 12:23.<br>';
     h+='<button class="gbbtn s" id="ds_bknow">💾 BACK UP NOW</button>';
     el.innerHTML=h;
@@ -8964,7 +8976,7 @@ const AR_KEYS = { ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right
 addEventListener('keydown', e=>{ if (!AR.on) return; if (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
   e.stopImmediatePropagation(); const k=AR_KEYS[e.code];
   if (k){ e.preventDefault(); AR.keys.add(k); return; }
-  if (e.code==='Space' || e.code==='KeyJ' || e.code==='KeyQ'){ e.preventDefault(); if (AR.phase==='play'){ AR.mouse=null; AR.fireHeld=true; myFire(); } else if (!e.repeat && e.code==='Space' && (AR.phase==='lobby' && AR.me || (AR.phase==='over' && AR.result))){ arPlay(); } return; }
+  if (e.code==='Space' || e.code==='KeyJ' || e.code==='KeyQ'){ e.preventDefault(); if (AR.phase==='play'){ AR.mouse=null; AR.fireHeld=true; myFire(); } return; }   /* starting a round is click-only (PLAY) */
   if (e.code==='Escape'){ e.preventDefault(); arenaClose(); return; } }, true);
 addEventListener('keyup', e=>{ if (!AR.on) return; const k=AR_KEYS[e.code]; if (k) AR.keys.delete(k); if (e.code==='Space'||e.code==='KeyJ'||e.code==='KeyQ') AR.fireHeld=false; }, true);
 const arToWorld = e => { const r=arCv.getBoundingClientRect(); return [(e.clientX-r.left)/AR.sc, (e.clientY-r.top)/AR.sc]; };

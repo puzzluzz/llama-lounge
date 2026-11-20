@@ -428,3 +428,9 @@ POW!, WHAM!, KAPOW! and friends pop up on comic-book bursts (bigger orange ones 
 ## Crash reports (DASHBOARD > ERRORS)
 
 If something breaks in a player's browser, the game quietly tells the server (`/api/clienterr`): the error, where in the code, the stack, the room, and a short device and browser name. The same error is grouped into one row with a count and the players who hit it (up to 30 names), so a bug that hits everyone shows once. Errors from browser extensions and blank cross-site "Script error." messages are skipped; each page sends at most 8, and each network at most 40 every 15 minutes. Staff see them in DASHBOARD > ERRORS (newest first, with DETAILS for the stack and a badge for errors in the last day); the owner can clear one (FIXED, CLEAR) or all of them. Table: `clienterr`.
+
+### Staff dashboard grids
+Every list on the dashboard (online now, new accounts, staff, muted, banned, token gifts, staff log, backups) is a lined-up grid with column headers, so names, dates and buttons sit in straight rows on desktop and phone.
+
+### Typing never triggers game keys
+While you type in any box (bug report, notes, search), keys like space and the arrows go to the box only. The Spit Arena starts only when you click PLAY; space still fires during a round.
