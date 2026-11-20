@@ -5,8 +5,10 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-22y";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-22z";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
+const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
+const BOOTH = { x: 18, y: 10, price: 10 };   // the changing booth in LLAMA ACRES: switch to another llama for 10 tokens
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
 const LOGIN_MAX_FAILS = 8;                // per username per 15 minutes
@@ -1016,7 +1018,7 @@ export class Lounge extends DurableObject {
     const uid = a.uid, now = Date.now();
     switch (kind) {
       case "profile": {
-        const c = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"].includes(m.c) ? m.c : null;
+        const c = LLAMAS.includes(m.c) ? m.c : null;
         const bet = Math.max(0, Math.min(10, Math.floor(+m.bet || 0)));
         // the llama picked at sign-up is the account's llama for good: once it's set, it never changes
         await this.env.DB.prepare("UPDATE users SET c = COALESCE(c, ?), agreed = MAX(agreed, ?), bet = ? WHERE id = ?").bind(c, Math.max(0, Math.min(9, +m.agreed || 0)), bet, uid).run();
@@ -1050,6 +1052,15 @@ export class Lounge extends DurableObject {
         if (now < ready) return { ok: false, left: ready - now, msg: `Those carrots are still growing. Ready in ${Math.ceil((ready - now) / 1000)}s.` };
         await this.setTimer(uid, "crop:" + k, now + CROP_MS);
         return { ok: true, left: CROP_MS, tk: await this.credit(uid, 1, "harvest") };
+      }
+      case "llama_change": {   // the changing booth: you have to be standing at it, and it costs 10 tokens
+        const c = String(m.c || ""); if (!LLAMAS.includes(c)) return { ok: false, msg: "That llama doesn't exist." };
+        if (!this.near(a, "barn", (x, y, p) => p.p !== "sit" && Math.abs(x - BOOTH.x) <= 1.6 && Math.abs(y - BOOTH.y) <= 1.6)) return { ok: false, msg: "Walk up to the changing booth in LLAMA ACRES first." };
+        const u = await this.user(uid); if (u && u.c === c) return { ok: false, msg: "That's already you! Pick a different llama." };
+        const tk = await this.debit(uid, BOOTH.price, "llama change " + c); if (tk === null) return { ok: false, msg: `The booth costs ${BOOTH.price} TOKENS. Play some games to earn more!` };
+        await this.env.DB.prepare("UPDATE users SET c = ? WHERE id = ?").bind(c, uid).run();
+        a.uc = { ...(a.uc || {}), t: now, tk, c }; if (a.pres) { a.pres.c = c; a.pres.tk = tk; this.peersOut(ws, a, "updated"); } ws.serializeAttachment(a);
+        return { ok: true, c, tk };
       }
       case "afk_ok": { a.act = now; ws.serializeAttachment(a); return { ok: true }; }
       case "fish_cast": {

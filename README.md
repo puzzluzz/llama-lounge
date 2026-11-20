@@ -261,3 +261,5 @@ No API keys or passwords are involved.
   - UNCANCELABLE: cream, droopy ears, a gold tooth, and a wide red sun hat with flowers.
 
   A shirt or glasses you buy go over the ones a llama comes with. The picker shows all seven in two rows. As before, an account's llama is set when it's picked and doesn't change.
+- **Changing booth (LLAMA ACRES):** a velvet-curtained booth with a gold LLAMA marquee stands on the lawn by the pond. It's part of the room, not for sale. Tap it to walk over. The llama picker opens in "booth" mode, and SWITCH · 10 changes your llama for 10 TOKENS. Your name, clothes and tokens stay the same.
+  - The server makes the change (act `llama_change`). It checks that you're standing at the booth and not sitting, that the llama exists and is different from yours, and charges the 10 tokens before saving `users.c`. Everyone in the room sees the new llama right away.

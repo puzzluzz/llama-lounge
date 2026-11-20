@@ -432,6 +432,7 @@
   #acctbox .acmsg{min-height:18px;font:600 13px var(--ui);color:#e02838;margin-top:6px} #acctbox .acmsg.good{color:#1f8a4c}
   #acctbox .aclink{border:0;background:transparent;font:700 13px var(--ui);color:#5a48b0;text-decoration:underline;padding:4px 0;cursor:pointer}
   /* llama picker */
+  #pick.booth #pname{display:none} #pick.booth .row{justify-content:center}
   #cards{flex-wrap:wrap;justify-content:center} #pick .card canvas{width:min(calc(var(--px)*44px),calc((100vw - 80px)/4 - 14px))!important;height:auto!important;aspect-ratio:56/92}
   #pick{line-height:1.4} #pick .tt{font-size:18px;font-weight:800} #pick .tt b{color:#d62d6a}
   .card{border:0;border-radius:16px;padding:6px;background:var(--soft);transition:transform .1s}
@@ -806,7 +807,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22y";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22z";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1239,8 +1240,10 @@ function buildLoungeWorld(){
 // LLAMA ACRES: outdoor barnyard
 // LLAMA ACRES: big outdoor barnyard (22 x 20)
 let BARN_PATH = new Set(), FARM_PATH = new Set();
+let boothHit=null; const BOOTH=[18,10];   // LLAMA ACRES: the changing booth (swap your llama for 10 TOKENS)
 function buildBarnWorld(){
   clearWorld();
+  FURN.push({t:'booth',gx:BOOTH[0],gy:BOOTH[1]}); block(BOOTH[0],BOOTH[1]);
   BARN_PATH = new Set([[14,1],[14,2],[13,3],[13,4],[12,5],[12,6],[11,7],[11,8],[10,8],[9,8],[8,9],[7,10],[7,11],[7,12]].map(([x,y])=>y*N+x));
   FURN.push({t:'barn',gx:0,gy:0}); for (let x=0;x<=3;x++) for (let y=0;y<=3;y++) block(x,y);
   FURN.push({t:'hay',gx:4,gy:0}); block(4,0);
@@ -2642,6 +2645,24 @@ function drawFurn(f,t){
       quad(0.72,0.9,24,34,INK); quad(0.74,0.88,25,33,'#d8d8e8'); for (let k=0;k<3;k++){ const [x,y]=FL(0.81,31-k*2.5); g.fillStyle=k===0?'#48c048':'#f8d030'; g.fillRect(Math.round(x)-1,Math.round(y)-1,2,1); }
       quad(0.2,0.6,4,8,INK); quad(0.22,0.58,5,7,'#2a2a3a');   // pick-up flap
       break; }
+    case 'booth': { // changing booth: a wooden cabinet, purple velvet curtain parted at the front, a gold marquee sign on top
+      const x0=f.gx+0.08, y0=f.gy+0.08, x1=f.gx+0.92, y1=f.gy+0.92, H=44;
+      box(f.gx+0.02,f.gy+0.02,0.96,0.96,3,'#9a6a3a','#7a4a24','#5e3818');
+      box(x0,y0,0.84,0.84,H,'#5a2a7a','#8a3ac0','#6a4a2a',0,3);
+      const FL=(u,v)=>P(x0+(x1-x0)*u, y1, 3+v), RT=(u,v)=>P(x1, y0+(y1-y0)*u, 3+v), quad=(F,u0,u1,v0,v1,col)=>polyPx([F(u0,v0),F(u1,v0),F(u1,v1),F(u0,v1)],col);
+      quad(FL,0.38,0.62,0,38,'#1c1028');                                                  // dark gap where the curtains part
+      for (const u of [0.1,0.22,0.3,0.7,0.78,0.9]){ const a=FL(u,1), b=FL(u,38); linePx(a[0],a[1],b[0],b[1],'#6a2a98'); }   // velvet folds
+      for (const u of [0.16,0.84]){ const a=FL(u,2), b=FL(u,36); linePx(a[0],a[1],b[0],b[1],'#b070e8'); }
+      for (const u of [0.36,0.64]){ const a=FL(u,14), b=FL(u+(u<0.5?-0.06:0.06),16); linePx(a[0],a[1],b[0],b[1],'#f6c945'); }   // gold tie-backs
+      { const a=FL(0,39), b=FL(1,39); linePx(a[0],a[1],b[0],b[1],'#f6c945'); linePx(a[0],a[1]+1,b[0],b[1]+1,'#c8951c'); }   // curtain rod
+      for (let k=0;k<3;k++){ const a=RT(0.12,6+k*12), b=RT(0.88,6+k*12); linePx(a[0],a[1],b[0],b[1],'#4e3018'); }   // wood planks on the side
+      quad(RT,0.3,0.7,18,32,INK); quad(RT,0.34,0.66,19,31,'#bfe4f0'); { const a=RT(0.4,21), b=RT(0.5,29); linePx(a[0],a[1],b[0],b[1],'#ffffff'); }   // little mirror
+      box(f.gx+0.12,f.gy+0.6,0.8,0.26,10,'#f6c945','#e0a82a','#b8841a',0,3+H);           // marquee sign
+      { const [sx,sy]=P(f.gx+0.5,f.gy+0.86,3+H+5); const X=Math.round(sx)-12, Y=Math.round(sy)-2; g.fillStyle='#3a2410'; g.fillRect(X,Y,24,7); pfDraw(g,'LLAMA',X+2,Y+1,'#ffe8a0',1);
+        const on=Math.floor(t*3)%2; for (let k=0;k<5;k++){ g.fillStyle=(k%2===on)?'#fff6c0':'#a87a20'; g.fillRect(X-1+k*6,Y-2,2,1); g.fillRect(X+2+k*5,Y+8,2,1); } }
+      { const [cx,cy]=P(f.gx+0.5,f.gy+0.5,3+H+16); const tw=Math.floor(t*2)%3; g.fillStyle=tw===0?'#ffffff':'#ffe070'; g.fillRect(Math.round(cx),Math.round(cy)-2,1,5); g.fillRect(Math.round(cx)-2,Math.round(cy),5,1); }   // twinkle
+      { const q=[P(f.gx,f.gy+1,0),P(f.gx+1,f.gy+1,0),P(f.gx+1,f.gy,0),P(f.gx+0.5,f.gy+0.5,3+H+18)]; boothHit={x0:Math.min(...q.map(v=>v[0])), x1:Math.max(...q.map(v=>v[0])), y0:Math.min(...q.map(v=>v[1])), y1:Math.max(...q.map(v=>v[1]))}; }
+      break; }
     case 'foldtable': { // display table with stacks of folded shirts
       box(f.gx+0.06,f.gy+0.06,0.88,0.88,13,'#f4e6c8','#a87444','#86582e');
       PRODUCTS.slice(f.k*2, f.k*2+3).forEach((pr,j)=>{ const u=[0.3,0.68,0.5][j], v=[0.35,0.4,0.72][j]; let lift=13;
@@ -3218,6 +3239,7 @@ function doAction(a){
   if (a==='shop'){ openCatalog(); return; }
   if (a==='leaveroom'){ prLeaveNow(); return; }
   if (a==='vend'){ openFw('vend'); return; }
+  if (a==='booth'){ openBooth(); return; }
   if (a==='pvend'){ pvOpen(); return; }
   if (a==='clothes'){ const r=STORE_RACKS.find(([x,y])=>near(x,y)); openWardrobe('shop', r ? r[2] : STORE_CASE.some(([x,y])=>near(x,y)) ? 'shades' : null); return; }
   if (a==='dunk'){ openDunk(); return; }
@@ -3786,8 +3808,21 @@ for (const id of CHAR_IDS){
   previews.push({id,pc,card});
 }
 function setSel(id){ sel=id; for(const p of previews) p.card.classList.toggle('sel',p.id===id); who.textContent = CHARS[id].label.toUpperCase(); }
-function openPicker(){ closeAll(); if(arcade.on) exitArcade(); pname.value=me.n; setSel(me.c); pick.style.display='flex'; }
+function pickMode(booth){ pick.classList.toggle('booth', !!booth);
+  pick.querySelector('.tt').innerHTML = booth ? 'Step into the <b>BOOTH</b>' : 'Which <b>LLAMA</b> will<br>you choose?';
+  pick.querySelector('.picknote').textContent = booth ? 'Switch to any llama for 10 TOKENS. Your name, clothes and tokens stay the same.' : 'Choose carefully: this llama is yours for good.';
+  $id('bGo').textContent = booth ? 'SWITCH · 10' : 'OK'; }
+function openPicker(){ closeAll(); if(arcade.on) exitArcade(); pickMode(false); pname.value=me.n; setSel(me.c); pick.style.display='flex'; }
+function openBooth(){ closeAll(); pickMode(true); pname.value=me.n; setSel(me.c); pick.style.display='flex'; }
+let boothBusy=false;
+function boothSwitch(){ if (boothBusy) return; if (sel===me.c){ localMsg("That's already you! Pick a different llama."); return; }
+  boothBusy=true; $id('bGo').textContent='...';
+  NET.act('llama_change',{c:sel}).then(r=>{ boothBusy=false; $id('bGo').textContent='SWITCH · 10';
+    if (!r || !r.ok){ localMsg((r&&r.msg)||"The booth is stuck. Try again."); return; }
+    me.c=r.c; store.c=r.c; saveStore(); if (acct) acct.c=r.c; acctSave(); pick.style.display='none'; pickMode(false);
+    if (Number.isFinite(r.tk)) tkSet(r.tk, `TA-DA! You're ${CHARS[r.c].label.toUpperCase()} now.`); sendPresence(true); }); }
 function enter(){
+  if (pick.classList.contains('booth')){ boothSwitch(); return; }
   ensureAudio(); restartSong();
   me.c = sel; me.n = clean(pname.value.trim(),12).toUpperCase() || CHARS[sel].label.toUpperCase().slice(0,12);
   store.c=me.c; store.n=me.n; saveStore(); if (acct){ acct.c=me.c; acct.n=me.n; } acctSave();
@@ -3853,7 +3888,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__ward=(t,k)=>openWardrobe(t,null,k); window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__ward=(t,k)=>openWardrobe(t,null,k); window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__wear=(sl,id)=>wdWear(sl,id); window.__face=d=>{ me.d=d; }; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
@@ -4752,8 +4787,11 @@ function casinoPointer(e){
   let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } }
   if (best) walkTo(best.gx,best.gy);
 }
+function boothNear(){ return Math.abs(me.gx-BOOTH[0])<=1 && Math.abs(me.gy-BOOTH[1])<=1 && !me.moving; }
+function boothGo(){ if (boothNear() && me.p!=='sit'){ openBooth(); return; } if (me.p==='sit') doAction('stand'); if (!walkTo(BOOTH[0],BOOTH[1]+1,'booth') && !walkTo(BOOTH[0]-1,BOOTH[1],'booth')) localMsg('Walk up to the changing booth.'); }
 function barnPointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
+  { const [gb,hb]=toGrid(e.clientX, e.clientY); if ((gb===BOOTH[0]&&hb===BOOTH[1]) || (boothHit && lx>=boothHit.x0&&lx<=boothHit.x1&&ly>=boothHit.y0&&ly<=boothHit.y1)){ boothGo(); return; } }
   { const [gx0,gy0]=toGrid(e.clientX, e.clientY); const [px,py]=P(DUNK_TGT[0]+0.5,DUNK_TGT[1]+0.5,0);
     if ((gx0===DUNK_TGT[0]&&gy0===DUNK_TGT[1]) || (Math.abs(lx-px)<=11 && ly>=py-50 && ly<=py-26)){ if (inDunkZone() && me.p!=='sit' && !me.moving) openDunk(); else walkTo(DUNK_TGT[0], DUNK_TGT[1]+2, 'dunk'); return; } }
   for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
