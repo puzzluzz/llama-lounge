@@ -111,13 +111,13 @@ const PR_WALLS = Object.keys(DECO_WALL), PR_FLOORS = Object.keys(DECO_FLOOR);
 // FARMS: one per llama (on top of the regular rooms). Garden plots only go in a farm, up to FARM.maxPlots each.
 // Crops: seed cost (TOKENS), grow time and what the harvest sells for. Short crops pay best per hour if you tend them; long ones suit time away.
 // A visitor (not the owner) can water a growing plot once per planting: it finishes FARM.waterCut of its grow time sooner.
-const FARM = { max: 1, maxPlots: 6, waterCut: 0.2, w: 12, h: 9, clear: ["0,8", "1,8", "2,8", "3,8"] };   // 6 plots plus paths and a few decorations fit; income is set by the plot cap, not the size   // farms are open fields, bigger than rooms, with a gate where the door would be
+const FARM = { max: 1, maxPlots: 12, waterCut: 0.2, w: 12, h: 9, clear: ["0,8", "1,8", "2,8", "3,8"] };   // 12 plots plus paths and a few decorations fit; income is set by the plot cap, not the size   // farms are open fields, bigger than rooms, with a gate where the door would be
 const prDim = (r) => (r && r.kind === "farm" ? FARM : PR);
-const CROPS = { carrot: { n: "CARROTS", seed: 2, ms: 15 * 60e3, pay: 5 }, corn: { n: "CORN", seed: 4, ms: 45 * 60e3, pay: 10 },
-  berry: { n: "STRAWBERRIES", seed: 6, ms: 2 * 3600e3, pay: 15 }, pumpkin: { n: "PUMPKINS", seed: 10, ms: 6 * 3600e3, pay: 26 } };
+const CROPS = { carrot: { n: "CARROTS", seed: 1, ms: 20 * 60e3, pay: 3 }, corn: { n: "CORN", seed: 2, ms: 45 * 60e3, pay: 5 },
+  berry: { n: "STRAWBERRIES", seed: 3, ms: 2 * 3600e3, pay: 8 }, pumpkin: { n: "PUMPKINS", seed: 5, ms: 6 * 3600e3, pay: 13 } };
 const FARM_ONLY = new Set(["plot"]);
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
-const FURN_ITEMS = { plot: 30, scarecrow: 15, wheelbarrow: 14, trough: 12, beehive: 18, appletree: 25, sunflowers: 8, gfence: 6, cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30, rug_persian: 25, rug_round: 15, rug_stripe: 12, rug_shag: 18,
+const FURN_ITEMS = { plot: 20, scarecrow: 15, wheelbarrow: 14, trough: 12, beehive: 18, appletree: 25, sunflowers: 8, gfence: 6, cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30, rug_persian: 25, rug_round: 15, rug_stripe: 12, rug_shag: 18,
   beanbag: 10, barstool: 7, dbed: 40, coffeetable: 14, roundtable: 16, floorlamp: 16, lavalamp: 12, cubeshelf: 14, dresser: 20, cactus: 5, flowers: 6, boombox: 18 , rug_mat_green: 6, rug_mat_red: 6, rug_mat_blue: 6, rug_mat_coir: 6, rug_mat_pink: 6, rug_mat_purple: 6 };
 // what the store sells right now: one piece per category (the rest stay placeable for anyone who already owns them)
 // vending machines players can put in their rooms, and what each one sells
