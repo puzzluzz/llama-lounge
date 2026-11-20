@@ -800,6 +800,7 @@
   #pmenu .pmroom{display:flex;gap:8px;align-items:center;background:var(--soft);border-radius:12px;padding:8px 8px 8px 10px;margin-bottom:10px}
   #pmenu .pmroom>span{flex:1;min-width:0;display:flex;flex-direction:column} #pmenu .pmroom b{font:800 13.5px var(--ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis} #pmenu .pmroom small{font:700 10.5px var(--ui);color:var(--sub);letter-spacing:.04em;display:flex;align-items:center;gap:3px}
   #pmenu .pmroom .gbbtn{min-height:34px;padding:6px 12px;font-size:12px}
+  #pmenu .pmroom>span.pi{flex:none!important;width:30px!important;height:30px!important;display:block}   /* the house icon keeps its shape */ #pmenu .pmroom small{white-space:nowrap;gap:4px} #pmenu .pmroom small .pi{width:12px;height:12px}
   #pmenu .pmb{display:grid!important;grid-template-columns:repeat(4,1fr);gap:6px!important} #pmenu .pmb .gbbtn{flex-direction:column;gap:3px;padding:8px 2px;font-size:11px;min-height:52px}
   #pmenu .pmb .gbbtn .pi{width:var(--pi2);height:var(--pi2)}
   .menu .shead.band .stx{align-items:flex-start!important;justify-content:center!important}
@@ -5067,7 +5068,8 @@ function render(t){
   if (py-camY > hy) ty = py-hy; else if (py-camY < -hy) ty = py+hy;
   if (camMan){ camPX=clampX(camPX); camPY=clampY(camPY); tx=camPX; ty=camPY; }   // the player slid the view with the arrows: hold it there until they tap to walk
   tx=clampX(tx); ty=clampY(ty);
-  { const wide = LW < roomR-roomL - 2, st = !wide || arcade.on ? 'off' : (camMan ? camPX : tx) <= roomL+LW/2+1 ? 'L' : (camMan ? camPX : tx) >= roomR-LW/2-1 ? 'R' : 'mid';
+  { const busy = (typeof pmenuEl!=='undefined' && pmenuEl.style.display==='block') || !!document.querySelector('.gb.sheet[style*="display: block"], .gb.sheet[style*="display: flex"]');   // pop-up open: arrows step aside
+    const wide = LW < roomR-roomL - 2, st = !wide || arcade.on || busy ? 'off' : (camMan ? camPX : tx) <= roomL+LW/2+1 ? 'L' : (camMan ? camPX : tx) >= roomR-LW/2-1 ? 'R' : 'mid';
     if (st!==camArrSt){ camArrSt=st; camLEl.classList.toggle('on', st!=='off'); camREl.classList.toggle('on', st!=='off'); camLEl.classList.toggle('end', st==='L'); camREl.classList.toggle('end', st==='R'); }
     camPanW = LW*0.45; }
   const k=Math.min(1, frameDt*3.5); camX += (tx-camX)*k; camY += (ty-camY)*k;
