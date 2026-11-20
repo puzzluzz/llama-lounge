@@ -424,3 +424,7 @@ Staff can add a passkey so a stolen password alone can't get into their account.
 ## Fight call-outs
 
 POW!, WHAM!, KAPOW! and friends pop up on comic-book bursts (bigger orange ones for hooks and counters), BLOCKED! on a blue shield, WHOOSH! with speed lines and CUT OFF! on a purple burst. Each is drawn pixel by pixel once and cached; it pops in small, floats up and blinks out.
+
+## Crash reports (DASHBOARD > ERRORS)
+
+If something breaks in a player's browser, the game quietly tells the server (`/api/clienterr`): the error, where in the code, the stack, the room, and a short device and browser name. The same error is grouped into one row with a count and the players who hit it (up to 30 names), so a bug that hits everyone shows once. Errors from browser extensions and blank cross-site "Script error." messages are skipped; each page sends at most 8, and each network at most 40 every 15 minutes. Staff see them in DASHBOARD > ERRORS (newest first, with DETAILS for the stack and a badge for errors in the last day); the owner can clear one (FIXED, CLEAR) or all of them. Table: `clienterr`.

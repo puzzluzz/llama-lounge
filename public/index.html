@@ -437,6 +437,7 @@
   #acctbox .pkcodes{margin-top:10px;background:#fffbe8;border:2px solid #000;border-radius:8px;padding:10px} #acctbox .pkcodes b{font:800 13px var(--pxf);display:block} #acctbox .pkcodes small{display:block;font:700 12px/1.4 var(--ui);color:var(--sub);margin:4px 0 8px}
   #acctbox .pkgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px} #acctbox .pkgrid code{font:800 14px ui-monospace,Menlo,Consolas,monospace;background:#fff;border:2px solid var(--cardln);border-radius:6px;padding:6px;text-align:center;letter-spacing:.06em}
   #acctbox .pkbtns{flex-wrap:wrap;gap:6px} #acctbox #pk_off.sure{background:#ff6a80;color:#fff}
+  #dashbox .errrow .rh b{font:800 13px ui-monospace,Menlo,Consolas,monospace;word-break:break-word} #dashbox .errst{white-space:pre-wrap;word-break:break-all;font:600 11px/1.4 ui-monospace,Menlo,Consolas,monospace;background:#f4eef8;border-radius:6px;padding:8px;max-height:220px;overflow:auto} #dashbox details summary{cursor:pointer;font:800 11px var(--pxf);color:var(--sub);margin:4px 0}
   /* BOXING GYM: panel, challenge pop-up, fight HUD and move pad */
   #boxbox{width:min(calc(100% - 24px),440px)} #boxbox .bxh{font:800 12px var(--pxf);letter-spacing:.06em;color:var(--sub);margin:14px 0 6px}
   #boxbox .bxbots{display:grid;grid-template-columns:1fr 1fr;gap:8px} #boxbox .bxbot{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;border:2px solid var(--cardln);border-radius:7px;background:#fff;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--cardln);font-family:var(--ui)}
@@ -1099,7 +1100,7 @@
   <div id="tradeask" class="gb sheet"><div class="dpt">🤝 TRADE?</div><div class="dpsub" id="ta_txt"></div><div class="srow"><button class="gbbtn y" id="ta_yes">LET'S TRADE</button><button class="gbbtn" id="ta_no">NO THANKS</button></div></div>
   <div id="tradebox" class="gb sheet"><div class="slt" id="tr_title">🤝 TRADE</div><div id="tr_body"></div><div id="tr_msg"></div><div class="srow"><button class="gbbtn y" id="tr_ready">✓ READY</button><button class="gbbtn" id="tr_cancel">CANCEL</button></div></div>
   <div id="jobsbox" class="gb sheet"><div class="slt">💰 JOB BOARD</div><div class="jsub">Ways to earn coins. Keep your 🍔 and 💧 up, or most jobs pay half.</div><div id="jobs_body"></div><div class="srow"><button class="gbbtn" id="jobs_close">CLOSE</button></div></div>
-  <div id="dashbox" class="gb sheet"><div class="slt" id="ds_title">STAFF DASHBOARD</div><div class="autabs" id="ds_tabs"><button type="button" data-t="players" class="on">PLAYERS</button><button type="button" data-t="chat">CHAT LOG</button><button type="button" data-t="reports">REPORTS<b class="mbadge" id="ds_repn"></b></button></div><div id="ds_body"></div><div class="srow"><button class="gbbtn" id="ds_refresh">REFRESH</button><button class="gbbtn" id="ds_close">CLOSE</button></div></div>
+  <div id="dashbox" class="gb sheet"><div class="slt" id="ds_title">STAFF DASHBOARD</div><div class="autabs" id="ds_tabs"><button type="button" data-t="players" class="on">PLAYERS</button><button type="button" data-t="chat">CHAT LOG</button><button type="button" data-t="reports">REPORTS<b class="mbadge" id="ds_repn"></b></button><button type="button" data-t="errors">ERRORS<b class="mbadge" id="ds_errn"></b></button></div><div id="ds_body"></div><div class="srow"><button class="gbbtn" id="ds_refresh">REFRESH</button><button class="gbbtn" id="ds_close">CLOSE</button></div></div>
   <div id="tblbox" class="gb sheet"><div class="slt" id="tb_title"></div><canvas id="tbcv" width="150" height="66"></canvas><div id="tb_msg"></div>
     <div class="tbopts" id="tb_opts"></div>
     <div class="slbet" id="tb_bet"><span>BET</span><button class="gbbtn" data-bet="1">1</button><button class="gbbtn" data-bet="2">2</button><button class="gbbtn" data-bet="5">5</button><button class="gbbtn" data-bet="10">10</button></div>
@@ -1205,6 +1206,18 @@ window.claude = { use: async name => name==='room' ? NET.roomPromise : null };
 async function apiPost(path, body){ const r = await fetch(path, {method:'POST', credentials:'same-origin', headers:{'content-type':'application/json'}, body:JSON.stringify(body||{})}); let j={}; try { j=await r.json(); } catch(_){} return {ok:r.ok, status:r.status, ...j}; }
 </script>
 <script>
+// ---- crash reports: if something breaks in this browser, tell the server (grouped there; staff see them in DASHBOARD > ERRORS) ----
+(()=>{ const sent=new Set(); let n=0;
+  const send=(m,src,line,col,stack)=>{ try { m=String(m||'').slice(0,300); if (!m || /^Script error\.?$/.test(m)) return; src=String(src||'');
+      if (src && !src.startsWith(location.origin)) return;   // browser extensions, not the game
+      const k=m+'|'+src+'|'+line; if (sent.has(k) || n>=8) return; sent.add(k); n++;
+      const r=(typeof curRoom==='string')?curRoom:'', ua=(navigator.userAgent.match(/(iPhone|iPad|Android|Windows|Macintosh|Linux)/)||[''])[0]+' '+((navigator.userAgent.match(/(Edg|Chrome|Firefox|Safari)\/[\d.]+/)||[''])[0]);
+      fetch('/api/clienterr',{method:'POST', credentials:'same-origin', keepalive:true, headers:{'content-type':'application/json'}, body:JSON.stringify({m, s:src.replace(location.origin,''), l:line|0, st:String(stack||'').slice(0,1200), ua, r})}).catch(()=>{}); } catch(_){} };
+  addEventListener('error', e=>{ if (e && e.message) send(e.message, e.filename, e.lineno, e.colno, e.error && e.error.stack); });
+  addEventListener('unhandledrejection', e=>{ const r=e && e.reason; send('Unhandled: '+(r && r.message || r), (r && r.stack && (r.stack.match(/(https?:[^\s)]+):(\d+)/)||[])[1]) || location.href, r && r.stack && +((r.stack.match(/:(\d+):\d+/)||[])[1]||0), 0, r && r.stack); });
+  window.__boom = () => { if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) setTimeout(()=>{ null.boom(); }, 0); };   // test hook (localhost only)
+})();
+
 (() => {
 'use strict';
 
@@ -8436,7 +8449,7 @@ function dashDo(cmd, target){
   if (cmd==='ban'){ openBan(target); return; }   // pick how long first
   if ((cmd==='ban'||cmd==='mod'||cmd==='unmod'||cmd==='pkreset') && !confirm(`${{ban:'Ban',mod:'Make',unmod:'Remove',pkreset:'Clear the passkeys of'}[cmd]} ${target}${cmd==='mod'?' a mod':cmd==='unmod'?' as a mod':''}?`)) return;
   NET.act('admin',{cmd, target}).then(r=>{ localMsg(r.msg||(r.ok?'Done.':'That did not work.')); loadDash(); }); }
-let dsTab=(['chat','reports'].includes(store.dsTab)?store.dsTab:'players'), dsChat={lines:[], open:null, q:'', more:true}, dsTimer=null;
+let dsTab=(['chat','reports','errors'].includes(store.dsTab)?store.dsTab:'players'), dsChat={lines:[], open:null, q:'', more:true}, dsTimer=null;
 for (const b of document.querySelectorAll('#ds_tabs button')) b.addEventListener('click', ()=>{ dsTab=b.dataset.t; store.dsTab=dsTab; saveStore(); for (const x of document.querySelectorAll('#ds_tabs button')) x.classList.toggle('on', x===b); dsChat={lines:[], open:null, q:dsChat.q, more:true}; loadDash(); });
 function chatWhen(t){ const d=new Date(t), today=new Date().toDateString()===d.toDateString(); return (today?'':d.toLocaleDateString([], {month:'short',day:'numeric'})+' ')+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }
 function loadChatLog(older){
@@ -8493,10 +8506,23 @@ function loadReports(){
     for (const b of dsBody.querySelectorAll('[data-cmd]')) b.addEventListener('click', ()=>dashDo(b.dataset.cmd, b.dataset.name));
     for (const b of dsBody.querySelectorAll('[data-rep]')) b.addEventListener('click', ()=>{ b.disabled=true; NET.act('report_done',{rpid:+b.dataset.rep, done:b.dataset.on==='1'}).then(r2=>{ if (!r2.ok) localMsg(r2.msg||'That did not work.'); loadReports(); }); });
   }); }
+// ERRORS tab: crashes from players' browsers, the same error grouped with a count and who saw it
+function errBadge(list){ const day=Date.now()-864e5, n=(list||[]).filter(e=>e.last>day).length, b=$id('ds_errn'); if (b){ b.textContent=n?String(n):''; b.style.display=n?'':'none'; } }
+function loadErrors(){ NET.act('err_list').then(r=>{ if (!r || !r.ok){ dsBody.innerHTML=`<div class="dl">${esc((r&&r.msg)||'Could not load errors.')}</div>`; return; } errBadge(r.errs); if (dsTab!=='errors') return;
+  let h=`<div class="dl">${r.errs.length ? 'Things that broke in players\' browsers, newest first. The same error from many players shows once with a count.' : 'NO ERRORS REPORTED. NICE!'}</div>`;
+  for (const e of r.errs){ h+=`<div class="rep errrow"><div class="rh"><b>${esc(e.msg)}</b><br><small>${e.n} TIME${e.n===1?'':'S'} · ${e.users.length} PLAYER${e.users.length===1?'':'S'} · LAST ${chatWhen(e.last)} · FIRST ${chatWhen(e.first)}</small></div>
+    <div class="rnote">${esc((e.src||'?')+':'+e.line)}${e.room?' · ROOM '+esc(ROOM_SHORT[e.room]||e.room):''}${e.ua?' · '+esc(e.ua):''}${e.users.length?'<br>'+esc(e.users.slice(0,12).join(', '))+(e.users.length>12?' and more':''):''}</div>
+    ${e.stack?`<details><summary>DETAILS</summary><pre class="errst">${esc(e.stack)}</pre></details>`:''}${r.owner?`<div class="racts"><button class="gbbtn s gd" data-errk="${esc(e.k)}">✓ FIXED, CLEAR</button></div>`:''}</div>`; }
+  if (r.owner && r.errs.length>1) h+='<div class="srow"><button class="gbbtn s" id="err_all">CLEAR ALL</button></div>';
+  dsBody.innerHTML=h;
+  for (const b of dsBody.querySelectorAll('[data-errk]')) b.addEventListener('click', ()=>{ b.disabled=true; NET.act('err_clear',{k:b.dataset.errk}).then(loadErrors); });
+  const all=$id('err_all'); if (all) all.addEventListener('click', ()=>{ if (!confirm('Clear every error?')) return; NET.act('err_clear',{}).then(loadErrors); }); }); }
 function loadDash(){
   clearInterval(dsTimer); dsTimer=null;
+  if (dsTab==='errors'){ dsBody.innerHTML='<div class="dl">LOADING...</div>'; loadErrors(); return; }
   if (dsTab==='reports'){ dsBody.innerHTML='<div class="dl">LOADING...</div>'; loadReports(); return; }
   NET.act('report_list').then(r=>{ if (r && r.ok) repBadge(r.reports); });   // keep the REPORTS count fresh on the other tabs
+  NET.act('err_list').then(r=>{ if (r && r.ok) errBadge(r.errs); });
   if (dsTab==='chat'){ if (!dsChat.lines.length) dsBody.innerHTML='<div class="dl">LOADING...</div>'; loadChatLog();
     dsTimer=setInterval(()=>{ if (dashEl.style.display!=='block' || dsTab!=='chat'){ clearInterval(dsTimer); return; } if (dsChat.open==null && !(document.activeElement && document.activeElement.id==='ds_q')) loadChatLog(); }, 6000); return; }
   NET.act('dash').then(r=>{

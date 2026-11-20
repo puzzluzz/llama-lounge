@@ -601,6 +601,22 @@ async function api(req, env, url, ctx) {
     if (u.email) later(sendMail(env, u.email, "Passkeys removed from your Llama Lounge account", [`Hi ${u.name.toUpperCase()}, all passkeys were just removed. Logins only need your password now.`, "If this wasn't you, tell the owner right away."]));
     return json({ ok: true });
   }
+  // the game in someone's browser reporting its own crash (grouped: the same error from many players is one row with a count)
+  if (path === "/api/clienterr") {
+    if (await blocked(env, "ce:" + ip, 40)) return json({ ok: true });
+    await bump(env, "ce:" + ip);
+    const cut = (v, n) => String(v == null ? "" : v).replace(/[\u0000-\u001f]+/g, " ").slice(0, n);
+    const msg = cut(body.m, 300), src = cut(body.s, 200), line = Math.max(0, Math.floor(+body.l || 0)), stack = cut(body.st, 1200), ua = cut(body.ua, 160), room = cut(body.r, 24);
+    if (!msg) return json({ ok: true });
+    const u = await sessionUser(env, req), who = u ? u.name.toUpperCase() : "";
+    await env.DB.prepare("CREATE TABLE IF NOT EXISTS clienterr (k TEXT PRIMARY KEY, msg TEXT NOT NULL, src TEXT, line INTEGER, stack TEXT, ua TEXT, room TEXT, first INTEGER NOT NULL, last INTEGER NOT NULL, n INTEGER NOT NULL DEFAULT 1, users TEXT NOT NULL DEFAULT '[]')").run();
+    const k = await sha256hex(msg + "|" + src + "|" + line), now = Date.now();
+    const row = await env.DB.prepare("SELECT users FROM clienterr WHERE k = ?").bind(k).first();
+    if (!row) await env.DB.prepare("INSERT INTO clienterr (k, msg, src, line, stack, ua, room, first, last, n, users) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)").bind(k, msg, src, line, stack, ua, room, now, now, JSON.stringify(who ? [who] : [])).run();
+    else { let us = []; try { us = JSON.parse(row.users || "[]"); } catch (e) {} if (who && !us.includes(who) && us.length < 30) us.push(who);
+      await env.DB.prepare("UPDATE clienterr SET n = n + 1, last = ?, ua = ?, room = ?, stack = ?, users = ? WHERE k = ?").bind(now, ua, room, stack || "", JSON.stringify(us), k).run(); }
+    return json({ ok: true });
+  }
   if (path === "/api/logout") {
     const tok = cookieToken(req); if (tok) await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(await sha256hex(tok)).run();
     return json({ ok: true }, 200, { "set-cookie": sessCookie("x".repeat(24), 0) });
@@ -1914,6 +1930,8 @@ export class Lounge extends DurableObject {
       case "block_list": return { ok: true, blocks: await this.blockList(a.uid) };
       case "report": return this.reportSend(a, m);
       case "report_list": return this.reportList(a);
+      case "err_list": return this.errList(a);
+      case "err_clear": return this.errClear(a, m);
       case "report_done": return this.reportDone(a, m);
       case "mod_info": return this.modInfo(a, m);
       case "wf_hit": { const now2 = Date.now(); if (a.wfT && now2 - a.wfT < 1500) return { ok: true }; a.wfT = now2; ws.serializeAttachment(a); await this.wfHit(ws, a, "blocked"); return { ok: true }; }
@@ -2563,6 +2581,12 @@ export class Lounge extends DurableObject {
     log.unshift({ t: Date.now(), by, cmd, target }); await this.ctx.storage.put("modlog", log.slice(0, 40));
   }
   // Re-reads the caller's role from the database on every staff request, so a removed mod loses access instantly.
+  async errList(a) { if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can see that." };
+    try { const r = await this.env.DB.prepare("SELECT k, msg, src, line, stack, ua, room, first, last, n, users FROM clienterr ORDER BY last DESC LIMIT 60").all(); return { ok: true, errs: (r.results || []).map((e) => ({ ...e, users: JSON.parse(e.users || "[]") })), owner: a.staff === "owner" }; }
+    catch (e) { return { ok: true, errs: [], owner: a.staff === "owner" }; } }
+  async errClear(a, m) { if ((await this.staffNow(a)) !== "owner") return { ok: false, msg: "Only the owner can clear errors." };
+    if (m.k) await this.env.DB.prepare("DELETE FROM clienterr WHERE k = ?").bind(String(m.k).slice(0, 80)).run(); else await this.env.DB.prepare("DELETE FROM clienterr").run();
+    await this.logStaff(a.name, "errclear", m.k ? "ONE ERROR" : "ALL ERRORS"); return { ok: true }; }
   async staffNow(a) { const me = await this.user(a.uid); const st = me && !me.banned ? staffRole(this.env, me) : ""; a.staff = st; return st; }
   async dashboard(a) {
     if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can open the dashboard." };
