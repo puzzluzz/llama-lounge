@@ -1012,7 +1012,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24i";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24j";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -5398,7 +5398,7 @@ function openFw(k){ k = k || standNear(); const S=STANDS[k]; if (!S || standRoom
   for (const [id,label,cost] of S.items){ const b=document.createElement('button'); b.className='gbbtn y'; const F=FOOD_FILL[id]||{}; b.innerHTML=`${label}<br><small>${cost} TOKEN${cost>1?'S':''} · ${F.hu?'🍔+'+F.hu:''}${F.hu&&F.th>0?' ':''}${F.th>0?'💧+'+F.th:''}</small>`; b.addEventListener('click', ()=>buyAt(k,id)); row.appendChild(b); }
   document.getElementById('fw_msg').textContent = me.h ? `YOU'RE HOLDING ${DRINKS[me.h].label}. A NEW ONE REPLACES IT.` : `YOU HAVE ${wallet.get()} TOKENS`; fwEl.style.display='block'; }
 document.getElementById('fw_close').addEventListener('click', ()=>{ fwEl.style.display='none'; });
-const FOOD_FILL = { chips:{hu:25,th:-3}, candy:{hu:20}, cookie:{hu:30}, soda:{th:30}, juice:{th:35,hu:5}, shake:{th:25,hu:20}, cider:{th:40}, caramel:{th:40,hu:8}, capple:{hu:30}, corn:{hu:35}, pie:{hu:45}, nachos:{hu:35,th:-5}, fries:{hu:35,th:-5}, burger:{hu:55} };   // same as the server
+const FOOD_FILL = { chips:{hu:33,th:-3}, candy:{hu:33}, cookie:{hu:50}, soda:{th:33}, juice:{th:33,hu:5}, shake:{th:50,hu:20}, cider:{th:50}, caramel:{th:100,hu:8}, capple:{hu:50}, corn:{hu:50}, pie:{hu:100}, nachos:{hu:50,th:-5}, fries:{hu:50,th:-5}, burger:{hu:100} };   // 1 token = a third, 2 = half, 3 = full   // same as the server
 function buyAt(k,id){ ensureAudio(); document.getElementById('fw_msg').textContent = DRINKS[id] && !DRINKS[id].food ? 'POURING...' : 'WRAPPING IT UP...';
   NET.act('buy',{s:k, k:id, fid:(STANDS[k]&&STANDS[k].fid)||0}).then(r=>{ if (!r.ok){ document.getElementById('fw_msg').textContent=(r.msg||'TRY AGAIN.').toUpperCase(); return; }
     me.h = DRINKS[r.k] ? r.k : id; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; if (r.nd) ndSet(r.nd); if (k!=='bar') face(STANDS[k].gx+(me.gx>STANDS[k].gx?1:0),STANDS[k].gy);

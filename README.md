@@ -171,7 +171,7 @@ No API keys or passwords are involved.
 
 - **Chat log:** Dashboard > CHAT LOG shows every public chat line, newest first, kept forever (stored in `chatlog`). Lines sent while muted are logged and tagged MUTED. Filter by name, or tap a line to MUTE, KICK, BAN or SHOW ONLY that player. Mods can mute, kick and ban players. Only the owner can unban or change mods, and nobody can act on the owner.
 - **Private messages:** friends can message each other from the 💬 sign, the 💬 button in the friends list, or MESSAGE on a friend's llama. Messages are kept forever (stored in `dms`). Each llama can send 300 a day, and muted llamas can't send any.
-- **Food and drink:** every drink and snack has 3 sips or bites, and each one fills a third of what it gives.
+- **Food and drink:** every drink and snack has 3 sips or bites, and each one fills a third of what it gives. What it gives scales with price: 1 token fills a third of the meter, 2 tokens half, 3 tokens the whole thing (`FOOD` in the worker, `FOOD_FILL` in the page).
 - **Pop-ups:** every pop-up has a header strip with a grab bar and ✕. Drag the strip to move the pop-up. It can't leave the screen, and it goes back to its usual spot when it closes.
 - **Walking:** paths go around chairs, stools, benches and logs. A llama only steps onto a seat when it's going to sit there.
 - The owner and mods both have the gold crown badge.

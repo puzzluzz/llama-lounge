@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-24i";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-24j";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -72,9 +72,10 @@ const STANDS = {
 // Meters go from 100 (full) to 0. They only drain while you're online: thirst empties in about an hour, hunger in 75 minutes.
 // Everything you buy fills them right away. When either is empty, the mini-games pay half.
 const NEEDS = { thirstMs: 60 * 60000, hungerMs: 75 * 60000, maxStep: 10 * 60000, saveMs: 60000, apple: 15, appleGap: 20000 };
-const FOOD = { soda: { th: 30 }, juice: { th: 35, hu: 5 }, shake: { th: 25, hu: 20 }, cider: { th: 40 }, caramel: { th: 40, hu: 8 },
-  capple: { hu: 30 }, corn: { hu: 35 }, pie: { hu: 45 }, nachos: { hu: 35, th: -5 }, fries: { hu: 35, th: -5 }, burger: { hu: 55 },
-  chips: { hu: 25, th: -3 }, candy: { hu: 20 }, cookie: { hu: 30 } };
+// how much each fills scales with its price: 1 token = a third of the meter, 2 tokens = half, 3 tokens = all of it
+const FOOD = { soda: { th: 33 }, juice: { th: 33, hu: 5 }, shake: { th: 50, hu: 20 }, cider: { th: 50 }, caramel: { th: 100, hu: 8 },
+  capple: { hu: 50 }, corn: { hu: 50 }, pie: { hu: 100 }, nachos: { hu: 50, th: -5 }, fries: { hu: 50, th: -5 }, burger: { hu: 100 },
+  chips: { hu: 33, th: -3 }, candy: { hu: 33 }, cookie: { hu: 50 } };
 // ---------- wardrobe: clothes you buy in the LLAMA STORE and wear anywhere ----------
 // s = the slot it goes in (one item per slot), p = price in tokens. The game draws each one; this list is the source of truth.
 const WEAR_SLOTS = ["hat", "eyes", "neck", "shirt", "hands", "legs"];
@@ -1312,7 +1313,7 @@ export class Lounge extends DurableObject {
       case "drink": {
         if (!this.near(a, "lounge", (x, y, p) => p.p === "sit" && Math.round(y) === 2)) return { ok: false, msg: "Sit at the bar first." };
         const tk = await this.debit(uid, 1, "drink"); if (tk === null) return { ok: false, msg: "Drinks cost 1 TOKEN. Earn some at the arcade, the bar or LLAMA ACRES!" };
-        await this.holdFood(uid, { th: 30 });
+        await this.holdFood(uid, { th: 33 });   // a 1-token bar drink: a third of the thirst meter
         return { ok: true, tk, nd: this.needsOut(a) };
       }
       case "slot": {
