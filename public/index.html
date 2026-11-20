@@ -3146,15 +3146,14 @@ function drawFurn(f,t){
       for (let x=0;x<W;x++) g.drawImage(cv, x,0,1,H, x0+x, y0+Math.round(x*sl), 1, H);
       const glint=(t*0.4)%1; if (glint<0.25){ const gx2=Math.round(W*glint*4); g.fillStyle='rgba(255,255,255,0.5)'; g.fillRect(x0+gx2, y0+Math.round(gx2*sl)+2, 1, H-4); }
       break; }
-    case 'chair': { // wooden chair: four legs, grained seat, spindle back with a top rail (back drawn first when it is on the far side)
+    case 'chair': { // wooden chair: four legs, grained seat, ladder back: two posts, a middle rail and a top rail (back drawn first when it is on the far side)
       const r=f.rot||0, x=f.gx, y=f.gy, far = r<2, K=h=>recol(h,f.wc,0.55);
       const back = r===0 ? [x+0.16,y+0.2,0.1,0.6] : r===1 ? [x+0.2,y+0.16,0.6,0.1] : r===2 ? [x+0.2,y+0.74,0.6,0.1] : [x+0.74,y+0.2,0.1,0.6];
       const along = (r%2===0) ? (u)=>[back[0]+back[2]/2, back[1]+back[3]*u] : (u)=>[back[0]+back[2]*u, back[1]+back[3]/2];
       const drawBack=()=>{
         for (const u of [0.1,0.9]){ const [bx,by]=along(u); box(bx-0.05,by-0.05,0.1,0.1,15,K('#d8a468'),K('#9a6436'),K('#7a4c26'),0,11); }
-        /* one slim centre spindle (2 px: lit side and shade side, no outline) with open gaps beside it, so you see through the back */
-        { const [bx,by]=along(0.5), [px0,py0]=P(bx,by,11), [,py1]=P(bx,by,23), X=Math.round(px0)-1, Y=Math.round(py1), H=Math.round(py0)-Y;
-          g.fillStyle=K('#e0b070'); g.fillRect(X,Y,1,H); g.fillStyle=K('#86522a'); g.fillRect(X+1,Y,1,H); }
+        /* ladder back: a slim middle rail between the posts, with open gaps above and below it, so you see through the back from every side */
+        wbox(back[0]+0.02,back[1]+0.02,back[2]-0.04,back[3]-0.04,2,K('#e8bc80'),K('#a86c3a'),K('#86522a'),0,16,K('#7a4c26'));
         wbox(back[0]-0.01,back[1]-0.01,back[2]+0.02,back[3]+0.02,4,K('#f0c890'),K('#b07440'),K('#8a5a30'),0,23,K('#7a4c26'));
       };
       if (f.part==='front'){ if (!far) drawBack(); break; }
