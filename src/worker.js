@@ -1873,7 +1873,10 @@ export class Lounge extends DurableObject {
     const gifts = ((await this.env.DB.prepare("SELECT l.id, l.delta, l.t, l.reason, u.name FROM ledger l JOIN users u ON u.id = l.uid WHERE l.reason LIKE 'staff gift by %' ORDER BY l.id DESC LIMIT 100").all()).results || [])
       .map((r) => ({ id: r.id, by: r.reason.slice(14).toUpperCase(), to: r.name.toUpperCase(), n: r.delta, t: r.t, undo: undone.get(r.id) || null }));
     const today = {}; for (const g2 of gifts) if (etDay(g2.t) === etDay(Date.now())) today[g2.by] = (today[g2.by] || 0) + g2.n;
-    return { ok: true, me: a.staff, online, staff, muted, banned, gifts, giftsToday: today, giftCap: STAFF_GIVE_DAY, log: (await this.ctx.storage.get("modlog")) || [] };
+    // newest sign-ups: owner only. Mods never receive this list (name and join time only, never emails)
+    let signups = null;
+    if (a.staff === "owner") signups = ((await this.env.DB.prepare("SELECT name, created FROM users ORDER BY created DESC LIMIT 30").all()).results || []).map((r) => ({ n: r.name.toUpperCase(), t: r.created }));
+    return { ok: true, me: a.staff, online, staff, muted, banned, gifts, giftsToday: today, giftCap: STAFF_GIVE_DAY, log: (await this.ctx.storage.get("modlog")) || [], ...(signups ? { signups } : {}) };
   }
   async admin(a, m) {
     if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can do that." };

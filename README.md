@@ -85,7 +85,7 @@ A fifth room with four lanes. Press BOWL (or tap a lane or a lane screen) for a 
 
 The owner is the account with `role = 'admin'` in the `users` table (PUZZ). Nothing else can make someone the owner. The owner shows a gold crown by their name, mods show a blue shield. The server stamps these badges, so nobody can fake one.
 
-Open **MENU > DASHBOARD** (only staff see it) to see who is online, who is muted or banned, the staff list and the staff log. You can also type commands in chat:
+Open **MENU > DASHBOARD** (only staff see it) to see who is online, who is muted or banned, the staff list and the staff log. The owner also sees **NEW ACCOUNTS**: the newest 30 sign-ups with the time each account was made and how many joined today. The server only sends this list to the owner, so mods never get it (names and times only, never emails). You can also type commands in chat:
 
 | Command | Owner | Mods |
 |---|---|---|
