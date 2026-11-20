@@ -254,3 +254,10 @@ No API keys or passwords are involved.
 - **Getting into boxed-in beds:** tapping a bed (pillow end, foot, or front) walks you to the pillow. If the pillow end is boxed in (against a wall with a lamp and a plant beside it), your llama climbs in over the bed itself.
 - **One llama per tile:** you can't stop on a tile another llama is standing on or walking to. Tapping one sends you to the nearest free tile next to them, paths go around other llamas, and if someone steps into your way you route around them (or stop if there's no way past).
 - **Gloves while eating:** with boxing gloves on, the glove on the hoof holding food or a drink lifts with it instead of staying at your side.
+- **Four more llamas** from the La Llama P.I.C. art, in the same pixel style:
+  - METALHEAD: brown, one floppy ear, pixel "deal with it" shades, buck teeth, spiked collar with a ring, black band tee.
+  - EASY MONEY: cream, face tattoos, big dark eyes, a gold tooth, a gold chain, and a white suit over a red shirt.
+  - PICNIC: red gingham from ears to toes, round silver glasses, buck teeth.
+  - UNCANCELABLE: cream, droopy ears, a gold tooth, and a wide red sun hat with flowers.
+
+  A shirt or glasses you buy go over the ones a llama comes with. The picker shows all seven in two rows. As before, an account's llama is set when it's picked and doesn't change.

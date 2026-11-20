@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-22x";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-22y";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
@@ -1016,7 +1016,7 @@ export class Lounge extends DurableObject {
     const uid = a.uid, now = Date.now();
     switch (kind) {
       case "profile": {
-        const c = ["twotone", "poophat", "tweed"].includes(m.c) ? m.c : null;
+        const c = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"].includes(m.c) ? m.c : null;
         const bet = Math.max(0, Math.min(10, Math.floor(+m.bet || 0)));
         // the llama picked at sign-up is the account's llama for good: once it's set, it never changes
         await this.env.DB.prepare("UPDATE users SET c = COALESCE(c, ?), agreed = MAX(agreed, ?), bet = ? WHERE id = ?").bind(c, Math.max(0, Math.min(9, +m.agreed || 0)), bet, uid).run();

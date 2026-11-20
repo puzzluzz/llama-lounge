@@ -432,6 +432,7 @@
   #acctbox .acmsg{min-height:18px;font:600 13px var(--ui);color:#e02838;margin-top:6px} #acctbox .acmsg.good{color:#1f8a4c}
   #acctbox .aclink{border:0;background:transparent;font:700 13px var(--ui);color:#5a48b0;text-decoration:underline;padding:4px 0;cursor:pointer}
   /* llama picker */
+  #cards{flex-wrap:wrap;justify-content:center} #pick .card canvas{width:min(calc(var(--px)*44px),calc((100vw - 80px)/4 - 14px))!important;height:auto!important;aspect-ratio:56/92}
   #pick{line-height:1.4} #pick .tt{font-size:18px;font-weight:800} #pick .tt b{color:#d62d6a}
   .card{border:0;border-radius:16px;padding:6px;background:var(--soft);transition:transform .1s}
   .card.sel{background:#fff1c2;box-shadow:0 0 0 3px var(--yel)} .card.sel::after{content:none}
@@ -805,7 +806,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22x";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-22y";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -853,7 +854,16 @@ const CHARS = {
   poophat: { label:'Poop Hat', blurb:'Crying, grinning, gold chain.', ears:'droop', hat:'poop', tears:true,
     fur:{ a:['#efe1c8','#c6b08d','#fffaf0'] }, outfit:'chain', tag:'#d29a5c' },
   tweed:   { label:'The Professor', blurb:'Tweed jacket and a fancy ascot.', ears:'droop', tuft:true,
-    fur:{ a:['#3f8fd4','#285f9a','#7cbcec'] }, outfit:'tweed', tag:'#5ab0ff' }
+    fur:{ a:['#3f8fd4','#285f9a','#7cbcec'] }, outfit:'tweed', tag:'#5ab0ff' },
+  // from the La Llama P.I.C. art: tee = a shirt the llama comes with (any shirt you buy goes over it), look = glasses it comes with, teeth = its grin
+  metal:   { label:'Metalhead', blurb:'Pixel shades, spiked collar, band tee.', ears:'mixed', tuft:true, look:'pixel', teeth:'buck',
+    fur:{ a:['#8e4c26','#5e2c12','#b8703e'] }, tee:{c:['#262a3e','#161828','#3c4260'], pr:'band'}, outfit:'collar', tag:'#e07a3a' },
+  money:   { label:'Easy Money', blurb:'Face tattoos, gold tooth, white suit.', ears:'up', tuft:true, look:'big', teeth:'gold', tattoo:true,
+    fur:{ a:['#eedcc2','#c6a888','#fff6e6'] }, tee:{c:['#f4f2ee','#c4c0b8','#ffffff']}, outfit:'suit', tag:'#f0c048' },
+  gingham: { label:'Picnic', blurb:'Red gingham from ears to toes.', ears:'up', tuft:true, look:'round', teeth:'buck', check:true,
+    fur:{ a:['#e8303a','#a8141e','#ff6a70'], b:['#fbeee6','#e2cfc4','#ffffff'] }, tag:'#ff5a64' },
+  cancel:  { label:'Uncancelable', blurb:'Big red sun hat with flowers.', ears:'droop', hat:'sunhat', teeth:'gold',
+    fur:{ a:['#f0e2cc','#c8ae8e','#fffaf0'] }, tag:'#c83a3a' }
 };
 // PENNY works the LLAMA STORE register; she's drawn like everyone else but isn't a llama players can pick
 CHARS.penny = { label:'Penny', blurb:'Runs the LLAMA STORE.', ears:'up', npc:true, outfit:'apron', hat:'visor', fur:{ a:['#c9b6f0','#9f8ad6','#ece2ff'] }, tag:'#c9b6f0' };
@@ -887,7 +897,7 @@ const ITEMS={
 };
 // shirt prints, 6 x 4 pixels, used for the worn shirt and the one on the hanger
 const TEE_PRINTS={ smile:['..aa..','.abba.','.aaaa.','..cc..'], cancelled:['.bbbb.','bbccbb','.bbbb.','dddddd'], wild:['..e...','.efe.e','efffef','ffffff'], cancel:['gggggg','......','gggggg','gggg..'], woke:['hhhhh.','......','hhhhhh','hh....'],
-  lounge:['gggggg','g.ii.g','g.ii.g','gggggg'], acres:['...jj.','..kk..','.kk...','kk....'], arena:['.g..g.','gg.gg.','.g..g.','......'] };
+  lounge:['gggggg','g.ii.g','g.ii.g','gggggg'], band:['g.gg.g','gggggg','.g..g.','g.gg.g'], acres:['...jj.','..kk..','.kk...','kk....'], arena:['.g..g.','gg.gg.','.g..g.','......'] };
 const TEE_PC={a:'#d8b07a',b:'#6fd0ff',c:'#1a1626',d:'#d8b07a',e:'#ffb030',f:'#e03048',g:'#ffffff',h:'#1a1626',i:'#f8d030',j:'#4aa04a',k:'#ff8a30'};
 const cleanWear = w => { const o={}; if (w && typeof w==='object') for (const s2 of WEAR_SLOTS){ const k=w[s2]; if (typeof k==='string' && ITEMS[k] && ITEMS[k].s===s2) o[s2]=k; } return o; };
 const wearKey = w => w ? WEAR_SLOTS.map(s2=>w[s2]||'').join(',')+(w.hold?',h':'') : '';
@@ -909,12 +919,12 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
   const oy = sit ? 6 : bob;
   const splitX = (y) => (front && y>=14+oy && y<=23+oy) ? 16 : 14;
   const side = (x,y) => ch.split ? ((((x<splitX(y)) !== flip) === front) ? 'a' : 'b') : 'a';
-  const pal = (x,y) => ch.fur[side(x,y)];
+  const pal = (x,y) => ch.check ? ((((x>>1)+(y>>1))&1) ? ch.fur.b : ch.fur.a) : ch.fur[side(x,y)];   // gingham: 2x2 checks
   const shadeFn = (cx,cy,rx,ry,palFn) => (x,y) => { const p=palFn(x,y); const nx=(flip?-(x-cx):(x-cx))/rx, ny=(y-cy)/ry; if(nx>0.5||ny>0.6) return p[1]; if(nx<-0.3&&ny<-0.2) return p[2]; return p[0]; };
   const fur = (cx,cy,rx,ry) => shadeFn(cx,cy,rx,ry,pal);
   const coatFn = (cx,cy,rx,ry) => (x,y) => { const h=hash(x,y)%7; if(h===0) return RED[2]; if(h===1) return RED[1]; return shadeFn(cx,cy,rx,ry,()=>RED)(x,y); };
   const tweedFn = (cx,cy,rx,ry) => (x,y) => { let c=shadeFn(cx,cy,rx,ry,()=>TWEED)(x,y); if((x+y)%4===0) c='#4f3620'; if(x%5===2&&y%2===0) c='#a8463a'; return c; };
-  const TEE = W.shirt ? ITEMS[W.shirt] : null;
+  const TEE = W.shirt ? ITEMS[W.shirt] : (L && ch.tee ? ch.tee : null);   // a bought shirt goes over the one a llama comes with
   const teeFn = (cx,cy,rx,ry) => shadeFn(cx,cy,rx,ry,()=>TEE.c);
   const bodyFn = TEE ? teeFn : ch.outfit==='furcoat' ? coatFn : ch.outfit==='tweed' ? tweedFn : fur;
 
@@ -981,7 +991,21 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
       put(Math.round(cx-3),Math.round(cy-2.5),OUT); put(Math.round(cx+3),Math.round(cy-2.5),OUT); };
     glove(5.5,swing); if (!(wear && wear.hold)) glove(21.5,-swing); }
   // outfit details (a worn shirt covers the character's own outfit)
-  if (!L || TEE) {}
+  if (!L || W.shirt) {}
+  else if (ch.outfit==='collar') {   // black leather collar with a silver ring at the throat
+    for (let x=10;x<=17;x++){ put(x,22+oy,OUT); put(x,23+oy,'#2a2c38'); put(x,24+oy,(x===11||x===16)?'#9aa0b0':'#20222c'); put(x,25+oy,OUT); }
+    if (front){ for (const [x,y] of [[13,25],[14,25],[12,26],[15,26],[12,27],[15,27],[13,28],[14,28]]) put(x,y+oy,'#c8ccd8'); put(13,26+oy,OUT); put(14,26+oy,'#e8ecf4'); } }
+  else if (ch.outfit==='suit') {   // white jacket open over a red shirt with a big collar, gold chain and a glowing pendant
+    if (front){ for (let y=25;y<=33;y++){ const w=Math.max(0,3-Math.floor((y-25)/3)); for (let x=13-w;x<=14+w;x++) put(x,y+oy, x>=14?'#b8141e':'#e02a34'); put(12-w,y+oy,'#a8a49c'); put(15+w,y+oy,'#a8a49c'); }
+      for (const [x,y] of [[9,24],[10,25],[11,26],[18,24],[17,25],[16,26]]) put(x,y+oy,'#e02a34'); for (const [x,y] of [[8,24],[9,25],[10,26],[19,24],[18,25],[17,26]]) put(x,y+oy,OUT);
+      for (let x=9;x<=18;x++){ const t=(x-13.5)/4.5; put(x,Math.round(26+4*(1-t*t))+oy,(x%2)?'#f6c945':'#c8951c'); } put(13,31+oy,'#fff6c0'); put(14,31+oy,'#f6c945'); put(13,32+oy,'#f6c945'); put(14,32+oy,'#c8951c');
+      put(19,33+oy,'#e02a34'); put(20,33+oy,'#e02a34'); }   // pocket square
+    else { for (let x=10;x<=17;x++) put(x,25+oy,'#e02a34'); } }
+  else if (ch.outfit==='sign') {   // holds up a hand-written cardboard sign in green scaly gloves
+    if (front){ rect(4,28+oy,20,10,OUT); rect(5,29+oy,18,8,(x,y)=> (x+y*3)%11===0 ? '#b08a58' : '#c8a070'); rect(5,36+oy,18,1,'#a88050');
+      for (const [y,x0,x1] of [[30,7,20],[32,6,21],[34,8,19]]) for (let x=x0;x<=x1;x++) if ((x*7+y)%5!==0) put(x,y+oy,'#3a2a1c');
+      for (const cx of [4,23]){ oell(cx,31+oy,2.4,2.6,(x,y)=>((x+y)%3===0)?'#1a8a3a':((x*y)%4===0?'#5ad06a':'#2eae4e')); } }
+    else { rect(3,29+oy,2,8,'#a88050'); rect(23,29+oy,2,8,'#a88050'); } }
   else if (ch.outfit==='furcoat') {
     oell(13.5,26+oy,8.3,2.6,coatFn(13.5,26+oy,8.3,2.6));
     if (front) for (let y=27;y<=35;y++){ const h=y<29?2:y<32?1:0; rect(13-h,y+oy,2+2*h,1,'#1d1726'); }
@@ -1007,6 +1031,9 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
   // ears (upright ears tuck under hats that cover the top of the head)
   if (!L) {}
   else if (ch.ears==='up' && ['cap','beanie','tophat','cowboy'].includes(W.hat)) {}
+  else if (ch.ears==='mixed') {   // one ear flopped over, one standing tall
+    oell(5,11.5+oy,3.4,1.5,fur(5,11.5+oy,3.4,1.5)); for(let x=3;x<=6;x++) put(x,11.5+oy,pal(x,11+oy)[1]);
+    if (!['cap','beanie','tophat','cowboy'].includes(W.hat)){ oell(18,4.4+oy,1.8,4.8,fur(18,4.4+oy,1.8,4.8)); for(let y=2;y<=6;y++) put(18,y+oy,pal(18,y+oy)[1]); put(19,0+oy,pal(19,0)[2]); } }
   else if (ch.ears==='up') {
     const ear = (cx) => { oell(cx,5+oy,1.7,4.2,fur(cx,5+oy,1.7,4.2)); for(let y=3;y<=6;y++) put(cx,y+oy,pal(cx,y+oy)[1]); };
     ear(9); ear(18);
@@ -1032,9 +1059,17 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
     put(12,18+oy,OUT); put(13,19+oy,OUT); for(let x=14;x<=19;x++) put(x,19+oy,OUT); put(20,19+oy,OUT); put(21,18+oy,OUT);
     for(let x=14;x<=19;x++) put(x,20+oy,x===16?TG:T); put(13,20+oy,OUT); put(20,20+oy,OUT);
     for(let x=14;x<=19;x++) put(x,21+oy,LIP);
+    if (ch.teeth==='buck'){ for (let x=15;x<=18;x++){ put(x,20+oy,T); put(x,21+oy,x===16||x===17?T:TG); } put(16,21+oy,'#d8d2bc'); put(17,20+oy,TG); put(14,21+oy,LIP); put(19,21+oy,LIP); for (let x=15;x<=18;x++) put(x,22+oy,LIP); }   // two big front teeth
+    if (ch.teeth==='gold'){ put(17,20+oy,'#f8d030'); put(18,20+oy,'#c89818'); put(17,19+oy,'#fffbe0'); }   // a gold tooth with a glint
     // eyes
     const eye = (x0) => { const sh=pal(x0,13+oy)[1]; for(let i=0;i<3;i++) put(x0+i,11+oy,OUT); put(x0,12+oy,'#ffffff'); put(x0+1,12+oy,'#ffffff'); put(x0+2,12+oy,'#1b1020'); for(let i=0;i<3;i++) put(x0+i,13+oy,sh); };
-    eye(9); eye(15);
+    if (ch.look==='big' && !W.eyes){ for (const x0 of [8,15]){ rect(x0,10+oy,4,4,OUT); rect(x0+1,11+oy,2,2,'#14101c'); put(x0+1,11+oy,'#ffffff'); put(x0+3,11+oy,'#14101c'); put(x0+3,12+oy,'#14101c'); } }
+    else eye(9), eye(15);
+    if (ch.tattoo){ const ink='#4a3a30'; for (const x of [8,9,11]) put(x,8+oy,ink); for (const x of [16,18,19]) put(x,8+oy,ink); put(13,7+oy,ink); put(12,8+oy,ink); put(14,8+oy,ink); put(13,8+oy,'#6a5a48');   // EASY, MONEY and an eye in a triangle on the brow
+      put(8,15+oy,ink); put(8,16+oy,'#2e8a3a'); put(8,17+oy,ink); put(20,15+oy,'#6a7a5a'); put(21,15+oy,'#6a7a5a'); put(14,16+oy,'#c8ccd8'); }   // $ on a cheek, a bill tattoo, a nose ring
+    if (!W.eyes && ch.look==='pixel'){ rect(6,10+oy,16,1,OUT); rect(6,11+oy,7,3,OUT); rect(15,11+oy,7,3,OUT); rect(13,11+oy,2,1,OUT);   // pixel "deal with it" shades
+      for (const x0 of [7,16]) for (let i=0;i<5;i++) for (let j=0;j<2;j++) if ((i+j)%2===0 && i<4) put(x0+i,11+j+oy,'#d8d8e0'); put(11,11+oy,'#6a6a7a'); put(20,11+oy,'#6a6a7a'); }
+    if (!W.eyes && ch.look==='round'){ for (const cx of [10,17]){ ell(cx,11.5+oy,3.2,3.2,'#b8bcc8'); ell(cx,11.5+oy,2.3,2.3,(x,y)=>(y<11+oy)?'#f4f0f0':'#d8c8cc'); put(cx-1,10+oy,'#ffffff'); put(cx,12+oy,'#5a3a40'); } rect(13,10+oy,2,1,'#b8bcc8'); put(6,11+oy,'#b8bcc8'); put(21,11+oy,'#b8bcc8'); }
     if (ch.tears) { put(9,14+oy,'#8fd8ff'); put(9,15+oy,'#5fbff0'); put(9,16+oy,'#8fd8ff'); put(15,14+oy,'#8fd8ff'); put(14,15+oy,'#5fbff0'); }
   }
   // neckwear
@@ -1053,6 +1088,7 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
     else if (W.neck==='lei'){ const fl=['#f85888','#f8d030','#ffffff','#ff8a30'];
       const pts=[]; for (let x=8;x<=19;x+=2){ const t2=(x-13.5)/5.5; pts.push([x, Math.round(23+(front?4.5:1)*(1-t2*t2))]); }
       pts.forEach(([x,y],k)=>{ const c=fl[k%fl.length]; put(x,y-1+oy,c); put(x-1,y+oy,c); put(x+1,y+oy,c); put(x,y+1+oy,c); put(x,y+oy,'#f8d030'); if (k%2) put(x+1,y+1+oy,'#4aa04a'); }); } }
+  if (L && !front && !W.eyes && (ch.look==='pixel' || ch.look==='round')){ for (let x=7;x<=20;x++) put(x,11+oy, ch.look==='pixel'?OUT:'#b8bcc8'); }
   // eyewear (only seen from the front; a strap from the back)
   if (W.eyes){ const C=ITEMS[W.eyes].c;
     if (!front){ for (let x=7;x<=20;x++) put(x,11+oy,OUT); }
@@ -1084,6 +1120,13 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
     put(15,1+oy,HAT[2]);
     if (front) { put(11,5+oy,'#fff'); put(12,5+oy,OUT); put(15,5+oy,'#fff'); put(16,5+oy,OUT); put(13,8+oy,OUT); put(14,8+oy,OUT); put(13,9+oy,'#ff8a96'); put(14,9+oy,'#ff8a96'); }
   }
+  // wide red sun hat with a bunch of flowers on one side
+  if (L && ch.hat==='sunhat' && !W.hat) {
+    const H=['#b8202a','#801018','#e04a52'];
+    oell(13.5,8.6+oy,10.6,2.4,(x,y)=> y>9.4+oy ? H[1] : (x>17?H[1]:H[0]));
+    oell(13.5,5+oy,5.4,3.4,(x,y)=> x>16?H[1]:(x<11&&y<5+oy?H[2]:H[0])); for (let x=8;x<=19;x++) put(x,7+oy,'#5a0c12');
+    for (const [x,y,c] of [[5,5,'#f05a78'],[6,4,'#f05a78'],[4,4,'#c83a58'],[8,3,'#3ad0b0'],[9,4,'#2ea890'],[7,6,'#ffffff'],[6,7,'#ffffff'],[8,7,'#ffffff'],[7,8,'#f8d030'],[10,3,'#f0b090'],[11,4,'#d89070'],[4,6,'#4a7af0']]){ put(x,y+oy,c); }
+    for (const [x,y] of [[3,4],[4,3],[5,3],[6,3],[7,2],[8,2],[9,2],[10,2]]) put(x,y+oy,OUT); }
   // pink store visor: a band round the head and a brim over the snout
   if (L && ch.hat==='visor') {
     const V=['#f85888','#c8306a','#ffa0c0'];
@@ -3810,7 +3853,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__ward=(t,k)=>openWardrobe(t,null,k); window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__ward=(t,k)=>openWardrobe(t,null,k); window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__wear=(sl,id)=>wdWear(sl,id); window.__face=d=>{ me.d=d; }; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
@@ -3856,7 +3899,7 @@ const endPtr = () => { arcade.ptr=null; arcade.jumpHeld=false; };
 cv.addEventListener('pointerup', endPtr); cv.addEventListener('pointercancel', endPtr);
 const KEYMAP = {ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
 function navKey(k){
-  if (pick.style.display==='flex'){ const i=CHAR_IDS.indexOf(sel); if(k==='left') setSel(CHAR_IDS[(i+2)%3]); if(k==='right') setSel(CHAR_IDS[(i+1)%3]); return true; }
+  if (pick.style.display==='flex'){ const i=CHAR_IDS.indexOf(sel); if(k==='left') setSel(CHAR_IDS[(i+CHAR_IDS.length-1)%CHAR_IDS.length]); if(k==='right') setSel(CHAR_IDS[(i+1)%CHAR_IDS.length]); return true; }
   if (curMenu){ if(k==='up') setMenu(menuIdx-1); if(k==='down') setMenu(menuIdx+1); return true; }
   if (logbox.style.display==='block'){ if(k==='up') logbox.scrollTop-=40; if(k==='down') logbox.scrollTop+=40; return true; }
   return false;
@@ -4167,7 +4210,7 @@ const SHIRT_BMP=[
 "....XooooooooX....",
 "....XooooooooX....",
 "....XXXXXXXXXX...."];
-const PRINT_COLS = { twotone:['#e2a93f','#5aa99e'], tweed:['#3f8fd4','#3f8fd4'], poophat:['#efe1c8','#efe1c8'], twotoneb:['#f8d030','#f8d030'], tweedg:['#48c8b8','#48c8b8'] };
+const PRINT_COLS = { metal:['#8e4c26','#8e4c26'], money:['#eedcc2','#eedcc2'], gingham:['#e8303a','#fbeee6'], cancel:['#f0e2cc','#f0e2cc'], twotone:['#e2a93f','#5aa99e'], tweed:['#3f8fd4','#3f8fd4'], poophat:['#efe1c8','#efe1c8'], twotoneb:['#f8d030','#f8d030'], tweedg:['#48c8b8','#48c8b8'] };
 function shadeHex(h,k){ const n=parseInt(h.slice(1),16); const r=Math.round(((n>>16)&255)*k), g2=Math.round(((n>>8)&255)*k), b=Math.round((n&255)*k); return '#'+[r,g2,b].map(v=>Math.min(255,v).toString(16).padStart(2,'0')).join(''); }
 function shirtImg(pr){
   const c=document.createElement('canvas'); c.width=18; c.height=13; const x=c.getContext('2d');
