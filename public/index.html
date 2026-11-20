@@ -6931,6 +6931,7 @@ NET.handlers.rinv = m => { const rm=String(m.rm||''), by=String(m.by||'').toUppe
   document.getElementById('sw_text').textContent=`📨 ${by} invited you to ${nm}. GO?`; swapEl.style.display='block'; };
 NET.handlers.wfwarn = m => { closeAll(); $id('wf_text').textContent=`Our word filter has caught your messages ${m.n} times. Please keep chat friendly: swear words get starred out, and slurs are never allowed. Staff can see blocked messages and can mute or ban accounts that keep breaking the rules.`; $id('wfbox').style.display='block'; sheetHead($id('wfbox')); };
 NET.handlers.filtered = () => { me.bubble=null; localMsg("That message has a word that isn't allowed here, so nobody saw it."); };
+NET.handlers.toast = m => { if (m && m.msg) localMsg(String(m.msg).slice(0,120)); };
 NET.handlers.seattaken = m => { if (me.p==='sit'){ me.p='stand'; me.d='f'+me.d[1]; sendPresence(true); } localMsg("Someone's already sitting there."); };
 NET.handlers.prinvited = m => localMsg(`🏠 ${String(m.by).toUpperCase()} invited you to ${m.name}! Find it in 🏠 ROOMS.`);
 const KNQ=[];   // knocks waiting for the owner to answer

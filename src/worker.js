@@ -654,7 +654,7 @@ function cleanPresence(p, name, tk, muted, staff) {
   for (const k of Object.keys(p)) if (PRES_KEYS.has(k)) o[k] = p[k];
   o.n = name; o.tk = tk; if (staff) o.st = staff; else delete o.st;   // the server decides who you are, what you hold and your staff badge
   if (o.s && typeof o.s === "object") { o.s = { k: +o.s.k || 0, t: String(o.s.t || "").slice(0, 120), y: o.s.y ? 1 : 0, f: o.s.f ? 1 : 0 }; if (muted) delete o.s;
-    else if (!o.s.f) { if (WF.slur(o.s.t)) delete o.s; else o.s.t = WF.mask(o.s.t); } }   // slurs never go out; swears go out as stars
+    else if (WF.slur(o.s.t)) delete o.s; else o.s.t = WF.mask(o.s.t); }   // every line, action lines too (the flag comes from the browser, so it can't skip the filter): slurs never go out; swears go out as stars
   if (JSON.stringify(o).length > 3000) return { c: o.c, n: name, x: o.x, y: o.y, d: o.d, p: o.p, m: o.m, rm: o.rm, tk, ...(staff ? { st: staff } : {}) };
   return o;
 }
@@ -712,7 +712,10 @@ export class Lounge extends DurableObject {
       if (m.p && (first || +m.p.x !== a.pres.x || +m.p.y !== a.pres.y || m.p.rm !== a.pres.rm || (m.p.s && typeof m.p.s === "object" && +m.p.s.k !== a.ck))) a.act = now;
       // chat log for staff: every new line, muted ones too (marked); action lines like "sat down" are marked as actions
       const rs = m.p && m.p.s;
-      if (rs && typeof rs === "object" && rs.t && +rs.k !== a.ck) { const was = a.ck; a.ck = +rs.k; const bad = !rs.f && WF.slur(String(rs.t)); if (bad) this.send(ws, { t: "filtered" });
+      // chat flood limit: at most 8 new lines every 5 seconds; extra lines are dropped (not shown, not logged)
+      if (rs && typeof rs === "object" && rs.t && +rs.k !== a.ck && !first) { if (!a.cr || now - a.cr[0] > 5000) a.cr = [now, 0];
+        if (++a.cr[1] > 8) { a.ck = +rs.k; delete m.p.s; if (a.cr[1] === 9) this.send(ws, { t: "toast", msg: "Slow down a little. Some of your messages weren't sent." }); } }
+      if (rs && typeof rs === "object" && rs.t && m.p.s && +rs.k !== a.ck) { const was = a.ck; a.ck = +rs.k; const bad = WF.slur(String(rs.t)); if (bad) this.send(ws, { t: "filtered" });
         if (!first && was !== undefined && !rs.f && (bad || WF.mask(String(rs.t)) !== String(rs.t))) await this.wfHit(ws, a, bad ? "blocked" : "masked");
         if (!first && was !== undefined) { await this.chatLog(a, m.p.rm, (bad ? "BLOCKED: " : rs.f ? "* " : "") + String(rs.t).slice(0, 120), !!a.uc.muted); if (!rs.f && !a.uc.muted && !bad) { try { await this.questTick(ws, a.uid, "chat"); } catch (e) {} } } }
       else if (first && rs && typeof rs === "object") a.ck = +rs.k;
