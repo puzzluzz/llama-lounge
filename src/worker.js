@@ -63,20 +63,21 @@ const TABLES = [{ gx: 8, gy: 8 }, { gx: 3, gy: 8 }];
 const CROP_MS = 90000, BAR_MS = 30000;
 // market stands in LLAMA ACRES: where each one is and what it sells (token prices)
 const STANDS = {
-  cider: { rm: "barn", x: 7.5, y: 4, items: { cider: 2, caramel: 3 } },     // two tiles wide: x is the middle of the stall
-  snack: { rm: "barn", x: 10.5, y: 4, items: { capple: 2, corn: 2, pie: 3 } },
-  bar:   { rm: "lounge", items: { soda: 1, juice: 1, shake: 2, nachos: 2, fries: 2, burger: 3 } },   // sit at the bar to order
-  vend:  { rm: "store", x: 5, y: 0.5, items: { soda: 1, juice: 1, shake: 2 } },
-  svend: { rm: "store", x: 4, y: 0.5, items: { chips: 1, candy: 1, cookie: 2 } },   // snack machine next to it   // vending machine on the LLAMA STORE's back wall
+  cider: { rm: "barn", x: 7.5, y: 4, items: { ajuice: 1, cider: 2, caramel: 3 } },     // two tiles wide: x is the middle of the stall
+  snack: { rm: "barn", x: 10.5, y: 4, items: { corn: 1, capple: 2, pie: 3 } },
+  bar:   { rm: "lounge", items: { soda: 1, juice: 2, shake: 3, fries: 1, nachos: 2, burger: 3 } },   // sit at the bar to order
+  vend:  { rm: "store", x: 5, y: 0.5, items: { soda: 1, juice: 2, shake: 3 } },
+  svend: { rm: "store", x: 4, y: 0.5, items: { chips: 1, candy: 2, cookie: 3 } },   // snack machine next to it   // vending machine on the LLAMA STORE's back wall
 };
 // ---------- hunger and thirst ----------
 // Meters go from 100 (full) to 0. They only drain while you're online: thirst empties in about an hour, hunger in 75 minutes.
 // Everything you buy fills them right away. When either is empty, the mini-games pay half.
 const NEEDS = { thirstMs: 60 * 60000, hungerMs: 75 * 60000, maxStep: 10 * 60000, saveMs: 60000, apple: 15, appleGap: 20000 };
-// how much each fills scales with its price: 1 token = a third of the meter, 2 tokens = half, 3 tokens = all of it
-const FOOD = { soda: { th: 33 }, juice: { th: 33, hu: 5 }, shake: { th: 50, hu: 20 }, cider: { th: 50 }, caramel: { th: 100, hu: 8 },
-  capple: { hu: 50 }, corn: { hu: 50 }, pie: { hu: 100 }, nachos: { hu: 50, th: -5 }, fries: { hu: 50, th: -5 }, burger: { hu: 100 },
-  chips: { hu: 33, th: -3 }, candy: { hu: 33 }, cookie: { hu: 50 } };
+// how much each fills scales with its price: 1 token = a third of the meter, 2 tokens = half, 3 tokens = all of it.
+// Every place that sells food or drink (the lounge bar, the store machines, player-room machines, the Acres stands) has one of each tier.
+const FOOD = { soda: { th: 33 }, juice: { th: 50, hu: 5 }, shake: { th: 100, hu: 15 }, ajuice: { th: 33 }, cider: { th: 50 }, caramel: { th: 100, hu: 8 },
+  corn: { hu: 33 }, capple: { hu: 50 }, pie: { hu: 100 }, fries: { hu: 33, th: -3 }, nachos: { hu: 50, th: -5 }, burger: { hu: 100 },
+  chips: { hu: 33, th: -3 }, candy: { hu: 50 }, cookie: { hu: 100 } };
 // ---------- wardrobe: clothes you buy in the LLAMA STORE and wear anywhere ----------
 // s = the slot it goes in (one item per slot), p = price in tokens. The game draws each one; this list is the source of truth.
 const WEAR_SLOTS = ["hat", "eyes", "neck", "shirt", "hands", "legs"];
@@ -107,7 +108,7 @@ const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6
   beanbag: 10, barstool: 7, dbed: 40, coffeetable: 14, roundtable: 16, floorlamp: 16, lavalamp: 12, cubeshelf: 14, dresser: 20, cactus: 5, flowers: 6, boombox: 18 , rug_mat_green: 6, rug_mat_red: 6, rug_mat_blue: 6, rug_mat_coir: 6, rug_mat_pink: 6, rug_mat_purple: 6 };
 // what the store sells right now: one piece per category (the rest stay placeable for anyone who already owns them)
 // vending machines players can put in their rooms, and what each one sells
-const PV_ITEMS = { vending: { soda: 1, juice: 1, shake: 2 }, snackvend: { chips: 1, candy: 1, cookie: 2 } };
+const PV_ITEMS = { vending: { soda: 1, juice: 2, shake: 3 }, snackvend: { chips: 1, candy: 2, cookie: 3 } };
 const FURN_SWITCH = new Set(["tv", "bigtv", "lamp", "floorlamp", "lavalamp", "boombox"]);   // things you can tap to switch on or off
 const FURN_SIZE = { bed: 2, loveseat: 2, sofa: 3, bigtv: 2 };   // pieces bigger than one tile
 const FURN_SIDEWAYS = new Set(["loveseat", "sofa"]);

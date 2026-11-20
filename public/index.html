@@ -3686,7 +3686,7 @@ function tkSet(v, why){ if (!Number.isFinite(v)) return; const d=v-wallet.get();
 function tokUI(dir){ const el=document.getElementById('tokn'), row=document.getElementById('tokrow'); if(!el) return; el.textContent=wallet.get();
   if (dir){ row.classList.remove('up','down'); void row.offsetWidth; row.classList.add(dir>0?'up':'down'); }
   if (typeof sendPresence==='function' && joined) sendPresence(); }
-const DRINKS = { soda:{label:'HAY SODA', c:'#f84848'}, juice:{label:'GRASS JUICE', c:'#48c048'}, shake:{label:'BERRY SHAKE', c:'#f878b8'}, cider:{label:'HOT APPLE CIDER', c:'#c87028'}, caramel:{label:'CARAMEL APPLE CIDER', c:'#e8a038'},
+const DRINKS = { soda:{label:'HAY SODA', c:'#f84848'}, ajuice:{label:'APPLE JUICE', c:'#f0c040'}, juice:{label:'GRASS JUICE', c:'#48c048'}, shake:{label:'BERRY SHAKE', c:'#f878b8'}, cider:{label:'HOT APPLE CIDER', c:'#c87028'}, caramel:{label:'CARAMEL APPLE CIDER', c:'#e8a038'},
   capple:{label:'CARAMEL APPLE', c:'#d83838', food:true}, corn:{label:'CORN ON THE COB', c:'#f8d030', food:true}, pie:{label:'SLICE OF APPLE PIE', c:'#e8c070', food:true},
   nachos:{label:'HAY NACHOS', c:'#f8c040', food:true}, fries:{label:'ALFALFA FRIES', c:'#f8d860', food:true}, burger:{label:'CLOVER BURGER', c:'#c87838', food:true}, chips:{label:'BAG OF HAY CHIPS', c:'#8a48e0', food:true}, candy:{label:'CLOVER CANDY BAR', c:'#7a3a18', food:true}, cookie:{label:'OAT COOKIE', c:'#c88a50', food:true} };
 const DRINK_IDS = Object.keys(DRINKS), BAR_IDS = ['soda','juice','shake'];   // the bar pours these; cider and snacks come from the stands in LLAMA ACRES
@@ -5661,16 +5661,16 @@ function eatApple(k){
 }
 // ---- market stands in LLAMA ACRES: spend tokens on cider or a snack you carry around (the server charges for it) ----
 const fwEl=document.getElementById('fwbox');
-const STANDS={ bar:{gx:0,gy:2, title:'🍸 THE BAR', note:'DRINKS FILL 💧 THIRST, FOOD FILLS 🍔 HUNGER. ENJOY IT ANYWHERE!', items:[['soda','HAY SODA',1],['juice','GRASS JUICE',1],['shake','BERRY SHAKE',2],['nachos','HAY NACHOS',2],['fries','ALFALFA FRIES',2],['burger','CLOVER BURGER',3]]},
-  cider:{gx:7,gy:4, title:'🍎 APPLE CIDER', note:'FRESH PRESSED FROM THE ORCHARD. SIP IT ANYWHERE!', items:[['cider','HOT CIDER',2],['caramel','CARAMEL CIDER',3]]},
-  svend:{gx:4,gy:0, rm:'store', title:'🍪 SNACK MACHINE', note:'CRUNCHY, SWEET AND READY. EAT IT ANYWHERE!', items:[['chips','HAY CHIPS',1],['candy','CANDY BAR',1],['cookie','OAT COOKIE',2]]},
-  vend:{gx:5,gy:0, rm:'store', title:'🥤 VENDING MACHINE', note:'ICE COLD AND READY. SIP IT ANYWHERE!', items:[['soda','HAY SODA',1],['juice','GRASS JUICE',1],['shake','BERRY SHAKE',2]]},
-  snack:{gx:10,gy:4, title:'🌽 FARM SNACKS', note:'HOMEMADE TREATS FROM LLAMA ACRES. EAT IT ANYWHERE!', items:[['capple','CARAMEL APPLE',2],['corn','CORN ON THE COB',2],['pie','APPLE PIE',3]]} };
+const STANDS={ bar:{gx:0,gy:2, title:'🍸 THE BAR', note:'DRINKS FILL 💧 THIRST, FOOD FILLS 🍔 HUNGER. ENJOY IT ANYWHERE!', items:[['soda','HAY SODA',1],['juice','GRASS JUICE',2],['shake','BERRY SHAKE',3],['fries','ALFALFA FRIES',1],['nachos','HAY NACHOS',2],['burger','CLOVER BURGER',3]]},
+  cider:{gx:7,gy:4, title:'🍎 APPLE CIDER', note:'FRESH PRESSED FROM THE ORCHARD. SIP IT ANYWHERE!', items:[['ajuice','APPLE JUICE',1],['cider','HOT CIDER',2],['caramel','CARAMEL CIDER',3]]},
+  svend:{gx:4,gy:0, rm:'store', title:'🍪 SNACK MACHINE', note:'CRUNCHY, SWEET AND READY. EAT IT ANYWHERE!', items:[['chips','HAY CHIPS',1],['candy','CANDY BAR',2],['cookie','OAT COOKIE',3]]},
+  vend:{gx:5,gy:0, rm:'store', title:'🥤 VENDING MACHINE', note:'ICE COLD AND READY. SIP IT ANYWHERE!', items:[['soda','HAY SODA',1],['juice','GRASS JUICE',2],['shake','BERRY SHAKE',3]]},
+  snack:{gx:10,gy:4, title:'🌽 FARM SNACKS', note:'HOMEMADE TREATS FROM LLAMA ACRES. EAT IT ANYWHERE!', items:[['corn','CORN ON THE COB',1],['capple','CARAMEL APPLE',2],['pie','APPLE PIE',3]]} };
 let standOpen=null;
 const nearStand = ST => near(ST.gx,ST.gy) || near(ST.gx+1,ST.gy);   // stalls are two tiles wide
 // vending machines placed in player rooms (anyone in the room can use them; the server checks the machine is really there)
-const PV_ITEMS = { vending:{title:'🥤 DRINK MACHINE', note:'ICE COLD AND READY. SIP IT ANYWHERE!', items:[['soda','HAY SODA',1],['juice','GRASS JUICE',1],['shake','BERRY SHAKE',2]]},
-  snackvend:{title:'🍪 SNACK MACHINE', note:'CRUNCHY, SWEET AND READY. EAT IT ANYWHERE!', items:[['chips','HAY CHIPS',1],['candy','CANDY BAR',1],['cookie','OAT COOKIE',2]]} };
+const PV_ITEMS = { vending:{title:'🥤 DRINK MACHINE', note:'ICE COLD AND READY. SIP IT ANYWHERE!', items:[['soda','HAY SODA',1],['juice','GRASS JUICE',2],['shake','BERRY SHAKE',3]]},
+  snackvend:{title:'🍪 SNACK MACHINE', note:'CRUNCHY, SWEET AND READY. EAT IT ANYWHERE!', items:[['chips','HAY CHIPS',1],['candy','CANDY BAR',2],['cookie','OAT COOKIE',3]]} };
 const pvHits=[];
 const pvNear = () => isP(curRoom) && me.p!=='sit' ? FURN.find(f=>f.fid && PV_ITEMS[f.item] && Math.abs(me.gx-f.gx)<=1 && Math.abs(me.gy-f.gy)<=1) : null;
 function pvOpen(f){ f = f || (me.pvF && FURN.find(q=>q.fid===me.pvF && Math.abs(me.gx-q.gx)<=1 && Math.abs(me.gy-q.gy)<=1)) || pvNear(); me.pvF=null; if (!f) return; const D=PV_ITEMS[f.item]; STANDS.pv={gx:f.gx, gy:f.gy, rm:curRoom, fid:f.fid, title:D.title, note:D.note, items:D.items}; openFw('pv'); }
@@ -5688,7 +5688,7 @@ document.getElementById('fw_close').addEventListener('click', ()=>{ fwEl.style.d
 // the room ♥ button always sits just under the status card, however tall that card is
 { const st=document.getElementById('status'), lb=document.getElementById('likebtn'); const place=()=>{ const r=st.getBoundingClientRect(); if (r.height) lb.style.top=Math.round(r.bottom+8)+'px'; };
   try{ new ResizeObserver(place).observe(st); }catch(_){} addEventListener('resize', place); place(); }
-const FOOD_FILL = { chips:{hu:33,th:-3}, candy:{hu:33}, cookie:{hu:50}, soda:{th:33}, juice:{th:33,hu:5}, shake:{th:50,hu:20}, cider:{th:50}, caramel:{th:100,hu:8}, capple:{hu:50}, corn:{hu:50}, pie:{hu:100}, nachos:{hu:50,th:-5}, fries:{hu:50,th:-5}, burger:{hu:100} };   // 1 token = a third, 2 = half, 3 = full   // same as the server
+const FOOD_FILL = { chips:{hu:33,th:-3}, candy:{hu:50}, cookie:{hu:100}, soda:{th:33}, juice:{th:50,hu:5}, shake:{th:100,hu:15}, ajuice:{th:33}, cider:{th:50}, caramel:{th:100,hu:8}, corn:{hu:33}, capple:{hu:50}, pie:{hu:100}, fries:{hu:33,th:-3}, nachos:{hu:50,th:-5}, burger:{hu:100} };   // 1 token = a third, 2 = half, 3 = full   // same as the server
 function buyAt(k,id){ ensureAudio(); document.getElementById('fw_msg').textContent = DRINKS[id] && !DRINKS[id].food ? 'POURING...' : 'WRAPPING IT UP...';
   NET.act('buy',{s:k, k:id, fid:(STANDS[k]&&STANDS[k].fid)||0}).then(r=>{ if (!r.ok){ document.getElementById('fw_msg').textContent=(r.msg||'TRY AGAIN.').toUpperCase(); return; }
     me.h = DRINKS[r.k] ? r.k : id; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; if (r.nd) ndSet(r.nd); if (k!=='bar') face(STANDS[k].gx+(me.gx>STANDS[k].gx?1:0),STANDS[k].gy);
