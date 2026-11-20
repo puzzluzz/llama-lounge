@@ -2150,6 +2150,12 @@ const DECO_FLOOR={
       return ((Math.floor(gx*40)+Math.floor(gy*40))%2)?c:dmul(c,0.94); }},
 };
 // a little preview tile of a wallpaper or floor, for the shop and the room settings
+// wallpaper and floors are bag items too: wp_<id> and fl_<id>. These turn an item key into its kind and name, and draw its icon.
+const decoOf = item => { const m=/^(wp|fl)_(\w+)$/.exec(item||''); if (!m) return null; const kind=m[1]==='wp'?'w':'f', T=(kind==='w'?DECO_WALL:DECO_FLOOR)[m[2]]; return T ? {kind, id:m[2], T} : null; };
+const itemName = item => { const d=decoOf(item); if (d) return d.kind==='w' ? (/PAINT|WALL/.test(d.T.n) ? d.T.n : d.T.n+' WALLPAPER') : (/FLOOR/.test(d.T.n) ? d.T.n : d.T.n+' FLOOR'); return FURN_DEF[item] ? FURN_DEF[item].n : item; };
+function decoIcon(item, CS){ const d=decoOf(item), R2=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1))), S2=CS*R2, c=document.createElement('canvas'); c.width=c.height=S2; const m=c.getContext('2d'); m.imageSmoothingEnabled=false;
+  const pad=Math.round(S2*0.1), w=S2-pad*2, sw=decoSwatch(d.kind,d.id,40,40); m.fillStyle=INK; m.fillRect(pad-R2,pad-R2,w+R2*2,w+R2*2); m.drawImage(sw,pad,pad,w,w);
+  m.fillStyle='rgba(255,255,255,.35)'; m.fillRect(pad,pad,w,Math.max(1,R2)); return c; }
 function decoSwatch(kind, id, W=44, H=34){ const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const m=cv.getContext('2d'), img=m.createImageData(W,H), D2=img.data;
   for (let y=0;y<H;y++) for (let x=0;x<W;x++){ let c;
     if (kind==='w'){ const T=DECO_WALL[id]||DECO_WALL.lavender, h=H-1-y+8; c = h<26 ? T.low(x+3,h,false) : (h<29 ? dh(T.rail||'#f8f8f8') : T.field(x+3,h,false)); }
@@ -6157,17 +6163,19 @@ function wdDraw(){
     h+= dragIn ? '<div class="fre"><b>Drag any picture into your room</b> to buy it and put it down in one go, or tap BUY and place it later from 🎒 INVENTORY > ITEMS.</div>' : '<div class="fre">Buy from anywhere. Furniture goes into 🎒 INVENTORY > ITEMS, ready to place in your own room. LIMITED RARES are only sold at the LLAMA STORE.</div>';
     for (const [cat,label] of FURN_CATS){ if ((cat==='staff' && !me.st) || cat==='rares') continue; const ORD=Object.keys(FURN_DEF), ks=ORD.filter(k=>FURN_DEF[k].cat===cat).sort((p,q)=>ORD.indexOf(furnBase(p))-ORD.indexOf(furnBase(q))); if (!ks.length) continue;   /* colours sit right after their base piece */ h+=`<div class="wdh">${label}</div><div class="wdg">`;
     h+=ks.map(k=>`<div class="wi fi${dragIn?' drag':''}" data-f="${k}"><canvas width="80" height="80" data-fk="${k}"></canvas><b>${esc(FURN_DEF[k].n)}</b><small>${FURN_DEF[k].p} 🪙${own(k)?` · <span class="own">YOU HAVE ${own(k)}</span>`:''}</small><button class="gbbtn y" data-buyf="${k}">BUY</button></div>`).join('')+'</div>'; }
-    const dcard=(kind,k,T)=>{ const have=!T.p||DECO_OWN.includes(kind+':'+k); return `<div class="wi fi"><canvas width="88" height="88" data-dsw="${kind}:${k}"></canvas><b>${esc(T.n)}</b><small>${T.p?T.p+' 🪙':'FREE'}${have&&T.p?' · <span class="own">YOURS</span>':''}</small>${have?'<button class="gbbtn" disabled>'+(T.p?'OWNED':'FREE')+'</button>':`<button class="gbbtn y" data-buyd="${kind}:${k}">BUY</button>`}</div>`; };
-    h+='<div class="wdh">🎨 WALLPAPER</div><div class="fre">Buy it once, then put it up any time from 🏠 ROOMS > SETTINGS.</div><div class="wdg">'+Object.entries(DECO_WALL).map(([k,T])=>dcard('w',k,T)).join('')+'</div>';
+    const dcard=(kind,k,T)=>{ if (!T.p) return ''; const n=own((kind==='w'?'wp_':'fl_')+k); return `<div class="wi fi"><canvas width="88" height="88" data-dsw="${kind}:${k}"></canvas><b>${esc(T.n)}</b><small>${T.p} 🪙${n?` · <span class="own">YOU HAVE ${n}</span>`:''}</small><button class="gbbtn y" data-buyd="${kind}:${k}">BUY</button></div>`; };
+    h+='<div class="wdh">🎨 WALLPAPER</div><div class="fre">Wallpaper and floors go into 🎒 INVENTORY > ITEMS. Put one up from there (or 🏠 ROOMS > SETTINGS); the one it replaces goes back in your bag, so you can keep it or trade it.</div><div class="wdg">'+Object.entries(DECO_WALL).map(([k,T])=>dcard('w',k,T)).join('')+'</div>';
     h+='<div class="wdh">🎨 FLOORS</div><div class="wdg">'+Object.entries(DECO_FLOOR).map(([k,T])=>dcard('f',k,T)).join('')+'</div>'; }
   else if (WD.tab==='shop'){ for (const s2 of WEAR_SLOTS){ h+=`<div class="wdh">${SLOT_NAMES[s2]}</div><div class="wdg">`+Object.keys(ITEMS).filter(k=>ITEMS[k].s===s2).map(wdCard).join('')+'</div>'; }
     if (curRoom!=='store') h='<div class="fre">Browse and try things on here. To buy clothes, visit the 🛍️ LLAMA STORE.</div>'+h;
     h+='<div class="srow"><button class="gbbtn" id="wd_toinv">🎒 MY INVENTORY</button></div>'; }
-  else if (WD.tab==='storage'){ const list=WD.furn.filter(x=>FURN_DEF[x.item]&&x.n>0), inMine=isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine;
-    if (!list.length) h=emptyBox('NO ITEMS YET', 'Tap SHOP at the bottom to buy furniture, then place it in your room.');
+  else if (WD.tab==='storage'){ const list=WD.furn.filter(x=>FURN_DEF[x.item]&&x.n>0), inMine=isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine, decos=WD.furn.filter(x=>decoOf(x.item)&&x.n>0);
+    const decoH = decos.length ? '<div class="wdh">🎨 WALLPAPER & FLOORS</div><div class="wdg">'+decos.map(x=>`<div class="wi fi"><canvas width="80" height="80" data-fk="${x.item}"></canvas><b>${esc(itemName(x.item))}</b><small class="own">${x.n} IN YOUR BAG</small><button class="gbbtn y" data-putup="${x.item}">PUT UP</button></div>`).join('')+'</div>' : '';
+    if (!list.length && decos.length) h=decoH; else if (!list.length) h=emptyBox('NO ITEMS YET', 'Tap SHOP at the bottom to buy furniture, then place it in your room.');
     else { const card=x=>{ const left=x.n-x.placed; return `<div class="wi fi${inMine&&left>0?' drag':''}" data-pf="${x.item}"><canvas width="80" height="80" data-fk="${x.item}"></canvas><b>${esc(FURN_DEF[x.item].n)}</b><small class="own">${left} LEFT${x.placed?` · ${x.placed} PLACED`:''}</small>${inMine?`<button class="gbbtn y" data-placef="${x.item}" ${left<=0?'disabled':''}>PLACE</button>`:''}</div>`; };
       h=`<div class="fre">${inMine ? 'Drag a picture into your room, or tap PLACE. Only you can place furniture, and only in your own room.' : 'Furniture you own. You can place it in your own room.'}</div>`;
       for (const [cat,label] of [...FURN_CATS,[null,'📦 OTHER']]){ const ls=list.filter(x=>(FURN_DEF[x.item].cat||null)===cat); if (ls.length) h+=`<div class="wdh">${label}</div><div class="wdg">${ls.map(card).join('')}</div>`; }
+      h+=decoH;
       h+=`<div class="srow"><button class="gbbtn y" id="wd_place">${inMine?'🛋️ ARRANGE MY ROOM':'🏠 GO TO MY ROOM'}</button></div>`; } }
   else { const mine=INV.owned.filter(k=>ITEMS[k]);
     if (!mine.length) h=emptyBox('NO CLOTHES YET', 'Buy some at the 🛍️ LLAMA STORE, then wear them anywhere.');
@@ -6183,7 +6191,10 @@ function wdDraw(){
   wdPreview(); wdInfo(); sheetHead($id('wardbox'));
 }
 $id('wd_body').addEventListener('click', e=>{
-  const bd=e.target.closest('[data-buyd]'); if (bd){ const k=bd.dataset.buyd, [kind,id]=k.split(':'), T=(kind==='w'?DECO_WALL:DECO_FLOOR)[id]; wdMsg('BUYING...'); NET.act('deco_buy',{k}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); DECO_OWN=r.deco||DECO_OWN; tkSet(r.tk, `You bought ${T.n}! Put it up from 🏠 ROOMS > SETTINGS.`); wdDraw(); }); return; }
+  const pu=e.target.closest('[data-putup]'); if (pu){ const d=decoOf(pu.dataset.putup); if (!d) return; pu.disabled=true; wdMsg('PUTTING IT UP...');
+    NET.act('pr_set', d.kind==='w'?{wall:d.id}:{floor:d.id}).then(r=>{ if (!r.ok){ pu.disabled=false; return wdMsg(r.msg||'That did not work.'); } DECO_OWN=r.deco||DECO_OWN; prApplyRoom(r.room); if (PRUI.info) PRUI.info.room=r.room;
+      wdMsg(`${itemName(pu.dataset.putup)} is up in your room! The old one went back in your bag.`, true); wdFurnLoad(); }); return; }
+  const bd=e.target.closest('[data-buyd]'); if (bd){ const k=bd.dataset.buyd, [kind,id]=k.split(':'), T=(kind==='w'?DECO_WALL:DECO_FLOOR)[id]; wdMsg('BUYING...'); NET.act('deco_buy',{k}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); DECO_OWN=r.deco||DECO_OWN; if (r.furn) WD.furn=r.furn; tkSet(r.tk, `You bought ${T.n}! It's in your 🎒 ITEMS.`); wdMsg(`Bought ${T.n}! Put it up from 🎒 ITEMS.`, true); wdDraw(); }); return; }
   const br=e.target.closest('[data-buyr]'); if (br){ const k=br.dataset.buyr; br.disabled=true; wdMsg('BUYING...'); NET.act('rare_buy',{item:k}).then(r=>{ if (Number.isFinite(r.tk)) tkSet(r.tk); if (!r.ok){ wdMsg(r.msg||'That did not work.'); br.disabled=false; return; }
     WD.rares=r.rares; WD.furn=r.furn; localMsg(`⭐ ${r.msg} It's in your 🎒 ITEMS.`); wdMsg(r.msg); wdDraw(); }); return; }
   const bf=e.target.closest('[data-buyf]'); if (bf){ const k=bf.dataset.buyf; wdMsg('BUYING...'); NET.act('furn_buy',{item:k}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); WD.furn=r.furn; tkSet(r.tk, `You bought a ${FURN_DEF[k].n}! It's in your items.`); wdMsg(`Bought a ${FURN_DEF[k].n}! It's in your 🎒 ITEMS.`, true); wdDraw(); }); return; }
@@ -6309,7 +6320,7 @@ function furnBox(item, rot){ const D=FURN_DEF[item], big=document.createElement(
   for (let yy=0;yy<H;yy++) for (let xx=0;xx<W;xx++) if (px[(yy*W+xx)*4+3]>0){ if(xx<x0)x0=xx; if(xx>x1)x1=xx; if(yy<y0)y0=yy; if(yy>y1)y1=yy; }
   return x1<0 ? null : {src, x0, y0, w:x1-x0+1, h:y1-y0+1}; }
 /* Shop and bag pictures: drawn once at 1x, then blown up by a WHOLE number so every art pixel stays square (no warped, uneven pixels). */
-function furnIcon(item, CS=88, rot){ const R=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1))), S=CS*R, key=item+'@'+S+'@'+(rot==null?'':rot); let c=furnIconCache.get(key); if (c) return c; c=document.createElement('canvas'); c.width=S; c.height=S;   /* sized in real screen pixels, so whole-number blow-ups stay crisp on phones too */
+function furnIcon(item, CS=88, rot){ if (decoOf(item)){ const k2='deco@'+item+'@'+CS; let c2=furnIconCache.get(k2); if (!c2){ c2=decoIcon(item,CS); furnIconCache.set(k2,c2); } return c2; } const R=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1))), S=CS*R, key=item+'@'+S+'@'+(rot==null?'':rot); let c=furnIconCache.get(key); if (c) return c; c=document.createElement('canvas'); c.width=S; c.height=S;   /* sized in real screen pixels, so whole-number blow-ups stay crisp on phones too */
   const b=furnBox(item, rot); if (b){ const m=c.getContext('2d'), room=S-6*R, fit=Math.min(room/b.w, room/b.h), k=fit>=1 ? Math.floor(fit) : fit, dw=Math.round(b.w*k), dh=Math.round(b.h*k), dx=Math.round((S-dw)/2), dy=Math.round((S-dh)/2);
     if (!FURN_DEF[item].wall && !FURN_DEF[item].rug){ m.fillStyle='rgba(40,20,70,.13)'; m.beginPath(); m.ellipse(S/2, Math.min(S-3*R, dy+dh-Math.max(2*R,dh*0.06)), Math.min(S/2-2*R, dw*0.48), Math.max(3*R, dw*0.12), 0, 0, Math.PI*2); m.fill(); }
     m.imageSmoothingEnabled = k<1; m.imageSmoothingQuality='high'; m.drawImage(b.src, b.x0, b.y0, b.w, b.h, dx, dy, dw, dh); }
@@ -6368,7 +6379,7 @@ $id('pr_body').addEventListener('click', e=>{ const b=e.target.closest('button')
   if (b.id==='pr_back'){ PRUI.view='list'; prDraw(); prRefresh(); return; }
   if (b.classList.contains('lock')){ prMsg('Buy that one in the SHOP first (🎨 WALLPAPER and FLOORS, at the bottom).'); return; }
   if (b.dataset.wall||b.dataset.floor||b.dataset.priv!==undefined){ const upd = b.dataset.wall?{wall:b.dataset.wall}:b.dataset.floor?{floor:b.dataset.floor}:{priv:b.dataset.priv==='1'};
-    NET.act('pr_set',upd).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.info.room=r.room; prApplyRoom(r.room); prDraw(); }); return; }
+    NET.act('pr_set',upd).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); if (r.deco) DECO_OWN=r.deco; PRUI.info.room=r.room; prApplyRoom(r.room); prDraw(); }); return; }
   if (b.id==='pr_savename'){ const n=$id('pr_name').value.trim(); NET.act('pr_set',{name:n}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.info.room=r.room; prApplyRoom(r.room); prDraw(); prMsg('Saved!',true); }); return; }
   if (b.id==='pr_inv'){ const n=$id('pr_invname').value.trim(); if (!n) return; NET.act('pr_invite',{n, add:true}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.info=r; prDraw(); prMsg('Invited!',true); }); return; }
   if (b.dataset.uninv){ NET.act('pr_invite',{n:b.dataset.uninv, add:false}).then(r=>{ if (r.ok){ PRUI.info=r; prDraw(); } }); return; }
@@ -6384,10 +6395,10 @@ function prDrawSettings(){ if (!prDrawSettings.loaded){ prDrawSettings.loaded=1;
   let h=`<div class="prsec">NAME</div><input id="pr_name" maxlength="24" value="${esc(R.name)}"><div class="srow"><button class="gbbtn" id="pr_savename">SAVE NAME</button></div>`;
   h+=`<div class="prsec">WHO CAN COME IN</div><div class="seg"><button data-priv="0" class="${R.priv?'':'on'}">🌍 PUBLIC</button><button data-priv="1" class="${R.priv?'on':''}">🔒 PRIVATE</button></div>`;
   h+=`<div class="fre" style="margin-top:6px">${R.priv?'Only you, people you invite, and people you let in when they knock.':'Anyone can come in.'}</div>`;
-  const own=k=>DECO_OWN.includes(k), sw=(kind,k,T,cur)=>{ const ok=!T.p||own(kind+':'+k)||cur; return `<button ${kind==='w'?'data-wall':'data-floor'}="${k}" class="${cur?'on':''}${ok?'':' lock'}" title="${esc(T.n)}${ok?'':` (${T.p} TOKENS at the LLAMA STORE)`}" data-sw="${kind}:${k}">${ok?'':'<span>🔒</span>'}</button>`; };
+  const own=k=>DECO_OWN.includes(k), sw=(kind,k,T,cur)=>{ const ok=!T.p||own(kind+':'+k)||cur; return `<button ${kind==='w'?'data-wall':'data-floor'}="${k}" class="${cur?'on':''}${ok?'':' lock'}" title="${esc(T.n)}${ok?'':` (${T.p} TOKENS in the SHOP)`}" data-sw="${kind}:${k}">${ok?'':'<span>🔒</span>'}</button>`; };
   h+='<div class="prsec">WALLPAPER</div><div class="sw">'+Object.entries(DECO_WALL).map(([k,T])=>sw('w',k,T,R.wall===k)).join('')+'</div>';
   h+='<div class="prsec">FLOOR</div><div class="sw">'+Object.entries(DECO_FLOOR).map(([k,T])=>sw('f',k,T,R.floor===k)).join('')+'</div>';
-  h+='<div class="fre">🔒 ones are for sale in the SHOP (tap SHOP at the bottom).</div>';
+  h+='<div class="fre">🔒 ones are for sale in the SHOP. Putting one up uses it from your bag, and the one you take down goes back in your bag.</div>';
   h+=`<div class="prsec">INVITED (${I.invites.length})</div>`+(I.invites.length?I.invites.map(n=>`<span class="chip">${esc(n)}<button data-uninv="${esc(n)}" aria-label="Remove ${esc(n)}">✕</button></span>`).join(''):'<div class="fre">Nobody yet. Invited llamas can always come in, even when it\'s private.</div>');
   h+=`<input id="pr_invname" maxlength="12" placeholder="Invite by llama name" autocapitalize="off" spellcheck="false"><div class="srow"><button class="gbbtn" id="pr_inv">INVITE</button></div>`;
   if (inside.length){ h+='<div class="prsec">IN YOUR ROOM NOW</div>'+inside.map(n=>`<div class="prr"><div class="prn"><b>${esc(n)}</b></div><button class="gbbtn" data-kickp="${esc(n)}">ASK TO LEAVE</button></div>`).join(''); }
@@ -7524,15 +7535,15 @@ $id('dp_later').addEventListener('click', ()=>{ $id('dailypop').style.display='n
 const TR={tid:null, them:'', mine:{items:{},rares:[],tk:0}, theirs:{items:{},rares:[],tk:0}, ok:[false,false], have:null, rares:null, sendT:null};
 function trSay(t,good){ const el=$id('tr_msg'); el.textContent=t||''; el.classList.toggle('good',!!good); }
 function trLoadHave(){ NET.act('furn_info').then(r=>{ if (!r.ok) return; TR.have=r.furn; TR.rares=r.rares; trDraw(); }); }
-function trOfferHtml(O){ let h=''; for (const [k,n] of Object.entries(O.items||{})) h+=`<div class="trl"><canvas data-fk="${k}"></canvas><span class="tn">${esc(FURN_DEF[k]?FURN_DEF[k].n:k)}</span><b class="q">×${n}</b></div>`;
+function trOfferHtml(O){ let h=''; for (const [k,n] of Object.entries(O.items||{})) h+=`<div class="trl"><canvas data-fk="${k}"></canvas><span class="tn">${esc(itemName(k))}</span><b class="q">×${n}</b></div>`;
   for (const r of O.rares||[]) h+=`<div class="trl"><canvas data-fk="${r.item}"></canvas><span class="tn">⭐ ${esc(FURN_DEF[r.item]?FURN_DEF[r.item].n:r.item)}<small>#${r.serial}</small></span></div>`;
   if (O.tk) h+=`<div class="trl"><span style="font-size:22px">🪙</span><span class="tn">${O.tk} TOKENS</span></div>`; return h || '<div class="trnone">Nothing yet.</div>'; }
 function trDraw(){ if (!TR.tid) return; $id('tr_title').textContent=`🤝 TRADE WITH ${TR.them}`;
   const M=TR.mine, rareIds=new Set((M.rares||[]).map(r=>r.id)); let mine='';
-  const have=(TR.have||[]).map(x=>({item:x.item, free:Math.max(0,x.n-(x.placed||0))})).filter(x=>x.free>0 && FURN_DEF[x.item] && !FURN_DEF[x.item].rare);
-  mine+='<div class="trsub">FURNITURE IN STORAGE</div>';
-  if (!TR.have) mine+='<div class="trnone">Loading...</div>'; else if (!have.length) mine+='<div class="trnone">Nothing in storage to trade (placed pieces stay in your room).</div>';
-  for (const x of have){ const q=(M.items||{})[x.item]||0; mine+=`<div class="trl"><canvas data-fk="${x.item}"></canvas><span class="tn">${esc(FURN_DEF[x.item].n)}<small>${x.free} in storage</small></span><button data-dq="${x.item}" data-d="-1">−</button><b class="q">${q}</b><button data-dq="${x.item}" data-d="1">+</button></div>`; }
+  const have=(TR.have||[]).map(x=>({item:x.item, free:Math.max(0,x.n-(x.placed||0))})).filter(x=>x.free>0 && ((FURN_DEF[x.item] && !FURN_DEF[x.item].rare) || decoOf(x.item)));
+  mine+='<div class="trsub">ITEMS IN YOUR BAG</div>';
+  if (!TR.have) mine+='<div class="trnone">Loading...</div>'; else if (!have.length) mine+='<div class="trnone">Nothing in your bag to trade (placed pieces and the wallpaper and floor that are up stay in your room).</div>';
+  for (const x of have){ const q=(M.items||{})[x.item]||0; mine+=`<div class="trl"><canvas data-fk="${x.item}"></canvas><span class="tn">${esc(itemName(x.item))}<small>${x.free} in your bag</small></span><button data-dq="${x.item}" data-d="-1">−</button><b class="q">${q}</b><button data-dq="${x.item}" data-d="1">+</button></div>`; }
   const myR=(TR.rares&&TR.rares.mine)||[]; if (myR.length){ mine+='<div class="trsub">⭐ YOUR RARES</div>'; for (const r of myR) mine+=`<div class="trl"><canvas data-fk="${r.item}"></canvas><span class="tn">${esc(FURN_DEF[r.item]?FURN_DEF[r.item].n:r.item)}<small>#${r.serial}</small></span><button data-rr="${r.id}" class="${rareIds.has(r.id)?'on':''}">${rareIds.has(r.id)?'✓':'+'}</button></div>`; }
   mine+=`<div class="trtk">🪙<input id="tr_tk" type="number" min="0" inputmode="numeric" placeholder="Tokens to give" value="${M.tk||''}"></div>`;
   const h=`<div class="trcols"><div class="trc ${TR.ok[0]?'ok':''}"><h5><span>YOU GIVE</span>${TR.ok[0]?'<span class="rd">✓ READY</span>':''}</h5>${mine}</div><div class="trc ${TR.ok[1]?'ok':''}"><h5><span>${esc(TR.them)} GIVES</span>${TR.ok[1]?'<span class="rd">✓ READY</span>':''}</h5>${trOfferHtml(TR.theirs)}</div></div>`;

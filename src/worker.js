@@ -97,6 +97,10 @@ const PR = { w: 11, h: 7, maxFurn: 40,   // player rooms: 11 wide, 7 deep (the l
 // wallpaper and flooring for player rooms: price in TOKENS (0 = free for everyone); you buy one once and can use it any time
 const DECO_WALL = { lavender: 0, cream: 15, mint: 15, pink: 15, night: 15, wood: 25, stripes: 30, damask: 35, brick: 35, stars: 40, floral: 30 };
 const DECO_FLOOR = { wood: 0, checker: 20, carpet: 20, marble: 25, grass: 20, parquet: 30, tiles: 30, cobble: 25, plaid: 25 };
+// wallpaper and floors are items too: wp_<id> and fl_<id> sit in finv like furniture, so they can be kept and traded.
+// Putting one up moves it from your bag onto your room; the one it replaces goes back into your bag. The free lavender and wood aren't items.
+const DECO_ITEMS = Object.fromEntries([...Object.entries(DECO_WALL).filter(([, p]) => p > 0).map(([k, p]) => ["wp_" + k, p]), ...Object.entries(DECO_FLOOR).filter(([, p]) => p > 0).map(([k, p]) => ["fl_" + k, p])]);
+const decoItem = (kind, id) => (kind === "w" ? "wp_" : "fl_") + id;
 const PR_WALLS = Object.keys(DECO_WALL), PR_FLOORS = Object.keys(DECO_FLOOR);
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
 const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30, rug_persian: 25, rug_round: 15, rug_stripe: 12, rug_shag: 18,
@@ -701,6 +705,10 @@ export class Lounge extends DurableObject {
       "CREATE TABLE IF NOT EXISTS plike (room INTEGER NOT NULL, uid INTEGER NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (room, uid))"]) await this.env.DB.prepare(q).run();
     try { await this.env.DB.prepare("ALTER TABLE prooms ADD COLUMN feat INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {}   // rooms the owner features in the room browser
     try { await this.env.DB.prepare("ALTER TABLE pfurn ADD COLUMN off INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {}   // TVs and lamps can be switched off (already there after the first time)
+    // old wallpaper/floor unlocks become bag items (the one already up in the room stays on the wall); runs until the old table is empty
+    await this.env.DB.batch([
+      this.env.DB.prepare("INSERT INTO finv (uid, item, n) SELECT d.uid, CASE WHEN substr(d.k, 1, 2) = 'w:' THEN 'wp_' || substr(d.k, 3) ELSE 'fl_' || substr(d.k, 3) END, 1 FROM deco d WHERE NOT EXISTS (SELECT 1 FROM prooms r WHERE r.owner = d.uid AND (d.k = 'w:' || r.wall OR d.k = 'f:' || r.floor)) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1"),
+      this.env.DB.prepare("DELETE FROM deco")]);
     this.prReady = true; this.prPriv = this.prPriv || new Map(); this.letIn = this.letIn || new Map(); this.knocks = this.knocks || new Map(); }
   async prRoom(id) { await this.prTables(); const r = await this.env.DB.prepare("SELECT r.*, u.name AS oname FROM prooms r JOIN users u ON u.id = r.owner WHERE r.id = ?").bind(id).first(); if (r) this.prPriv.set(r.id, !!r.priv); return r; }
   async prCanEnter(a, r) {
@@ -780,13 +788,20 @@ export class Lounge extends DurableObject {
     const name = m.name !== undefined ? cleanRoomName(m.name) : r.name; if (!name) return { ok: false, msg: "Give your room a name." };
     const priv = m.priv !== undefined ? (m.priv ? 1 : 0) : r.priv, wall = PR_WALLS.includes(m.wall) ? m.wall : r.wall, floor = PR_FLOORS.includes(m.floor) ? m.floor : r.floor;
     // a wallpaper or floor you haven't bought can't be put up (free ones, and whatever the room already has, are fine)
-    const own = await this.decoOwned(a.uid);
-    if (wall !== r.wall && DECO_WALL[wall] && !own.includes("w:" + wall)) return { ok: false, msg: "Buy that wallpaper at the LLAMA STORE first." };
-    if (floor !== r.floor && DECO_FLOOR[floor] && !own.includes("f:" + floor)) return { ok: false, msg: "Buy that floor at the LLAMA STORE first." };
-    await this.env.DB.prepare("UPDATE prooms SET name = ?, priv = ?, wall = ?, floor = ? WHERE id = ?").bind(name, priv, wall, floor, r.id).run();
+    // putting up a wallpaper or floor uses one from your bag; the one coming down goes back into your bag. One batch, so it's all or nothing.
+    const db = this.env.DB, st = [];
+    for (const [kind, now, was, T] of [["w", wall, r.wall, DECO_WALL], ["f", floor, r.floor, DECO_FLOOR]]) { if (now === was) continue;
+      if (T[now]) { const have = await db.prepare("SELECT n FROM finv WHERE uid = ? AND item = ?").bind(a.uid, decoItem(kind, now)).first(); if (!have || have.n < 1) return { ok: false, msg: kind === "w" ? "Buy that wallpaper in the SHOP first." : "Buy that floor in the SHOP first." };
+        st.push(db.prepare("INSERT INTO trade_guard (ok) SELECT CASE WHEN COALESCE((SELECT n FROM finv WHERE uid = ? AND item = ?), 0) >= 1 THEN 1 ELSE 0 END").bind(a.uid, decoItem(kind, now)),
+          db.prepare("UPDATE finv SET n = n - 1 WHERE uid = ? AND item = ?").bind(a.uid, decoItem(kind, now))); }
+      if (T[was]) st.push(db.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, decoItem(kind, was))); }
+    if (st.length) await this.rareTables();   // makes sure trade_guard exists
+    st.push(db.prepare("UPDATE prooms SET name = ?, priv = ?, wall = ?, floor = ? WHERE id = ? AND wall = ? AND floor = ?").bind(name, priv, wall, floor, r.id, r.wall, r.floor));
+    if (st.length > 1) st.push(db.prepare("DELETE FROM finv WHERE uid = ? AND n <= 0").bind(a.uid), db.prepare("DELETE FROM trade_guard"));
+    try { await db.batch(st); } catch (e) { return { ok: false, msg: "That didn't work. Try again." }; }
     const nr = await this.prRoom(r.id); this.toRoom("p:" + r.id, { t: "prr", room: this.prOut(nr) });
     if (priv) await this.prKickUnwelcome(nr);
-    return { ok: true, room: this.prOut(nr) };
+    return { ok: true, room: this.prOut(nr), deco: await this.decoOwned(a.uid) };
   }
   async prKickUnwelcome(r) {   // a room just went private: anyone inside who isn't allowed goes back to the lounge
     for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (!x || !x.pres || x.pres.rm !== "p:" + r.id) continue;
@@ -837,17 +852,19 @@ export class Lounge extends DurableObject {
     const own = (await this.env.DB.prepare("SELECT item, n FROM finv WHERE uid = ?").bind(uid).all()).results || [];
     const mine = await this.env.DB.prepare("SELECT id FROM prooms WHERE owner = ?").bind(uid).first();
     const placed = new Map(); if (mine) for (const f of await this.prFurn(mine.id)) placed.set(f.item, (placed.get(f.item) || 0) + 1);
-    return own.filter((r) => FURN_ITEMS[r.item]).map((r) => ({ item: r.item, n: r.n, placed: placed.get(r.item) || 0 }));
+    return own.filter((r) => FURN_ITEMS[r.item] || DECO_ITEMS[r.item]).map((r) => ({ item: r.item, n: r.n, placed: placed.get(r.item) || 0 }));
   }
-  async decoOwned(uid) { await this.prTables(); return ((await this.env.DB.prepare("SELECT k FROM deco WHERE uid = ?").bind(uid).all()).results || []).map((r) => r.k); }
+  // "w:<id>" / "f:<id>" for every wallpaper and floor in the bag (the settings swatches unlock from this)
+  async decoOwned(uid) { await this.prTables(); return ((await this.env.DB.prepare("SELECT item FROM finv WHERE uid = ? AND n > 0 AND substr(item, 1, 3) IN ('wp_', 'fl_')").bind(uid).all()).results || []).filter((r) => DECO_ITEMS[r.item]).map((r) => (r.item.startsWith("wp_") ? "w:" : "f:") + r.item.slice(3)); }
   async decoBuy(a, m) {   // k is "w:<wallpaper>" or "f:<floor>"
     await this.prTables();
     const k = String(m.k || ""), [kind, id] = k.split(":"), table = kind === "w" ? DECO_WALL : kind === "f" ? DECO_FLOOR : null;
     const price = table && Object.hasOwn(table, id) ? table[id] : 0; if (!price) return { ok: false, msg: "The store doesn't sell that." };
-    if ((await this.decoOwned(a.uid)).includes(k)) return { ok: false, msg: "You already have that one." };
+    const item = decoItem(kind, id), have = await this.env.DB.prepare("SELECT n FROM finv WHERE uid = ? AND item = ?").bind(a.uid, item).first();
+    if (have && have.n >= 20) return { ok: false, msg: "You have plenty of those." };
     const tk = await this.debit(a.uid, price, "deco " + k); if (tk === null) return { ok: false, msg: `That costs ${price} TOKENS. Play some games to earn more!` };
-    await this.env.DB.prepare("INSERT OR IGNORE INTO deco (uid, k) VALUES (?, ?)").bind(a.uid, k).run();
-    return { ok: true, tk, deco: await this.decoOwned(a.uid) };
+    await this.env.DB.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, item).run();
+    return { ok: true, tk, deco: await this.decoOwned(a.uid), furn: await this.furnStorage(a.uid) };
   }
   async furnBuy(a, m) {
     await this.prTables();
@@ -1071,7 +1088,7 @@ export class Lounge extends DurableObject {
     const H = await this.tradeHave(a.uid), items = {}, rares = [];
     const inItems = m.items && typeof m.items === "object" ? m.items : {};
     for (const [k, v] of Object.entries(inItems)) { const n = Math.floor(+v || 0); if (n <= 0) continue;
-      if (!Object.hasOwn(FURN_ITEMS, k) || Object.hasOwn(RARES, k)) return { ok: false, msg: "You can't trade that." };   // rares go by their number
+      if (!(Object.hasOwn(FURN_ITEMS, k) || Object.hasOwn(DECO_ITEMS, k)) || Object.hasOwn(RARES, k)) return { ok: false, msg: "You can't trade that." };   // rares go by their number
       if (n > TRADE.maxEach || n > (H.free.get(k) || 0)) return { ok: false, msg: "You don't have that many in storage (placed pieces stay put)." };
       items[k] = n; }
     const need = new Map();
