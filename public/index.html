@@ -3152,7 +3152,9 @@ function drawFurn(f,t){
       const along = (r%2===0) ? (u)=>[back[0]+back[2]/2, back[1]+back[3]*u] : (u)=>[back[0]+back[2]*u, back[1]+back[3]/2];
       const drawBack=()=>{
         for (const u of [0.1,0.9]){ const [bx,by]=along(u); box(bx-0.05,by-0.05,0.1,0.1,15,K('#d8a468'),K('#9a6436'),K('#7a4c26'),0,11); }
-        for (const u of [0.3,0.5,0.7]){ const [bx,by]=along(u); box(bx-0.035,by-0.035,0.07,0.07,11,K('#e0b070'),K('#a86c3a'),K('#86522a'),0,11); }
+        /* one slim centre spindle (2 px: lit side and shade side, no outline) with open gaps beside it, so you see through the back */
+        { const [bx,by]=along(0.5), [px0,py0]=P(bx,by,11), [,py1]=P(bx,by,23), X=Math.round(px0)-1, Y=Math.round(py1), H=Math.round(py0)-Y;
+          g.fillStyle=K('#e0b070'); g.fillRect(X,Y,1,H); g.fillStyle=K('#86522a'); g.fillRect(X+1,Y,1,H); }
         wbox(back[0]-0.01,back[1]-0.01,back[2]+0.02,back[3]+0.02,4,K('#f0c890'),K('#b07440'),K('#8a5a30'),0,23,K('#7a4c26'));
       };
       if (f.part==='front'){ if (!far) drawBack(); break; }
