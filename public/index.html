@@ -437,6 +437,7 @@
   #acctbox .pkcodes{margin-top:10px;background:#fffbe8;border:2px solid #000;border-radius:8px;padding:10px} #acctbox .pkcodes b{font:800 13px var(--pxf);display:block} #acctbox .pkcodes small{display:block;font:700 12px/1.4 var(--ui);color:var(--sub);margin:4px 0 8px}
   #acctbox .pkgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px} #acctbox .pkgrid code{font:800 14px ui-monospace,Menlo,Consolas,monospace;background:#fff;border:2px solid var(--cardln);border-radius:6px;padding:6px;text-align:center;letter-spacing:.06em}
   #acctbox .pkbtns{flex-wrap:wrap;gap:6px} #acctbox #pk_off.sure{background:#ff6a80;color:#fff}
+  #dashbox .sugrid{display:grid;grid-template-columns:auto auto 1fr;column-gap:14px;row-gap:0;align-items:center;font:600 13px var(--ui);color:var(--sub)} #dashbox .sugrid>*{padding:6px 0;border-bottom:1px dashed var(--line)} #dashbox .sugrid span{font-variant-numeric:tabular-nums;white-space:nowrap} #dashbox .sugrid b{color:var(--ink);font:800 13px var(--pxf);letter-spacing:.04em} #dashbox .sugrid .suh{font:800 10px var(--pxf);color:var(--sub);letter-spacing:.08em;padding-top:2px}
   #dashbox .errrow .rh b{font:800 13px ui-monospace,Menlo,Consolas,monospace;word-break:break-word} #dashbox .errst{white-space:pre-wrap;word-break:break-all;font:600 11px/1.4 ui-monospace,Menlo,Consolas,monospace;background:#f4eef8;border-radius:6px;padding:8px;max-height:220px;overflow:auto} #dashbox details summary{cursor:pointer;font:800 11px var(--pxf);color:var(--sub);margin:4px 0}
   /* BOXING GYM: panel, challenge pop-up, fight HUD and move pad */
   #boxbox{width:min(calc(100% - 24px),440px)} #boxbox .bxh{font:800 12px var(--pxf);letter-spacing:.06em;color:var(--sub);margin:14px 0 6px}
@@ -8538,7 +8539,7 @@ function loadDash(){
     if (owner && Array.isArray(r.signups)){   // OWNER ONLY: who made an account (the server never sends this to mods)
       const day=new Date().toDateString(), nToday=r.signups.filter(s2=>new Date(s2.t).toDateString()===day).length;
       h+=`<h4>NEW ACCOUNTS (${nToday} TODAY)</h4>`;
-      for (const s2 of r.signups.slice(0,30)){ const d=new Date(s2.t); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · <b>${esc(s2.n)}</b> made an account</div>`; }
+      { const list=r.signups.slice(0,30); if (list.length){ h+='<div class="sugrid"><span class="suh">DATE</span><span class="suh">TIME</span><span class="suh">LLAMA</span>'; for (const s2 of list){ const d=new Date(s2.t); h+=`<span>${d.toLocaleDateString([], {month:'short',day:'numeric'})}</span><span>${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}</span><b>${esc(s2.n)}</b>`; } h+='</div>'; } }
       if (!r.signups.length) h+='<div class="dl">NO ACCOUNTS YET.</div>'; }
     h+='<h4>STAFF</h4>';
     for (const p of r.staff){ const st=p.role==='admin'?'owner':'mod'; h+=`<div class="dr">${badgeHtml(st)}<span class="nm">${esc(p.n)} <small>${st==='owner'?'OWNER':'MOD'}</small></span>${owner&&st==='mod'?btn('RESET PASSKEY','pkreset',p.n)+btn('UNMOD','unmod',p.n):''}</div>`; }
