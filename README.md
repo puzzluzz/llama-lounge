@@ -174,7 +174,7 @@ No API keys or passwords are involved.
 - **Food and drink:** every drink and snack has 3 sips or bites, and each one fills a third of what it gives.
 - **Pop-ups:** every pop-up has a header strip with a grab bar and ✕. Drag the strip to move the pop-up. It can't leave the screen, and it goes back to its usual spot when it closes.
 - **Walking:** paths go around chairs, stools, benches and logs. A llama only steps onto a seat when it's going to sit there.
-- Mods have a gold heart 💛 badge. The owner has the crown 👑.
+- The owner and mods both have the gold crown badge.
 - **Lounge wall:** the framed shirts and the round logo over the door are taken down, and the neon LLAMA LOUNGE sign hangs on that wall instead. Everything for the shirts (shop pop-ups, links, tips) is still in the code. Set `SHOW_MERCH = true` in `public/index.html` to hang them again, which also moves the sign back up into the sky.
 
 ## LLAMA STORE, wardrobe and inventory
