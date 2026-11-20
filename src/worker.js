@@ -5,10 +5,10 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-22z";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-23a";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
-const BOOTH = { x: 18, y: 10, price: 10 };   // the changing booth in LLAMA ACRES: switch to another llama for 10 tokens
+const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
 const SESSION_DAYS = 30;
 const PBKDF2_ITERS = 100000;              // Workers' maximum for PBKDF2
 const LOGIN_MAX_FAILS = 8;                // per username per 15 minutes
@@ -19,7 +19,7 @@ const WINDOW_MS = 15 * 60 * 1000;
 const FRIENDS = { max: 100, inbox: 50 };
 const DM = { len: 300, burst: 8, perDay: 300 };   // private messages: longest message, most per 10 seconds, most a day (kept forever)
 // the staff chat log is kept forever too
-const ROOM_IDS = new Set(["lounge", "barn", "casino", "arena", "lanes", "store"]);
+const ROOM_IDS = new Set(["lounge", "barn", "casino", "arena", "lanes", "store", "account"]);
 const STAFF_GIVE_DAY = 500;   // most tokens a mod can give out in a day (the owner has no limit)
 const AFK_MS = 12 * 60000;   // no moving, chatting or "I'm still here" for this long: no more fishing or bar tips until they're back
 const SIPS = 5;                                   // sips or bites in every drink and snack   // friends plus sent requests per llama; requests waiting for one llama
@@ -1055,7 +1055,7 @@ export class Lounge extends DurableObject {
       }
       case "llama_change": {   // the changing booth: you have to be standing at it, and it costs 10 tokens
         const c = String(m.c || ""); if (!LLAMAS.includes(c)) return { ok: false, msg: "That llama doesn't exist." };
-        if (!this.near(a, "barn", (x, y, p) => p.p !== "sit" && Math.abs(x - BOOTH.x) <= 1.6 && Math.abs(y - BOOTH.y) <= 1.6)) return { ok: false, msg: "Walk up to the changing booth in LLAMA ACRES first." };
+        if (!this.near(a, BOOTH.rm, (x, y, p) => p.p !== "sit" && Math.abs(x - BOOTH.x) <= 1.6 && Math.abs(y - BOOTH.y) <= 1.6)) return { ok: false, msg: "Walk up to the changing booth in the ACCOUNT room first." };
         const u = await this.user(uid); if (u && u.c === c) return { ok: false, msg: "That's already you! Pick a different llama." };
         const tk = await this.debit(uid, BOOTH.price, "llama change " + c); if (tk === null) return { ok: false, msg: `The booth costs ${BOOTH.price} TOKENS. Play some games to earn more!` };
         await this.env.DB.prepare("UPDATE users SET c = ? WHERE id = ?").bind(c, uid).run();

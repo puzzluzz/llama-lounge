@@ -678,7 +678,7 @@
   <div id="logbox" class="gb sheet"><span class="x" id="logx">✕</span><div id="loglines"></div></div>
   <div id="tbox" class="gb"><span id="ttext"></span><span id="tarrow">▼</span></div>
   <div id="dock">
-  <div id="rbwrap"><button class="rbarrow" id="rb_l" type="button" aria-label="Scroll rooms left">‹</button><div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button><button class="pbtn" data-go="arena">💦 ARENA</button><button class="pbtn" data-go="lanes">🎳 LANES</button><button class="pbtn" data-go="store">🛍️ STORE</button></div><button class="rbarrow" id="rb_r" type="button" aria-label="Scroll rooms right">›</button></div>
+  <div id="rbwrap"><button class="rbarrow" id="rb_l" type="button" aria-label="Scroll rooms left">‹</button><div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button><button class="pbtn" data-go="arena">💦 ARENA</button><button class="pbtn" data-go="lanes">🎳 LANES</button><button class="pbtn" data-go="store">🛍️ STORE</button><button class="pbtn" data-go="account">🔐 ACCOUNT</button></div><button class="rbarrow" id="rb_r" type="button" aria-label="Scroll rooms right">›</button></div>
   <div id="bottom">
     <form id="chatrow" autocomplete="off"><input id="chatin" maxlength="120" placeholder="Say something..." enterkeyhint="send"><button class="pbtn y" id="saybtn" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10 15 12 3.4 14z" fill="currentColor"/></svg></button></form>
     <button class="pbtn" id="abtn" title="Action (Space)"><b id="alabel">SIT</b></button>
@@ -726,6 +726,7 @@
     <button class="rpb" data-r="lanes"><span class="rpi">🎳</span><span class="rpx"><b>LLAMA LANES</b><small>HAY BALE BOWLING · 5-FRAME GAMES · STRIKES PAY COINS</small><i id="rp_n_lanes"></i></span></button>
     <button class="rpb" data-r="store"><span class="rpi">🛍️</span><span class="rpx"><b>LLAMA STORE</b><small>LA LLAMA P.I.C. SHIRTS · TAP A FRAME OR THE COUNTER TO SHOP</small><i id="rp_n_store"></i></span></button>
     <button class="rpb" data-r="barn"><span class="rpi">🌾</span><span class="rpx"><b>LLAMA ACRES</b><small>BARN · CAMPFIRE · CARROT PATCH (EARN TOKENS)</small><i id="rp_n_barn"></i></span></button>
+    <button class="rpb" data-r="account"><span class="rpi">🔐</span><span class="rpx"><b>ACCOUNT</b><small>CHANGING BOOTH (SWITCH LLAMAS) · ACCOUNT DESK (EMAIL AND PASSWORD)</small><i id="rp_n_account"></i></span></button>
     <div class="srow"><button class="gbbtn" id="rp_close">CLOSE</button></div></div>
   <div id="slotbox" class="gb sheet"><div class="slt" id="sl_title">🎰 LLAMA SLOTS</div><canvas id="slotcv" width="130" height="70"></canvas><div id="sl_msg">1 TOKEN A SPIN. GOOD LUCK!</div>
     <div class="slbet" id="sl_bet"><span>BET</span><button class="gbbtn" data-bet="1">1</button><button class="gbbtn" data-bet="2">2</button><button class="gbbtn" data-bet="5">5</button><button class="gbbtn" data-bet="10">10</button></div>
@@ -807,7 +808,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-22z";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-23a";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1175,7 +1176,7 @@ function itemIcon(id){ let c=itemIconCache.get(id); if (c) return c; const it=IT
 // ======================= WORLD =======================
 const ARC_X = 9, JUKE_X = 12;   // arcade cabinet and jukebox spots on the lounge's back wall
 const TW = 40, TH = 20, WH = 96;
-const ROOM_DIMS = { lounge:[13,12], barn:[22,20], casino:[13,12], arena:[13,12], lanes:[13,12], store:[13,12] };
+const ROOM_DIMS = { lounge:[13,12], barn:[22,20], casino:[13,12], arena:[13,12], lanes:[13,12], store:[13,12], account:[9,6] };
 let N = 13, NY = 12;   // current room: N = width (gx) and row stride, NY = depth (gy)
 const proj = (gx,gy) => [(gx-gy)*TW/2, (gx+gy)*TH/2];
 let BLOCK = new Uint8Array(N*NY);
@@ -1183,8 +1184,8 @@ const FURN = [], SEATS = [];
 const block = (x,y) => { BLOCK[y*N+x] = 1; };
 // two rooms share one grid; each build function lays out its own furniture
 let curRoom = 'lounge';
-const ROOM_NAMES = { lounge:'LLAMA LOUNGE', barn:'LLAMA ACRES', casino:'LLAMA CASINO', arena:'SPIT ARENA', lanes:'LLAMA LANES', store:'LLAMA STORE' };
-const ROOMS = ['lounge','barn','casino','arena','lanes','store'];
+const ROOM_NAMES = { lounge:'LLAMA LOUNGE', barn:'LLAMA ACRES', casino:'LLAMA CASINO', arena:'SPIT ARENA', lanes:'LLAMA LANES', store:'LLAMA STORE', account:'ACCOUNT' };
+const ROOMS = ['lounge','barn','casino','arena','lanes','store','account'];
 // player rooms are 'p:<id>'; their name, door and layout get registered when you go in
 const isP = r => /^p:\d{1,9}$/.test(String(r||''));
 const validRoom = r => ROOMS.includes(r) || isP(r);
@@ -1240,10 +1241,18 @@ function buildLoungeWorld(){
 // LLAMA ACRES: outdoor barnyard
 // LLAMA ACRES: big outdoor barnyard (22 x 20)
 let BARN_PATH = new Set(), FARM_PATH = new Set();
-let boothHit=null; const BOOTH=[18,10];   // LLAMA ACRES: the changing booth (swap your llama for 10 TOKENS)
-function buildBarnWorld(){
+// ACCOUNT: a small room with the changing booth (swap your llama for 20 TOKENS) and the account desk (email and password)
+let boothHit=null, deskHit=null; const BOOTH=[7,0], ACCT_DESK=[3,0], BOOTH_PRICE=20;
+PRD.account = { name:'ACCOUNT', wall:'stars', floor:'marble', furn:[] };   // drawn like a player room, but nobody owns it
+function buildAccountWorld(){
   clearWorld();
   FURN.push({t:'booth',gx:BOOTH[0],gy:BOOTH[1]}); block(BOOTH[0],BOOTH[1]);
+  FURN.push({t:'acctdesk',gx:ACCT_DESK[0],gy:ACCT_DESK[1]}); block(ACCT_DESK[0],ACCT_DESK[1]); block(ACCT_DESK[0]+1,ACCT_DESK[1]);
+  const put=(item,gx,gy,rot)=>{ const D=FURN_DEF[item]; FURN.push({...D.mk(rot), gx, gy, item, rot}); if (D.rug) return; if (D.seat) SEATS.push({gx,gy,dir:SEAT_DIRS[rot],lift:D.seat}); else block(gx,gy); };
+  put('rug_round',3,2,0); put('plant',0,0,0); put('floorlamp',8,0,0); put('armchair',0,2,1); put('armchair_mustard',0,3,1); put('cactus',8,2,0); put('flowers',6,0,0);
+}
+function buildBarnWorld(){
+  clearWorld();
   BARN_PATH = new Set([[14,1],[14,2],[13,3],[13,4],[12,5],[12,6],[11,7],[11,8],[10,8],[9,8],[8,9],[7,10],[7,11],[7,12]].map(([x,y])=>y*N+x));
   FURN.push({t:'barn',gx:0,gy:0}); for (let x=0;x<=3;x++) for (let y=0;y<=3;y++) block(x,y);
   FURN.push({t:'hay',gx:4,gy:0}); block(4,0);
@@ -1335,7 +1344,7 @@ function buildStoreWorld(){
   FURN.push({t:'fern',gx:12,gy:11,flip:true}); block(12,11);
   FURN.push({t:'fern',gx:0,gy:11}); block(0,11);
 }
-function buildWorld(){ if (isP(curRoom)) buildPlayerWorld(); else if (curRoom==='store') buildStoreWorld(); else if (curRoom==='barn') buildBarnWorld(); else if (curRoom==='casino') buildCasinoWorld(); else if (curRoom==='arena') buildArenaWorld(); else if (curRoom==='lanes') buildLanesWorld(); else buildLoungeWorld(); }
+function buildWorld(){ if (isP(curRoom)) buildPlayerWorld(); else if (curRoom==='account') buildAccountWorld(); else if (curRoom==='store') buildStoreWorld(); else if (curRoom==='barn') buildBarnWorld(); else if (curRoom==='casino') buildCasinoWorld(); else if (curRoom==='arena') buildArenaWorld(); else if (curRoom==='lanes') buildLanesWorld(); else buildLoungeWorld(); }
 buildLoungeWorld();
 const seatAt = (x,y) => SEATS.find(s=>s.gx===x&&s.gy===y);
 const walkable = (x,y) => x>=0&&y>=0&&x<N&&y<NY&&!BLOCK[y*N+x];
@@ -1846,7 +1855,7 @@ function buildBarnBG(){
   g = null;
 }
 function barnSky(){ const per=(typeof period==='string')?period:'day'; return per==='day' ? ['#78b8f0','#98ccf8','#b8e0f8'] : per==='dusk' ? ['#d86858','#f09868','#f8c890'] : ['#181c50','#222a68','#2c3a80']; }
-function rebuildBG(){ sizeBG(); if (isP(curRoom)) buildPlayerBG(); else if (curRoom==='store') buildStoreBG(); else if (curRoom==='barn') buildBarnBG(); else if (curRoom==='casino') buildCasinoBG(); else if (curRoom==='arena') buildArenaBG(); else if (curRoom==='lanes') buildLanesBG(); else buildBG(); }
+function rebuildBG(){ sizeBG(); if (isP(curRoom) || curRoom==='account') buildPlayerBG(); else if (curRoom==='store') buildStoreBG(); else if (curRoom==='barn') buildBarnBG(); else if (curRoom==='casino') buildCasinoBG(); else if (curRoom==='arena') buildArenaBG(); else if (curRoom==='lanes') buildLanesBG(); else buildBG(); }
 
 function P(gx,gy,h=0){ const [x,y]=proj(gx,gy); return [OX+x, OY+y-h]; }
 // faint wood grain on a box: broken streaks along the left face (l), right face (r) and top (t)
@@ -2663,6 +2672,17 @@ function drawFurn(f,t){
       { const [cx,cy]=P(f.gx+0.5,f.gy+0.5,3+H+16); const tw=Math.floor(t*2)%3; g.fillStyle=tw===0?'#ffffff':'#ffe070'; g.fillRect(Math.round(cx),Math.round(cy)-2,1,5); g.fillRect(Math.round(cx)-2,Math.round(cy),5,1); }   // twinkle
       { const q=[P(f.gx,f.gy+1,0),P(f.gx+1,f.gy+1,0),P(f.gx+1,f.gy,0),P(f.gx+0.5,f.gy+0.5,3+H+18)]; boothHit={x0:Math.min(...q.map(v=>v[0])), x1:Math.max(...q.map(v=>v[0])), y0:Math.min(...q.map(v=>v[1])), y1:Math.max(...q.map(v=>v[1]))}; }
       break; }
+    case 'acctdesk': { // two-tile wooden desk with a computer showing a padlock, a little bell and a stack of forms
+      box(f.gx+0.06,f.gy+0.1,1.88,0.8,16,'#a8743e','#8a5a2c','#6a4220');
+      for (const u of [0.25,1.75]){ const a=P(f.gx+u,f.gy+0.9,2), b=P(f.gx+u,f.gy+0.9,14); linePx(a[0],a[1],b[0],b[1],'#5a3418'); }
+      box(f.gx+0.55,f.gy+0.25,0.7,0.12,15,'#2a2c3a','#3a3e52','#22242e',0,16);   // monitor
+      { const S2=(u,v)=>P(f.gx+0.58+0.64*u,f.gy+0.37,16+2+v*12), q=[S2(0,0),S2(1,0),S2(1,1),S2(0,1)]; polyPx(q,'#2a6ad8'); const glow=Math.floor(t*2)%4===0;
+        const [cx,cy]=S2(0.5,0.45); const X=Math.round(cx), Y=Math.round(cy); g.fillStyle='#f6c945'; g.fillRect(X-2,Y,5,4); g.fillStyle='#c8951c'; g.fillRect(X,Y+1,1,2); g.fillStyle=glow?'#ffffff':'#d8e4f8'; g.fillRect(X-1,Y-3,1,3); g.fillRect(X+1,Y-3,1,3); g.fillRect(X,Y-4,1,1); }
+      box(f.gx+0.75,f.gy+0.4,0.3,0.1,1,'#2a2c3a','#3a3e52','#22242e',0,16);
+      box(f.gx+1.4,f.gy+0.5,0.35,0.25,3,'#f8f4ec','#d8d0c0','#c0b8a8',0,16); box(f.gx+1.42,f.gy+0.48,0.33,0.25,2,'#ffffff','#e0d8c8','#c8c0b0',0,19);   // forms
+      { const [bx,by]=P(f.gx+0.25,f.gy+0.6,17); g.fillStyle=INK; g.fillRect(Math.round(bx)-3,Math.round(by)-3,7,4); g.fillStyle='#f6c945'; g.fillRect(Math.round(bx)-2,Math.round(by)-3,5,3); g.fillStyle='#ffffff'; g.fillRect(Math.round(bx)-1,Math.round(by)-3,1,1); g.fillStyle=INK; g.fillRect(Math.round(bx),Math.round(by)-5,1,2); }   // service bell
+      { const q=[P(f.gx,f.gy+1,0),P(f.gx+2,f.gy+1,0),P(f.gx+2,f.gy,0),P(f.gx+1,f.gy+0.4,34)]; deskHit={x0:Math.min(...q.map(v=>v[0])), x1:Math.max(...q.map(v=>v[0])), y0:Math.min(...q.map(v=>v[1])), y1:Math.max(...q.map(v=>v[1]))}; }
+      break; }
     case 'foldtable': { // display table with stacks of folded shirts
       box(f.gx+0.06,f.gy+0.06,0.88,0.88,13,'#f4e6c8','#a87444','#86582e');
       PRODUCTS.slice(f.k*2, f.k*2+3).forEach((pr,j)=>{ const u=[0.3,0.68,0.5][j], v=[0.35,0.4,0.72][j]; let lift=13;
@@ -3240,6 +3260,7 @@ function doAction(a){
   if (a==='leaveroom'){ prLeaveNow(); return; }
   if (a==='vend'){ openFw('vend'); return; }
   if (a==='booth'){ openBooth(); return; }
+  if (a==='acctdesk'){ openAccount(); return; }
   if (a==='pvend'){ pvOpen(); return; }
   if (a==='clothes'){ const r=STORE_RACKS.find(([x,y])=>near(x,y)); openWardrobe('shop', r ? r[2] : STORE_CASE.some(([x,y])=>near(x,y)) ? 'shades' : null); return; }
   if (a==='dunk'){ openDunk(); return; }
@@ -3810,14 +3831,14 @@ for (const id of CHAR_IDS){
 function setSel(id){ sel=id; for(const p of previews) p.card.classList.toggle('sel',p.id===id); who.textContent = CHARS[id].label.toUpperCase(); }
 function pickMode(booth){ pick.classList.toggle('booth', !!booth);
   pick.querySelector('.tt').innerHTML = booth ? 'Step into the <b>BOOTH</b>' : 'Which <b>LLAMA</b> will<br>you choose?';
-  pick.querySelector('.picknote').textContent = booth ? 'Switch to any llama for 10 TOKENS. Your name, clothes and tokens stay the same.' : 'Choose carefully: this llama is yours for good.';
-  $id('bGo').textContent = booth ? 'SWITCH · 10' : 'OK'; }
+  pick.querySelector('.picknote').textContent = booth ? `Switch to any llama for ${BOOTH_PRICE} TOKENS. Your name, clothes and tokens stay the same.` : 'Choose carefully: this llama is yours for good.';
+  $id('bGo').textContent = booth ? `SWITCH · ${BOOTH_PRICE}` : 'OK'; }
 function openPicker(){ closeAll(); if(arcade.on) exitArcade(); pickMode(false); pname.value=me.n; setSel(me.c); pick.style.display='flex'; }
 function openBooth(){ closeAll(); pickMode(true); pname.value=me.n; setSel(me.c); pick.style.display='flex'; }
 let boothBusy=false;
 function boothSwitch(){ if (boothBusy) return; if (sel===me.c){ localMsg("That's already you! Pick a different llama."); return; }
   boothBusy=true; $id('bGo').textContent='...';
-  NET.act('llama_change',{c:sel}).then(r=>{ boothBusy=false; $id('bGo').textContent='SWITCH · 10';
+  NET.act('llama_change',{c:sel}).then(r=>{ boothBusy=false; $id('bGo').textContent=`SWITCH · ${BOOTH_PRICE}`;
     if (!r || !r.ok){ localMsg((r&&r.msg)||"The booth is stuck. Try again."); return; }
     me.c=r.c; store.c=r.c; saveStore(); if (acct) acct.c=r.c; acctSave(); pick.style.display='none'; pickMode(false);
     if (Number.isFinite(r.tk)) tkSet(r.tk, `TA-DA! You're ${CHARS[r.c].label.toUpperCase()} now.`); sendPresence(true); }); }
@@ -3906,6 +3927,7 @@ cv.addEventListener('pointerdown', e => {
   if (curRoom==='arena'){ arenaPointer(e); return; }
   if (curRoom==='lanes'){ lanesPointer(e); return; }
   if (curRoom==='store'){ storePointer(e); return; }
+  if (curRoom==='account'){ accountPointer(e); return; }
   if (isP(curRoom)){ playerPointer(e); return; }
   { const lx=e.clientX/S, ly=e.clientY/S; for (const h of shopHit){ if(lx>=h.x0&&lx<h.x1&&ly>=h.y0&&ly<=h.y1){ openShop(h.i); return; } }
     const lcx=OX-210, lcy=OY+105-75.5; if (SHOW_MERCH && Math.abs(lx-lcx)<=13 && Math.abs(ly-lcy)<=13){ openLogo(); return; } }
@@ -4671,7 +4693,7 @@ function drawTableGames(c, t){
 // ======================= ROOMS: LLAMA LOUNGE <-> LLAMA ACRES =======================
 const roomPickEl=document.getElementById('roompick'), loadingEl=document.getElementById('loading');
 // where you appear in a room, by the room you came from
-const ENTRY = { lounge:{ any:{at:[1,10], to:[3,10]} }, barn:{ any:{at:[14,1], to:[13,3]} }, casino:{ any:{at:[1,10], to:[3,10]} }, arena:{ any:{at:[1,10], to:[3,10]} }, lanes:{ any:{at:[1,10], to:[3,10]} }, store:{ any:{at:[1,10], to:[3,10]} } };
+const ENTRY = { lounge:{ any:{at:[1,10], to:[3,10]} }, barn:{ any:{at:[14,1], to:[13,3]} }, casino:{ any:{at:[1,10], to:[3,10]} }, arena:{ any:{at:[1,10], to:[3,10]} }, lanes:{ any:{at:[1,10], to:[3,10]} }, store:{ any:{at:[1,10], to:[3,10]} }, account:{ any:{at:[1,5], to:[2,4]} } };
 let entryFrom = null;
 const entryFor = r => { const E=ENTRY[r]; return (entryFrom && E[entryFrom]) || E.any || E[Object.keys(E)[0]]; };
 // pick a free tile near the room's entrance so new arrivals don't stand on top of each other
@@ -4702,13 +4724,13 @@ function setRoom(r){ if (me.fish) stopFish(true); if (typeof AR!=='undefined' &&
 }
 // ---- bottom-left room selector: walk to the doorway, then confirm the swap ----
 const swapEl=document.getElementById('swapbox'), roombarEl=document.getElementById('roombar'); let swapTo=null;
-const DOORWAY = { lounge:[0,10], barn:[14,1], casino:[0,10], arena:[0,10], lanes:[0,10], store:[0,10] };   // each room has one door; you walk to it whichever room you're going to
+const DOORWAY = { lounge:[0,10], barn:[14,1], casino:[0,10], arena:[0,10], lanes:[0,10], store:[0,10], account:[0,5] };   // each room has one door; you walk to it whichever room you're going to
 function showSwap(r){ if (!joined || r===curRoom || !validRoom(r)) return; if (isP(r) && !PRD[r]){ prGo(+r.slice(2)); return; } closeAll(); swapTo=r; document.getElementById('sw_text').textContent=`GO TO ${roomName(r)}?`; swapEl.style.display='block'; }
 document.getElementById('sw_go').addEventListener('click', ()=>{ swapEl.style.display='none'; const r=swapTo; swapTo=null; if (!r) return; if (isP(r)){ prGo(+r.slice(2)); return; } if (arcade.on) exitArcade(); localMsg(`Heading to ${roomName(r)}...`); goThroughDoor(r); });
 function goThroughDoor(r){ const [dx,dy]=DOORWAY[curRoom]||[0,10]; if (me.gx===dx && me.gy===dy && !me.moving && !me.bar){ switchRoom(r); return; } me.travelTo=r; if (!walkTo(dx,dy,'travel')){ me.travelTo=null; switchRoom(r); } }
 document.getElementById('sw_stay').addEventListener('click', ()=>{ swapEl.style.display='none'; swapTo=null; });
 function updateRoomsSign(){ const el=$id('rooms_on'), btn=$id('roomsbtn'); if (!el) return; const n=[...others.values()].filter(o=>!o.leaving && isP(o.rm)).length + (isP(curRoom)?1:0); el.textContent=n||''; el.classList.toggle('on', n>0); btn.classList.toggle('here', isP(curRoom)); }
-function updateRoombar(){ updateRoomsSign(); roombarEl.style.display = joined ? 'flex' : 'none'; document.getElementById('dock').classList.toggle('on', !!joined); document.body.classList.toggle('joined', !!joined); for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n = roomCount(r); const [ic,lb]=({lounge:['🍸','LOUNGE'], barn:['🌾','ACRES'], casino:['🎰','CASINO'], arena:['💦','ARENA'], lanes:['🎳','LANES'], store:['🛍️','STORE']})[r]; b.innerHTML = `<span class="ri">${ic}</span><span class="rl">${lb}</span>` + (n ? `<span class="cnt">${n}</span>` : ''); } }
+function updateRoombar(){ updateRoomsSign(); roombarEl.style.display = joined ? 'flex' : 'none'; document.getElementById('dock').classList.toggle('on', !!joined); document.body.classList.toggle('joined', !!joined); for (const b of roombarEl.querySelectorAll('[data-go]')){ const r=b.dataset.go; b.classList.toggle('here', r===curRoom); const n = roomCount(r); const [ic,lb]=({lounge:['🍸','LOUNGE'], barn:['🌾','ACRES'], casino:['🎰','CASINO'], arena:['💦','ARENA'], lanes:['🎳','LANES'], store:['🛍️','STORE'], account:['🔐','ACCOUNT']})[r] || ['🚪',r.toUpperCase()]; b.innerHTML = `<span class="ri">${ic}</span><span class="rl">${lb}</span>` + (n ? `<span class="cnt">${n}</span>` : ''); } }
 // fades show which side has more rooms; a mouse wheel scrolls the bar sideways; your room's tab stays in view
 function roombarEdges(){ const el=roombarEl, max=el.scrollWidth-el.clientWidth; el.classList.toggle('fl', el.scrollLeft>2); el.classList.toggle('fr', max>2 && el.scrollLeft<max-2);
   const w=document.getElementById('rbwrap'); if (w){ w.classList.toggle('over', max>2); document.getElementById('rb_l').disabled = el.scrollLeft<=2; document.getElementById('rb_r').disabled = el.scrollLeft>=max-2; } }
@@ -4731,7 +4753,7 @@ function switchRoom(r){
   if (arcade.on) exitArcade();
   entryFrom = curRoom; setRoom(r); flash(); sendPresence(true);
   if (isP(r)){ localMsg(`Welcome to ${roomName(r)}!`); setTimeout(()=>walkTo(...spawnSpot(r)), 400); if (PRED.pending){ PRED.pending=false; setTimeout(prEditStart, 600); } return; }
-  localMsg(r==='barn' ? 'You stepped outside to LLAMA ACRES!' : r==='casino' ? 'Welcome to the LLAMA CASINO! Feeling lucky?' : r==='arena' ? 'Welcome to the SPIT ARENA! Press PLAY to start a round.' : r==='lanes' ? 'Welcome to LLAMA LANES! Press BOWL to roll a game.' : r==='store' ? 'Welcome to the LLAMA STORE! Tap a shirt on the wall, or the counter to see them all.' : 'You headed back into the LLAMA LOUNGE!');
+  localMsg(r==='account' ? `Welcome to ACCOUNT! Step into the booth to switch llamas (${BOOTH_PRICE} TOKENS), or visit the desk for your email and password.` : r==='barn' ? 'You stepped outside to LLAMA ACRES!' : r==='casino' ? 'Welcome to the LLAMA CASINO! Feeling lucky?' : r==='arena' ? 'Welcome to the SPIT ARENA! Press PLAY to start a round.' : r==='lanes' ? 'Welcome to LLAMA LANES! Press BOWL to roll a game.' : r==='store' ? 'Welcome to the LLAMA STORE! Tap a shirt on the wall, or the counter to see them all.' : 'You headed back into the LLAMA LOUNGE!');
   setTimeout(()=>walkTo(...spawnSpot(r)), 400);
 }
 // showroom pieces: a price tag and a tap area that opens the furniture shop
@@ -4788,10 +4810,19 @@ function casinoPointer(e){
   if (best) walkTo(best.gx,best.gy);
 }
 function boothNear(){ return Math.abs(me.gx-BOOTH[0])<=1 && Math.abs(me.gy-BOOTH[1])<=1 && !me.moving; }
-function boothGo(){ if (boothNear() && me.p!=='sit'){ openBooth(); return; } if (me.p==='sit') doAction('stand'); if (!walkTo(BOOTH[0],BOOTH[1]+1,'booth') && !walkTo(BOOTH[0]-1,BOOTH[1],'booth')) localMsg('Walk up to the changing booth.'); }
+function deskGo(){ if (Math.abs(me.gx-ACCT_DESK[0]-0.5)<=1.5 && me.gy<=1 && !me.moving && me.p!=='sit'){ openAccount(); return; } if (me.p==='sit') doAction('stand'); if (!walkTo(ACCT_DESK[0],ACCT_DESK[1]+1,'acctdesk') && !walkTo(ACCT_DESK[0]+1,ACCT_DESK[1]+1,'acctdesk')) localMsg('Walk up to the account desk.'); }
+function accountPointer(e){
+  const lx=e.clientX/S, ly=e.clientY/S, [gx,gy]=toGrid(e.clientX, e.clientY), inH=h=>h && lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1;
+  for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (inH(h)){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
+  if ((gx===BOOTH[0]&&gy===BOOTH[1]) || inH(boothHit)){ boothGo(); return; }
+  if ((gy===ACCT_DESK[1] && (gx===ACCT_DESK[0]||gx===ACCT_DESK[0]+1)) || inH(deskHit)){ deskGo(); return; }
+  if (gx<0||gy<0||gx>=N||gy>=NY) return;
+  const st=seatAt(gx,gy); if (st){ if (seatTaken(st.gx,st.gy)) localMsg("Someone's already sitting there."); else walkTo(gx,gy); return; }
+  if (walkable(gx,gy)){ walkTo(gx,gy); return; }
+}
+function boothGo(){ if (boothNear() && me.p!=='sit'){ openBooth(); return; } if (me.p==='sit') doAction('stand'); if (!walkTo(BOOTH[0],BOOTH[1]+1,'booth') && !walkTo(BOOTH[0]-1,BOOTH[1]+1,'booth')) localMsg('Walk up to the changing booth.'); }
 function barnPointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
-  { const [gb,hb]=toGrid(e.clientX, e.clientY); if ((gb===BOOTH[0]&&hb===BOOTH[1]) || (boothHit && lx>=boothHit.x0&&lx<=boothHit.x1&&ly>=boothHit.y0&&ly<=boothHit.y1)){ boothGo(); return; } }
   { const [gx0,gy0]=toGrid(e.clientX, e.clientY); const [px,py]=P(DUNK_TGT[0]+0.5,DUNK_TGT[1]+0.5,0);
     if ((gx0===DUNK_TGT[0]&&gy0===DUNK_TGT[1]) || (Math.abs(lx-px)<=11 && ly>=py-50 && ly<=py-26)){ if (inDunkZone() && me.p!=='sit' && !me.moving) openDunk(); else walkTo(DUNK_TGT[0], DUNK_TGT[1]+2, 'dunk'); return; } }
   for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
@@ -5850,7 +5881,7 @@ NET.handlers.tk = m => tkSet(m.tk, m.msg);
 // ======================= STAFF DASHBOARD (owner and mods; the server checks every action) =======================
 const dashEl=document.getElementById('dashbox'), dsBody=document.getElementById('ds_body');
 function dashMenu(){ const el=document.getElementById('mdash'); if (el) el.style.display = me.st ? '' : 'none'; }
-const ROOM_SHORT={lounge:'LOUNGE', barn:'ACRES', casino:'CASINO', arena:'ARENA', lanes:'LANES', store:'STORE'};
+const ROOM_SHORT={lounge:'LOUNGE', barn:'ACRES', casino:'CASINO', arena:'ARENA', lanes:'LANES', store:'STORE', account:'ACCOUNT'};
 const esc = s => String(s).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const badgeHtml = st => st==='owner' ? '<span class="badge" title="Owner">👑</span>' : st==='mod' ? '<span class="badge" title="Mod">💛</span>' : '<span class="badge"></span>';
 function openDash(){ if (!me.st) return; closeAll(); dsBody.innerHTML='<div class="dl">LOADING...</div>'; dashEl.style.display='block'; loadDash(); }
