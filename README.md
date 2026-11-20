@@ -226,6 +226,8 @@ No API keys or passwords are involved.
 
 ## Walking, doors, seats and beds
 
+- **Moving furniture:** hold a piece for 5 seconds (a ring fills up) to pick it up, then drag it. A quick drag does nothing, so pieces don't get bumped by accident. ARRANGE MY ROOM (edit mode) still drags right away.
+- **Staff moves:** the owner and mods can hold and move (or turn) pieces in anyone's player room. The server re-checks the role from the database every time and writes each move to the staff log on the dashboard ("moved SOFA in CHARLIE'S ROOM (3,1 to 5,1)"). Staff can't put pieces away or place their own items in someone else's room.
 - Walking is tap or click only (no WASD or arrow keys). Arrows still work in menus and arcade games.
 - Tapping a door in any room (or the farm gate in LLAMA ACRES) opens the LLAMA MAP.
 - Llamas never step straight from one seat to another: to switch seats on a sofa they get up, step off and walk around.

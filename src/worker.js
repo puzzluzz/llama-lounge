@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-24k";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-24l";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -904,22 +904,27 @@ export class Lounge extends DurableObject {
     const nf = await this.prFurn(rid); this.toRoom("p:" + rid, { t: "prf", room: rid, furn: nf });
     return { ok: true };
   }
+  // who may move or turn pieces in the room they're standing in: the owner, or staff (re-checked from the database every time, and logged)
+  async prMoveRoom(a) { const own = await this.prOwnRoomHere(a); if (own) return { r: own, staff: false };
+    const rm = a.pres && typeof a.pres.rm === "string" && /^p:\d+$/.test(a.pres.rm) ? +a.pres.rm.slice(2) : 0; if (!rm) return null;
+    if (!(await this.staffNow(a))) return null; const r = await this.prRoom(rm); return r ? { r, staff: true } : null; }
   async prMove(a, m) {   // drag a placed piece to another tile (same checks as placing it)
-    const r = await this.prOwnRoomHere(a); if (!r) return { ok: false, msg: "Go into your own room to move furniture." };
+    const E = await this.prMoveRoom(a); if (!E) return { ok: false, msg: "Go into your own room to move furniture." }; const r = E.r;
     const id = Math.floor(+m.fid || 0); const f = await this.env.DB.prepare("SELECT * FROM pfurn WHERE id = ? AND room = ?").bind(id, r.id).first(); if (!f) return { ok: false, msg: "That piece is gone." };
     const gx = Math.floor(+m.gx), gy = Math.floor(+m.gy);
     if (!(gx >= 0 && gy >= 0 && gx < PR.w && gy < PR.h)) return { ok: false, msg: "That's outside the room." };
     if (FURN_WALL.has(f.item)) { if (gx !== 0 && gy !== 0) return { ok: false, msg: "Wall items go on a wall." }; if (gx === 0 && gy >= PR.h - 2) return { ok: false, msg: "That's where the door is." }; }
     const why = this.furnFits(f.item, gx, gy, f.rot, await this.prFurn(r.id), f.id); if (why) return { ok: false, msg: why };
     await this.env.DB.prepare("UPDATE pfurn SET gx = ?, gy = ? WHERE id = ?").bind(gx, gy, id).run();
+    if (E.staff) await this.logStaff(a.name, "movefurn", `${f.item.replace(/_/g, " ").toUpperCase()} in ${r.oname.toUpperCase()}'S ROOM (${f.gx},${f.gy} to ${gx},${gy})`);
     const nf = await this.prFurn(r.id); this.toRoom("p:" + r.id, { t: "prf", room: r.id, furn: nf });
     return { ok: true, furn: nf, storage: await this.furnStorage(a.uid) };
   }
   async prEditPiece(a, m, what) {
-    const r = await this.prOwnRoomHere(a); if (!r) return { ok: false, msg: "Go into your own room to change furniture." };
+    const E = what === "rot" ? await this.prMoveRoom(a) : { r: await this.prOwnRoomHere(a), staff: false }; const r = E && E.r; if (!r) return { ok: false, msg: "Go into your own room to change furniture." };
     const id = Math.floor(+m.fid || 0); const f = await this.env.DB.prepare("SELECT * FROM pfurn WHERE id = ? AND room = ?").bind(id, r.id).first(); if (!f) return { ok: false, msg: "That piece is gone." };
     if (what === "rot") { const why = this.furnFits(f.item, f.gx, f.gy, (f.rot + 1) % 4, await this.prFurn(r.id), f.id); if (why) return { ok: false, msg: why === "Something is in the way." ? "No room to turn it there." : why }; }
-    if (what === "rot") await this.env.DB.prepare("UPDATE pfurn SET rot = (rot + 1) % 4 WHERE id = ?").bind(id).run();
+    if (what === "rot") { await this.env.DB.prepare("UPDATE pfurn SET rot = (rot + 1) % 4 WHERE id = ?").bind(id).run(); if (E.staff) await this.logStaff(a.name, "turnfurn", `${f.item.replace(/_/g, " ").toUpperCase()} in ${r.oname.toUpperCase()}'S ROOM`); }
     else await this.env.DB.prepare("DELETE FROM pfurn WHERE id = ?").bind(id).run();
     const nf = await this.prFurn(r.id); this.toRoom("p:" + r.id, { t: "prf", room: r.id, furn: nf });
     return { ok: true, furn: nf, storage: await this.furnStorage(a.uid) };

@@ -854,6 +854,16 @@
   #plkbox .slbet{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px} #plkbox .slbet span{font:700 14px var(--pxf);letter-spacing:.06em;color:var(--sub)}
   #plkbox .slbet .gbbtn{min-width:52px}
   #needs .nd .pi{width:var(--pi1);height:var(--pi1);display:block}
+
+  /* press-and-hold ring: fills over 5 seconds, then the piece lifts */
+  #holdring{position:fixed;width:56px;height:56px;margin:-28px 0 0 -28px;pointer-events:none;z-index:20;opacity:0}
+  #holdring.on{opacity:1;transition:opacity .15s .35s}
+  #holdring svg{width:100%;height:100%;transform:rotate(-90deg)}
+  #holdring .hr0{fill:rgba(29,21,48,.55);stroke:#fff;stroke-width:6}
+  #holdring .hr1{fill:none;stroke:var(--yel);stroke-width:6;stroke-dasharray:113.1;stroke-dashoffset:113.1}
+  #holdring.on .hr1{animation:holdfill 5s linear forwards}
+  @keyframes holdfill{to{stroke-dashoffset:0}}
+  canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 </style>
 </head>
 <body>
@@ -872,6 +882,7 @@
   <div id="lboard" class="gb sheet"><div class="lbt">🏆 HIGH SCORES</div><div class="lbcols"><div><div class="lbh">HAY CATCH</div><div id="lb_hay"></div></div><div><div class="lbh">LLAMA DASH</div><div id="lb_dash"></div></div></div><div class="srow"><button class="gbbtn" id="lbclose">CLOSE</button></div></div>
   <div id="shop" class="gb sheet"><img id="shopimg" alt=""><div id="shopname"></div><div id="shopprice"></div><div id="shopsub"></div><div class="srow"><a id="shoplink" class="gbbtn" href="#" target="_blank" rel="noopener noreferrer">VIEW PRODUCT ▶</a><button class="gbbtn" id="shopclose">CLOSE</button></div></div>
   <div id="logbox" class="gb sheet"><span class="x" id="logx">✕</span><div id="loglines"></div></div>
+  <div id="holdring" aria-hidden="true"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" class="hr0"/><circle cx="22" cy="22" r="18" class="hr1"/></svg></div>
   <div id="evpop" role="status" aria-live="polite"><span class="evnew">NEW!</span><span class="evi"></span><span class="evt"></span></div>
   <div id="tbox" class="gb"><span id="ttext"></span><span id="tarrow">▼</span></div>
   <div id="dock">
@@ -1012,7 +1023,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24k";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24l";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -4373,6 +4384,7 @@ cv.addEventListener('pointerdown', e => {
 });
 cv.addEventListener('pointermove', e => { if (arcade.on && arcade.ptr!==null) arcade.ptr = e.clientX/S; });
 const endPtr = () => { arcade.ptr=null; arcade.jumpHeld=false; };
+cv.addEventListener('contextmenu', e=>e.preventDefault());   /* a long press (holding furniture) shouldn't pop up the phone's menu */
 cv.addEventListener('pointerup', endPtr); cv.addEventListener('pointercancel', endPtr);
 const KEYMAP = {ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
 function navKey(k){
@@ -5700,7 +5712,7 @@ function drawFishing(t){
 
 // ======================= CONTEXT TIPS =======================
 const TIPS = {
-  myroom:'<b>YOUR ROOM</b> Drag any piece to move it. Add more from 🎒 INVENTORY > ITEMS. Open 🏠 ROOMS > SETTINGS to name it, change the walls and floor, make it private or invite friends.',
+  myroom:'<b>YOUR ROOM</b> Hold any piece for 5 seconds to pick it up, then drag it. Add more from 🎒 INVENTORY > ITEMS. Open 🏠 ROOMS > SETTINGS to name it, change the walls and floor, make it private or invite friends.',
   counter:'<b>CHECKOUT</b> Press SHOP or tap the counter to see the real La Llama P.I.C. shirts.',
   racks:'<b>CLOTHES</b> Tap anything on the racks or in the glass case to try it on and buy it with tokens. Change outfits any time in MENU > WARDROBE.',
   arcade:'<b>ARCADE</b> Tap the cabinet to play HAY CATCH or LLAMA DASH.',
@@ -6054,6 +6066,9 @@ $id('wd_body').addEventListener('click', e=>{
 for (const b of $id('wd_tabs').children) b.addEventListener('click', ()=>{ WD.tab=b.dataset.t; wdDraw(); });
 $id('wd_prev').addEventListener('click', ()=>{ WD.dir=(WD.dir+1)%4; wdPreview(); });
 // inventory ITEMS: PLACE picks the piece in edit mode; pressing a card and pulling it out of the sheet starts a drag into the room
+function prCanMove(){ return prInMine() || (isP(curRoom) && !!me.st); }   // staff can move pieces in any player room (the server re-checks and logs it)
+const HOLD_MS=5000;   // hold a piece this long to pick it up and move it
+function holdRing(on, x, y){ const el=$id('holdring'); if (!on){ el.classList.remove('on'); return; } el.style.left=x+'px'; el.style.top=y+'px'; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); }
 function prInMine(){ return isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine; }
 function prTakeOut(item){ if (!prInMine()) return; closeAll(); if (!PRED.on) prEditStart(); PRED.item=item; PRED.piece=null; prEditBar(); localMsg(`Tap or drag on the floor to place your ${FURN_DEF[item].n}. Press DONE when you're finished.`); }
 $id('wardbox').addEventListener('click', e=>{ const b=e.target.closest('[data-placef]'); if (!b || b.disabled) return; e.stopPropagation(); ensureAudio(); prTakeOut(b.dataset.placef); });
@@ -6272,9 +6287,11 @@ function prEditBar(){ const el=$id('eb_items'), bar=$id('editbar'); bar.classLis
 $id('editbar').addEventListener('pointerdown', e=>{ e.stopPropagation(); const b=e.target.closest('.ebi'); if (b && !b.disabled && b.dataset.it) prDragStart(e, {item:b.dataset.it, rot:0, ox:0, oy:0, fromBar:true}); });
 // ---- drag and drop: press a piece (or an item in the bar), drag it, let go to drop it; a see-through copy shows where it lands ----
 const PDR={on:false, armed:false};
-function prDragStart(e, o){ clearTimeout(PDR.lp); Object.assign(PDR, {on:false, armed:true, auto:false, fromBar:false, tapHit:null, longPress:false, id:e.pointerId, sx:e.clientX, sy:e.clientY, fid:null, gx:null, gy:null, ok:false, tapGx:null, tapGy:null}, o); PDR.hgx=null;
-  if (PDR.fid && prInMine()) PDR.lp=setTimeout(()=>{ if (!PDR.armed || PDR.on) return; PDR.on=true; PDR.longPress=true; if (!PRED.on) prEditStart(); PRED.item=null;
-    PRED.piece={fid:PDR.fid, item:PDR.item, gx:PDR.tapGx, gy:PDR.tapGy}; prEditBar(); PDR.gx=PDR.gx0; PDR.gy=PDR.gy0; PDR.ok=true; try{ navigator.vibrate && navigator.vibrate(25); }catch(_){} }, 450); }
+function prDragStart(e, o){ clearTimeout(PDR.lp); Object.assign(PDR, {on:false, armed:true, auto:false, staff:false, fromBar:false, tapHit:null, longPress:false, id:e.pointerId, sx:e.clientX, sy:e.clientY, fid:null, gx:null, gy:null, ok:false, tapGx:null, tapGy:null}, o); PDR.hgx=null;
+  if (PDR.fid && prCanMove()) PDR.lp=setTimeout(()=>{ if (!PDR.armed || PDR.on) return; PDR.on=true; PDR.longPress=true; holdRing(false);
+    if (!PDR.staff){ if (!PRED.on) prEditStart(); PRED.item=null; PRED.piece={fid:PDR.fid, item:PDR.item, gx:PDR.tapGx, gy:PDR.tapGy}; prEditBar(); }
+    PDR.gx=PDR.gx0; PDR.gy=PDR.gy0; PDR.ok=true; sfxChime([523,784]); try{ navigator.vibrate && navigator.vibrate(40); }catch(_){}
+    localMsg(PDR.staff ? 'Picked it up! Drag it where it should go. Staff moves are logged.' : 'Picked it up! Drag it where you want it.'); }, PDR.auto ? HOLD_MS : 450); }
 const layerOf = item => { const D=FURN_DEF[item]||{}; return D.wall ? 'wall' : D.rug ? 'rug' : 'floor'; };
 function prFits(item, gx, gy, rot, skip){ const D=FURN_DEF[item]; if (!D) return false; const wall=!!D.wall, L=layerOf(item);
   if (wall && gx!==0 && gy!==0) return false; if (wall && gx===0 && gy>=NY-2) return false;
@@ -6295,19 +6312,20 @@ function prDragAim(e){ const bar=$id('editbar').getBoundingClientRect();
   PDR.px=e.clientX/S; PDR.py=e.clientY/S;
   [PDR.gx,PDR.gy]=prCentreTile(PDR.item, PDR.rot, e.clientX, e.clientY, !!PDR.fid); PDR.ok=prFits(PDR.item, PDR.gx, PDR.gy, PDR.rot, PDR.fid); }
 addEventListener('pointermove', e=>{
-  if (PDR.armed && e.pointerId===PDR.id){ if (!PDR.on){ const dx=e.clientX-PDR.sx, dy=e.clientY-PDR.sy;
+  if (PDR.armed && e.pointerId===PDR.id){ if (!PDR.on && PDR.auto && !PRED.on){ if (Math.hypot(e.clientX-PDR.sx, e.clientY-PDR.sy)>(e.pointerType==='mouse'?8:20)){ clearTimeout(PDR.lp); PDR.armed=false; holdRing(false); } return; }
+    if (!PDR.on){ const dx=e.clientX-PDR.sx, dy=e.clientY-PDR.sy;
       // from the bar, a sideways swipe still scrolls the bar; pull up (or press a piece and move) to start dragging
       if (PDR.fromBar ? (dy<-14 && Math.abs(dy)>Math.abs(dx)) : Math.hypot(dx,dy)>(e.pointerType==="mouse" ? 8 : 20)){   /* a finger wobbles: a tap only turns into a drag once it really moves */ PDR.on=true; if (!PRED.on && prInMine()) prEditStart(); PRED.piece=null; PRED.item=null; prEditBar(); } }
     if (PDR.on){ prDragAim(e); e.preventDefault(); } return; }
   // mouse hover with an item picked: show where a tap would put it
   if (PRED.on && PRED.item && e.pointerType==='mouse' && e.target===cv){ const [tx,ty]=prCentreTile(PRED.item, 0, e.clientX, e.clientY); PDR.hgx=tx; PDR.hgy=ty; PDR.px=e.clientX/S; PDR.py=e.clientY/S; } else PDR.hgx=null;
 }, {passive:false});
-function prDragEnd(e, cancel){ if (!PDR.armed || e.pointerId!==PDR.id) return; clearTimeout(PDR.lp); const was=PDR.on; PDR.armed=false; PDR.on=false;
+function prDragEnd(e, cancel){ holdRing(false); if (!PDR.armed || e.pointerId!==PDR.id) return; clearTimeout(PDR.lp); const was=PDR.on; PDR.armed=false; PDR.on=false;
   if (!was){ if (PDR.auto){ if (!cancel){ if (PDR.tapHit) prTapPiece(PDR.tapHit); else prTapWalk(PDR.tapGx, PDR.tapGy); } return; } if (PDR.fid && !cancel){ PRED.piece={fid:PDR.fid, item:PDR.item, gx:PDR.tapGx, gy:PDR.tapGy}; PRED.item=null; prEditBar(); } return; }   // just a tap: select it as before
   PDR.noClick=performance.now();
   if (cancel || PDR.gx===null) return;
   if (!PDR.ok){ localMsg(PDR.fid ? 'That piece doesn\'t fit there.' : 'That doesn\'t fit there.'); return; }
-  if (PDR.fid){ const fid=PDR.fid, item=PDR.item, nx=PDR.gx, ny=PDR.gy; if (PDR.longPress){ PRED.piece={fid, item, gx:nx, gy:ny}; prEditBar(); } if (nx===PDR.gx0 && ny===PDR.gy0) return; NET.act('pr_move',{fid, gx:nx, gy:ny}).then(r=>{ if (!r.ok) localMsg(r.msg||'Can\'t move that there.'); }); return; }
+  if (PDR.fid){ const fid=PDR.fid, item=PDR.item, nx=PDR.gx, ny=PDR.gy; if (PDR.longPress && !PDR.staff){ PRED.piece={fid, item, gx:nx, gy:ny}; prEditBar(); } if (nx===PDR.gx0 && ny===PDR.gy0) return; NET.act('pr_move',{fid, gx:nx, gy:ny}).then(r=>{ if (!r.ok) localMsg(r.msg||'Can\'t move that there.'); }); return; }
   const item=PDR.item; NET.act('pr_place',{item, gx:PDR.gx, gy:PDR.gy, rot:0}).then(r=>{ if (!r.ok) return localMsg(r.msg||'Can\'t put that there.'); if (r.storage){ PRED.storage=r.storage; const s2=r.storage.find(x=>x.item===PRED.item); if (PRED.item && (!s2 || s2.n-s2.placed<=0)) PRED.item=null; } prEditBar(); }); }
 addEventListener('pointerup', e=>prDragEnd(e,false)); addEventListener('pointercancel', e=>prDragEnd(e,true));
 // draw the piece see-through where it would land: green floor tiles if it fits, red if it doesn't
@@ -6346,7 +6364,7 @@ function playerPointer(e){
     if (PRED.item){ const rot=0, [cx2,cy2]=prCentreTile(PRED.item, 0, e.clientX, e.clientY); NET.act('pr_place',{item:PRED.item, gx:cx2, gy:cy2, rot}).then(r=>{ if (!r.ok) return localMsg(r.msg||'Can\'t put that there.'); if (r.storage){ PRED.storage=r.storage; const s2=r.storage.find(x=>x.item===PRED.item); if (!s2 || s2.n-s2.placed<=0) PRED.item=null; } prEditBar(); }); return; }
     PRED.piece=null; prEditBar(); return; }
   // in your own room you can grab any piece and drag it somewhere else; a plain tap still walks or sits as usual
-  if (hit && prInMine()){ const f=hit.f; prDragStart(e, {fid:f.fid, item:f.item, rot:f.rot||0, gx0:f.gx, gy0:f.gy, ox:hit.tx-f.gx, oy:hit.ty-f.gy, auto:true}); PDR.tapGx=hit.tx; PDR.tapGy=hit.ty; PDR.tapHit=hit; return; }
+  if (hit && prCanMove()){ const f=hit.f; prDragStart(e, {fid:f.fid, item:f.item, rot:f.rot||0, gx0:f.gx, gy0:f.gy, ox:hit.tx-f.gx, oy:hit.ty-f.gy, auto:true, staff:!prInMine()}); PDR.tapGx=hit.tx; PDR.tapGy=hit.ty; PDR.tapHit=hit; holdRing(true, e.clientX, e.clientY); return; }
   if (hit){ prTapPiece(hit); return; }
   prTapWalk(gx,gy);
 }
@@ -6589,7 +6607,7 @@ function loadDash(){
     for (const gf of (r.gifts||[]).slice(0,30)){ const d=new Date(gf.t), mine=gf.by===(me.n||'').toUpperCase(); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(gf.by)} gave ${esc(gf.to)} <b>${gf.n}</b> 🪙 ${gf.undo ? `<s>UNDONE</s> <small>by ${esc(gf.undo.by)} (${gf.undo.n} taken back)</small>` : ((owner||mine) && gf.id ? `<button class="gbbtn s" data-undo="${gf.id}" data-to="${esc(gf.to)}" data-n="${gf.n}">↩ UNDO</button>` : '')}</div>`; }
     if (!(r.gifts||[]).length) h+='<div class="dl">NO TOKEN GIFTS YET.</div>';
     h+='<h4>STAFF LOG</h4>';
-    const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:',give:'gave tokens to',undogift:'took back a gift from',roomreset:'reset the room name of'};
+    const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:',give:'gave tokens to',undogift:'took back a gift from',roomreset:'reset the room name of', movefurn:'moved', turnfurn:'turned'};
     for (const e of r.log.slice(0,20)){ const d=new Date(e.t); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(e.by)} ${WORD[e.cmd]||esc(e.cmd)} ${esc(e.target)}</div>`; }
     if (!r.log.length) h+='<div class="dl">NO STAFF ACTIONS YET.</div>';
     if (owner) h+='<h4>💾 BACKUPS</h4><div id="ds_bk" class="dl">LOADING...</div>';
