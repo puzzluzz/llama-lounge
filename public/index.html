@@ -992,7 +992,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24d";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24e";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -7266,12 +7266,16 @@ NET.handlers.trade = m => { const fresh = TR.tid!==m.tid; TR.tid=m.tid; TR.them=
 NET.handlers.tradeend = m => { if (m.tid!==TR.tid && m.tid!==TR.ask) return; $id('tradebox').style.display='none'; $id('tradeask').style.display='none'; TR.tid=null; if (m.msg && m.msg!=='TRADE DONE!') localMsg(m.msg); };
 NET.handlers.tradedone = m => { tkSet(m.tk, '🤝 TRADE DONE! Your new things are in 🎒 ITEMS.'); WD.furn=m.furn||WD.furn; WD.rares=m.rares||WD.rares; };
 NET.handlers.quest = m => { if (m.info){ DAILY=m.info; dailyDot(); if (jobsEl.style.display==='block') openJobs(true); } if (m.msg){ if (Number.isFinite(m.tk)) tkSet(m.tk, m.msg); else localMsg(m.msg); } };
-function openJobs(keep){ if (!keep){ closeAll(); dailyLoad(false); } const order=[curRoom, ...ROOMS.filter(r=>r!==curRoom)]; let h=dailyHtml(DAILY);
-  for (const r of order){ const list=JOBS[r]||[]; if (!list.length) continue;
-    h+=`<div class="jroom ${r===curRoom?'here':''}">${r===curRoom?'📍 HERE IN ':''}${ROOM_NAMES[r]}</div>`;
+function openJobs(keep){ if (!keep){ closeAll(); dailyLoad(false); } let h=dailyHtml(DAILY);
+  /* only the daily rewards and the jobs in the room you're standing in */
+  const here=JOBS[curRoom]||[], rn=ROOM_NAMES[curRoom]||roomName(curRoom);
+  if (!here.length) h+=`<div class="jroom here">📍 ${esc(rn)}</div>`+emptyBox('NO JOBS IN THIS ROOM', 'Tap MAP to visit LLAMA ACRES, the LOUNGE, the CASINO, the ARENA or the LANES. They all have jobs.')+'<div class="srow"><button class="gbbtn y" id="jobs_map">MAP</button></div>';
+  for (const r of here.length ? [curRoom] : []){ const list=JOBS[r];
+    h+=`<div class="jroom here">📍 JOBS HERE IN ${ROOM_NAMES[r]}</div>`;
     list.forEach((j,k)=>{ h+=`<div class="job ${j.risk?'risk':''}"><span class="ji">${j.i}</span><span class="jt"><b>${j.t}</b><small>${j.h}</small><span class="jp">${j.p}${j.risk?' · you can lose coins':''}</span></span><button class="gbbtn y" data-r="${r}" data-k="${k}">${r===curRoom?'GO':'GO ▶'}</button></div>`; }); }
   document.getElementById('jobs_body').innerHTML=h;
   { const c=$id('dj_claim'); if (c) c.addEventListener('click', ()=>dailyClaim(c)); }
+  { const m=$id('jobs_map'); if (m) m.addEventListener('click', ()=>{ jobsEl.style.display='none'; showRoomPick(false); }); }
   for (const b of jobsEl.querySelectorAll('[data-r]')) b.addEventListener('click', ()=>{ const r=b.dataset.r, j=JOBS[r][+b.dataset.k]; jobsEl.style.display='none';
     if (r!==curRoom){ showSwap(r); return; } if (me.p==='sit' && !(j.t==='Sit on the dunk tank')) { me.p='stand'; sendPresence(true); } j.go(); });
   jobsEl.style.display='block'; }
