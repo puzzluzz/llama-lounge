@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-23c";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-23d";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -119,6 +119,45 @@ const layerOf = (item) => (FURN_WALL.has(item) ? "wall" : FURN_RUG.has(item) ? "
 const prId = (rm) => { const m = /^p:(\d{1,9})$/.exec(String(rm || "")); return m ? +m[1] : 0; };
 const cleanRoomName = (n) => String(n || "").replace(/[^A-Za-z0-9 '!?&.,:-]/g, "").replace(/\s+/g, " ").trim().slice(0, PR.nameMax);
 const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
+
+// ---------- database backups ----------
+// Every 12 hours (cron in wrangler.jsonc) the whole game database is written out as SQL into a separate backup database
+// (binding BACKUP), split into parts. The newest 4 are kept (2 days). Login sessions, reset links and login-attempt
+// counters are skipped on purpose: they're temporary, and players simply log in again after a restore.
+// Only the owner (users.role = 'admin') can list, make or download backups (they hold emails and password hashes).
+const BACKUP = { keep: 4, skip: new Set(["sessions", "email_tokens", "login_attempts"]), part: 400000, page: 500 };
+const sqlVal = (v) => (v === null || v === undefined) ? "NULL" : typeof v === "number" ? (Number.isFinite(v) ? String(v) : "NULL") : typeof v === "boolean" ? (v ? "1" : "0") : "'" + String(v).replace(/'/g, "''") + "'";
+async function backupTables(env) {
+  await env.BACKUP.prepare("CREATE TABLE IF NOT EXISTS backups (id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER NOT NULL, why TEXT NOT NULL, tables INTEGER NOT NULL, rows INTEGER NOT NULL, bytes INTEGER NOT NULL, parts INTEGER NOT NULL)").run();
+  await env.BACKUP.prepare("CREATE TABLE IF NOT EXISTS backup_parts (bid INTEGER NOT NULL, part INTEGER NOT NULL, sql TEXT NOT NULL, PRIMARY KEY (bid, part))").run();
+}
+async function makeBackup(env, why) {
+  if (!env.BACKUP) return null;
+  await backupTables(env);
+  const all = (await env.DB.prepare("SELECT type, name, tbl_name, sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY type DESC, name").all()).results || [];
+  const tabs = all.filter((r) => r.type === "table" && !BACKUP.skip.has(r.name)), idx = all.filter((r) => r.type === "index" && !BACKUP.skip.has(r.tbl_name));
+  const out = [`-- Llama Lounge database backup, ${new Date().toISOString()} (${why})`,
+    "-- Restore into an EMPTY database. Not included on purpose: sessions, email_tokens, login_attempts (players just log in again).", ""];
+  let rows = 0;
+  for (const t of tabs) {
+    out.push(t.sql + ";");
+    for (let off = 0; ; off += BACKUP.page) {
+      const rs = (await env.DB.prepare(`SELECT * FROM "${t.name.replace(/"/g, '""')}" ORDER BY rowid LIMIT ? OFFSET ?`).bind(BACKUP.page, off).all()).results || [];
+      for (const r of rs) { const cols = Object.keys(r); out.push(`INSERT INTO ${t.name} (${cols.join(",")}) VALUES (${cols.map((c) => sqlVal(r[c])).join(",")});`); }
+      rows += rs.length; if (rs.length < BACKUP.page) break;
+    }
+    out.push("");
+  }
+  for (const i of idx) out.push(i.sql + ";");
+  const text = out.join("\n"), parts = [];
+  for (let k = 0; k < text.length; k += BACKUP.part) parts.push(text.slice(k, k + BACKUP.part));
+  const r = await env.BACKUP.prepare("INSERT INTO backups (t, why, tables, rows, bytes, parts) VALUES (?, ?, ?, ?, ?, ?) RETURNING id").bind(Date.now(), String(why).slice(0, 40), tabs.length, rows, text.length, parts.length).first();
+  await env.BACKUP.batch(parts.map((p, k) => env.BACKUP.prepare("INSERT INTO backup_parts (bid, part, sql) VALUES (?, ?, ?)").bind(r.id, k, p)));
+  // keep the newest few
+  const old = (await env.BACKUP.prepare("SELECT id FROM backups ORDER BY id DESC LIMIT -1 OFFSET ?").bind(BACKUP.keep).all()).results || [];
+  for (const o of old) { await env.BACKUP.prepare("DELETE FROM backup_parts WHERE bid = ?").bind(o.id).run(); await env.BACKUP.prepare("DELETE FROM backups WHERE id = ?").bind(o.id).run(); }
+  return { id: r.id, rows, bytes: text.length, parts: parts.length };
+}
 
 // ---------- helpers ----------
 const enc = new TextEncoder();
@@ -240,6 +279,8 @@ export default {
     }
     return env.ASSETS ? env.ASSETS.fetch(req) : new Response("not found", { status: 404 });
   },
+  // twice a day: back up the database (see BACKUP above)
+  async scheduled(event, env, ctx) { ctx.waitUntil(makeBackup(env, "automatic").then((b) => console.log("backup done", JSON.stringify(b))).catch((e) => console.error("backup failed", e && e.message))); },
 };
 
 async function api(req, env, url, ctx) {
@@ -1061,6 +1102,19 @@ export class Lounge extends DurableObject {
         await this.env.DB.prepare("UPDATE users SET c = ? WHERE id = ?").bind(c, uid).run();
         a.uc = { ...(a.uc || {}), t: now, tk, c }; if (a.pres) { a.pres.c = c; a.pres.tk = tk; this.peersOut(ws, a, "updated"); } ws.serializeAttachment(a);
         return { ok: true, c, tk };
+      }
+      case "backup_list": case "backup_now": case "backup_get": {   // owner only: backups hold emails and password hashes
+        const u = await this.user(uid); if (!isAdmin(this.env, u) || u.banned) return { ok: false, msg: "Only the owner can see backups." };
+        if (!this.env.BACKUP) return { ok: false, msg: "Backups aren't set up on this server." };
+        await backupTables(this.env);
+        if (kind === "backup_now") { if (now - (this.lastBackup || 0) < 120000) return { ok: false, msg: "A backup was just made. Try again in a couple of minutes." };
+          this.lastBackup = now; const b = await makeBackup(this.env, "by " + a.name); return { ok: true, msg: `Backup saved: ${b.rows} rows.` }; }
+        if (kind === "backup_get") { const bid = Math.floor(+m.bid || 0), part = Math.max(0, Math.floor(+m.part || 0));
+          const b = await this.env.BACKUP.prepare("SELECT * FROM backups WHERE id = ?").bind(bid).first(); if (!b) return { ok: false, msg: "That backup is gone." };
+          const p = await this.env.BACKUP.prepare("SELECT sql FROM backup_parts WHERE bid = ? AND part = ?").bind(bid, part).first();
+          return { ok: true, sql: p ? p.sql : "", part, parts: b.parts, at: b.t }; }   // "t" is taken: it marks the reply
+        const list = (await this.env.BACKUP.prepare("SELECT id, t, why, tables, rows, bytes, parts FROM backups ORDER BY id DESC").all()).results || [];
+        return { ok: true, list };
       }
       case "afk_ok": { a.act = now; ws.serializeAttachment(a); return { ok: true }; }
       case "fish_cast": {

@@ -268,3 +268,7 @@ No API keys or passwords are involved.
   - Along the left wall: a little round table, three wooden chairs facing into the room, and another little round table.
   - The **account desk** (computer with a padlock, a service bell) opens your account settings: email and password.
 - **Sitting pose:** a llama sitting and facing the camera has two legs hanging over the front of the seat. They have a rounded knee, shins angled toward the way it faces, and hooves that swing gently (each llama at its own pace). Leg length follows the seat height: folded on cushions, dangling on bar stools. Boxing shorts show on the thighs. The legs are drawn after a couch's or armchair's front edge, so they hang in front of it.
+- **Database backups:** at 12:23 am and 12:23 pm Eastern (cron in `wrangler.jsonc`), the Worker writes the whole game database out as SQL into a separate D1 database, `llama-lounge-backups` (binding `BACKUP`). The newest 4 are kept, which is 2 days.
+  - Login sessions, reset links and login-attempt counters are left out on purpose. Players just log in again after a restore.
+  - The owner (and only the owner) sees a **💾 BACKUPS** section at the bottom of the dashboard, with a DOWNLOAD button for each backup (a `.sql` file) and a BACK UP NOW button.
+  - To restore: create an empty D1 database, run the `.sql` file in it, then point the `DB` binding at it.

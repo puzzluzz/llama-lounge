@@ -808,7 +808,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-23c";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-23d";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -5980,12 +5980,29 @@ function loadDash(){
     const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:',give:'gave tokens to',undogift:'took back a gift from',roomreset:'reset the room name of'};
     for (const e of r.log.slice(0,20)){ const d=new Date(e.t); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(e.by)} ${WORD[e.cmd]||esc(e.cmd)} ${esc(e.target)}</div>`; }
     if (!r.log.length) h+='<div class="dl">NO STAFF ACTIONS YET.</div>';
+    if (owner) h+='<h4>💾 BACKUPS</h4><div id="ds_bk" class="dl">LOADING...</div>';
     dsBody.innerHTML=h;
+    if (owner) loadBackups();
     for (const b of dsBody.querySelectorAll('[data-cmd]')) b.addEventListener('click', ()=>dashDo(b.dataset.cmd, b.dataset.name));
     for (const b of dsBody.querySelectorAll('[data-undo]')) b.addEventListener('click', ()=>{ if (!confirm(`Take back ${b.dataset.n} TOKENS from ${b.dataset.to}?`)) return; b.disabled=true;
       NET.act('gift_undo',{gid:+b.dataset.undo}).then(r2=>{ localMsg(r2.msg||(r2.ok?'Gift undone.':'Could not undo that.')); loadDash(); }); });
     const add=document.getElementById('ds_addmod'); if (add) add.addEventListener('click', ()=>{ const n=document.getElementById('ds_new').value.trim(); if (n) dashDo('mod', n); });
   }); }
+// owner only: the twice-a-day database backups (the server checks it's the owner; these hold emails and password hashes)
+function loadBackups(){ const el=$id('ds_bk'); if (!el) return;
+  NET.act('backup_list').then(r=>{ if (!r.ok){ el.textContent=r.msg||'Could not load backups.'; return; }
+    const kb=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
+    let h='Saved automatically every 12 hours. The newest 4 (2 days) are kept.<br>';
+    for (const b of r.list){ const d=new Date(b.t); h+=`<div class="dr"><span class="nm">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} <small>${b.rows} ROWS · ${kb(b.bytes)} · ${esc(String(b.why).toUpperCase())}</small></span><button class="gbbtn s gd" data-bk="${b.id}">DOWNLOAD</button></div>`; }
+    if (!r.list.length) h+='No backups yet. The first one is saved at the next 12:23.<br>';
+    h+='<button class="gbbtn s" id="ds_bknow">💾 BACK UP NOW</button>';
+    el.innerHTML=h;
+    $id('ds_bknow').addEventListener('click', e=>{ e.target.disabled=true; e.target.textContent='SAVING...'; NET.act('backup_now').then(r2=>{ localMsg(r2.msg||(r2.ok?'Backup saved.':'Backup failed.')); loadBackups(); }); });
+    for (const b of el.querySelectorAll('[data-bk]')) b.addEventListener('click', async ()=>{ b.disabled=true; b.textContent='...'; let sql='', part=0, parts=1, t=Date.now();
+      try { while (part<parts){ const r2=await NET.act('backup_get',{bid:+b.dataset.bk, part}); if (!r2.ok){ localMsg(r2.msg||'Download failed.'); b.disabled=false; b.textContent='DOWNLOAD'; return; } sql+=r2.sql; parts=r2.parts; t=r2.at; part++; }
+        const d=new Date(t), pad=n=>String(n).padStart(2,'0'), name=`llama-lounge-backup-${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.sql`;
+        const a2=document.createElement('a'); a2.href=URL.createObjectURL(new Blob([sql],{type:'text/plain'})); a2.download=name; document.body.appendChild(a2); a2.click(); setTimeout(()=>{ URL.revokeObjectURL(a2.href); a2.remove(); }, 2000);
+        b.textContent='SAVED'; } catch(e){ localMsg('Download failed.'); b.disabled=false; b.textContent='DOWNLOAD'; } }); }); }
 document.getElementById('ds_refresh').addEventListener('click', loadDash);
 document.getElementById('ds_close').addEventListener('click', ()=>{ dashEl.style.display='none'; });
 NET.handlers.tg = m => tgServer(m);

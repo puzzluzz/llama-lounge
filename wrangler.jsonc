@@ -6,6 +6,12 @@
   "assets": { "directory": "./public", "not_found_handling": "single-page-application" },
   "durable_objects": { "bindings": [ { "name": "LOUNGE", "class_name": "Lounge" } ] },
   "migrations": [ { "tag": "v1", "new_sqlite_classes": ["Lounge"] } ],
-  "d1_databases": [ { "binding": "DB", "database_name": "llama-lounge", "database_id": "a0730bf5-48cc-4c15-be61-860aff614308" } ],
+  "d1_databases": [
+    { "binding": "DB", "database_name": "llama-lounge", "database_id": "a0730bf5-48cc-4c15-be61-860aff614308" },
+    // where the twice-a-day backups go (the newest 4 are kept)
+    { "binding": "BACKUP", "database_name": "llama-lounge-backups", "database_id": "7c9dd5df-3ce7-4137-80c3-bc848b2af923" }
+  ],
+  // back up the database at 5:23 and 17:23 UTC (12:23 am and 12:23 pm Eastern)
+  "triggers": { "crons": ["23 5,17 * * *"] },
   "observability": { "enabled": true }
 }
