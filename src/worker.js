@@ -19,7 +19,7 @@ const WINDOW_MS = 15 * 60 * 1000;
 const FRIENDS = { max: 100, inbox: 50 };
 const DM = { len: 300, burst: 8, perDay: 300 };   // private messages: longest message, most per 10 seconds, most a day (kept forever)
 // the staff chat log is kept forever too
-const ROOM_IDS = new Set(["lounge", "barn", "casino", "arena", "lanes", "store", "account", "gym", "cove"]);
+const ROOM_IDS = new Set(["lounge", "barn", "casino", "arena", "lanes", "store", "account", "gym", "cove", "jungle"]);
 const STAFF_GIVE_DAY = 500;   // most tokens a mod can give out in a day (the owner has no limit)
 const AFK_MS = 12 * 60000;   // no moving, chatting or "I'm still here" for this long: no more fishing or bar tips until they're back
 const SIPS = 3;
@@ -173,7 +173,17 @@ const COVE = { w: 20, h: 16, n: 7, scanGap: 1100, digGap: 3200, holeMs: 120000, 
 // solid things on the island (palms, rocks, the wreck, torches, the sign): you can't stand on or dig them. The page has the same list.
 const COVE_SOLID = new Set(["5,2", "17,3", "17,10", "4,12", "10,13", "12,2", "13,2", "14,2", "12,3", "13,3", "14,3", "8,6", "14,11", "7,10", "1,6", "1,10", "2,5"]);
 const coveSand = (x, y) => { if (!(x >= 0 && y >= 0 && x < COVE.w && y < COVE.h)) return false; const dx = Math.max(0, Math.abs(x + 0.5 - 10) - 5), dy = Math.max(0, Math.abs(y + 0.5 - 8) - 3); return dx * dx + dy * dy <= 17.64; };
+// JUNGLE TEMPLE: same hunt, in a jungle clearing (20 x 16) ringed by thick undergrowth, with a temple, a waterfall pool and a stream
+const JUNGLE_SOLID = new Set(["9,2", "6,13", "3,11", "15,12", "10,5", "7,9", "8,9", "13,7", "1,7", "12,3", "8,13", "2,5", "6,5"]);
+for (let x = 2; x <= 6; x++) for (let y = 1; y <= 4; y++) JUNGLE_SOLID.add(x + "," + y);   // the temple
+const jungleWater = (x, y) => (x >= 14 && y >= 1 && y <= 4) || (x >= 17 && y >= 5);
+const jungleFloor = (x, y) => (x === 0 && y === 8) || (x >= 1 && x <= 18 && y >= 1 && y <= 14 && !jungleWater(x, y));
+const jungleDiggable = (x, y) => jungleFloor(x, y) && x >= 1 && !JUNGLE_SOLID.has(x + "," + y) && !(x <= 2 && y >= 7 && y <= 9);
 const coveDiggable = (x, y) => coveSand(x, y) && !COVE_SOLID.has(x + "," + y) && !(x <= 2 && y >= 7 && y <= 9);   // not the landing by the dock
+const HUNTS = {
+  cove:   { table: "cove", dig: (x, y) => coveDiggable(x, y), rare: "tchest", rareFind: "chest", finds: COVE.finds },
+  jungle: { table: "jungle", dig: (x, y) => jungleDiggable(x, y), rare: "gidol", rareFind: "idol", finds: [["coins", 3, 0.5], ["gold", 6, 0.28], ["gem", 10, 0.15], ["idol", 4, 0.07]] },
+};
 const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
 
 // ---------- limited rares ----------
@@ -186,7 +196,8 @@ const RARES = {
 };
 const RARE_EACH = 2;
 for (const [k, R] of Object.entries(RARES)) FURN_ITEMS[k] = R.p;
-FURN_ITEMS.tchest = 25;   // PIRATE CHEST: only dug up at TREASURE COVE (never in the shop)   // rares are placeable furniture, but never in the normal shop (not in FURN_SALE)
+FURN_ITEMS.tchest = 25;   // PIRATE CHEST: only dug up at TREASURE COVE (never in the shop)
+FURN_ITEMS.gidol = 25;    // GOLDEN IDOL: only dug up at the JUNGLE TEMPLE (never in the shop)   // rares are placeable furniture, but never in the normal shop (not in FURN_SALE)
 // ---------- trading ----------
 // Two llamas in the same room trade furniture, numbered rares and tokens. Both have to press READY on the exact same offers;
 // any change un-readies both. The swap is one database transaction: if anything changed meanwhile, nothing moves.
@@ -2166,38 +2177,40 @@ export class Lounge extends DurableObject {
   }
 
   // ---------- treasure cove ----------
-  coveInit(now) { if (this.cove) return this.cove; this.cove = { t: new Map(), holes: new Map(), last: new Map(), scan: new Map(), chest: new Map() }; for (let i = 0; i < COVE.n; i++) this.coveBury(now); return this.cove; }
-  coveBury(now) { const C = this.cove; for (let tries = 0; tries < 200; tries++) { const x = Math.floor(Math.random() * COVE.w), y = Math.floor(Math.random() * COVE.h), k = x + "," + y;
-      if (!coveDiggable(x, y) || C.t.has(k) || C.holes.has(k)) continue; let r = Math.random(), kind = "coins"; for (const [kk, , p] of COVE.finds) { if (r < p) { kind = kk; break; } r -= p; } C.t.set(k, kind); return; } }
-  coveHoles(now) { const C = this.cove, out = []; for (const [k, v] of C.holes) { if (now - v.t > COVE.holeMs) C.holes.delete(k); else out.push([...k.split(",").map(Number), v.f ? 1 : 0]); } return out; }
-  async coveInfo(a, now) { this.coveInit(now); const r = await this.dailyCove(a.uid, now); return { ok: true, holes: this.coveHoles(now), earned: r.earned, cap: COVE.dayCap, buried: this.cove.t.size }; }
-  async dailyCove(uid, now) { await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS cove (uid INTEGER PRIMARY KEY, day TEXT NOT NULL DEFAULT '', earned INTEGER NOT NULL DEFAULT 0, chests INTEGER NOT NULL DEFAULT 0, finds INTEGER NOT NULL DEFAULT 0)").run();
-    const r = await this.env.DB.prepare("SELECT * FROM cove WHERE uid = ?").bind(uid).first(), today = etDay(now);
+  // both treasure rooms run the same way; each has its own island or clearing, finds and dig-only rare
+  huntOf(rm) { return rm === "cove" ? HUNTS.cove : rm === "jungle" ? HUNTS.jungle : null; }
+  coveInit(now, rm = "cove") { this.hunts = this.hunts || {}; if (this.hunts[rm]) return this.hunts[rm]; const C = this.hunts[rm] = { rm, H: this.huntOf(rm), t: new Map(), holes: new Map(), last: new Map(), scan: new Map() }; for (let i = 0; i < COVE.n; i++) this.coveBury(now, C); return C; }
+  coveBury(now, C) { for (let tries = 0; tries < 200; tries++) { const x = Math.floor(Math.random() * COVE.w), y = Math.floor(Math.random() * COVE.h), k = x + "," + y;
+      if (!C.H.dig(x, y) || C.t.has(k) || C.holes.has(k)) continue; let r = Math.random(), kind = "coins"; for (const [kk, , p] of C.H.finds) { if (r < p) { kind = kk; break; } r -= p; } C.t.set(k, kind); return; } }
+  coveHoles(now, C) { const out = []; for (const [k, v] of C.holes) { if (now - v.t > COVE.holeMs) C.holes.delete(k); else out.push([...k.split(",").map(Number), v.f ? 1 : 0]); } return out; }
+  async coveInfo(a, now) { const rm = a.pres && this.huntOf(a.pres.rm) ? a.pres.rm : "cove"; const C = this.coveInit(now, rm); const r = await this.dailyCove(a.uid, now, rm); return { ok: true, holes: this.coveHoles(now, C), earned: r.earned, cap: COVE.dayCap, buried: C.t.size }; }
+  async dailyCove(uid, now, rm = "cove") { const T = HUNTS[rm].table; await this.env.DB.prepare(`CREATE TABLE IF NOT EXISTS ${T} (uid INTEGER PRIMARY KEY, day TEXT NOT NULL DEFAULT '', earned INTEGER NOT NULL DEFAULT 0, chests INTEGER NOT NULL DEFAULT 0, finds INTEGER NOT NULL DEFAULT 0)`).run();
+    const r = await this.env.DB.prepare(`SELECT * FROM ${T} WHERE uid = ?`).bind(uid).first(), today = etDay(now);
     return r && r.day === today ? r : { uid, day: today, earned: 0, chests: 0, finds: r ? r.finds : 0 }; }
-  covePos(a) { const p = a.pres; if (!p || p.rm !== "cove" || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return null; return [Math.floor(p.x), Math.floor(p.y)]; }
-  coveScan(a, now) { const C = this.coveInit(now), pos = this.covePos(a); if (!pos) return { ok: false, msg: "Head to TREASURE COVE to hunt." };
+  covePos(a) { const p = a.pres; if (!p || !this.huntOf(p.rm) || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return null; return [Math.floor(p.x), Math.floor(p.y)]; }
+  coveScan(a, now) { const pos = this.covePos(a); if (!pos) return { ok: false, msg: "Head to TREASURE COVE or the JUNGLE TEMPLE to hunt." }; const C = this.coveInit(now, a.pres.rm);
     if (now - (C.scan.get(a.uid) || 0) < COVE.scanGap) return { ok: false, slow: true }; C.scan.set(a.uid, now);
     let best = 99; for (const k of C.t.keys()) { const [x, y] = k.split(",").map(Number); best = Math.min(best, Math.max(Math.abs(x - pos[0]), Math.abs(y - pos[1]))); }
     const heat = best === 0 ? 4 : best <= 1 ? 3 : best <= 3 ? 2 : best <= 6 ? 1 : 0; return { ok: true, heat }; }
   async coveDig(ws, a, m, now) {
-    const C = this.coveInit(now), pos = this.covePos(a); if (!pos) return { ok: false, msg: "Head to TREASURE COVE to hunt." };
+    const pos = this.covePos(a); if (!pos) return { ok: false, msg: "Head to TREASURE COVE or the JUNGLE TEMPLE to hunt." }; const C = this.coveInit(now, a.pres.rm), H = C.H;
     const x = Math.floor(+m.x), y = Math.floor(+m.y); if (!Number.isFinite(x) || !Number.isFinite(y) || Math.max(Math.abs(x - pos[0]), Math.abs(y - pos[1])) > 1) return { ok: false, msg: "Dig right next to where you're standing." };
-    if (!coveDiggable(x, y)) return { ok: false, msg: "You can't dig there." };
+    if (!H.dig(x, y)) return { ok: false, msg: "You can't dig there." };
     if (now - (C.last.get(a.uid) || 0) < COVE.digGap) return { ok: false, msg: "Catch your breath first." }; C.last.set(a.uid, now);
     const k = x + "," + y; if (C.holes.has(k) && now - C.holes.get(k).t <= COVE.holeMs) return { ok: false, msg: "Someone already dug here." };
     const kind = C.t.get(k); const ev = { t: "cv", n: a.name, x, y };
-    if (!kind) { C.holes.set(k, { t: now, f: 0 }); const junk = Math.random() < 0.3 ? COVE.junk[Math.floor(Math.random() * COVE.junk.length)] : null; ev.f = 0; ev.junk = junk; this.coveBroadcast(ev); return { ok: true, found: null, junk, hint: (this.coveScan({ pres: a.pres, uid: -1 }, now + 9e9) || {}).heat }; }
-    C.t.delete(k); C.holes.set(k, { t: now, f: 1 }); setTimeout(() => { if (this.cove) this.coveBury(Date.now()); }, COVE.respawn);
-    const r = await this.dailyCove(a.uid, now); let find = kind, pay = (COVE.finds.find((q) => q[0] === kind) || [0, 3])[1], item = null;
-    if (find === "chest") { if (r.chests >= COVE.chestPerDay) { find = "gold"; pay = 6; } else { item = "tchest"; await this.prTables(); await this.env.DB.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, item).run(); } }
+    if (!kind) { C.holes.set(k, { t: now, f: 0 }); const junk = Math.random() < 0.3 ? COVE.junk[Math.floor(Math.random() * COVE.junk.length)] : null; ev.f = 0; ev.junk = junk; this.coveBroadcast(ev, C.rm); return { ok: true, found: null, junk }; }
+    C.t.delete(k); C.holes.set(k, { t: now, f: 1 }); setTimeout(() => this.coveBury(Date.now(), C), COVE.respawn);
+    const r = await this.dailyCove(a.uid, now, C.rm); let find = kind, pay = (H.finds.find((q) => q[0] === kind) || [0, 3])[1], item = null;
+    if (find === H.rareFind) { if (r.chests >= COVE.chestPerDay) { find = "gold"; pay = 6; } else { item = H.rare; await this.prTables(); await this.env.DB.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, item).run(); } }
     pay = Math.max(0, Math.min(halfIfEmpty(a, pay), COVE.dayCap - r.earned));
-    await this.env.DB.prepare("INSERT INTO cove (uid, day, earned, chests, finds) VALUES (?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET day = excluded.day, earned = excluded.earned, chests = excluded.chests, finds = excluded.finds")
+    await this.env.DB.prepare(`INSERT INTO ${H.table} (uid, day, earned, chests, finds) VALUES (?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET day = excluded.day, earned = excluded.earned, chests = excluded.chests, finds = excluded.finds`)
       .bind(a.uid, r.day, r.earned + pay, r.chests + (item ? 1 : 0), (r.finds || 0) + 1).run();
     const tk = pay ? await this.credit(a.uid, pay, "treasure") : null;
-    ev.f = 1; ev.find = find; this.coveBroadcast(ev);
+    ev.f = 1; ev.find = find; this.coveBroadcast(ev, C.rm);
     return { ok: true, found: find, pay, item, tk, capped: r.earned + pay >= COVE.dayCap, furn: item ? await this.furnStorage(a.uid) : undefined };
   }
-  coveBroadcast(obj) { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === "cove") { try { w.send(s); } catch (e) {} } } }
+  coveBroadcast(obj, rm = "cove") { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === rm) { try { w.send(s); } catch (e) {} } } }
 
   // ---------- dunk tank ----------
   async dunkThrow(a, m, now) {

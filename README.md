@@ -401,3 +401,12 @@ A bigger outdoor room (20 x 16): a sandy island in the open sea with a sky that 
 
 - **Clothes tab:** INVENTORY > CLOTHES starts with a WEARING NOW row, then everything else by slot.
 - **Changing booth sign:** a lit CHANGING BOOTH marquee with chasing bulbs stands on top of the booth in ACCOUNT.
+
+## Jungle Temple (`jungle`)
+
+A second treasure hunt, in a jungle clearing (20 x 16) ringed by thick undergrowth: a stepped stone temple with a staircase, a shrine with glowing eyes in the doorway, moss and vines and a toucan on the roof; a waterfall pouring off a jagged, ferny cliff into a pool and a stream; giant trees with buttress roots and hanging vines; a mossy stone llama idol with ruby eyes, a fallen carved pillar, a broken column, burning braziers, flowering bushes, cobbled paths, butterflies (fireflies at night) and parrots crossing a misty canopy with soft sun rays.
+
+- **Same hunt as the cove:** the detector and DIG work the same way, the server buries 7 treasures and only says how close the nearest is, and holes and finds are shared with the room. Finds: coins (3), gold (6), a gem (10) or, rarely, a GOLDEN IDOL (a gold llama on a stone pedestal; furniture you can only dig up here, max 1 a day). It has its own 40-token daily limit (`jungle` table).
+- **Server:** both hunts share one code path (`HUNTS` in `src/worker.js`): each room has its own diggable area, finds, rare item and daily table.
+- **Notices:** while the detector or the boxing HUD is on screen, NEW! notices drop just below it instead of hiding behind it.
+- **Booth sign:** the CHANGING BOOTH marquee's two posts stand on the corners of the booth's roof.
