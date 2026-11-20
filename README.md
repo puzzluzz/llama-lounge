@@ -272,3 +272,17 @@ No API keys or passwords are involved.
   - Login sessions, reset links and login-attempt counters are left out on purpose. Players just log in again after a restore.
   - The owner (and only the owner) sees a **💾 BACKUPS** section at the bottom of the dashboard, with a DOWNLOAD button for each backup (a `.sql` file) and a BACK UP NOW button.
   - To restore: create an empty D1 database, run the `.sql` file in it, then point the `DB` binding at it.
+- **Room browser and likes:** 🏠 ROOMS has tabs for 🔥 POPULAR (most llamas inside right now), ♥ TOP (most liked), 🏆 FEATURED (the owner's picks) and ⭐ FRIENDS.
+  - Inside someone else's room, a ♥ button under the status bar likes or unlikes it. The server only counts a like while you're in the room, never on your own room, and at most a few times a minute.
+  - The owner gets a ☆/★ button on each row to feature a room. Tables: `plike(room, uid, t)` and the `prooms.feat` column.
+- **Daily rewards and quests:** once a day a pop-up offers the daily reward. Claiming on back-to-back days builds a streak: 5, 6, 7, 8, 10, 12, then 25 tokens on day 7, and then it loops. Days roll over at midnight Eastern.
+  - Every llama also gets 3 quests a day from a pool: fish, harvest, buy food, visit a room, like a room, bowl, arena, dunk tank, arcade, chat and bar tips. Each pays 3 to 6 tokens, plus a 10-token bonus for finishing all 3.
+  - The server counts progress from what actually happens and pays right away. Everything shows at the top of 💰 JOBS, and a "!" badge on JOBS means today's reward is waiting. Table: `daily`.
+- **Limited rares:** the ⭐ LIMITED RARES shelf at the top of the furniture shop sells numbered furniture that's never restocked:
+  - CRYSTAL LLAMA STATUE: 50 made, 150 tokens.
+  - GOLDEN LLAMA THRONE: 25 made, 250 tokens, a seat. Its drop opens Friday Nov 20 at 8:00 pm Eastern.
+
+  Each llama can buy 2 of each; after that, only by trading. Each copy has its own number (`rares` table), and rares are placed like any other furniture. Drops are set in `RARES` in `src/worker.js`.
+- **Trading:** tap another llama in the same room and press 🤝 TRADE. Both sides pick furniture from storage, numbered rares and tokens. Any change clears both READYs, and the trade happens when both are READY on the same offers.
+  - The swap is one all-or-nothing database transaction, guarded by `trade_guard` checks. If a piece got placed or tokens got spent in the meantime, nothing moves.
+  - Leaving the room or logging off cancels the trade. Every trade is logged in the `trades` table.

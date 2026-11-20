@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-23d";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-23f";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -119,6 +119,53 @@ const layerOf = (item) => (FURN_WALL.has(item) ? "wall" : FURN_RUG.has(item) ? "
 const prId = (rm) => { const m = /^p:(\d{1,9})$/.exec(String(rm || "")); return m ? +m[1] : 0; };
 const cleanRoomName = (n) => String(n || "").replace(/[^A-Za-z0-9 '!?&.,:-]/g, "").replace(/\s+/g, " ").trim().slice(0, PR.nameMax);
 const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
+
+// ---------- limited rares ----------
+// Numbered furniture made in small runs and never sold again. Each copy has its own number (#1, #2, ...) and owner.
+// They go in STORAGE like other furniture (finv) and can be placed; the rares table tracks which numbered copies you own.
+// open = when the drop starts (ms); each llama can buy up to RARE_EACH of each from the store (more only by trading).
+const RARES = {
+  statue: { n: "CRYSTAL LLAMA STATUE", p: 150, max: 50, open: 0 },
+  throne: { n: "GOLDEN LLAMA THRONE", p: 250, max: 25, open: Date.parse("2026-11-21T01:00:00Z") },   // Friday 8:00 pm Eastern
+};
+const RARE_EACH = 2;
+for (const [k, R] of Object.entries(RARES)) FURN_ITEMS[k] = R.p;   // rares are placeable furniture, but never in the normal shop (not in FURN_SALE)
+// ---------- trading ----------
+// Two llamas in the same room trade furniture, numbered rares and tokens. Both have to press READY on the exact same offers;
+// any change un-readies both. The swap is one database transaction: if anything changed meanwhile, nothing moves.
+const TRADE = { maxLines: 12, maxEach: 20, maxTk: 100000, ask: 60000 };
+
+// ---------- daily rewards and quests ----------
+// Log in each day and claim a reward; claiming on back-to-back days builds a streak (day 7 is the big one, then it loops).
+// Each day every llama gets 3 quests picked from the pool; the server counts progress from what actually happens and pays
+// right away, plus a bonus for finishing all 3. Days roll over at midnight US Eastern.
+const DAILY = { rewards: [5, 6, 7, 8, 10, 12, 25], bonus: 10, per: 3 };
+const QUESTS = {
+  fish:    { n: 3, pay: 5, t: "Catch 3 fish at the pond in LLAMA ACRES" },
+  harvest: { n: 3, pay: 5, t: "Harvest 3 carrots in LLAMA ACRES" },
+  eat:     { n: 2, pay: 4, t: "Buy 2 drinks or snacks" },
+  visit:   { n: 1, pay: 4, t: "Visit someone else's room" },
+  like:    { n: 1, pay: 3, t: "Like a room you enjoy" },
+  bowl:    { n: 1, pay: 6, t: "Finish a game at LLAMA LANES" },
+  arena:   { n: 1, pay: 5, t: "Play a round in the SPIT ARENA" },
+  dunk:    { n: 2, pay: 4, t: "Throw 2 balls at the dunk tank" },
+  arcade:  { n: 1, pay: 4, t: "Play a game on the lounge arcade" },
+  chat:    { n: 5, pay: 3, t: "Say 5 things in chat" },
+  bar:     { n: 2, pay: 5, t: "Earn tips working the bar twice" },
+};
+function questsFor(uid, day) {   // the same 3 for a llama all day, different each day
+  let h = 2166136261; for (const ch of uid + ":" + day) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+  const keys = Object.keys(QUESTS); for (let i = keys.length - 1; i > 0; i--) { h = (Math.imul(h, 1103515245) + 12345) >>> 0; const j = h % (i + 1); [keys[i], keys[j]] = [keys[j], keys[i]]; }
+  return keys.slice(0, DAILY.per);
+}
+// which successful actions count toward which quest
+function questKeyFor(kind, res) {
+  if (kind === "fish_reel") return "fish"; if (kind === "harvest") return "harvest"; if (kind === "buy" || kind === "drink") return "eat";
+  if (kind === "pr_enter" && !res.mine) return "visit"; if (kind === "pr_like" && res.liked) return "like";
+  if (kind === "bowl_roll" && res.done) return "bowl"; if (kind === "arena_end") return "arena"; if (kind === "dunk_throw") return "dunk";
+  if (kind === "arcade") return "arcade"; if (kind === "bar_tick" && Number.isFinite(res.tk) && !res.started) return "bar";
+  return null;
+}
 
 // ---------- database backups ----------
 // Every 12 hours (cron in wrangler.jsonc) the whole game database is written out as SQL into a separate backup database
@@ -610,9 +657,10 @@ export class Lounge extends DurableObject {
       if (m.p && (first || +m.p.x !== a.pres.x || +m.p.y !== a.pres.y || m.p.rm !== a.pres.rm || (m.p.s && typeof m.p.s === "object" && +m.p.s.k !== a.ck))) a.act = now;
       // chat log for staff: every new line, muted ones too (marked); action lines like "sat down" are marked as actions
       const rs = m.p && m.p.s;
-      if (rs && typeof rs === "object" && rs.t && +rs.k !== a.ck) { const was = a.ck; a.ck = +rs.k; if (!first && was !== undefined) await this.chatLog(a, m.p.rm, (rs.f ? "* " : "") + String(rs.t).slice(0, 120), !!a.uc.muted); }
+      if (rs && typeof rs === "object" && rs.t && +rs.k !== a.ck) { const was = a.ck; a.ck = +rs.k; if (!first && was !== undefined) { await this.chatLog(a, m.p.rm, (rs.f ? "* " : "") + String(rs.t).slice(0, 120), !!a.uc.muted); if (!rs.f && !a.uc.muted) { try { await this.questTick(ws, a.uid, "chat"); } catch (e) {} } } }
       else if (first && rs && typeof rs === "object") a.ck = +rs.k;
       if (first && a.ck === undefined) a.ck = 0;
+      if (a.pres && m.p && m.p.rm !== a.pres.rm) this.tradeDrop(a.uid, `${a.name} left the room, so the trade was cancelled.`);
       const prevSit = a.pres && a.pres.p === "sit" ? a.pres.rm + ":" + Math.floor(a.pres.x) + "," + Math.floor(a.pres.y) : null;
       a.pres = cleanPresence(m.p, a.name, a.uc.tk, !!a.uc.muted, a.staff); if (a.uc.c) a.pres.c = a.uc.c;   // everyone sees the llama the account picked
       // one llama per seat: whoever sat down first keeps it
@@ -629,6 +677,7 @@ export class Lounge extends DurableObject {
     if (m.t === "act") {
       let res;
       try { res = await this.act(ws, a, String(m.a || ""), m); } catch (e) { console.error(e); res = { ok: false, msg: "Server hiccup, try again." }; }
+      if (res && res.ok) { const qk = questKeyFor(String(m.a || ""), res); if (qk) { try { await this.questTick(ws, a.uid, qk); } catch (e) { console.error("quest", e); } } }
       if (res && Number.isFinite(res.tk)) { const a2 = ws.deserializeAttachment(); if (a2) { a2.uc = { ...(a2.uc || {}), t: Date.now(), tk: res.tk, muted: a2.uc ? a2.uc.muted : 0 }; ws.serializeAttachment(a2); } }
       this.send(ws, { t: "res", id: m.id, ...res });
     }
@@ -636,7 +685,7 @@ export class Lounge extends DurableObject {
 
   async webSocketClose(ws) { this.left(ws); try { const a = ws.deserializeAttachment(); if (a && a.nd) { this.needsDrain(a, Date.now()); await this.needsSave(a); } } catch (e) {} }
   async webSocketError(ws) { this.left(ws); }
-  left(ws) { const a = ws.deserializeAttachment(); if (a && a.pres) this.broadcast({ t: "peers", left: [{ peer: a.peer }] }, ws); }
+  left(ws) { const a = ws.deserializeAttachment(); if (a && a.pres) this.broadcast({ t: "peers", left: [{ peer: a.peer }] }, ws); if (a) this.tradeDrop(a.uid, `${a.name} left, so the trade was cancelled.`); }
 
   // ---------- player rooms ----------
   async prTables() { if (this.prReady) return;
@@ -645,7 +694,9 @@ export class Lounge extends DurableObject {
       "CREATE TABLE IF NOT EXISTS pfurn (id INTEGER PRIMARY KEY AUTOINCREMENT, room INTEGER NOT NULL, item TEXT NOT NULL, gx INTEGER NOT NULL, gy INTEGER NOT NULL, rot INTEGER NOT NULL DEFAULT 0)",
       "CREATE INDEX IF NOT EXISTS pfurn_room ON pfurn (room)",
       "CREATE TABLE IF NOT EXISTS finv (uid INTEGER NOT NULL, item TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (uid, item))",
-      "CREATE TABLE IF NOT EXISTS deco (uid INTEGER NOT NULL, k TEXT NOT NULL, PRIMARY KEY (uid, k))"]) await this.env.DB.prepare(q).run();
+      "CREATE TABLE IF NOT EXISTS deco (uid INTEGER NOT NULL, k TEXT NOT NULL, PRIMARY KEY (uid, k))",
+      "CREATE TABLE IF NOT EXISTS plike (room INTEGER NOT NULL, uid INTEGER NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (room, uid))"]) await this.env.DB.prepare(q).run();
+    try { await this.env.DB.prepare("ALTER TABLE prooms ADD COLUMN feat INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {}   // rooms the owner features in the room browser
     try { await this.env.DB.prepare("ALTER TABLE pfurn ADD COLUMN off INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {}   // TVs and lamps can be switched off (already there after the first time)
     this.prReady = true; this.prPriv = this.prPriv || new Map(); this.letIn = this.letIn || new Map(); this.knocks = this.knocks || new Map(); }
   async prRoom(id) { await this.prTables(); const r = await this.env.DB.prepare("SELECT r.*, u.name AS oname FROM prooms r JOIN users u ON u.id = r.owner WHERE r.id = ?").bind(id).first(); if (r) this.prPriv.set(r.id, !!r.priv); return r; }
@@ -655,23 +706,44 @@ export class Lounge extends DurableObject {
     const li = this.letIn.get(r.id); if (li && (li.get(a.uid) || 0) > Date.now()) return true;
     return !!(await this.env.DB.prepare("SELECT 1 FROM pinv WHERE room = ? AND uid = ?").bind(r.id, a.uid).first());
   }
-  prOut(r) { return { id: r.id, name: r.name, owner: r.oname.toUpperCase(), priv: !!r.priv, wall: r.wall, floor: r.floor }; }
+  prOut(r) { return { id: r.id, name: r.name, owner: r.oname.toUpperCase(), priv: !!r.priv, wall: r.wall, floor: r.floor, likes: r.likes || 0, liked: !!r.liked, feat: !!r.feat }; }
+  async prLikes(id, uid) { const r = await this.env.DB.prepare("SELECT (SELECT COUNT(*) FROM plike WHERE room = ?) AS likes, EXISTS(SELECT 1 FROM plike WHERE room = ? AND uid = ?) AS liked").bind(id, id, uid).first(); return { likes: r.likes || 0, liked: !!r.liked }; }
+  // like or unlike someone else's room: only while you're inside it, never your own, a few times a minute at most
+  async prLike(ws, a, m) {
+    await this.prTables();
+    const rid = Math.floor(+m.rid || 0); if (!rid || a.proom !== rid || !a.pres || a.pres.rm !== "p:" + rid) return { ok: false, msg: "Walk into the room to like it." };
+    const r = await this.prRoom(rid); if (!r) return { ok: false, msg: "That room doesn't exist anymore." };
+    if (r.owner === a.uid) return { ok: false, msg: "You can't like your own room. Get your friends to!" };
+    const now = Date.now(); if (!a.lk || now - a.lk[0] > 60000) a.lk = [now, 0]; if (++a.lk[1] > 10) { ws.serializeAttachment(a); return { ok: false, msg: "Easy on the hearts!" }; } ws.serializeAttachment(a);
+    const had = await this.env.DB.prepare("SELECT 1 FROM plike WHERE room = ? AND uid = ?").bind(rid, a.uid).first();
+    if (had) await this.env.DB.prepare("DELETE FROM plike WHERE room = ? AND uid = ?").bind(rid, a.uid).run();
+    else await this.env.DB.prepare("INSERT OR IGNORE INTO plike (room, uid, t) VALUES (?, ?, ?)").bind(rid, a.uid, now).run();
+    const L = await this.prLikes(rid, a.uid); this.toRoom("p:" + rid, { t: "prlikes", room: rid, likes: L.likes });
+    return { ok: true, ...L };
+  }
+  async prFeature(a, m) {   // the owner (users.role = 'admin') picks rooms to feature at the top of the room browser
+    const u = await this.user(a.uid); if (!isAdmin(this.env, u)) return { ok: false, msg: "Only the owner can feature rooms." };
+    await this.prTables(); const rid = Math.floor(+m.rid || 0);
+    await this.env.DB.prepare("UPDATE prooms SET feat = ? WHERE id = ?").bind(m.on ? 1 : 0, rid).run();
+    await this.logStaff(a.name, m.on ? "feature" : "unfeature", String(rid)); return this.prList(a);
+  }
   prCount(id) { const rm = "p:" + id, seen = new Set(); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === rm) seen.add(x.uid); } return seen.size; }
   toRoom(rm, obj) { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === rm) { try { w.send(s); } catch (e) {} } } }
   async prFurn(id) { return ((await this.env.DB.prepare("SELECT id, item, gx, gy, rot, off FROM pfurn WHERE room = ? ORDER BY id").bind(id).all()).results || []).filter((f) => FURN_ITEMS[f.item]); }
   async prList(a) {
     await this.prTables(); await this.frTable();
-    const mine = await this.env.DB.prepare("SELECT r.*, u.name AS oname FROM prooms r JOIN users u ON u.id = r.owner WHERE r.owner = ?").bind(a.uid).first();
+    const mine = await this.env.DB.prepare("SELECT r.*, u.name AS oname, (SELECT COUNT(*) FROM plike l WHERE l.room = r.id) AS likes FROM prooms r JOIN users u ON u.id = r.owner WHERE r.owner = ?").bind(a.uid).first();
     const rows = (await this.env.DB.prepare(`SELECT r.*, u.name AS oname,
         EXISTS(SELECT 1 FROM friends f WHERE f.st = 'ok' AND ((f.a = ? AND f.b = r.owner) OR (f.b = ? AND f.a = r.owner))) AS fr,
-        EXISTS(SELECT 1 FROM pinv i WHERE i.room = r.id AND i.uid = ?) AS inv
-      FROM prooms r JOIN users u ON u.id = r.owner WHERE u.banned = 0 AND r.owner != ? ORDER BY r.t DESC LIMIT 200`).bind(a.uid, a.uid, a.uid, a.uid).all()).results || [];
+        EXISTS(SELECT 1 FROM pinv i WHERE i.room = r.id AND i.uid = ?) AS inv,
+        (SELECT COUNT(*) FROM plike l WHERE l.room = r.id) AS likes, EXISTS(SELECT 1 FROM plike l WHERE l.room = r.id AND l.uid = ?) AS liked
+      FROM prooms r JOIN users u ON u.id = r.owner WHERE u.banned = 0 AND r.owner != ? ORDER BY r.t DESC LIMIT 200`).bind(a.uid, a.uid, a.uid, a.uid, a.uid).all()).results || [];
     const out = [];
     for (const r of rows) { this.prPriv.set(r.id, !!r.priv); const n = this.prCount(r.id); if (!r.fr && !r.inv && r.priv && !n) continue;   // strangers' private rooms only show while someone's in them
       const li = this.letIn.get(r.id); const can = !r.priv || !!r.inv || (li && (li.get(a.uid) || 0) > Date.now()) || a.staff === "owner" || a.staff === "mod";
       out.push({ ...this.prOut(r), n, friend: !!r.fr, invited: !!r.inv, can: !!can }); }
     out.sort((x, y) => (y.friend - x.friend) || (y.n - x.n));
-    return { ok: true, mine: mine ? { ...this.prOut(mine), n: this.prCount(mine.id) } : null, rooms: out.slice(0, 60), staff: a.staff === "owner" || a.staff === "mod" };
+    return { ok: true, mine: mine ? { ...this.prOut(mine), n: this.prCount(mine.id) } : null, rooms: out.slice(0, 60), staff: a.staff === "owner" || a.staff === "mod", owner: a.staff === "owner" };
   }
   // search rooms by room name or owner name (private rooms show up too, with a lock, so people can knock)
   async prSearch(a, m) {
@@ -680,8 +752,9 @@ export class Lounge extends DurableObject {
     const like = "%" + q.replace(/[%_]/g, "") + "%";
     const rows = (await this.env.DB.prepare(`SELECT r.*, u.name AS oname,
         EXISTS(SELECT 1 FROM friends f WHERE f.st = 'ok' AND ((f.a = ? AND f.b = r.owner) OR (f.b = ? AND f.a = r.owner))) AS fr,
-        EXISTS(SELECT 1 FROM pinv i WHERE i.room = r.id AND i.uid = ?) AS inv
-      FROM prooms r JOIN users u ON u.id = r.owner WHERE u.banned = 0 AND (r.name LIKE ? OR u.name LIKE ?) ORDER BY r.t DESC LIMIT 30`).bind(a.uid, a.uid, a.uid, like, like).all()).results || [];
+        EXISTS(SELECT 1 FROM pinv i WHERE i.room = r.id AND i.uid = ?) AS inv,
+        (SELECT COUNT(*) FROM plike l WHERE l.room = r.id) AS likes, EXISTS(SELECT 1 FROM plike l WHERE l.room = r.id AND l.uid = ?) AS liked
+      FROM prooms r JOIN users u ON u.id = r.owner WHERE u.banned = 0 AND (r.name LIKE ? OR u.name LIKE ?) ORDER BY r.t DESC LIMIT 30`).bind(a.uid, a.uid, a.uid, a.uid, like, like).all()).results || [];
     const out = rows.map((r) => { this.prPriv.set(r.id, !!r.priv); const li = this.letIn.get(r.id);
       const can = r.owner === a.uid || !r.priv || !!r.inv || (li && (li.get(a.uid) || 0) > Date.now()) || a.staff === "owner" || a.staff === "mod";
       return { ...this.prOut(r), n: this.prCount(r.id), friend: !!r.fr, invited: !!r.inv, can: !!can, mine: r.owner === a.uid }; });
@@ -720,7 +793,7 @@ export class Lounge extends DurableObject {
     const owner = await this.user(r.owner); if (!owner || owner.banned) return { ok: false, msg: "That room is closed." };
     if (!(await this.prCanEnter(a, r))) return { ok: false, locked: true, msg: `${r.name} is private. Knock and the owner can let you in.` };
     a.proom = r.id; ws.serializeAttachment(a);
-    return { ok: true, room: this.prOut(r), mine: r.owner === a.uid, furn: await this.prFurn(r.id) };
+    return { ok: true, room: { ...this.prOut(r), ...(await this.prLikes(r.id, a.uid)) }, mine: r.owner === a.uid, furn: await this.prFurn(r.id) };
   }
   async prKnock(a, m, now) {
     const r = await this.prRoom(Math.floor(+m.rid || 0)); if (!r) return { ok: false, msg: "That room doesn't exist anymore." };
@@ -900,6 +973,154 @@ export class Lounge extends DurableObject {
     if (h.left > 0) await this.ctx.storage.put("held:" + a.uid, h); else await this.ctx.storage.delete("held:" + a.uid);
     await this.needsEat(ws, a, { hu: h.hu / SIPS, th: h.th / SIPS }, now);
     return { ok: true, nd: this.needsOut(a) };
+  }
+
+  // ---------- limited rares ----------
+  async rareTables() { if (this.rareReady) return; await this.prTables();
+    for (const q of ["CREATE TABLE IF NOT EXISTS rares (id INTEGER PRIMARY KEY AUTOINCREMENT, item TEXT NOT NULL, serial INTEGER NOT NULL, owner INTEGER NOT NULL, t INTEGER NOT NULL, UNIQUE (item, serial))",
+      "CREATE INDEX IF NOT EXISTS rares_owner ON rares (owner)",
+      "CREATE TABLE IF NOT EXISTS trade_guard (ok INTEGER NOT NULL CHECK (ok = 1))",   // a trade step that would break the rules inserts 0 here, which aborts the whole trade
+      "CREATE TABLE IF NOT EXISTS trades (id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER NOT NULL, a INTEGER NOT NULL, b INTEGER NOT NULL, a_gave TEXT NOT NULL, b_gave TEXT NOT NULL)"]) await this.env.DB.prepare(q).run();
+    this.rareReady = true; }
+  async rareInfo(uid) {
+    await this.rareTables();
+    const sold = new Map(((await this.env.DB.prepare("SELECT item, COUNT(*) AS n FROM rares GROUP BY item").all()).results || []).map((r) => [r.item, r.n]));
+    const mine = (await this.env.DB.prepare("SELECT id, item, serial FROM rares WHERE owner = ? ORDER BY item, serial").bind(uid).all()).results || [];
+    return { list: Object.entries(RARES).map(([k, R]) => ({ k, n: R.n, p: R.p, max: R.max, sold: sold.get(k) || 0, open: R.open, each: RARE_EACH })), mine, now: Date.now() };
+  }
+  async rareBuy(a, m) {
+    await this.rareTables();
+    const k = String(m.item || ""), R = Object.hasOwn(RARES, k) ? RARES[k] : null; if (!R) return { ok: false, msg: "That isn't a rare." };
+    if (!a.pres || a.pres.rm !== "store") return { ok: false, msg: "Visit the LLAMA STORE to buy rares." };
+    const now = Date.now(); if (now < R.open) return { ok: false, msg: `The ${R.n} drop hasn't started yet.` };
+    const bought = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM ledger WHERE uid = ? AND reason = ?").bind(a.uid, "rare " + k).first();
+    if (bought.n >= RARE_EACH) return { ok: false, msg: `You can buy up to ${RARE_EACH} of each rare. Trade for more!` };
+    const left = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM rares WHERE item = ?").bind(k).first(); if (left.n >= R.max) return { ok: false, msg: "SOLD OUT! The only way to get one now is to trade for it." };
+    const tk = await this.debit(a.uid, R.p, "rare " + k); if (tk === null) return { ok: false, msg: `That costs ${R.p} TOKENS. Play some games to earn more!` };
+    // take the next number, but never past the limit (UNIQUE item+serial stops two buyers getting the same number)
+    let r = null; try { r = await this.env.DB.prepare("INSERT INTO rares (item, serial, owner, t) SELECT ?, COUNT(*) + 1, ?, ? FROM rares WHERE item = ? HAVING COUNT(*) < ? RETURNING id, serial").bind(k, a.uid, now, k, R.max).first(); } catch (e) { r = null; }
+    if (!r) { const tk2 = await this.credit(a.uid, R.p, "rare refund " + k); return { ok: false, tk: tk2, msg: "Someone grabbed the last one first! Your tokens are back." }; }
+    await this.env.DB.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, k).run();
+    return { ok: true, tk, serial: r.serial, msg: `You got ${R.n} #${r.serial} of ${R.max}!`, rares: await this.rareInfo(a.uid), furn: await this.furnStorage(a.uid) };
+  }
+
+  // ---------- trading ----------
+  sockOf(uid) { for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.uid === uid && x.pres) return [w, x]; } return [null, null]; }
+  tradeOut(T, i) { const S = T.side[i], O = T.side[1 - i]; return { t: "trade", tid: T.id, open: T.open, them: O.name, mine: S.offer, theirs: O.offer, ok: [S.ok, O.ok] }; }
+  tradePush(T) { for (let i = 0; i < 2; i++) { const [w] = this.sockOf(T.side[i].uid); if (w) this.send(w, this.tradeOut(T, i)); } }
+  tradeEnd(T, msg) { if (!this.trades) return; this.trades.delete(T.id); for (const S of T.side) { if (this.tradeOf.get(S.uid) === T.id) this.tradeOf.delete(S.uid); const [w] = this.sockOf(S.uid); if (w) this.send(w, { t: "tradeend", tid: T.id, msg }); } }
+  tradeDrop(uid, why) { if (!this.tradeOf) return; const id = this.tradeOf.get(uid); const T = id && this.trades.get(id); if (T) this.tradeEnd(T, why); }
+  async tradeReq(ws, a, m) {
+    await this.rareTables(); this.trades = this.trades || new Map(); this.tradeOf = this.tradeOf || new Map();
+    const n = String(m.n || "").trim().toUpperCase(); if (!/^[A-Z0-9_]{3,12}$/.test(n) || n === a.name) return { ok: false, msg: "Pick someone else to trade with." };
+    let them = null, tw = null; for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.name === n) { them = x; tw = w; } }
+    if (!them || !a.pres || them.pres.rm !== a.pres.rm) return { ok: false, msg: `${n} has to be in the same room as you to trade.` };
+    const now = Date.now(); if (now - (a.tq || 0) < 5000) return { ok: false, msg: "Wait a moment before asking again." }; a.tq = now; ws.serializeAttachment(a);
+    if (this.tradeOf.has(a.uid)) this.tradeDrop(a.uid, "The trade was cancelled.");
+    if (this.tradeOf.has(them.uid)) return { ok: false, msg: `${n} is already trading with someone.` };
+    const T = { id: crypto.randomUUID().slice(0, 12), open: false, t: now, side: [{ uid: a.uid, name: a.name, offer: { items: {}, rares: [], tk: 0 }, ok: false }, { uid: them.uid, name: them.name, offer: { items: {}, rares: [], tk: 0 }, ok: false }] };
+    this.trades.set(T.id, T); this.tradeOf.set(a.uid, T.id); this.tradeOf.set(them.uid, T.id);
+    this.send(tw, { t: "tradereq", tid: T.id, from: a.name });
+    return { ok: true, tid: T.id, msg: `Asked ${n} to trade. Waiting for them to accept...` };
+  }
+  tradeGet(a, m) { const T = this.trades && this.trades.get(String(m.tid || "")); if (!T) return [null, -1]; const i = T.side.findIndex((s) => s.uid === a.uid); return i < 0 ? [null, -1] : [T, i]; }
+  async tradeAnswer(a, m) {
+    const [T, i] = this.tradeGet(a, m); if (!T || i !== 1 || T.open) return { ok: false, msg: "That trade request expired." };
+    if (Date.now() - T.t > TRADE.ask) { this.tradeEnd(T, "The trade request expired."); return { ok: false, msg: "That trade request expired." }; }
+    if (!m.yes) { this.tradeEnd(T, `${a.name} said no to trading.`); return { ok: true }; }
+    T.open = true; this.tradePush(T); return { ok: true };
+  }
+  // what a llama can give right now: storage minus what's placed in their room, their numbered rares, their tokens
+  async tradeHave(uid) {
+    await this.rareTables();
+    const rows = (await this.env.DB.prepare("SELECT f.item, f.n, (SELECT COUNT(*) FROM pfurn p JOIN prooms r ON r.id = p.room WHERE r.owner = f.uid AND p.item = f.item) AS placed FROM finv f WHERE f.uid = ?").bind(uid).all()).results || [];
+    const free = new Map(rows.map((r) => [r.item, Math.max(0, r.n - r.placed)]));
+    const rares = (await this.env.DB.prepare("SELECT id, item, serial FROM rares WHERE owner = ?").bind(uid).all()).results || [];
+    const u = await this.user(uid); return { free, rares, tk: u ? u.tk : 0 };
+  }
+  async tradeSet(a, m) {
+    const [T, i] = this.tradeGet(a, m); if (!T || !T.open) return { ok: false, msg: "That trade is over." };
+    const H = await this.tradeHave(a.uid), items = {}, rares = [];
+    const inItems = m.items && typeof m.items === "object" ? m.items : {};
+    for (const [k, v] of Object.entries(inItems)) { const n = Math.floor(+v || 0); if (n <= 0) continue;
+      if (!Object.hasOwn(FURN_ITEMS, k) || Object.hasOwn(RARES, k)) return { ok: false, msg: "You can't trade that." };   // rares go by their number
+      if (n > TRADE.maxEach || n > (H.free.get(k) || 0)) return { ok: false, msg: "You don't have that many in storage (placed pieces stay put)." };
+      items[k] = n; }
+    const need = new Map();
+    for (const rid of (Array.isArray(m.rares) ? m.rares : []).slice(0, TRADE.maxLines)) { const R = H.rares.find((r) => r.id === Math.floor(+rid)); if (!R) return { ok: false, msg: "You don't own that rare." };
+      if (!rares.some((x) => x.id === R.id)) { rares.push(R); need.set(R.item, (need.get(R.item) || 0) + 1); } }
+    for (const [k, n] of need) if (n > (H.free.get(k) || 0)) return { ok: false, msg: "Pick up that rare from your room before trading it." };
+    if (Object.keys(items).length + rares.length > TRADE.maxLines) return { ok: false, msg: `Up to ${TRADE.maxLines} things per trade.` };
+    const tk = Math.max(0, Math.min(TRADE.maxTk, Math.floor(+m.tk || 0))); if (tk > H.tk) return { ok: false, msg: "You don't have that many tokens." };
+    T.side[i].offer = { items, rares: rares.map((r) => ({ id: r.id, item: r.item, serial: r.serial })), tk }; T.side[0].ok = false; T.side[1].ok = false; T.t = Date.now();
+    this.tradePush(T); return { ok: true };
+  }
+  async tradeReady(a, m) {
+    const [T, i] = this.tradeGet(a, m); if (!T || !T.open) return { ok: false, msg: "That trade is over." };
+    T.side[i].ok = !!m.on; this.tradePush(T);
+    if (!(T.side[0].ok && T.side[1].ok)) return { ok: true };
+    const A = T.side[0], B = T.side[1], empty = (O) => !Object.keys(O.items).length && !O.rares.length && !O.tk;
+    if (empty(A.offer) && empty(B.offer)) { A.ok = B.ok = false; this.tradePush(T); return { ok: false, msg: "Add something to the trade first." }; }
+    const db = this.env.DB, st = [], now = Date.now();
+    const give = (S, R) => {
+      const O = S.offer, moves = new Map(Object.entries(O.items)); for (const r of O.rares) moves.set(r.item, (moves.get(r.item) || 0) + 1);
+      if (O.tk > 0) st.push(db.prepare("UPDATE users SET tk = tk - ? WHERE id = ?").bind(O.tk, S.uid), db.prepare("UPDATE users SET tk = tk + ? WHERE id = ?").bind(O.tk, R.uid),
+        db.prepare("INSERT INTO ledger (uid, delta, reason, t) VALUES (?, ?, ?, ?)").bind(S.uid, -O.tk, "trade to " + R.name, now), db.prepare("INSERT INTO ledger (uid, delta, reason, t) VALUES (?, ?, ?, ?)").bind(R.uid, O.tk, "trade from " + S.name, now));
+      for (const [k, n] of moves) st.push(db.prepare("UPDATE finv SET n = n - ? WHERE uid = ? AND item = ?").bind(n, S.uid, k),
+        db.prepare("INSERT INTO trade_guard (ok) SELECT CASE WHEN COALESCE((SELECT n FROM finv WHERE uid = ? AND item = ?), -1) >= (SELECT COUNT(*) FROM pfurn p JOIN prooms r ON r.id = p.room WHERE r.owner = ? AND p.item = ?) THEN 1 ELSE 0 END").bind(S.uid, k, S.uid, k),
+        db.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, ?) ON CONFLICT(uid, item) DO UPDATE SET n = n + excluded.n").bind(R.uid, k, n));
+      for (const r of O.rares) st.push(db.prepare("UPDATE rares SET owner = ? WHERE id = ? AND owner = ?").bind(R.uid, r.id, S.uid),
+        db.prepare("INSERT INTO trade_guard (ok) SELECT CASE WHEN (SELECT owner FROM rares WHERE id = ?) = ? THEN 1 ELSE 0 END").bind(r.id, R.uid));
+    };
+    give(A, B); give(B, A);
+    st.push(db.prepare("DELETE FROM finv WHERE n <= 0 AND uid IN (?, ?)").bind(A.uid, B.uid), db.prepare("DELETE FROM trade_guard"),
+      db.prepare("INSERT INTO trades (t, a, b, a_gave, b_gave) VALUES (?, ?, ?, ?, ?)").bind(now, A.uid, B.uid, JSON.stringify(A.offer), JSON.stringify(B.offer)));
+    try { await db.batch(st); }
+    catch (e) { console.log("trade refused", e && e.message); A.ok = B.ok = false; this.tradePush(T); return { ok: false, msg: "The trade didn't go through: something changed (a piece was placed, or tokens were spent). Check the offers and try again." }; }
+    this.tradeEnd(T, "TRADE DONE!");
+    for (const S of [A, B]) { const [w, x] = this.sockOf(S.uid); const u = await this.user(S.uid); if (w) { if (x) { x.uc = { ...(x.uc || {}), t: Date.now(), tk: u.tk }; w.serializeAttachment(x); } this.send(w, { t: "tradedone", tk: u.tk, furn: await this.furnStorage(S.uid), rares: await this.rareInfo(S.uid) }); } }
+    return { ok: true };
+  }
+
+  // ---------- daily rewards and quests ----------
+  async dailyTable() { if (this.dailyReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS daily (uid INTEGER PRIMARY KEY, claim_day TEXT NOT NULL DEFAULT '', streak INTEGER NOT NULL DEFAULT 0, qday TEXT NOT NULL DEFAULT '', prog TEXT NOT NULL DEFAULT '{}', bonus INTEGER NOT NULL DEFAULT 0)").run(); this.dailyReady = true; }
+  async dailyRow(uid, today) {
+    await this.dailyTable();
+    let r = await this.env.DB.prepare("SELECT * FROM daily WHERE uid = ?").bind(uid).first();
+    if (!r) { await this.env.DB.prepare("INSERT OR IGNORE INTO daily (uid) VALUES (?)").bind(uid).run(); r = { uid, claim_day: "", streak: 0, qday: "", prog: "{}", bonus: 0 }; }
+    if (r.qday !== today) { r.qday = today; r.prog = "{}"; r.bonus = 0; await this.env.DB.prepare("UPDATE daily SET qday = ?, prog = '{}', bonus = 0 WHERE uid = ?").bind(today, uid).run(); }
+    let prog = {}; try { prog = JSON.parse(r.prog || "{}") || {}; } catch (e) {}
+    return { ...r, prog };
+  }
+  dailyOut(uid, r, now) {
+    const today = etDay(now), yest = etDay(now - 86400000), claimed = r.claim_day === today;
+    const streak = claimed ? r.streak : (r.claim_day === yest ? r.streak + 1 : 1);   // what today's claim makes it
+    const qs = questsFor(uid, today).map((k) => ({ k, t: QUESTS[k].t, n: QUESTS[k].n, pay: QUESTS[k].pay, prog: Math.min(QUESTS[k].n, +r.prog[k] || 0), done: (+r.prog[k] || 0) >= QUESTS[k].n }));
+    return { ok: true, day: today, claimed, streak, reward: DAILY.rewards[(streak - 1) % 7], rewards: DAILY.rewards, quests: qs, bonus: { pay: DAILY.bonus, done: !!r.bonus } };
+  }
+  async dailyInfo(a, now) { const r = await this.dailyRow(a.uid, etDay(now)); return this.dailyOut(a.uid, r, now); }
+  async dailyClaim(a, now) {
+    const today = etDay(now), r = await this.dailyRow(a.uid, today);
+    if (r.claim_day === today) return { ok: false, msg: "You already got today's reward. Come back tomorrow!" };
+    const streak = r.claim_day === etDay(now - 86400000) ? r.streak + 1 : 1, pay = DAILY.rewards[(streak - 1) % 7];
+    const ch = await this.env.DB.prepare("UPDATE daily SET claim_day = ?, streak = ? WHERE uid = ? AND claim_day != ?").bind(today, streak, a.uid, today).run();
+    if (!ch.meta.changes) return { ok: false, msg: "You already got today's reward." };   // two taps at once only pay once
+    const tk = await this.credit(a.uid, pay, "daily reward day " + streak);
+    return { ...this.dailyOut(a.uid, { ...r, claim_day: today, streak }, now), tk, paid: pay };
+  }
+  async questTick(ws, uid, k) {
+    const now = Date.now(), today = etDay(now); if (!questsFor(uid, today).includes(k)) return;
+    const r = await this.dailyRow(uid, today), Q = QUESTS[k], before = +r.prog[k] || 0; if (before >= Q.n) return;
+    r.prog[k] = before + 1;
+    await this.env.DB.prepare("UPDATE daily SET prog = ? WHERE uid = ? AND qday = ?").bind(JSON.stringify(r.prog), uid, today).run();
+    let tk = null, msg = null;
+    if (r.prog[k] >= Q.n) {
+      tk = await this.credit(uid, Q.pay, "quest " + k); msg = `QUEST DONE: ${Q.t}! +${Q.pay} TOKENS`;
+      const all = questsFor(uid, today).every((q) => (+r.prog[q] || 0) >= QUESTS[q].n);
+      if (all && !r.bonus) { const b = await this.env.DB.prepare("UPDATE daily SET bonus = 1 WHERE uid = ? AND bonus = 0").bind(uid).run();
+        if (b.meta.changes) { r.bonus = 1; tk = await this.credit(uid, DAILY.bonus, "quests bonus"); msg += ` · ALL 3 DONE! +${DAILY.bonus} BONUS`; } }
+    }
+    this.send(ws, { t: "quest", msg, tk, info: this.dailyOut(uid, r, now) });
   }
 
   // ---------- chat log (staff only) ----------
@@ -1207,6 +1428,14 @@ export class Lounge extends DurableObject {
       case "bowl_roll": return this.bowlRoll(a, m, now);
       case "dash_chat": return this.dashChat(a, m);
       case "gift_undo": return this.giftUndo(a, m);
+      case "daily_info":
+        return this.dailyInfo(a, now);
+      case "daily_claim":
+        return this.dailyClaim(a, now);
+      case "pr_like":
+        return this.prLike(ws, a, m);
+      case "pr_feature":
+        return this.prFeature(a, m);
       case "pr_list": return this.prList(a);
       case "pr_create": return this.prCreate(a, m);
       case "pr_search": return this.prSearch(a, m);
@@ -1223,7 +1452,13 @@ export class Lounge extends DurableObject {
       case "pr_rot": return this.prEditPiece(a, m, "rot");
       case "pr_pick": return this.prEditPiece(a, m, "pick");
       case "pr_staff": return this.prStaff(a, m);
-      case "furn_info": return { ok: true, furn: await this.furnStorage(uid), deco: await this.decoOwned(uid) };
+      case "furn_info": return { ok: true, furn: await this.furnStorage(uid), deco: await this.decoOwned(uid), rares: await this.rareInfo(uid) };
+      case "rare_buy": return this.rareBuy(a, m);
+      case "trade_req": return this.tradeReq(ws, a, m);
+      case "trade_answer": return this.tradeAnswer(a, m);
+      case "trade_set": return this.tradeSet(a, m);
+      case "trade_ready": return this.tradeReady(a, m);
+      case "trade_cancel": { const [T] = this.tradeGet(a, m); if (T) this.tradeEnd(T, `${a.name} cancelled the trade.`); return { ok: true }; }
       case "deco_buy": return this.decoBuy(a, m);
       case "furn_buy": return this.furnBuy(a, m);
       case "inv_info": return { ok: true, ...(await this.invInfo(uid)), w: a.wear || {} };

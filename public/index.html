@@ -434,6 +434,23 @@
   /* llama picker */
   #pick.booth #pname{display:none} #pick.booth .row{justify-content:center}
   #cards{flex-wrap:wrap;justify-content:center} #pick .card canvas{width:min(calc(var(--px)*44px),calc((100vw - 80px)/4 - 14px))!important;height:auto!important;aspect-ratio:56/92}
+  #likebtn{position:absolute;z-index:4;left:calc(10px + env(safe-area-inset-left,0px));top:calc(64px + env(safe-area-inset-top,0px));display:none;align-items:center;gap:6px;height:34px;padding:0 13px;border-radius:999px;border:1px solid var(--gline);background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#f4eefc;font:800 13px var(--ui);cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+  #likebtn .lh{color:#ff7aa2;font-size:16px;line-height:1} #likebtn.on{background:linear-gradient(135deg,#ff4f8b,#d62d6a);border-color:transparent} #likebtn.on .lh{color:#fff} #likebtn:active{transform:scale(.94)}
+  body.joined.inp #likebtn{display:inline-flex} body.arena-on #likebtn,body.editing #likebtn{display:none!important}
+  @keyframes lpop{0%{transform:scale(1)}40%{transform:scale(1.25)}100%{transform:scale(1)}} #likebtn.pop{animation:lpop .35s ease-out}
+  @media (max-width:640px){ #likebtn{top:calc(78px + env(safe-area-inset-top,0px))} }
+  #pr_body .prlk{font:800 11px var(--ui);color:#d62d6a;flex:none} #pr_body .prfeat{font:800 10px var(--ui);color:#a06808;background:#fff1c8;border-radius:6px;padding:1px 5px;margin-left:4px}
+  #pr_body .prtabs{margin:12px 0 4px} #pr_body .prtabs button{font-size:12px}
+  #wd_body .wi.rare{background:linear-gradient(160deg,#fff8dc,#ffe6f2);border-color:#ffd25a} #wd_body .wi.rare .rl{color:#d62d6a;font-weight:800} #wd_body .wi.rare .rso{color:#8a8aa0;font-weight:800}
+  #tradeask{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:min(380px,calc(100% - 24px));text-align:center;animation:popIn .18s ease-out}
+  #tradebox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100% - 16px));max-height:88vh;overflow:auto;animation:popIn .18s ease-out}
+  #tradebox .slt{text-align:center;color:#2a6ad8} .trcols{display:grid;grid-template-columns:1fr 1fr;gap:10px} @media (max-width:520px){ .trcols{grid-template-columns:1fr} }
+  .trc{border-radius:16px;padding:10px;background:#f4f2fb;border:2px solid transparent} .trc.ok{border-color:#2cc06a;background:#ebfaf1} .trc h5{margin:0 0 8px;font:800 13px var(--ui);color:var(--ink);display:flex;justify-content:space-between}
+  .trc h5 .rd{color:#1f8a4c} .trl{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:10px;background:#fff;margin-bottom:5px;font:600 12px var(--ui);color:var(--ink)}
+  .trl canvas{width:40px;height:40px;flex:none;image-rendering:auto} .trl .tn{flex:1;min-width:0;line-height:1.25} .trl .tn small{display:block;color:var(--sub);font-weight:600}
+  .trl button{width:28px;height:28px;border-radius:9px;border:0;background:#ece7f6;font:800 15px var(--ui);cursor:pointer;flex:none} .trl button.on{background:#ffd23f}
+  .trl b.q{min-width:16px;text-align:center;font:800 13px var(--ui)} .trtk{display:flex;align-items:center;gap:8px;margin-top:6px;font:700 13px var(--ui)} .trtk input{width:100%;font:16px var(--ui);padding:8px 10px;border:2px solid var(--line);border-radius:10px;box-sizing:border-box}
+  .trnone{font:500 12px var(--ui);color:var(--sub);padding:6px 2px} .trsub{font:700 12px var(--ui);color:var(--sub);margin:8px 0 4px} #tr_msg{min-height:18px;font:600 13px var(--ui);color:#e02838;text-align:center;margin-top:8px} #tr_msg.good{color:#1f8a4c}
   #pick{line-height:1.4} #pick .tt{font-size:18px;font-weight:800} #pick .tt b{color:#d62d6a}
   .card{border:0;border-radius:16px;padding:6px;background:var(--soft);transition:transform .1s}
   .card.sel{background:#fff1c2;box-shadow:0 0 0 3px var(--yel)} .card.sel::after{content:none}
@@ -565,7 +582,7 @@
   #jobsbtn.isign,.isign{padding:8px 12px 7px!important;min-height:46px;box-sizing:border-box} .sico{width:32px;height:26px;flex:none;display:block}
   #frbtn .fr-on,#dmbtn .fr-on{display:none;align-items:center;gap:4px;margin-left:2px;padding:3px 6px 2px 5px;border-radius:999px;background:rgba(42,22,6,.55);font-size:10px;text-shadow:none;color:#fff}
   #frbtn .fr-on::before{content:'';width:7px;height:7px;border-radius:50%;background:#3ddc75;box-shadow:0 0 0 2px rgba(61,220,117,.3)} #frbtn .fr-on.on{display:inline-flex}
-  #frbtn .fr-req,#dmbtn .fr-req{display:none;position:absolute;top:-9px;right:-9px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--pink);border:2px solid #2a1606;color:#fff;font:800 11px/16px var(--ui);text-shadow:none;text-align:center;letter-spacing:0} #frbtn .fr-req.on,#dmbtn .fr-req.on{display:block;animation:frPop .25s ease-out}
+  #frbtn .fr-req,#dmbtn .fr-req,#jobsbtn .fr-req{display:none;position:absolute;top:-9px;right:-9px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--pink);border:2px solid #2a1606;color:#fff;font:800 11px/16px var(--ui);text-shadow:none;text-align:center;letter-spacing:0} #frbtn .fr-req.on,#dmbtn .fr-req.on,#jobsbtn .fr-req.on{display:block;animation:frPop .25s ease-out}
   @keyframes frPop{from{transform:scale(.4)}to{transform:scale(1)}}
   .jb-nail{position:absolute;top:5px;width:4px;height:4px;border-radius:50%;background:#2a1606;box-shadow:inset 1px 1px 0 #8a6a4a} .jb-nail.l{left:5px} .jb-nail.r{right:5px}
   .jb-coin{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0 0 18%,#ffd23f 20% 62%,#d79a12 64%);box-shadow:0 0 0 2px #2a1606;flex:none}
@@ -611,6 +628,16 @@
 
   @media (max-width:640px){ #signs .mbtn{min-width:0;flex:1 1 0;padding:6px 2px 5px!important} #signs .mchip{width:30px;height:30px;border-radius:10px} #signs .mico{width:18px;height:18px} #signs .mlb{font-size:9px} }   /* messages sit above the JOBS and FRIENDS signs on phones */
   #jobsbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:min(480px,calc(100% - 24px));max-height:86vh;animation:popIn .18s ease-out}
+  #dailypop{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,calc(100% - 24px));animation:popIn .18s ease-out;text-align:center}
+  #dailypop .dpt{font:800 20px var(--ui);color:#d62d6a;margin:2px 0 6px} .dpsub{font:600 14px/1.4 var(--ui);color:var(--sub);margin:0 0 12px}
+  .dstrip{display:flex;gap:5px;justify-content:center;margin:6px 0 10px} .dstrip .dd{flex:1;max-width:52px;border-radius:12px;background:#f2eff9;padding:7px 0 6px;font:800 11px var(--ui);color:var(--sub);border:2px solid transparent}
+  .dstrip .dd b{display:block;font:800 15px var(--ui);color:var(--ink);margin-top:2px} .dstrip .dd.got{background:#e3f6ea;color:#1f8a4c} .dstrip .dd.got b{color:#1f8a4c}
+  .dstrip .dd.now{border-color:#ffc83a;background:#fff6d8;color:#a06808} .dstrip .dd.now b{color:#a06808} .dstrip .dd.big b{color:#d62d6a}
+  .dsec{margin:0 0 10px;padding:12px;border-radius:16px;background:linear-gradient(135deg,#fff6d8,#ffe9f1)} .dsec h5{margin:0 0 8px;font:800 13px var(--ui);color:#a0441e;display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .dsec .gbbtn{min-height:34px;padding:0 14px;font-size:13px}
+  .dq{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.75);margin-top:6px;font:600 13px var(--ui);color:var(--ink);text-align:left}
+  .dq .dqt{flex:1;min-width:0} .dq .bar{height:6px;border-radius:9px;background:#ece7f6;margin-top:5px;overflow:hidden} .dq .bar i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,#ffb020,#ff6a3d)}
+  .dq.done{opacity:.75} .dq.done .bar i{background:#2cc06a} .dq .dqp{font:800 12px var(--ui);color:#a06808;flex:none} .dq.done .dqp{color:#1f8a4c}
   #jobsbox .slt{text-align:center;color:#a06808} .jsub{font-size:13px;color:var(--sub);text-align:center;margin:4px 0 10px;line-height:1.4}
   .jroom{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--sub);margin:14px 0 6px} .jroom.here{color:#1e8a3a}
   .job{display:flex;align-items:center;gap:12px;background:var(--soft);border-radius:14px;padding:10px 12px;margin-bottom:6px}
@@ -665,13 +692,14 @@
 <div id="screen">
   <canvas id="game"></canvas>
   <canvas id="ui"></canvas>
+  <button id="likebtn" type="button" aria-label="Like this room"><span class="lh">♥</span><span id="like_n">0</span></button>
   <div id="status" class="hb"><div class="st1"><b id="stitle">LLAMA LOUNGE</b><span class="st2"><span id="dot"></span><span id="stxt">CONNECTING</span></span></div><div id="needs"><span class="nd" id="nd_hu" title="Hunger: eat food at the bar or in LLAMA ACRES">🍔<i><b></b></i></span><span class="nd" id="nd_th" title="Thirst: drinks at the bar or cider in LLAMA ACRES">💧<i><b></b></i></span></div><div id="tokrow" title="Your tokens"><span class="coin"></span><span id="tokn">0</span><span class="tkl">TOKENS</span></div></div>
   <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button class="pbtn ic" id="zout" title="Zoom out" aria-label="Zoom out">−</button><button class="pbtn ic" id="zin" title="Zoom in" aria-label="Zoom in">+</button><button class="pbtn ic" id="musicbtn" title="Music" aria-label="Music">♪</button><button class="pbtn y" id="menubtn" aria-label="Menu"><span class="hamb"><i></i><i></i><i></i></span><span class="mtx">MENU</span></button></div>
   <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
   <div id="keys">ARROWS/WASD WALK · SPACE ACTION<br>ENTER TALK · M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
   <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">CHANGE ROOM</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
   <div id="emenu" class="gb menu sheet"><div data-e="heart">♥ HEART</div><div data-e="bang">! WOW</div><div data-e="huh">? HUH</div><div data-e="note">♪ SING</div><div data-e="lol">^^ LOL</div><div data-e="zzz">Z SLEEP</div><div data-e="wave">✋ WAVE</div><div data-e="flex">💪 FLEX</div><div data-e="palm">-_- FACEPALM</div></div>
-  <div id="pmenu" class="gb"><div id="pm_name" class="pmn"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_close">✕</button></div></div>
+  <div id="pmenu" class="gb"><div id="pm_name" class="pmn"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_trade">🤝 TRADE</button><button class="gbbtn" id="pm_close">✕</button></div></div>
   <div id="tmenu" class="gb sheet"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
   <div id="lboard" class="gb sheet"><div class="lbt">🏆 HIGH SCORES</div><div class="lbcols"><div><div class="lbh">HAY CATCH</div><div id="lb_hay"></div></div><div><div class="lbh">LLAMA DASH</div><div id="lb_dash"></div></div></div><div class="srow"><button class="gbbtn" id="lbclose">CLOSE</button></div></div>
   <div id="shop" class="gb sheet"><img id="shopimg" alt=""><div id="shopname"></div><div id="shopprice"></div><div id="shopsub"></div><div class="srow"><a id="shoplink" class="gbbtn" href="#" target="_blank" rel="noopener noreferrer">VIEW PRODUCT ▶</a><button class="gbbtn" id="shopclose">CLOSE</button></div></div>
@@ -685,7 +713,7 @@
   </div>
   </div>
   <div id="scrim"></div>
-  <div id="signs"><button id="jobsbtn" class="mbtn m-jobs" aria-label="Jobs: ways to earn coins"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 6.8v10.4"/><path d="M14.8 9.3c-.4-1-1.5-1.6-2.8-1.6-1.6 0-2.8.8-2.8 2s1.2 1.7 2.8 2 2.8.9 2.8 2.1-1.2 2-2.8 2c-1.4 0-2.5-.6-2.9-1.7"/></svg></span><span class="mlb">JOBS</span></button><button id="frbtn" class="mbtn m-fr" aria-label="Friends"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9.5" cy="8" r="3.4"/><path d="M3.5 19.5v-1.2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1.2"/><path d="M15.6 4.8a3.3 3.3 0 0 1 0 6.4"/><path d="M18 14.6a4 4 0 0 1 2.5 3.7v1.2"/></svg></span><span class="mlb">FRIENDS</span><span class="fr-on" id="fr_on"></span><span class="fr-req" id="fr_req"></span></button><button id="dmbtn" class="mbtn m-dm" aria-label="Messages"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.6a8 8 0 0 1-11.7 7.1L4 19.8l1.1-4.4a8 8 0 1 1 15.4-3.8z"/><path d="M8.6 11.8h.01M12 11.8h.01M15.4 11.8h.01" stroke-width="3"/></svg></span><span class="mlb">CHAT</span><span class="fr-req" id="dm_un"></span></button><button id="roomsbtn" class="mbtn m-rooms" aria-label="Rooms: player rooms"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.6 12 3.8l8.5 6.8"/><path d="M5.6 9.2V20h12.8V9.2"/><path d="M10 20v-5.2h4V20"/></svg></span><span class="mlb">ROOMS</span><span class="fr-on" id="rooms_on"></span></button><button id="invbtn" class="mbtn m-bag" aria-label="Inventory"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 8.5h11a2 2 0 0 1 2 2V19a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19v-8.5a2 2 0 0 1 2-2z"/><path d="M9 8.5V6.2a3 3 0 0 1 6 0v2.3"/><path d="M4.5 13.5h15"/><path d="M10.5 13.5v2h3v-2"/></svg></span><span class="mlb">BAG</span></button><button id="signshide" type="button" aria-label="Hide these buttons" title="Hide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button></div>
+  <div id="signs"><button id="jobsbtn" class="mbtn m-jobs" aria-label="Jobs: ways to earn coins"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 6.8v10.4"/><path d="M14.8 9.3c-.4-1-1.5-1.6-2.8-1.6-1.6 0-2.8.8-2.8 2s1.2 1.7 2.8 2 2.8.9 2.8 2.1-1.2 2-2.8 2c-1.4 0-2.5-.6-2.9-1.7"/></svg></span><span class="mlb">JOBS</span><span id="jobs_dot" class="fr-req"></span></button><button id="frbtn" class="mbtn m-fr" aria-label="Friends"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9.5" cy="8" r="3.4"/><path d="M3.5 19.5v-1.2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1.2"/><path d="M15.6 4.8a3.3 3.3 0 0 1 0 6.4"/><path d="M18 14.6a4 4 0 0 1 2.5 3.7v1.2"/></svg></span><span class="mlb">FRIENDS</span><span class="fr-on" id="fr_on"></span><span class="fr-req" id="fr_req"></span></button><button id="dmbtn" class="mbtn m-dm" aria-label="Messages"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.6a8 8 0 0 1-11.7 7.1L4 19.8l1.1-4.4a8 8 0 1 1 15.4-3.8z"/><path d="M8.6 11.8h.01M12 11.8h.01M15.4 11.8h.01" stroke-width="3"/></svg></span><span class="mlb">CHAT</span><span class="fr-req" id="dm_un"></span></button><button id="roomsbtn" class="mbtn m-rooms" aria-label="Rooms: player rooms"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.6 12 3.8l8.5 6.8"/><path d="M5.6 9.2V20h12.8V9.2"/><path d="M10 20v-5.2h4V20"/></svg></span><span class="mlb">ROOMS</span><span class="fr-on" id="rooms_on"></span></button><button id="invbtn" class="mbtn m-bag" aria-label="Inventory"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 8.5h11a2 2 0 0 1 2 2V19a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19v-8.5a2 2 0 0 1 2-2z"/><path d="M9 8.5V6.2a3 3 0 0 1 6 0v2.3"/><path d="M4.5 13.5h15"/><path d="M10.5 13.5v2h3v-2"/></svg></span><span class="mlb">BAG</span></button><button id="signshide" type="button" aria-label="Hide these buttons" title="Hide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button></div>
   <button id="signsshow" type="button" aria-label="Show Jobs, Friends, Chat, Rooms and Bag" title="Show buttons"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><i id="signsdot"></i></button>
   <div id="auth" class="gb">
     <div class="rt">🦙 <b>LLAMA LOUNGE</b></div>
@@ -739,6 +767,9 @@
   <div id="dkbox" class="gb sheet"><div class="slt">💦 DUNK TANK</div><canvas id="dkcv" width="160" height="120"></canvas><div id="dk_msg"></div>
     <div class="dkn">1 COIN A THROW · A DUNK PAYS 3 · SIT ON THE TANK AND EARN 1 EVERY TIME YOU GET DUNKED</div>
     <div class="srow"><button class="gbbtn y" id="dk_throw">THROW ⚾</button><button class="gbbtn" id="dk_close">CLOSE</button></div></div>
+  <div id="dailypop" class="gb sheet"><div class="dpt">🎁 DAILY REWARD</div><div id="dp_body"></div><div class="srow"><button class="gbbtn y" id="dp_claim">CLAIM</button><button class="gbbtn" id="dp_later">LATER</button></div></div>
+  <div id="tradeask" class="gb sheet"><div class="dpt">🤝 TRADE?</div><div class="dpsub" id="ta_txt"></div><div class="srow"><button class="gbbtn y" id="ta_yes">LET'S TRADE</button><button class="gbbtn" id="ta_no">NO THANKS</button></div></div>
+  <div id="tradebox" class="gb sheet"><div class="slt" id="tr_title">🤝 TRADE</div><div id="tr_body"></div><div id="tr_msg"></div><div class="srow"><button class="gbbtn y" id="tr_ready">✓ READY</button><button class="gbbtn" id="tr_cancel">CANCEL</button></div></div>
   <div id="jobsbox" class="gb sheet"><div class="slt">💰 JOB BOARD</div><div class="jsub">Ways to earn coins. Keep your 🍔 and 💧 up, or most jobs pay half.</div><div id="jobs_body"></div><div class="srow"><button class="gbbtn" id="jobs_close">CLOSE</button></div></div>
   <div id="dashbox" class="gb sheet"><div class="slt" id="ds_title">STAFF DASHBOARD</div><div class="autabs" id="ds_tabs"><button type="button" data-t="players" class="on">PLAYERS</button><button type="button" data-t="chat">CHAT LOG</button></div><div id="ds_body"></div><div class="srow"><button class="gbbtn" id="ds_refresh">REFRESH</button><button class="gbbtn" id="ds_close">CLOSE</button></div></div>
   <div id="tblbox" class="gb sheet"><div class="slt" id="tb_title"></div><canvas id="tbcv" width="150" height="66"></canvas><div id="tb_msg"></div>
@@ -808,7 +839,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-23d";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-23f";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1674,6 +1705,8 @@ Object.assign(FURN_DEF, {
   cubeshelf:{n:'CUBE SHELF',p:14,cat:'shelves',mk:rot=>({t:'cube',rot})}, dresser:{n:'DRESSER',p:20,cat:'shelves',mk:rot=>({t:'dresser',rot})},
   cactus:{n:'CACTUS',p:5,cat:'plants',mk:()=>({t:'cactus'})}, flowers:{n:'FLOWER POT',p:6,cat:'plants',mk:()=>({t:'flowers'})},
   boombox:{n:'BOOMBOX',p:18,cat:'electronics',mk:rot=>({t:'boombox',rot})} });
+// LIMITED RARES: numbered runs from the store's LIMITED shelf, never sold again (the server keeps the numbers)
+Object.assign(FURN_DEF, { statue:{n:'CRYSTAL LLAMA STATUE',p:150,cat:'rares',rare:true,mk:()=>({t:'statue'})}, throne:{n:'GOLDEN LLAMA THRONE',p:250,seat:12,cat:'rares',rare:true,mk:rot=>({t:'throne',rot})} });
 Object.assign(FURN_DEF, { rug_persian:{n:'PERSIAN RUG',p:25,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'persian',rot,dz:-60})}, rug_round:{n:'BRAIDED ROUND RUG',p:15,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'round',rot,dz:-60})},
   rug_stripe:{n:'STRIPED RUNNER',p:12,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'stripe',rot,dz:-60})}, rug_shag:{n:'SHAG RUG',p:18,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'shag',rot,dz:-60})} });
 const COUCH_COL={blue:['#6a88e0','#4462b8','#344c98','#a8c0f8'], pink:['#f08aa8','#c85a80','#a84468','#ffc0d4'], teal:['#48b8a8','#2a8a7c','#1e6a5e','#7fe0d0'], green:['#78b850','#558c36','#3e6c26','#b8e890'],
@@ -1687,7 +1720,7 @@ const FURN_VARIANTS=[['sofa_gray','sofa','GRAY',{col:COUCH_COL.gray}],['sofa_gre
 const furnBase = item => (FURN_DEF[item] && FURN_DEF[item].base) || item;
 for (const [k,base,cn,extra] of FURN_VARIANTS){ const B0=FURN_DEF[base]; FURN_DEF[k]={...B0, base, n:`${B0.n} (${cn})`, mk:rot=>({...B0.mk(rot), ...extra})}; }
 // what the store sells, by category (one of each for now; add more pieces to a category by giving them its cat)
-const FURN_CATS=[['staff','🛡️ STAFF ONLY'],['seating','🪑 SEATING'],['sofas','🛋️ SOFAS & ARMCHAIRS'],['beds','🛏️ BEDS'],['tables','🍽️ TABLES'],['lighting','💡 LIGHTING'],['shelves','📚 SHELVES'],['electronics','📺 ELECTRONICS'],['plants','🪴 PLANTS'],['machines','🥤 VENDING MACHINES'],['rugs','🧶 RUGS']];
+const FURN_CATS=[['rares','⭐ LIMITED RARES'],['staff','🛡️ STAFF ONLY'],['seating','🪑 SEATING'],['sofas','🛋️ SOFAS & ARMCHAIRS'],['beds','🛏️ BEDS'],['tables','🍽️ TABLES'],['lighting','💡 LIGHTING'],['shelves','📚 SHELVES'],['electronics','📺 ELECTRONICS'],['plants','🪴 PLANTS'],['machines','🥤 VENDING MACHINES'],['rugs','🧶 RUGS']];
 const SEAT_DIRS=['fr','fl','br','bl'];
 const PR_WALL={ lavender:['#b8a0f0','#d0b8f8','#7860c8','#8870d8'], cream:['#f2e2c8','#f8ecd6','#9a6436','#a86e3e'], mint:['#a8e0c8','#c0eed8','#4a9a7a','#58aa88'],
   pink:['#f8b8d0','#fcd0e0','#c86890','#d87aa0'], night:['#2a2450','#342c60','#141030','#1a1438'], wood:['#a87444','#b8834e','#6a4220','#7a4c26'] };
@@ -2673,6 +2706,31 @@ function drawFurn(f,t){
         const on=Math.floor(t*3)%2; for (let k=0;k<5;k++){ g.fillStyle=(k%2===on)?'#fff6c0':'#a87a20'; g.fillRect(X-1+k*6,Y-2,2,1); g.fillRect(X+2+k*5,Y+8,2,1); } }
       { const [cx,cy]=P(f.gx+0.5,f.gy+0.5,3+H+16); const tw=Math.floor(t*2)%3; g.fillStyle=tw===0?'#ffffff':'#ffe070'; g.fillRect(Math.round(cx),Math.round(cy)-2,1,5); g.fillRect(Math.round(cx)-2,Math.round(cy),5,1); }   // twinkle
       { const q=[P(f.gx,f.gy+1,0),P(f.gx+1,f.gy+1,0),P(f.gx+1,f.gy,0),P(f.gx+0.5,f.gy+0.5,3+H+18)]; boothHit={x0:Math.min(...q.map(v=>v[0])), x1:Math.max(...q.map(v=>v[0])), y0:Math.min(...q.map(v=>v[1])), y1:Math.max(...q.map(v=>v[1]))}; }
+      break; }
+    case 'statue': { // crystal llama statue: a llama carved from glassy ice-blue crystal on a white marble plinth, with twinkles
+      const x=f.gx, y=f.gy;
+      box(x+0.16,y+0.16,0.68,0.68,7,'#f6f2fc','#cfc6e0','#aea4c4'); box(x+0.12,y+0.12,0.76,0.76,2,'#ffffff','#ddd6ea','#bdb4d0',0,7);
+      for (const u of [0.3,0.5,0.7]){ const a=P(x+u,y+0.84,1), b=P(x+u,y+0.84,6); linePx(a[0],a[1],b[0],b[1],'#e4dcf0'); }   // fluting on the plinth
+      const cv=crystalLlama(); const [sx,sy]=P(x+0.5,y+0.5,9); g.drawImage(cv, Math.round(sx)-14, Math.round(sy)-44);
+      for (let k=0;k<4;k++){ const ph=(t*1.3+k*0.27)%1; if (ph>0.35) continue; const [qx,qy]=[[-7,-36],[6,-24],[-3,-14],[8,-40]][k], X=Math.round(sx)+qx, Y=Math.round(sy)+qy, on=ph<0.18;
+        g.fillStyle='#ffffff'; g.fillRect(X,Y-(on?2:1),1,on?5:3); g.fillRect(X-(on?2:1),Y,on?5:3,1); }
+      break; }
+    case 'throne': { // golden llama throne: gold frame, red velvet seat and back panel, rolled arms, a little crown on top
+      const r=f.rot||0, x=f.gx, y=f.gy, far=r<2, GD='#f6c945', GM='#d8a222', GS='#a8761a', VR='#c8263a', VD='#8e1426', VL='#ee5468';
+      const back = r===0 ? [x+0.12,y+0.14,0.12,0.72] : r===1 ? [x+0.14,y+0.12,0.72,0.12] : r===2 ? [x+0.14,y+0.76,0.72,0.12] : [x+0.76,y+0.14,0.12,0.72];
+      const arms = r%2===0 ? [[x+0.18,y+0.12,0.66,0.12],[x+0.18,y+0.76,0.66,0.12]] : [[x+0.12,y+0.18,0.12,0.66],[x+0.76,y+0.18,0.12,0.66]];
+      const drawBack=()=>{ box(...back,26,GD,GM,GS,0,10); const c=[back[0]+back[2]/2, back[1]+back[3]/2];
+        const pad = r%2===0 ? [back[0]+(r===0?back[2]:0)-0.005, back[1]+0.1] : [back[0]+0.1, back[1]+(r===1?back[3]:0)-0.005];
+        if (r%2===0) polyPx([P(pad[0],pad[1],14),P(pad[0],pad[1]+0.52,14),P(pad[0],pad[1]+0.52,32),P(pad[0],pad[1],32)], VR);
+        else polyPx([P(pad[0],pad[1],14),P(pad[0]+0.52,pad[1],14),P(pad[0]+0.52,pad[1],32),P(pad[0],pad[1],32)], VR);
+        { const [cx,cy]=P(c[0],c[1],37); const X=Math.round(cx), Y=Math.round(cy); g.fillStyle=INK; g.fillRect(X-5,Y-5,11,6); g.fillStyle=GD; g.fillRect(X-4,Y-4,9,4);   // crown
+          g.fillStyle=INK; for (const dx of [-4,0,4]) g.fillRect(X+dx,Y-8,1,3); g.fillStyle=GD; for (const dx of [-4,0,4]) g.fillRect(X+dx,Y-7,1,2); g.fillStyle='#e8304a'; g.fillRect(X,Y-3,1,1); g.fillStyle='#48a8f0'; g.fillRect(X-3,Y-3,1,1); g.fillRect(X+3,Y-3,1,1); g.fillStyle='#fff6c0'; g.fillRect(X-4,Y-4,1,1); } };
+      if (f.part==='front'){ if (!far) drawBack(); for (const A of arms){ const near = r%2===0 ? A[1]>y+0.5 : A[0]>x+0.5; if (near) box(...A,8,GD,GM,GS,0,10); } break; }
+      for (const [u,v] of [[0.2,0.2],[0.8,0.2],[0.2,0.8],[0.8,0.8]]){ const [lx,ly]=P(x+u,y+v,0), [,ty]=P(x+u,y+v,10); g.fillStyle=INK; g.fillRect(Math.round(lx)-1,Math.round(ty),3,Math.round(ly-ty)+1); g.fillStyle=GM; g.fillRect(Math.round(lx),Math.round(ty),1,Math.round(ly-ty)); g.fillStyle=GD; g.fillRect(Math.round(lx)-1,Math.round(ly)-1,3,1); }
+      if (far) drawBack();
+      box(x+0.14,y+0.14,0.72,0.72,3,GD,GM,GS,0,7); box(x+0.2,y+0.2,0.6,0.6,3,VL,VR,VD,0,10);   // gold frame, plump velvet cushion
+      for (const A of arms) box(...A,8,GD,GM,GS,0,10);
+      if (!far) drawBack();
       break; }
     case 'acctdesk': { // two-tile wooden desk with a computer showing a padlock, a little bell and a stack of forms
       box(f.gx+0.06,f.gy+0.1,1.88,0.8,16,'#a8743e','#8a5a2c','#6a4220');
@@ -3796,7 +3854,7 @@ function items(m){ return [...m.children].filter(c=>!c.classList.contains('sheet
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; const dmb=document.getElementById('dmbox'); if (dmb) dmb.style.display='none'; const ctb=document.getElementById('catbox'); if (ctb) ctb.style.display='none'; const wdb=document.getElementById('wardbox'); if (wdb) wdb.style.display='none'; const prb=document.getElementById('roomsbox'); if (prb) prb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+function closeAll(){ { const dp=document.getElementById('dailypop'); if (dp) dp.style.display='none'; } if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; const dmb=document.getElementById('dmbox'); if (dmb) dmb.style.display='none'; const ctb=document.getElementById('catbox'); if (ctb) ctb.style.display='none'; const wdb=document.getElementById('wardbox'); if (wdb) wdb.style.display='none'; const prb=document.getElementById('roomsbox'); if (prb) prb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
   const a=el.dataset.a;
@@ -4042,6 +4100,14 @@ function drawBottle(o, x0, y0, oy, dir, walking, t){
 }
 /* sitting, facing the camera: two legs hang over the front of the seat, bent at the knee, hooves swinging a little.
    Drawn after the seat's front edge so they hang in front of it. Short seats (cushions, hay) get folded legs. */
+// the crystal statue's llama: the normal llama drawing, recoloured into ice-blue crystal (made once, then reused)
+let crystalCv=null;
+function crystalLlama(){ if (crystalCv) return crystalCv; const src=sprite('twotone','fr',0,'stand',{}), c=document.createElement('canvas'); c.width=SW; c.height=SH; const x=c.getContext('2d'); x.drawImage(src,0,0);
+  const im=x.getImageData(0,0,SW,SH), d=im.data, PAL=[[90,110,180],[120,180,232],[168,220,248],[214,242,255],[255,255,255]];
+  for (let i=0;i<d.length;i+=4){ if (!d[i+3]) continue; const L=(d[i]*0.3+d[i+1]*0.59+d[i+2]*0.11), px=(i/4)%SW, py=Math.floor(i/4/SW);
+    let k = L<45 ? 0 : L<110 ? 1 : L<170 ? 2 : 3; if (k>0 && (px+py)%7===0) k=Math.min(4,k+1);   // diagonal glints
+    [d[i],d[i+1],d[i+2]]=PAL[k]; d[i+3]=k===0?255:235; }
+  x.putImageData(im,0,0); crystalCv=c; return c; }
 function drawSitLegs(L, t){ const ch=CHARS[L.c]||CHARS.twotone, flip=L.dir==='fl', X=L.x, Y=L.y, len=Math.max(2,Math.min(8,L.lift-1));
   const furAt=(x,y)=>{ if (ch.check) return ((((x>>1)+(y>>1))&1) ? ch.fur.b : ch.fur.a); if (ch.split) return x<14 ? ch.fur.a : ch.fur.b; return ch.fur.a; };
   const SHO = L.W.legs && ITEMS[L.W.legs] ? ITEMS[L.W.legs] : null;
@@ -5479,7 +5545,7 @@ $id('cat_close').addEventListener('click', ()=>{ $id('catbox').style.display='no
 const INV={owned:[]}; me.w={};
 const WD={tab:'shop', pick:null, dir:0, kind:'clothes', furn:[]};
 let DECO_OWN=[];
-function wdFurnLoad(){ return NET.act('furn_info').then(r=>{ if (r.ok){ WD.furn=r.furn; DECO_OWN=r.deco||DECO_OWN; if ($id('wardbox').style.display==='block') wdDraw(); } }); } const WD_DIRS=['fr','fl','bl','br'];
+function wdFurnLoad(){ return NET.act('furn_info').then(r=>{ if (r.ok){ WD.furn=r.furn; WD.rares=r.rares||WD.rares; DECO_OWN=r.deco||DECO_OWN; if ($id('wardbox').style.display==='block') wdDraw(); } }); } const WD_DIRS=['fr','fl','bl','br'];
 function wdLoad(){ return NET.act('inv_info').then(r=>{ if (r.ok){ INV.owned=r.owned||[]; me.w=cleanWear(r.w); if ($id('wardbox').style.display==='block') wdDraw(); } }); }
 function wdMsg(t,good){ const el=$id('wd_msg'); el.textContent=t||''; el.classList.toggle('good',!!good); }
 function wdPreview(){ const c=$id('wd_prev'), x=c.getContext('2d'); x.clearRect(0,0,SW,SH); const w={...me.w}; if (WD.pick) w[ITEMS[WD.pick].s]=WD.pick; x.drawImage(sprite(me.c, WD_DIRS[WD.dir], 0, 'stand', w), 0, 0); }
@@ -5503,7 +5569,14 @@ function wdDraw(){
   if (shop) h+=`<div class="autabs" id="wd_kind"><button type="button" data-k="clothes" class="${WD.kind==='clothes'?'on':''}">👕 CLOTHES</button><button type="button" data-k="furn" class="${WD.kind==='furn'?'on':''}">🛋️ FURNITURE</button></div>`;
   if (shop && WD.kind==='furn'){ const own=k=>{ const r=WD.furn.find(x=>x.item===k); return r?r.n:0; };
     h+='<div class="fre">Furniture goes into 🎒 INVENTORY > ITEMS. Take it out of there to place it in your own room.</div>';
-    for (const [cat,label] of FURN_CATS){ if (cat==='staff' && !me.st) continue; const ORD=Object.keys(FURN_DEF), ks=ORD.filter(k=>FURN_DEF[k].cat===cat).sort((p,q)=>ORD.indexOf(furnBase(p))-ORD.indexOf(furnBase(q))); if (!ks.length) continue;   /* colours sit right after their base piece */ h+=`<div class="wdh">${label}</div><div class="wdg">`;
+    { const RR=WD.rares; if (RR && RR.list){ h+='<div class="wdh">⭐ LIMITED RARES</div><div class="fre">Made in small numbered runs and never sold again. Each llama can buy '+(RR.list[0]?RR.list[0].each:2)+' of each. After that, the only way is trading!</div><div class="wdg">';
+      const skew=Date.now()-(RR.now||Date.now());
+      for (const r of RR.list){ const left=r.max-r.sold, notYet=r.open>Date.now()-skew, mineN=(RR.mine||[]).filter(m=>m.item===r.k).map(m=>'#'+m.serial);
+        const when=notYet ? new Date(r.open).toLocaleString([], {weekday:'short', hour:'numeric', minute:'2-digit'}) : '';
+        h+=`<div class="wi fi rare"><canvas width="80" height="80" data-fk="${r.k}"></canvas><b>${esc(r.n)}</b><small>${r.p} 🪙 · ${left>0?`<span class="rl">${left} OF ${r.max} LEFT</span>`:'<span class="rso">SOLD OUT</span>'}${mineN.length?` · <span class="own">YOURS: ${mineN.join(' ')}</span>`:''}</small>`+
+          (notYet ? `<button class="gbbtn" disabled>DROPS ${esc(when.toUpperCase())}</button>` : left<=0 ? '<button class="gbbtn" disabled>SOLD OUT</button>' : `<button class="gbbtn y" data-buyr="${r.k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button>`)+'</div>'; }
+      h+='</div>'; } }
+    for (const [cat,label] of FURN_CATS){ if ((cat==='staff' && !me.st) || cat==='rares') continue; const ORD=Object.keys(FURN_DEF), ks=ORD.filter(k=>FURN_DEF[k].cat===cat).sort((p,q)=>ORD.indexOf(furnBase(p))-ORD.indexOf(furnBase(q))); if (!ks.length) continue;   /* colours sit right after their base piece */ h+=`<div class="wdh">${label}</div><div class="wdg">`;
     h+=ks.map(k=>`<div class="wi fi" data-f="${k}"><canvas width="80" height="80" data-fk="${k}"></canvas><b>${esc(FURN_DEF[k].n)}</b><small>${FURN_DEF[k].p} 🪙${own(k)?` · <span class="own">YOU HAVE ${own(k)}</span>`:''}</small><button class="gbbtn y" data-buyf="${k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button></div>`).join('')+'</div>'; }
     const dcard=(kind,k,T)=>{ const have=!T.p||DECO_OWN.includes(kind+':'+k); return `<div class="wi fi"><canvas width="88" height="88" data-dsw="${kind}:${k}"></canvas><b>${esc(T.n)}</b><small>${T.p?T.p+' 🪙':'FREE'}${have&&T.p?' · <span class="own">YOURS</span>':''}</small>${have?'<button class="gbbtn" disabled>'+(T.p?'OWNED':'FREE')+'</button>':`<button class="gbbtn y" data-buyd="${kind}:${k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button>`}</div>`; };
     h+='<div class="wdh">🎨 WALLPAPER</div><div class="fre">Buy it once, then put it up any time from 🏠 ROOMS > SETTINGS.</div><div class="wdg">'+Object.entries(DECO_WALL).map(([k,T])=>dcard('w',k,T)).join('')+'</div>';
@@ -5532,6 +5605,8 @@ function wdDraw(){
 }
 $id('wd_body').addEventListener('click', e=>{
   const bd=e.target.closest('[data-buyd]'); if (bd){ const k=bd.dataset.buyd, [kind,id]=k.split(':'), T=(kind==='w'?DECO_WALL:DECO_FLOOR)[id]; wdMsg('BUYING...'); NET.act('deco_buy',{k}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); DECO_OWN=r.deco||DECO_OWN; tkSet(r.tk, `You bought ${T.n}! Put it up from 🏠 ROOMS > SETTINGS.`); wdDraw(); }); return; }
+  const br=e.target.closest('[data-buyr]'); if (br){ const k=br.dataset.buyr; br.disabled=true; wdMsg('BUYING...'); NET.act('rare_buy',{item:k}).then(r=>{ if (Number.isFinite(r.tk)) tkSet(r.tk); if (!r.ok){ wdMsg(r.msg||'That did not work.'); br.disabled=false; return; }
+    WD.rares=r.rares; WD.furn=r.furn; localMsg(`⭐ ${r.msg} It's in your 🎒 ITEMS.`); wdMsg(r.msg); wdDraw(); }); return; }
   const bf=e.target.closest('[data-buyf]'); if (bf){ const k=bf.dataset.buyf; wdMsg('BUYING...'); NET.act('furn_buy',{item:k}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); WD.furn=r.furn; tkSet(r.tk, `You bought a ${FURN_DEF[k].n}! It's in your items.`); wdMsg(`Bought a ${FURN_DEF[k].n}! It's in your 🎒 ITEMS.`, true); wdDraw(); }); return; }
   const c=e.target.closest('.wi'); if (!c || c.classList.contains('fi')) return; ensureAudio(); WD.pick = WD.pick===c.dataset.id ? null : c.dataset.id; wdMsg(''); wdDraw(); });
 for (const b of $id('wd_tabs').children) b.addEventListener('click', ()=>{ WD.tab=b.dataset.t; wdDraw(); });
@@ -5562,7 +5637,7 @@ $id('roomsbtn').addEventListener('click', ()=>{ ensureAudio(); if (joined) openR
 
 // ======================= PLAYER ROOMS (UI) =======================
 // one room per llama; only its owner can change it. Public rooms are open; private ones need an invite or a knock.
-const PRUI={view:'list', list:null, info:null, q:'', found:null};
+const PRUI={view:'list', list:null, info:null, q:'', found:null, tab:'pop'};
 const furnIconCache=new Map(); let adminSignCv=null;
 function furnBox(item){ const D=FURN_DEF[item], big=document.createElement('canvas'); big.width=220; big.height=180; const sg=g, sOX=OX, sOY=OY;
   try { g=big.getContext('2d'); g.imageSmoothingEnabled=false; OX=110; OY=90; drawFurn({...D.mk(D.iconRot||0), gx:0, gy:0}, 0); } catch(e){} finally { g=sg; OX=sOX; OY=sOY; }
@@ -5581,7 +5656,7 @@ function openRooms(view){ closeAll(); PRUI.view=view||'list'; $id('roomsbox').st
 function prRefresh(){ NET.act('pr_list').then(r=>{ if (r.ok){ PRUI.list=r; if (r.mine) PRN['p:'+r.mine.id]=r.mine.name; for (const x of r.rooms) PRN['p:'+x.id]=x.name; if ($id('roomsbox').style.display==='block' && PRUI.view==='list') prDraw(); } });
   if (PRUI.view==='settings') NET.act('pr_info').then(r=>{ if (r.ok){ PRUI.info=r; if (PRUI.view==='settings') prDraw(); } }); }
 const lock = p => p ? ' 🔒' : '';
-function prRow(x, btns){ return `<div class="prr"><div class="prn"><b>${esc(x.name)}${lock(x.priv)}</b><small>by ${esc(x.owner)}${x.friend?' · ⭐ friend':''}${x.invited?' · invited':''}</small></div>${x.n?`<span class="prcnt">● ${x.n}</span>`:''}${btns}</div>`; }
+function prRow(x, btns){ return `<div class="prr"><div class="prn"><b>${esc(x.name)}${lock(x.priv)}${x.feat?'<span class="prfeat">🏆 FEATURED</span>':''}</b><small>by ${esc(x.owner)}${x.friend?' · ⭐ friend':''}${x.invited?' · invited':''}</small></div>${x.likes?`<span class="prlk">♥ ${x.likes}</span>`:''}${x.n?`<span class="prcnt">● ${x.n}</span>`:''}${btns}</div>`; }
 function prDraw(){
   const B=$id('pr_body'); let h='';
   if (PRUI.view==='settings') return prDrawSettings();
@@ -5599,11 +5674,19 @@ function prDraw(){
   h+='<div class="prsec">YOUR ROOM</div>';
   if (L.mine){ const here=curRoom==='p:'+L.mine.id; h+=prRow(L.mine, (here?'':`<button class="gbbtn y" data-go="${L.mine.id}">GO ▶</button>`)+`<button class="gbbtn" data-set="1">SETTINGS</button>`); }
   else h+=`<div class="fre">Make a room of your own! Fill it with furniture from the LLAMA STORE and invite your friends.</div><input id="pr_newname" maxlength="24" placeholder="${esc((me.n||'').toUpperCase())}'S ROOM"><div class="srow"><button class="gbbtn y" id="pr_create">CREATE MY ROOM</button></div>`;
-  const fr=L.rooms.filter(x=>x.friend), open=L.rooms.filter(x=>!x.friend);
   const btn=x=> curRoom==='p:'+x.id ? '<span class="prcnt">YOU\'RE HERE</span>' : x.can ? `<button class="gbbtn y" data-go="${x.id}">GO ▶</button>` : `<button class="gbbtn" data-knock="${x.id}">🚪 KNOCK</button>`;
   const staffBtn=x=> L.staff ? `<button class="gbbtn" data-reset="${x.id}" title="Staff: reset this room's name">↺</button>` : '';
-  if (fr.length){ h+='<div class="prsec">FRIENDS\' ROOMS</div>'; for (const x of fr) h+=prRow(x, btn(x)+staffBtn(x)); }
-  h+='<div class="prsec">OPEN ROOMS</div>'; if (!open.length) h+='<div class="fre">No other rooms yet.</div>'; for (const x of open) h+=prRow(x, btn(x)+staffBtn(x));
+  // room browser: what's busy right now, the most-liked rooms, the owner's picks, and friends' rooms
+  const T=PRUI.tab||'pop', TABS=[['pop','🔥 POPULAR'],['top','♥ TOP'],['feat','🏆 FEATURED'],['fr','⭐ FRIENDS']];
+  h+=`<div class="seg prtabs">${TABS.map(([k,l])=>`<button data-tab="${k}" class="${k===T?'on':''}">${l}</button>`).join('')}</div>`;
+  let rows=L.rooms.slice();
+  if (T==='pop') rows.sort((a,b)=>(b.n-a.n)||(b.likes-a.likes)||(b.feat-a.feat));
+  else if (T==='top') rows=rows.filter(x=>x.likes>0).sort((a,b)=>(b.likes-a.likes)||(b.n-a.n));
+  else if (T==='feat') rows=rows.filter(x=>x.feat);
+  else rows=rows.filter(x=>x.friend).sort((a,b)=>(b.n-a.n)||(b.likes-a.likes));
+  const featBtn=x=> L.owner ? `<button class="gbbtn" data-feat="${x.id}" data-on="${x.feat?0:1}" title="Owner: feature this room">${x.feat?'★':'☆'}</button>` : '';
+  const none={pop:'No other rooms yet. Make yours and invite friends!', top:'No liked rooms yet. Visit a room and tap ♥ to like it.', feat:'No featured rooms yet.', fr:'None of your friends have rooms yet.'}[T];
+  if (!rows.length) h+=`<div class="fre">${none}</div>`; for (const x of rows) h+=prRow(x, btn(x)+featBtn(x)+staffBtn(x));
   h+='<div class="prmsg"></div>';
   B.innerHTML=h; prSearchWire(keepFocus);
 }
@@ -5612,6 +5695,8 @@ function prSearchWire(keepFocus){ const q=$id('pr_q'); if (!q) return; if (keepF
   q.addEventListener('input', ()=>{ PRUI.q=q.value; clearTimeout(prQT); if (q.value.trim().length<2){ PRUI.found=null; prDraw(); return; }
     PRUI.found=null; prQT=setTimeout(()=>{ const asked=q.value.trim(); NET.act('pr_search',{q:asked}).then(r=>{ if (PRUI.q.trim()!==asked) return; PRUI.found = r.ok ? r.rooms : []; if (PRUI.view==='list') prDraw(); }); }, 300); }); }
 $id('pr_body').addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; ensureAudio();
+  if (b.dataset.tab){ PRUI.tab=b.dataset.tab; prDraw(); return; }
+  if (b.dataset.feat){ NET.act('pr_feature',{rid:+b.dataset.feat, on:b.dataset.on==='1'}).then(r=>{ if (r.ok){ PRUI.list=r; prDraw(); } else prMsg(r.msg||'Could not change that.'); }); return; }
   if (b.dataset.go){ prGo(+b.dataset.go); return; }
   if (b.dataset.knock){ prMsg('KNOCKING...'); NET.act('pr_knock',{rid:+b.dataset.knock}).then(r=>{ if (r.open){ prGo(+b.dataset.knock); return; } prMsg(r.msg||'', r.ok); }); return; }
   if (b.dataset.reset){ if (!confirm('Reset this room\'s name?')) return; NET.act('pr_staff',{rid:+b.dataset.reset}).then(r=>{ prMsg(r.msg||'', r.ok); prRefresh(); }); return; }
@@ -5646,7 +5731,7 @@ function prDrawSettings(){ if (!prDrawSettings.loaded){ prDrawSettings.loaded=1;
   h+=`<div class="srow"><button class="gbbtn y" id="pr_edit">🎒 PLACE FURNITURE</button><button class="gbbtn" id="pr_back">◀ ROOMS</button></div><div class="prmsg"></div>`;
   B.innerHTML=h; for (const b of B.querySelectorAll('[data-sw]')){ const k=b.dataset.sw; if (!DSW_URL[k]){ const [kind,id]=k.split(':'); DSW_URL[k]=decoSwatch(kind,id).toDataURL(); } b.style.backgroundImage=`url(${DSW_URL[k]})`; }
 }
-function prApplyRoom(room){ const key='p:'+room.id; PRN[key]=room.name; ROOM_NAMES[key]=room.name; if (PRD[key]){ Object.assign(PRD[key], room); if (curRoom===key){ rebuildBG(); document.getElementById('stitle').textContent=room.name; } } }
+function prApplyRoom(room){ const key='p:'+room.id; PRN[key]=room.name; ROOM_NAMES[key]=room.name; if (PRD[key]){ const { likes, liked, ...rest } = room; Object.assign(PRD[key], rest);   /* like counts come from their own updates */ if (curRoom===key){ rebuildBG(); document.getElementById('stitle').textContent=room.name; } } }
 // going to a player room: ask the server first (it decides who gets in), then walk out the door
 function prGo(id){ NET.act('pr_enter',{rid:id}).then(r=>{
   if (!r.ok){ if (r.locked){ if ($id('roomsbox').style.display!=='block') openRooms(); prMsg(r.msg); } else localMsg(r.msg||'That room is closed.'); PRED.pending=false; return; }
@@ -5787,6 +5872,12 @@ function drawPlayerRoom(t){
 NET.handlers.prf = m => { const key='p:'+m.room; if (!PRD[key]) return; PRD[key].furn=m.furn; if (curRoom===key){ buildWorld(); if (PRED.piece && !m.furn.some(f=>f.id===PRED.piece.fid)) { PRED.piece=null; prEditBar(); } else if (PRED.piece){ const f=m.furn.find(f=>f.id===PRED.piece.fid); if (f){ PRED.piece.gx=f.gx; PRED.piece.gy=f.gy; } }
   if (!walkable(me.gx,me.gy) && !seatAt(me.gx,me.gy) && !me.moving){ const [x,y]=spawnSpot(key); me.gx=x; me.gy=y; me.x=x+0.5; me.y=y+0.5; sendPresence(true); } } };
 NET.handlers.prr = m => prApplyRoom(m.room);
+// ♥ like button: shows inside other people's rooms; the server only counts it while you're in the room
+function likeUI(){ const R=isP(curRoom)&&PRD[curRoom]; document.body.classList.toggle('inp', !!(R && !R.mine)); if (!R) return; const b=$id('likebtn'); b.classList.toggle('on', !!R.liked); $id('like_n').textContent=R.likes||0; b.title = R.liked ? 'You like this room. Tap to unlike.' : 'Like this room'; }
+$id('likebtn').addEventListener('click', e=>{ e.stopPropagation(); ensureAudio(); const key=curRoom, R=PRD[key]; if (!R || R.mine) return;
+  NET.act('pr_like',{rid:+key.slice(2)}).then(r=>{ if (!r.ok){ localMsg(r.msg||'Could not like that.'); return; } R.likes=r.likes; R.liked=r.liked; likeUI(); const b=$id('likebtn'); b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); if (r.liked) localMsg(`You liked ${R.name}! ♥`); }); });
+NET.handlers.prlikes = m => { const key='p:'+m.room; if (PRD[key]){ PRD[key].likes=m.likes; if (curRoom===key) likeUI(); } };
+setInterval(likeUI, 700);
 NET.handlers.prkick = m => { localMsg(m.msg||'You left the room.'); if (isP(curRoom)){ setRoom('lounge'); flash(); sendPresence(true); setTimeout(()=>walkTo(...spawnSpot('lounge')), 400); } };
 NET.handlers.knockans = m => { if (m.yes){ localMsg(`You were let into ${m.name}!`); prGo(m.room); } else localMsg(`Nobody let you into ${m.name} this time.`); };
 // a friend invited you to the room they're in: offer to go there
@@ -6007,7 +6098,7 @@ document.getElementById('ds_refresh').addEventListener('click', loadDash);
 document.getElementById('ds_close').addEventListener('click', ()=>{ dashEl.style.display='none'; });
 NET.handlers.tg = m => tgServer(m);
 NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; renderBoard(); };
-NET.handlers.hello = m => { if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true);
+NET.handlers.hello = m => { setTimeout(()=>dailyLoad(true), 2500); if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true);
   // load friends, unread messages and the outfit every time we (re)connect
   setTimeout(()=>{ frLoad(); wdLoad(); dmLoad(); }, 150); };
 NET.handlers.kick = m => showKicked(m.msg);
@@ -6740,11 +6831,67 @@ const JOBS = {
     {i:'🎡', t:'Roulette', h:'Sit at the wheel in the middle and place a bet.', p:'games of chance', risk:true, go:()=>walkTo(5,5)},
     {i:'🃏', t:'Blackjack', h:'Sit at a blackjack table and beat the dealer.', p:'games of chance', risk:true, go:()=>walkTo(10,5)} ] };
 const jobsEl=document.getElementById('jobsbox');
-function openJobs(){ closeAll(); const order=[curRoom, ...ROOMS.filter(r=>r!==curRoom)]; let h='';
+// ---- daily reward and quests (the server decides everything; this just shows it) ----
+let DAILY=null;
+function dailyHtml(D){ if (!D) return '<div class="dsec"><h5>🎁 DAILY</h5><div class="jsub">Loading...</div></div>';
+  let h=`<div class="dsec"><h5><span>🎁 DAILY REWARD · DAY ${D.streak} STREAK</span>${D.claimed?'<span style="color:#1f8a4c">✔ CLAIMED</span>':`<button class="gbbtn y" id="dj_claim">CLAIM ${D.reward} 🪙</button>`}</h5>`;
+  h+=`<h5 style="margin-top:12px"><span>📋 TODAY'S QUESTS</span><span style="color:${D.bonus.done?'#1f8a4c':'#a06808'}">${D.bonus.done?'✔ ':''}ALL 3: +${D.bonus.pay} BONUS</span></h5>`;
+  for (const q of D.quests) h+=`<div class="dq ${q.done?'done':''}"><span class="dqt">${q.done?'✅ ':''}${esc(q.t)}<div class="bar"><i style="width:${Math.round(100*q.prog/q.n)}%"></i></div></span><span class="dqp">${q.prog}/${q.n} · +${q.pay}</span></div>`;
+  return h+'</div>'; }
+function dailyDot(){ const d=$id('jobs_dot'); if (!d) return; const n = DAILY ? (DAILY.claimed?0:1) : 0; d.textContent = n ? '!' : ''; d.classList.toggle('on', !!n); }
+function dailyLoad(pop){ NET.act('daily_info').then(r=>{ if (!r || !r.ok) return; DAILY=r; dailyDot(); if (jobsEl.style.display==='block') openJobs(true); if (pop && !r.claimed && !uiOpen()) dailyPop(); }); }
+function dailyPop(){ const D=DAILY; if (!D) return; let h=`<div class="dpsub">Come back every day to grow your streak. Day 7 pays the most!</div><div class="dstrip">`;
+  D.rewards.forEach((v,i)=>{ const day=i+1, cur=((D.streak-1)%7)+1; h+=`<div class="dd ${day<cur?'got':''} ${day===cur?'now':''} ${day===7?'big':''}">DAY ${day}<b>${v}</b></div>`; });
+  h+='</div>'; $id('dp_body').innerHTML=h; $id('dp_claim').textContent=`CLAIM ${D.reward} TOKENS`; $id('dailypop').style.display='block'; }
+function dailyClaim(btn){ if (btn) btn.disabled=true; NET.act('daily_claim').then(r=>{ if (!r.ok){ localMsg(r.msg||'Could not claim that.'); if (btn) btn.disabled=false; return; } DAILY=r; dailyDot(); $id('dailypop').style.display='none';
+  tkSet(r.tk, `DAY ${r.streak} REWARD: +${r.paid} TOKENS! Check JOBS for today's quests.`); if (jobsEl.style.display==='block') openJobs(true); }); }
+$id('dp_claim').addEventListener('click', e=>{ ensureAudio(); dailyClaim(e.target); });
+$id('dp_later').addEventListener('click', ()=>{ $id('dailypop').style.display='none'; });
+// ---- trading: everything is checked and done by the server; this window just shows the offers ----
+const TR={tid:null, them:'', mine:{items:{},rares:[],tk:0}, theirs:{items:{},rares:[],tk:0}, ok:[false,false], have:null, rares:null, sendT:null};
+function trSay(t,good){ const el=$id('tr_msg'); el.textContent=t||''; el.classList.toggle('good',!!good); }
+function trLoadHave(){ NET.act('furn_info').then(r=>{ if (!r.ok) return; TR.have=r.furn; TR.rares=r.rares; trDraw(); }); }
+function trOfferHtml(O){ let h=''; for (const [k,n] of Object.entries(O.items||{})) h+=`<div class="trl"><canvas data-fk="${k}"></canvas><span class="tn">${esc(FURN_DEF[k]?FURN_DEF[k].n:k)}</span><b class="q">×${n}</b></div>`;
+  for (const r of O.rares||[]) h+=`<div class="trl"><canvas data-fk="${r.item}"></canvas><span class="tn">⭐ ${esc(FURN_DEF[r.item]?FURN_DEF[r.item].n:r.item)}<small>#${r.serial}</small></span></div>`;
+  if (O.tk) h+=`<div class="trl"><span style="font-size:22px">🪙</span><span class="tn">${O.tk} TOKENS</span></div>`; return h || '<div class="trnone">Nothing yet.</div>'; }
+function trDraw(){ if (!TR.tid) return; $id('tr_title').textContent=`🤝 TRADE WITH ${TR.them}`;
+  const M=TR.mine, rareIds=new Set((M.rares||[]).map(r=>r.id)); let mine='';
+  const have=(TR.have||[]).map(x=>({item:x.item, free:Math.max(0,x.n-(x.placed||0))})).filter(x=>x.free>0 && FURN_DEF[x.item] && !FURN_DEF[x.item].rare);
+  mine+='<div class="trsub">FURNITURE IN STORAGE</div>';
+  if (!TR.have) mine+='<div class="trnone">Loading...</div>'; else if (!have.length) mine+='<div class="trnone">Nothing in storage to trade (placed pieces stay in your room).</div>';
+  for (const x of have){ const q=(M.items||{})[x.item]||0; mine+=`<div class="trl"><canvas data-fk="${x.item}"></canvas><span class="tn">${esc(FURN_DEF[x.item].n)}<small>${x.free} in storage</small></span><button data-dq="${x.item}" data-d="-1">−</button><b class="q">${q}</b><button data-dq="${x.item}" data-d="1">+</button></div>`; }
+  const myR=(TR.rares&&TR.rares.mine)||[]; if (myR.length){ mine+='<div class="trsub">⭐ YOUR RARES</div>'; for (const r of myR) mine+=`<div class="trl"><canvas data-fk="${r.item}"></canvas><span class="tn">${esc(FURN_DEF[r.item]?FURN_DEF[r.item].n:r.item)}<small>#${r.serial}</small></span><button data-rr="${r.id}" class="${rareIds.has(r.id)?'on':''}">${rareIds.has(r.id)?'✓':'+'}</button></div>`; }
+  mine+=`<div class="trtk">🪙<input id="tr_tk" type="number" min="0" inputmode="numeric" placeholder="Tokens to give" value="${M.tk||''}"></div>`;
+  const h=`<div class="trcols"><div class="trc ${TR.ok[0]?'ok':''}"><h5><span>YOU GIVE</span>${TR.ok[0]?'<span class="rd">✓ READY</span>':''}</h5>${mine}</div><div class="trc ${TR.ok[1]?'ok':''}"><h5><span>${esc(TR.them)} GIVES</span>${TR.ok[1]?'<span class="rd">✓ READY</span>':''}</h5>${trOfferHtml(TR.theirs)}</div></div>`;
+  const focus=document.activeElement && document.activeElement.id==='tr_tk'; $id('tr_body').innerHTML=h;
+  for (const cv of $id('tr_body').querySelectorAll('canvas[data-fk]')){ const ic=furnIcon(cv.dataset.fk,40); cv.width=ic.width; cv.height=ic.height; cv.getContext('2d').drawImage(ic,0,0); }
+  $id('tr_ready').textContent = TR.ok[0] ? 'NOT READY' : '✓ READY';
+  if (focus){ const i=$id('tr_tk'); i.focus(); i.setSelectionRange && (i.type='text', i.setSelectionRange(i.value.length,i.value.length), i.type='number'); }
+  $id('tr_tk').addEventListener('input', e=>{ M.tk=Math.max(0,Math.floor(+e.target.value||0)); trSend(); }); }
+function trSend(){ clearTimeout(TR.sendT); TR.sendT=setTimeout(()=>{ const M=TR.mine; NET.act('trade_set',{tid:TR.tid, items:M.items, rares:(M.rares||[]).map(r=>r.id), tk:M.tk||0}).then(r=>{ if (!r.ok) trSay(r.msg||'Could not change that.'); else trSay(''); }); }, 250); }
+$id('tr_body').addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; ensureAudio(); const M=TR.mine;
+  if (b.dataset.dq){ const k=b.dataset.dq, x=(TR.have||[]).find(x=>x.item===k), free=x?Math.max(0,x.n-(x.placed||0)):0, q=Math.max(0,Math.min(free,((M.items||{})[k]||0)+(+b.dataset.d)));
+    M.items={...(M.items||{})}; if (q) M.items[k]=q; else delete M.items[k]; trDraw(); trSend(); return; }
+  if (b.dataset.rr){ const id=+b.dataset.rr, r=((TR.rares&&TR.rares.mine)||[]).find(x=>x.id===id); const on=(M.rares||[]).some(x=>x.id===id); M.rares = on ? M.rares.filter(x=>x.id!==id) : [...(M.rares||[]), r]; trDraw(); trSend(); } });
+$id('tr_ready').addEventListener('click', ()=>{ ensureAudio(); NET.act('trade_ready',{tid:TR.tid, on:!TR.ok[0]}).then(r=>{ if (!r.ok) trSay(r.msg||'Not yet.'); }); });
+$id('tr_cancel').addEventListener('click', ()=>{ if (TR.tid) NET.act('trade_cancel',{tid:TR.tid}); $id('tradebox').style.display='none'; TR.tid=null; });
+$id('pm_trade').addEventListener('click', ()=>{ const id=pmTarget; closeAll(); const o=others.get(id); if (!o) return; NET.act('trade_req',{n:o.n}).then(r=>localMsg(r.msg||(r.ok?'Asked to trade.':'Could not ask to trade.'))); });
+NET.handlers.tradereq = m => { TR.ask=m.tid; $id('ta_txt').textContent=`${m.from} wants to trade with you.`; $id('tradeask').style.display='block'; };
+$id('ta_yes').addEventListener('click', ()=>{ $id('tradeask').style.display='none'; NET.act('trade_answer',{tid:TR.ask, yes:true}).then(r=>{ if (!r.ok) localMsg(r.msg||'That trade request expired.'); }); });
+$id('ta_no').addEventListener('click', ()=>{ $id('tradeask').style.display='none'; NET.act('trade_answer',{tid:TR.ask, yes:false}); });
+NET.handlers.trade = m => { const fresh = TR.tid!==m.tid; TR.tid=m.tid; TR.them=m.them; TR.theirs=m.theirs; TR.ok=m.ok; TR.mine=m.mine;
+  if (fresh){ closeAll(); trSay('Pick what you want to give. When the offers look right, both press READY.', true); TR.have=null; trLoadHave(); $id('tradebox').style.display='block'; }
+  else if ($id('tradebox').style.display!=='block') $id('tradebox').style.display='block';
+  trDraw(); };
+NET.handlers.tradeend = m => { if (m.tid!==TR.tid && m.tid!==TR.ask) return; $id('tradebox').style.display='none'; $id('tradeask').style.display='none'; TR.tid=null; if (m.msg && m.msg!=='TRADE DONE!') localMsg(m.msg); };
+NET.handlers.tradedone = m => { tkSet(m.tk, '🤝 TRADE DONE! Your new things are in 🎒 ITEMS.'); WD.furn=m.furn||WD.furn; WD.rares=m.rares||WD.rares; };
+NET.handlers.quest = m => { if (m.info){ DAILY=m.info; dailyDot(); if (jobsEl.style.display==='block') openJobs(true); } if (m.msg){ if (Number.isFinite(m.tk)) tkSet(m.tk, m.msg); else localMsg(m.msg); } };
+function openJobs(keep){ if (!keep){ closeAll(); dailyLoad(false); } const order=[curRoom, ...ROOMS.filter(r=>r!==curRoom)]; let h=dailyHtml(DAILY);
   for (const r of order){ const list=JOBS[r]||[]; if (!list.length) continue;
     h+=`<div class="jroom ${r===curRoom?'here':''}">${r===curRoom?'📍 HERE IN ':''}${ROOM_NAMES[r]}</div>`;
     list.forEach((j,k)=>{ h+=`<div class="job ${j.risk?'risk':''}"><span class="ji">${j.i}</span><span class="jt"><b>${j.t}</b><small>${j.h}</small><span class="jp">${j.p}${j.risk?' · you can lose coins':''}</span></span><button class="gbbtn y" data-r="${r}" data-k="${k}">${r===curRoom?'GO':'GO ▶'}</button></div>`; }); }
   document.getElementById('jobs_body').innerHTML=h;
+  { const c=$id('dj_claim'); if (c) c.addEventListener('click', ()=>dailyClaim(c)); }
   for (const b of jobsEl.querySelectorAll('[data-r]')) b.addEventListener('click', ()=>{ const r=b.dataset.r, j=JOBS[r][+b.dataset.k]; jobsEl.style.display='none';
     if (r!==curRoom){ showSwap(r); return; } if (me.p==='sit' && !(j.t==='Sit on the dunk tank')) { me.p='stand'; sendPresence(true); } j.go(); });
   jobsEl.style.display='block'; }
