@@ -384,7 +384,7 @@
   #wd_body .wdstore{display:flex;flex-direction:column;align-items:center;gap:4px;padding:30px 10px;background:#f6f4fb;border-radius:18px;margin-top:6px} #wd_body .wdbox{font-size:40px} #wd_body .wdstore b{font:800 15px var(--ui)} #wd_body .wdstore small{font:600 13px var(--ui);color:var(--sub)}
   #roomsbox{width:min(calc(100% - 24px),460px)}
   #dashbox .bugr{border-left:3px solid #e8504a;padding-left:8px;margin:6px 0} #dashbox .bugr.done{opacity:.55;border-left-color:#1f8a4c} #dashbox .bugr .gbbtn{margin:4px 4px 0 0}
-  .wdg.kits .kit{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto auto;column-gap:12px;align-items:center;text-align:left}
+  .wdg.kits{gap:14px!important} .wdg.kits .kit{grid-column:1/-1;display:grid;padding:14px!important;row-gap:6px;grid-template-columns:auto 1fr;grid-template-rows:auto auto auto;column-gap:12px;align-items:center;text-align:left}
   .wdg.kits .kit canvas{grid-row:1/4} .wdg.kits .kit .gbbtn{grid-column:1/-1;margin-top:6px} .wdg.kits .kit .kl{font-size:12px!important;line-height:1.35!important} .wdg.kits .kit s{opacity:.6}
   @media (max-width:420px){ .wdg.kits .kit{grid-template-columns:1fr} .wdg.kits .kit canvas{grid-row:auto;justify-self:center} }
   .pmbdg{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 10px}
@@ -1171,7 +1171,7 @@ const PIXSRC={
   hundred:'............/............/rr..rr...rr./.r.r..r.r..r/.r.r..r.r..r/.r.r..r.r..r/.r.r..r.r..r/rrr.rr...rr./............/RRRRRRRRRRRR/.RRRRRRRRRR./............',
   smile:'....kkkkkkkk..../...kyyyyyyyYk.../..kyyyyyyyyyYk../.kyywyyyyyyyyYk./kyywyyyyyyyyyyYk/kyyyywkyywkyyyYk/kyyyykkyykkyyyYk/kyyyykkyykkyyyYk/kyyyyyyyyyyyyyYk/kyypyyyyyyyypyYk/kyyykyyyyyykyyYk/kYyyykyyyykyyyYk/.kYyyykkkkyyyYk./..kYyyyyyyyyYk../...kYYYYYYYYk.../....kkkkkkkk....',
   scroll:'.kkkkkkkkk../kttttttttNk./ktkkkkkkkk../.ktttttttk../.ktSSSSStk../.ktttttttk../.ktSSSSStk../.ktttttttk../.ktSSSStttk./.kkkkkkkkttk/..kttttttttk/..kkkkkkkkk.',
-  muscle:'..kkkkk........./.kfffffk......../.kftftfk......../.kfffffk......../..kfffk........./..kfffk...kkk.../..kfffk..kfwfk../..kfffk.kfwffftk/..kfffkkfffffftk/..kffffffffffkrk/..kfffffffffkrrk/..kffffffffffkrk/..ktffffffffftkk/...kttttttttttk./....kkkkkkkkkk../................',
+  muscle:'..kkkkk........./.kfffffk......../.kftftfk......../.kfffffk......../..kfffk........./..kfffk...kkk.../..kfffk..kfwfk../..kfffk.kfwffftk/..kfffkkfffffftk/..kffffffffffftk/..kffffffffffftk/..kffffffffffftk/..ktffffffffftkk/...kttttttttttk./....kkkkkkkkkk../................',
   llama:'.kk..kk...../.kwk.kwk..../.kwkkkwk..../.kwwwwwwk.../kwwwwkwwwk../kwwwwwwwwwk./kwwwwwwwwwwk/.kwwwwwwwSwk/..kkwwwwkkk./...kwwwwk.../...kwwwwk.../...kkkkkk...',
   zzz:'............/......kkkkk./......kbbbk./.......kbk../......kbbbk./..kkkkkkkkk./..kbbbbk..../....kbk...../...kbk....../..kbbbbk..../..kkkkkk..../............',
   speaker:'.......k..../......kk..k./....kkSk...k/.kkkkwSk.k.k/.kSSkwSk..kk/.kSSkwSk..kk/.kSSkwSk.k.k/.kkkkwSk...k/....kkSk..k./......kk..../.......k..../............',
@@ -6331,7 +6331,7 @@ function wdDraw(){
     h+= dragIn ? '<div class="fre"><b>Drag any picture into your room</b> to buy it and put it down in one go, or tap BUY and place it later from 🎒 INVENTORY > ITEMS.</div>' : '<div class="fre">Buy from anywhere. Furniture goes into 🎒 INVENTORY > ITEMS, ready to place in your own room. LIMITED RARES are only sold at the LLAMA STORE.</div>';
     h+='<div class="srow" style="margin:0 0 6px"><button class="gbbtn" id="wd_market">🏪 MARKETPLACE: BUY AND SELL WITH OTHER LLAMAS</button></div>';
     h+='<div class="wdh">🎁 ROOM KITS</div><div class="fre">A whole themed set in one go, for 20% less than buying the pieces one by one. Everything goes into 🎒 INVENTORY > ITEMS.</div><div class="wdg kits">'+Object.keys(KITS).map(k=>{ const K=KITS[k], list=Object.entries(K.items);
-      return `<div class="wi fi kit"><canvas width="168" height="56" data-kit="${k}"></canvas><b>${esc(K.n)}</b><small class="kl">${list.map(([it,n])=>(n>1?n+' × ':'')+esc((FURN_DEF[it]||{n:it}).n)).join(' · ')}</small><small>${kitPrice(k)} 🪙 <s>${kitFull(k)}</s> · <span class="own">SAVE ${kitFull(k)-kitPrice(k)}</span></small><button class="gbbtn y" data-buykit="${k}">BUY KIT</button></div>`; }).join('')+'</div>';
+      return `<div class="wi fi kit"><canvas width="190" height="40" data-kit="${k}"></canvas><b>${esc(K.n)}</b><small class="kl">${list.map(([it,n])=>(n>1?n+' × ':'')+esc((FURN_DEF[it]||{n:it}).n)).join(' · ')}</small><small>${kitPrice(k)} 🪙 <s>${kitFull(k)}</s> · <span class="own">SAVE ${kitFull(k)-kitPrice(k)}</span></small><button class="gbbtn y" data-buykit="${k}">BUY KIT</button></div>`; }).join('')+'</div>';
     for (const [cat,label] of FURN_CATS){ if ((cat==='staff' && !me.st) || cat==='rares') continue; const ORD=Object.keys(FURN_DEF), ks=ORD.filter(k=>FURN_DEF[k].cat===cat).sort((p,q)=>ORD.indexOf(furnBase(p))-ORD.indexOf(furnBase(q))); if (!ks.length) continue;   /* colours sit right after their base piece */ h+=`<div class="wdh">${label}</div><div class="wdg">`;
     h+=ks.map(k=>`<div class="wi fi${dragIn?' drag':''}" data-f="${k}"><canvas width="80" height="80" data-fk="${k}"></canvas><b>${esc(FURN_DEF[k].n)}</b><small>${FURN_DEF[k].p} 🪙${own(k)?` · <span class="own">YOU HAVE ${own(k)}</span>`:''}</small><button class="gbbtn y" data-buyf="${k}">BUY</button></div>`).join('')+'</div>'; }
     const dcard=(kind,k,T)=>{ if (!T.p) return ''; const n=own((kind==='w'?'wp_':'fl_')+k); return `<div class="wi fi"><canvas width="88" height="88" data-dsw="${kind}:${k}"></canvas><b>${esc(T.n)}</b><small>${T.p} 🪙${n?` · <span class="own">YOU HAVE ${n}</span>`:''}</small><button class="gbbtn y" data-buyd="${kind}:${k}">BUY</button></div>`; };
@@ -6355,8 +6355,9 @@ function wdDraw(){
   const body=$id('wd_body'); body.innerHTML=h;
   { const ti=$id('wd_toinv'); if (ti) ti.onclick=()=>{ WD.tab='clothing'; WD.pick=null; wdDraw(); }; const ts=$id('wd_toshop'); if (ts) ts.onclick=()=>{ WD.tab='shop'; WD.pick=null; wdDraw(); }; }
   for (const cv of body.querySelectorAll('canvas[data-fk]')){ const ic=furnIcon(cv.dataset.fk,88); cv.width=ic.width; cv.height=ic.height; cv.getContext('2d').drawImage(ic,0,0); }
-  for (const cv of body.querySelectorAll('canvas[data-kit]')){ const R2=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1))), its=Object.keys(KITS[cv.dataset.kit].items).slice(0,4); cv.width=168*R2; cv.height=56*R2; cv.style.width='168px'; cv.style.height='56px'; const m=cv.getContext('2d');
-    its.forEach((it,i)=>{ const ic=furnIcon(it,56); m.drawImage(ic, 0,0,ic.width,ic.height, i*(168*R2-56*R2)/Math.max(1,its.length-1)*(its.length>1?1:0), 0, 56*R2, 56*R2); }); }
+  for (const cv of body.querySelectorAll('canvas[data-kit]')){ const R2=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1))), its=Object.keys(KITS[cv.dataset.kit].items).slice(0,4), IC=40, GAP=10, W=its.length*IC+(its.length-1)*GAP;   // each piece in its own spot, evenly spaced
+    cv.width=W*R2; cv.height=IC*R2; cv.style.width=W+'px'; cv.style.height=IC+'px'; const m=cv.getContext('2d');
+    its.forEach((it,i)=>{ const ic=furnIcon(it,IC); m.drawImage(ic, 0,0,ic.width,ic.height, i*(IC+GAP)*R2, 0, IC*R2, IC*R2); }); }
   for (const cv of body.querySelectorAll('canvas[data-dsw]')){ const [kind,id]=cv.dataset.dsw.split(':'), m=cv.getContext('2d'); m.imageSmoothingEnabled=false; m.drawImage(decoSwatch(kind,id,40,40),4,4,80,80); m.strokeStyle=INK; m.lineWidth=2; m.strokeRect(5,5,78,78); }
   { const kk=$id('wd_kind'); if (kk) for (const b of kk.children) b.onclick=()=>{ WD.kind=b.dataset.k; WD.pick=null; wdMsg(''); wdDraw(); }; }
   { const mk=$id('wd_market'); if (mk) mk.onclick=()=>openMarket(); }
@@ -6586,8 +6587,8 @@ function furnIcon(item, CS=88, rot){ if (decoOf(item)){ const k2='deco@'+item+'@
   furnIconCache.set(key,c); return c; }
 function prMsg(t,good){ const el=document.querySelector('#pr_body .prmsg'); if (el){ el.textContent=t||''; el.classList.toggle('good',!!good); } }
 // ROOMS has two tabs, MAP (the main places) and PLAYER ROOMS; with no tab asked for it opens on whichever one you had last
-function openRooms(view){ closeAll(); PRUI.view=view||(store.prView==='map'?'map':'list'); $id('roomsbox').style.display='block'; prDraw(); prRefresh(); }
-function prRefresh(){ NET.act('pr_list').then(r=>{ if (r.ok){ PRUI.list=r; if (r.mine) PRN['p:'+r.mine.id]=r.mine.name; for (const x of r.rooms) PRN['p:'+x.id]=x.name; if ($id('roomsbox').style.display==='block' && PRUI.view==='list') prDraw(); } });
+function openRooms(view){ closeAll(); PRUI.view=view||(store.prView==='map'?'map':'list'); if (!PRUI.list && store.prCache && store.prCache.rooms) PRUI.list=store.prCache;   /* last list from this device shows instantly; a fresh one replaces it */ $id('roomsbox').style.display='block'; prDraw(); prRefresh(); }
+function prRefresh(){ NET.act('pr_list').then(r=>{ if (r.ok){ PRUI.list=r; try{ store.prCache=r; saveStore(); }catch(_){} if (r.mine) PRN['p:'+r.mine.id]=r.mine.name; for (const x of r.rooms) PRN['p:'+x.id]=x.name; if ($id('roomsbox').style.display==='block' && PRUI.view==='list') prDraw(); } });
   if (PRUI.view==='settings') NET.act('pr_info').then(r=>{ if (r.ok){ PRUI.info=r; if (PRUI.view==='settings') prDraw(); } }); }
 const lock = p => p ? ' 🔒' : '';
 function prRow(x, btns){ return `<div class="prr"><div class="prn"><b>${esc(x.name)}${lock(x.priv)}${x.feat?'<span class="prfeat">🏆 FEATURED</span>':''}</b><small>by ${esc(x.owner)}${x.friend?' · ⭐ friend':''}${x.invited?' · invited':''}</small></div>${x.likes?`<span class="prlk">♥ ${x.likes}</span>`:''}${x.n?`<span class="prcnt">● ${x.n}</span>`:''}${btns}</div>`; }
@@ -7058,7 +7059,7 @@ document.getElementById('ds_refresh').addEventListener('click', loadDash);
 document.getElementById('ds_close').addEventListener('click', ()=>{ dashEl.style.display='none'; });
 NET.handlers.tg = m => tgServer(m);
 NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; renderBoard(); };
-NET.handlers.hello = m => { setTimeout(()=>dailyLoad(true), 2500); setTimeout(()=>{ if ($id('roomsbox').style.display==='block' && (!PRUI.list || PRUI.view==='list')) prRefresh(); }, 50);   /* the ROOMS pop-up may have opened before the connection was ready */ if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true);
+NET.handlers.hello = m => { setTimeout(()=>dailyLoad(true), 2500); setTimeout(()=>{ if (!joined || ($id('roomsbox').style.display==='block' && PRUI.view==='list')) prRefresh(); }, 0);   /* the ROOMS pop-up may have opened before the connection was ready */ if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true);
   // load friends, unread messages and the outfit every time we (re)connect
   setTimeout(()=>{ frLoad(); wdLoad(); dmLoad(); }, 150); };
 NET.handlers.kick = m => showKicked(m.msg);
