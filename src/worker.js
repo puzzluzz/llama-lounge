@@ -1544,10 +1544,10 @@ export class Lounge extends DurableObject {
         return { ok: true, tk: await this.credit(uid, 1, "bar tips") };
       }
       case "bar_off": { await this.clearTimer(uid, "bar"); return { ok: true }; }
-      // helping the LLAMA STORE cashier: wipe the counter from behind it (the two tiles next to Penny); pays like the bar
+      // helping the LLAMA STORE cashier: wipe the counter from behind it (either side of Penny); pays like the bar
       case "shop_tick": {
         if (now - (a.act || 0) > AFK_MS) return { ok: false, afk: true };
-        if (!this.near(a, "store", (x, y, p) => p.p === "wipe" && y >= 1 && y < 2 && x >= 9 && x < 11)) { await this.clearTimer(uid, "shop"); return { ok: false }; }
+        if (!this.near(a, "store", (x, y, p) => p.p === "wipe" && y >= 0 && y < 2 && x >= 7 && x < 10)) { await this.clearTimer(uid, "shop"); return { ok: false }; }
         const last = await this.timer(uid, "shop");
         if (!last) { await this.setTimer(uid, "shop", now); return { ok: true, started: true }; }
         if (now - last < BAR_MS - 1500) return { ok: false };

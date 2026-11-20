@@ -3785,7 +3785,7 @@ const onDance = () => DANCE.has(me.gy*N+me.gx);
 function arrive(){
   if (me.act && !arcade.on) me.act=null;
   if (me.bar){ me.p='bar'; me.d = Math.random()<0.5?'fr':'fl'; me.barT = 2.6+Math.random()*2.8; sendPresence(true); if (!me.barOn){ me.barOn=true; me.shift=0; setTimeout(()=>NET.act('bar_tick'), 400); } return; }
-  if (me.cash){ me.p='wipe'; me.d='fl'; me.cashT=2.5+Math.random()*3; sendPresence(true); if (!me.cashOn){ me.cashOn=true; me.shift=0; setTimeout(()=>NET.act('shop_tick'), 400); } return; }
+  if (me.cash){ me.p='wipe'; me.d='fl'; me.cashT=4+Math.random()*4; sendPresence(true); if (!me.cashOn){ me.cashOn=true; me.shift=0; setTimeout(()=>NET.act('shop_tick'), 400); } return; }
   if (me.after){ const af=me.after; me.after=null; if (af[0]!==me.gx||af[1]!==me.gy){ if (walkTo(af[0],af[1],af[2])) return; } else if (af[2]){ me.p='stand'; sendPresence(true); doAction(af[2]); return; } }
   let s=seatAt(me.gx,me.gy); if (s && seatTaken(s.gx,s.gy)){ s=null; localMsg("Someone's already sitting there."); }
   if (s){ me.p='sit'; me.d=s.dir; if (isSlotSeat(s.gx,s.gy)) setTimeout(openSlots, 150); else if (seatIn(ROUL_SEATS,s.gx,s.gy)) setTimeout(()=>openTable('roul'),150); else if (seatIn(BJ_SEATS,s.gx,s.gy)) setTimeout(()=>openTable('bj'),150); }
@@ -3809,7 +3809,7 @@ function keyStep(){
 }
 function updateMe(dt){
   if (me.cash && me.p==='wipe'){ me.shift=(me.shift||0)+dt; if (me.shift>=TOKENS.BAR_EVERY){ me.shift=0; NET.act('shop_tick').then(r=>{ if (r.ok && Number.isFinite(r.tk)) tkSet(r.tk, '+1 TOKEN! Penny says thanks for the help!'); }); }
-    me.cashT-=dt; if (me.cashT<=0 && !me.moving){ const nx = me.gx===CASH_SPOTS[0][0] ? CASH_SPOTS[1][0] : CASH_SPOTS[0][0]; me.path=[[nx,CASH_SPOTS[0][1]]]; me.prog=0; startStep(); } }   // wipe one end of the counter, then the other
+    me.cashT-=dt; if (me.cashT<=0 && !me.moving){ const fromRight = me.gx===CASH_SPOTS[0][0]; me.path = fromRight ? [[9,0],[8,0],[7,0],[7,1]] : [[7,0],[8,0],[9,0],[9,1]]; me.prog=0; startStep(); } }   // wipe one end, then walk round behind Penny to the other
   if (me.bar && me.p==='bar'){ me.shift=(me.shift||0)+dt; if (me.shift>=TOKENS.BAR_EVERY){ me.shift=0; NET.act('bar_tick').then(r=>{ if (r.ok && Number.isFinite(r.tk)) tkSet(r.tk, '+1 TOKEN! Tips from working the bar!'); }); } }
   if (me.moving){
     me.anim+=dt; me.prog+=dt/(me.stepT||STEP);
@@ -3908,22 +3908,26 @@ function leaveBar(tx,ty,pending){
   else { me.path=out; me.prog=0; startStep(); }
 }
 // ---- helping the LLAMA STORE cashier: in at the end of the counter, wipe it down from behind, never on PENNY's tile ----
-const CASH_SPOTS=[[10,1],[9,1]], CASH_DOOR=[11,1];   // PENNY stands at (8,1); these two tiles are next to her
+// PENNY stands at (8,1). The tiles that really sit behind the counter on screen are (9,1) (behind its right half) and (7,1) (behind its left end).
+// The helper wipes at one, then walks around behind Penny (row 0) to the other, never through her. CASH_LOOP is that route, from the door in.
+const CASH_SPOTS=[[9,1],[7,1]], CASH_DOOR=[11,1], CASH_LOOP=[[11,1],[10,1],[9,1],[9,0],[8,0],[7,0],[7,1]];
 const otherHelpers = () => [...others.values()].filter(o=>!o.leaving && o.p==='wipe' && sameRoom(o));
 function cashClick(){ if (curRoom!=='store') return; if (me.cash){ leaveCash(CASH_DOOR[0],CASH_DOOR[1],null); return; }
   if (otherHelpers().length){ localMsg("Someone's already helping Penny. Try again in a bit."); return; }
   if (me.gx===CASH_DOOR[0] && me.gy===CASH_DOOR[1] && !me.moving) enterCash(); else walkTo(CASH_DOOR[0],CASH_DOOR[1],'help'); }
 function enterCash(){ if (otherHelpers().length){ localMsg("Someone's already helping Penny. Try again in a bit."); return; } if (me.p==='sit') me.p='stand';
-  me.cash=true; me.shift=0; me.h=null; me.path=[CASH_SPOTS[0]]; me.prog=0; startStep(); action('is helping at the counter!');
+  me.cash=true; me.shift=0; me.h=null; me.path=[[10,1],[9,1]]; me.prog=0; startStep(); action('is helping at the counter!');
   localMsg(`You're wiping down the counter for Penny. You earn 1 TOKEN every ${TOKENS.BAR_EVERY} seconds back here. Tap the floor to stop.`); }
 function leaveCash(tx,ty,pending){
   me.cash=false; if (me.cashOn){ me.cashOn=false; NET.act('shop_off'); } const from = me.moving ? me.to : [me.gx,me.gy];
-  const out=[]; if (from[0]<CASH_SPOTS[0][0]) out.push(CASH_SPOTS[0]); out.push(CASH_DOOR);
-  me.after = (tx===CASH_DOOR[0]&&ty===CASH_DOOR[1]&&!pending) ? null : [tx,ty,pending||null]; me.pending=null;
+  // step out the nearer way along the loop: back past the register to the door, or out at the counter's left end
+  let i=CASH_LOOP.findIndex(([x,y])=>x===from[0]&&y===from[1]); if (i<0) i=2; const out = i<=3 ? CASH_LOOP.slice(0,i).reverse() : CASH_LOOP.slice(i+1);
+  if (!out.length) out.push(i<=3 ? CASH_DOOR : CASH_LOOP[CASH_LOOP.length-1]);
+  const end=out[out.length-1]; me.after = (tx===end[0]&&ty===end[1]&&!pending) ? null : [tx,ty,pending||null]; me.pending=null;
   if (me.moving){ me.path=[me.path[0], ...out]; me.p='stand'; } else { me.path=out; me.prog=0; startStep(); } }
 // a cleaning rag swishing over the counter top in front of each helper (drawn after the counter so it sits on top)
 const RAGS=[];
-function drawRags(t){ for (const [x,y,walking] of RAGS){ if (walking) continue; const sw=Math.sin(t*7+x*3)*0.25, [cx,cy]=P(x+sw, y+1.3, 20), X=Math.round(cx), Y=Math.round(cy);
+function drawRags(t){ for (const [x,y,walking] of RAGS){ if (walking) continue; const sw=Math.sin(t*7+x*3)*0.25, [cx,cy]=P(x+0.9+sw, y+0.9-sw, 20),   /* same screen column as the llama, on the counter top in front of it */ X=Math.round(cx), Y=Math.round(cy);
     g.fillStyle=INK; g.fillRect(X-5,Y-3,11,6); g.fillRect(X-4,Y-4,9,1); g.fillStyle='#5ab0e8'; g.fillRect(X-4,Y-2,9,4); g.fillStyle='#8ad0f8'; g.fillRect(X-4,Y-3,9,1); g.fillStyle='#d8f0ff'; g.fillRect(X-3,Y-2,3,1); g.fillStyle='#3a88c8'; g.fillRect(X-4,Y,9,1); g.fillRect(X-2,Y-2,1,3); g.fillRect(X+2,Y-2,1,3);   // folded cloth with stitching
     if (Math.sin(t*5+x)>0.85){ const sx2=X+(sw>0?-6:6), sy2=Y-2; g.fillStyle='#ffffff'; g.fillRect(sx2,sy2-1,1,3); g.fillRect(sx2-1,sy2,3,1); } }
   RAGS.length=0; }
