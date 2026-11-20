@@ -443,3 +443,6 @@ The chat box is a pixel panel: hard ink border with stepped corners, a shaded bo
 
 ### Bug reports live in REPORTS
 Players' bug reports now show at the top of the dashboard's REPORTS tab (owner only, checked on the server through `bug_list`), above player reports. The REPORTS count includes open bugs.
+
+### Emotes float on their own
+Emotes (heart, wow, huh, music, lol, zzz, wave, flex, facepalm) show as their outlined pixel icon above the llama, bobbing, with no white speech bubble. The small bubble is kept only for the "playing a game" controller sign.
