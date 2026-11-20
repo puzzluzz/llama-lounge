@@ -1232,7 +1232,7 @@ const PIXSRC={
   em_huh:'..kkkkkkkk../.kbbbbbbbbk./kbbbwwwwbbbk/kbbwwbbwwbbk/kbbbbbbwwbbk/kbbbbwwwbbbk/kbbbbwwbbbbk/kbbbbbbbbbbk/kbbbbwwbbbbk/.kbbbbbbbbk./..kkkkkbbk../.......kk...',
   em_lol:'...kkkkkk.../.kkyyyyyykk./kyyyyyyyyyyk/kyykyyyykyyk/kykykyykykyk/kyyyyyyyyyyk/kykkkkkkkkyk/kykrrrrrrkyk/kyykrrrrkyyk/.kyykkkkyyk./..kkyyyykk../....kkkk....',
   em_zzz:'kkkkkkk...../kbbbbbk...../kkkkbbk...../..kbbk....../.kbbk......./kbbkkkk...../kbbbbbkkkkkk/kkkkkkkkbbbk/........kbk./.......kbk../.......kbbbk/.......kkkkk',
-  em_palm:'...kkkkkk.../.kkyyyyyykk./kyyyyyyyyyyk/kkkkkkkkyyyk/ktttttttkyyk/ktttttttkkyk/kkktttkkkyyk/kyykkkyyyyyk/kyyyyykkkyyk/.kyyyyyyyyk./..kkyyyykk../....kkkk....',
+  em_palm:'............../kkkkkkkkk...../kffffffffkk.../kkkkkkkkfkyk../kfffffffffkykk/kkkkkkkkkkyykc/.kyyyyyyyyyykk/.kykkkyykkkyyk/.kpyyyyyyyypyk/.kyyyyyyyyYYk./..kyykkkkyYYk./..kyyyyyYYYk../...kkyyyYYkk../.....kkkkk....',
   warn:'.....kk...../....kyyk..../....kyyk..../...kyyyyk.../...kykkyk.../..kyykkyyk../..kyykkyyk../.kyyykkyyyk./.kyyyyyyyyk./kyyyykkyyyYk/kyyyyyyyyYYk/kkkkkkkkkkkk',
   camr:'............/...kkk....../...kwwk...../....kwwk..../.....kwwk.../......kwwk../......kwwk../.....kwwk.../....kwwk..../...kwwk...../...kkk....../............',
   caml:'............/......kkk.../.....kwwk.../....kwwk..../...kwwk...../..kwwk....../..kwwk....../...kwwk...../....kwwk..../.....kwwk.../......kkk.../............',
@@ -6601,7 +6601,7 @@ function prDraw(){
   if (PRUI.view==='map'){ B.innerHTML=[...roomPickEl.querySelectorAll('.rpb[data-r]')].map(b=>{ const r=b.dataset.r, c=b.cloneNode(true), n=roomCount(r), i=c.querySelector('.rpx i');
       c.removeAttribute('id'); c.classList.toggle('here', joined && curRoom===r); if (i){ i.removeAttribute('id'); i.textContent = joined && curRoom===r ? `YOU ARE HERE${n>1?' · '+n+' LLAMAS':''}` : (n ? `${n} LLAMA${n>1?'S':''} HERE` : 'NOBODY HERE YET'); } return c.outerHTML; }).join('')+'<div class="prmsg"></div>';
     return; }
-  const L=PRUI.list; if (!L){ B.innerHTML='<div class="fre">Loading...</div>'; return; }
+  const L=PRUI.list; if (!L){ B.innerHTML='<div class="fre">Loading...</div>'; if (!prDraw.retry) prDraw.retry=setTimeout(()=>{ prDraw.retry=0; if ($id('roomsbox').style.display==='block' && !PRUI.list) prRefresh(); }, 1000); return; }   /* on the launch screen the connection may still be opening: ask again */
   const keepFocus = document.activeElement && document.activeElement.id==='pr_q';
   h+=`<input id="pr_q" class="prq" type="search" maxlength="24" placeholder="Search rooms or owners" value="${esc(PRUI.q)}" autocapitalize="off" spellcheck="false">`;
   if (PRUI.q.trim().length>=2){
@@ -6674,10 +6674,11 @@ function prDrawSettings(){ if (!prDrawSettings.loaded){ prDrawSettings.loaded=1;
 }
 function prApplyRoom(room){ const key='p:'+room.id; PRN[key]=room.name; ROOM_NAMES[key]=room.name; if (PRD[key]){ const { likes, liked, ...rest } = room; Object.assign(PRD[key], rest);   /* like counts come from their own updates */ if (curRoom===key){ rebuildBG(); document.getElementById('stitle').textContent=room.name; } } }
 // going to a player room: ask the server first (it decides who gets in), then walk out the door
-function prGo(id){ if (!joined){ goRoom('lounge'); setTimeout(()=>prGo(id), 900); return; }   /* picked a player room from the launch screen: join in the lounge, then head over */
+function prGo(id){ const fresh=!joined;   /* picked from the launch screen: once the server lets you in, you join right there (no stop in the lounge) */
   NET.act('pr_enter',{rid:id}).then(r=>{
   if (!r.ok){ if (r.locked){ if ($id('roomsbox').style.display!=='block') openRooms(); prMsg(r.msg); } else localMsg(r.msg||'That room is closed.'); PRED.pending=false; return; }
   const key='p:'+id; PRD[key]={...r.room, furn:r.furn, mine:r.mine}; PRN[key]=r.room.name; ROOM_NAMES[key]=r.room.name; ROOM_DIMS[key]=[11,7]; ENTRY[key]={any:{at:[1,6],to:[3,6]}}; DOORWAY[key]=[0,6];   /* player rooms: 11 wide, 7 deep; the door is at the front of the short left wall */ ROOM_SHORT[key]='ROOM';
+  if (fresh && !joined){ goRoom(key); if (PRED.pending){ PRED.pending=false; setTimeout(()=>{ if (curRoom===key) prEditStart(); }, 800); } return; }
   closeAll(); if (curRoom===key){ buildWorld(); if (PRED.pending){ PRED.pending=false; prEditStart(); } return; }
   if (arcade.on) exitArcade(); localMsg(`Heading to ${r.room.name}...`); goThroughDoor(key); }); }
 // ---- edit mode (owner only; the server checks every change) ----
