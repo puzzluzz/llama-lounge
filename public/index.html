@@ -4913,9 +4913,11 @@ const WF = (() => {
 
 const chatin = document.getElementById('chatin');
 document.getElementById('emobtn').addEventListener('click', e=>{ e.preventDefault(); ensureAudio(); if (!joined) return; if (curMenu===emenu && emenu.style.display==='block') closeAll(); else showMenu(emenu); });   // EMOTES, right by the send button
+/* the send button doesn't take focus away from the box, so the phone keyboard stays up too */
+document.getElementById('saybtn').addEventListener('pointerdown', e=>{ if (document.activeElement===chatin) e.preventDefault(); });
 document.getElementById('chatrow').addEventListener('submit', e => {
   e.preventDefault(); const raw = clean(chatin.value.trim(),120); if(!raw||!joined) return;
-  chatin.value=''; chatin.blur();
+  chatin.value=''; setTimeout(()=>{ if (uiOpen() || arcade.on || (typeof TOUR!=='undefined' && TOUR.on)) chatin.blur(); }, 0);   /* a command that opens a pop-up steps out of the box; otherwise stay in the box: type the next line and hit Enter again (Esc or tapping the game leaves it) */
   const cmd = raw.toLowerCase();
   if (cmd==='/roll'){ const v=1+Math.floor(Math.random()*6); const ti=nearTable(); if(ti>=0){ me.tdK=(me.tdK||0)+1; me.lastTable={k:me.tdK,i:ti,v,coin:false}; tableShow(ti,v,false); } action(`rolled a ${v}!`); return; }
   if (cmd==='/flip'){ const h=Math.random()<0.5; const ti=nearTable(); if(ti>=0){ me.tdK=(me.tdK||0)+1; me.lastTable={k:me.tdK,i:ti,v:h?1:2,coin:true}; tableShow(ti,h?1:2,true); } action(`flipped a coin: ${h?'HEADS':'TAILS'}!`); return; }
