@@ -19,7 +19,7 @@ const WINDOW_MS = 15 * 60 * 1000;
 const FRIENDS = { max: 100, inbox: 50 };
 const DM = { len: 300, burst: 8, perDay: 300 };   // private messages: longest message, most per 10 seconds, most a day (kept forever)
 // the staff chat log is kept forever too
-const ROOM_IDS = new Set(["lounge", "barn", "casino", "arena", "lanes", "store", "account"]);
+const ROOM_IDS = new Set(["lounge", "barn", "casino", "arena", "lanes", "store", "account", "gym", "cove"]);
 const STAFF_GIVE_DAY = 500;   // most tokens a mod can give out in a day (the owner has no limit)
 const AFK_MS = 12 * 60000;   // no moving, chatting or "I'm still here" for this long: no more fishing or bar tips until they're back
 const SIPS = 3;
@@ -149,6 +149,31 @@ const FURN_DIM = { dbed: [2, 2], rug_persian: [3, 2], rug_round: [2, 2], rug_str
 const layerOf = (item) => (FURN_WALL.has(item) ? "wall" : FURN_RUG.has(item) ? "rug" : "floor");    // hang on a wall: placed on a tile along a wall, don't take up floor space
 const prId = (rm) => { const m = /^p:(\d{1,9})$/.exec(String(rm || "")); return m ? +m[1] : 0; };
 const cleanRoomName = (n) => String(n || "").replace(/[^A-Za-z0-9 '!?&.,:-]/g, "").replace(/\s+/g, " ").trim().slice(0, PR.nameMax);
+
+// ---------- BOXING GYM ----------
+// Two fighters each pick a move every beat; the server settles the beat. JAB beats DODGE, DODGE beats HOOK, HOOK beats BLOCK, BLOCK beats JAB
+// (a JAB also cuts a HOOK short). Cartoon hits only: no blood anywhere, a knockout just sits you down seeing stars.
+const BOX = { beat: 1500, beats: 10, rounds: 3, rest: 3500, start: 3000, hp: 100, st: 100, dayCap: 40, pairPerDay: 3, minBeats: 8, inviteMs: 15000,
+  pay: { rookie: 3, champ: 8, win: 10, lose: 2, draw: 4 } };
+const BOX_MOVES = new Set(["jab", "hook", "block", "dodge"]);
+const BOX_COST = { jab: 6, hook: 15, dodge: 8, block: -6, idle: -10 };
+const BOX_BOTS = { rookie: { n: "ROOKIE RUSTY", smart: 0, idle: 0.25 }, champ: { n: "CHAMP DUKE", smart: 0.6, idle: 0.04 } };
+const BOX_COUNTER = { jab: "block", hook: "dodge", block: "hook", dodge: "jab" };
+// damage a move deals against the other fighter's move this beat
+function boxHit(m, o) {
+  if (m === "jab") return o === "block" ? 0 : o === "dodge" ? 7 : 6;
+  if (m === "hook") return (o === "jab" || o === "dodge") ? 0 : o === "block" ? 8 : 12;
+  if (m === "dodge") return o === "hook" ? 10 : 0;
+  return 0;
+}
+// TREASURE COVE: an island (20 x 16, sea all round). The server buries the treasure; the detector only ever says how close the nearest one is.
+const COVE = { w: 20, h: 16, n: 7, scanGap: 1100, digGap: 3200, holeMs: 120000, respawn: 12000, dayCap: 40, chestPerDay: 1,
+  finds: [["coins", 3, 0.55], ["gold", 6, 0.28], ["gem", 10, 0.12], ["chest", 4, 0.05]],
+  junk: ["an old boot", "a seashell", "a rubber duck", "a soggy map", "a crab (it waved and left)", "a bottle cap", "a starfish", "seaweed"] };
+// solid things on the island (palms, rocks, the wreck, torches, the sign): you can't stand on or dig them. The page has the same list.
+const COVE_SOLID = new Set(["5,2", "17,3", "17,10", "4,12", "10,13", "12,2", "13,2", "14,2", "12,3", "13,3", "14,3", "8,6", "14,11", "7,10", "1,6", "1,10", "2,5"]);
+const coveSand = (x, y) => { if (!(x >= 0 && y >= 0 && x < COVE.w && y < COVE.h)) return false; const dx = Math.max(0, Math.abs(x + 0.5 - 10) - 5), dy = Math.max(0, Math.abs(y + 0.5 - 8) - 3); return dx * dx + dy * dy <= 17.64; };
+const coveDiggable = (x, y) => coveSand(x, y) && !COVE_SOLID.has(x + "," + y) && !(x <= 2 && y >= 7 && y <= 9);   // not the landing by the dock
 const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
 
 // ---------- limited rares ----------
@@ -160,7 +185,8 @@ const RARES = {
   throne: { n: "GOLDEN LLAMA THRONE", p: 250, max: 25, open: Date.parse("2026-11-21T01:00:00Z") },   // Friday 8:00 pm Eastern
 };
 const RARE_EACH = 2;
-for (const [k, R] of Object.entries(RARES)) FURN_ITEMS[k] = R.p;   // rares are placeable furniture, but never in the normal shop (not in FURN_SALE)
+for (const [k, R] of Object.entries(RARES)) FURN_ITEMS[k] = R.p;
+FURN_ITEMS.tchest = 25;   // PIRATE CHEST: only dug up at TREASURE COVE (never in the shop)   // rares are placeable furniture, but never in the normal shop (not in FURN_SALE)
 // ---------- trading ----------
 // Two llamas in the same room trade furniture, numbered rares and tokens. Both have to press READY on the exact same offers;
 // any change un-readies both. The swap is one database transaction: if anything changed meanwhile, nothing moves.
@@ -1773,6 +1799,15 @@ export class Lounge extends DurableObject {
       case "mkt_buy": return this.mktBuy(ws, a, m);
       case "bug_done": return this.bugEdit(a, m, false);
       case "bug_del": return this.bugEdit(a, m, true);
+      case "box_info": return this.boxInfo(a, now);
+      case "box_bot": return this.boxBot(ws, a, m, now);
+      case "box_invite": return this.boxInvite(ws, a, m, now);
+      case "box_answer": return this.boxAnswer(ws, a, m, now);
+      case "box_move": return this.boxMove(a, m);
+      case "box_quit": return this.boxQuit(a);
+      case "cove_info": return this.coveInfo(a, now);
+      case "cove_scan": return this.coveScan(a, now);
+      case "cove_dig": return this.coveDig(ws, a, m, now);
       case "arena_info": return this.arenaInfo(a, now);
       case "arena_join": return this.arenaJoin(ws, a, m, now);
       case "arena_end": return this.arenaEnd(ws, a, m, now);
@@ -2030,6 +2065,139 @@ export class Lounge extends DurableObject {
     return { ok: true, score, place, players: humans.length, earned: earn, bonus, capped: earnedSoFar + earn >= ARENA.dayCap, best, wkBest: newWk && score > 0, levelUp: after > before ? after : 0,
              newColors: unlocked(after).filter((c) => !unlocked(before).includes(c)), me, board, tk };
   }
+
+
+  // ---------- boxing ----------
+  async boxTable() { if (this.boxReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS boxing (uid INTEGER PRIMARY KEY, wins INTEGER NOT NULL DEFAULT 0, losses INTEGER NOT NULL DEFAULT 0, draws INTEGER NOT NULL DEFAULT 0, kos INTEGER NOT NULL DEFAULT 0, earn_day TEXT NOT NULL DEFAULT '', earned INTEGER NOT NULL DEFAULT 0)").run(); this.boxReady = true; }
+  async boxRow(uid) { await this.boxTable(); return (await this.env.DB.prepare("SELECT * FROM boxing WHERE uid = ?").bind(uid).first()) || { uid, wins: 0, losses: 0, draws: 0, kos: 0, earn_day: "", earned: 0 }; }
+  sockFor(uid) { for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.uid === uid) return [w, x]; } return [null, null]; }
+  inGym(uid) { const [, x] = this.sockFor(uid); return !!(x && x.pres && x.pres.rm === "gym"); }
+  gymBroadcast(obj) { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === "gym") { try { w.send(s); } catch (e) {} } } }
+  boxPublic() { const M = this.bx; if (!M) return null; const f = (P) => ({ n: P.name, bot: P.bot || null, hp: P.hp, st: P.st });
+    return { id: M.id, a: f(M.a), b: f(M.b), round: M.round, beat: M.beat, beats: BOX.beats, rounds: BOX.rounds, phase: M.phase, next: M.next, ms: BOX.beat }; }
+  async boxInfo(a, now) { const r = await this.boxRow(a.uid), today = etDay(now);
+    return { ok: true, s: this.boxPublic(), me: { wins: r.wins, losses: r.losses, draws: r.draws, kos: r.kos, earned: r.earn_day === today ? r.earned : 0, cap: BOX.dayCap }, bots: BOX_BOTS, pay: BOX.pay }; }
+  boxFree() { if (this.bx && this.bx.phase === "over" && Date.now() - this.bx.ended > 3500) this.bx = null; return !this.bx; }
+  boxStart(A, B, now) {
+    const id = String(now), mk = (P) => ({ uid: P.uid || 0, name: P.name, bot: P.bot || null, hp: BOX.hp, st: BOX.st, mv: null, hist: [] });
+    this.bx = { id, a: mk(A), b: mk(B), round: 1, beat: 0, phase: "start", next: now + BOX.start, t0: now, beatsDone: 0 };
+    this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "start" });
+    const M = this.bx; setTimeout(() => this.boxTick(M).catch((e) => console.error("box", e)), BOX.start);
+  }
+  async boxBot(ws, a, m, now) {
+    if (!a.pres || a.pres.rm !== "gym") return { ok: false, msg: "Head to the BOXING GYM to box." };
+    const k = String(m.bot || ""); if (!BOX_BOTS[k]) return { ok: false, msg: "Pick a sparring partner." };
+    if (!this.boxFree()) return { ok: false, msg: "The ring is busy. Watch this fight, you're next!" };
+    this.boxStart({ uid: a.uid, name: a.name }, { bot: k, name: BOX_BOTS[k].n }, now); return { ok: true };
+  }
+  async boxInvite(ws, a, m, now) {
+    if (!a.pres || a.pres.rm !== "gym") return { ok: false, msg: "Head to the BOXING GYM to box." };
+    const n = String(m.n || "").toUpperCase().slice(0, 24); const them = [...this.sockets()].map((w) => [w, w.deserializeAttachment()]).find(([, x]) => x && x.name === n && x.pres && x.pres.rm === "gym");
+    if (!them) return { ok: false, msg: `${n || "They"} isn't in the gym right now.` };
+    const [tw, tx] = them; if (tx.uid === a.uid) return { ok: false, msg: "You can't box yourself." };
+    if (await this.blockedPair(a.uid, tx.uid)) return { ok: false, msg: `You can't challenge ${n}.` };
+    if (!this.boxFree()) return { ok: false, msg: "The ring is busy. Challenge them after this fight." };
+    (this.bxInv = this.bxInv || new Map()).set(tx.uid, { from: a.uid, name: a.name, t: now });
+    this.send(tw, { t: "bxinv", from: a.name, ms: BOX.inviteMs }); return { ok: true, msg: `Challenge sent to ${n}!` };
+  }
+  async boxAnswer(ws, a, m, now) {
+    const inv = this.bxInv && this.bxInv.get(a.uid); if (inv) this.bxInv.delete(a.uid);
+    if (!inv || now - inv.t > BOX.inviteMs) return { ok: false, msg: "That challenge ran out." };
+    const [fw] = this.sockFor(inv.from);
+    if (!m.yes) { if (fw) this.send(fw, { t: "toast", msg: `${a.name} turned down your challenge.` }); return { ok: true }; }
+    if (!a.pres || a.pres.rm !== "gym" || !this.inGym(inv.from)) return { ok: false, msg: "You both need to be in the gym." };
+    if (!this.boxFree()) return { ok: false, msg: "The ring got busy. Try again after this fight." };
+    this.boxStart({ uid: inv.from, name: inv.name }, { uid: a.uid, name: a.name }, now); return { ok: true };
+  }
+  boxMove(a, m) { const M = this.bx; if (!M || M.phase !== "fight") return { ok: false };
+    const P = M.a.uid === a.uid ? M.a : M.b.uid === a.uid && !M.b.bot ? M.b : null; if (!P) return { ok: false };
+    const mv = String(m.mv || ""); if (!BOX_MOVES.has(mv)) return { ok: false }; P.mv = mv; return { ok: true, mv }; }
+  boxQuit(a) { const M = this.bx; if (!M || M.phase === "over") return { ok: false }; const P = M.a.uid === a.uid ? M.a : M.b.uid === a.uid ? M.b : null; if (!P) return { ok: false };
+    P.quit = true; return { ok: true }; }
+  boxBotMove(P, O) {   // the bot's move: the champ watches what you've been throwing and counters it; both rest when tired
+    const B = BOX_BOTS[P.bot], r = Math.random(); if (r < B.idle) return null;
+    if (P.st < 12) return Math.random() < 0.7 ? "block" : null;
+    if (B.smart && O.hist.length && Math.random() < B.smart) { const cnt = {}; for (const h of O.hist.slice(-4)) if (h) cnt[h] = (cnt[h] || 0) + 1; const top = Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x])[0]; if (top) return BOX_COUNTER[top]; }
+    const pool = ["jab", "jab", "hook", "block", "dodge"]; return pool[Math.floor(Math.random() * pool.length)];
+  }
+  async boxTick(M) {
+    if (this.bx !== M || M.phase === "over") return;
+    const now = Date.now();
+    // someone walked out or dropped: the other fighter wins
+    for (const [P, O] of [[M.a, M.b], [M.b, M.a]]) if (!P.bot && (P.quit || !this.inGym(P.uid))) return this.boxEnd(M, O, P, "forfeit");
+    if (M.phase === "start" || M.phase === "rest") { M.phase = "fight"; M.beat = 0; M.next = now + BOX.beat; this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "bell" }); setTimeout(() => this.boxTick(M).catch((e) => console.error("box", e)), BOX.beat); return; }
+    // settle this beat
+    for (const [P, O] of [[M.a, M.b], [M.b, M.a]]) if (P.bot) P.mv = this.boxBotMove(P, O);
+    const out = {};
+    for (const [P, O, k] of [[M.a, M.b, "a"], [M.b, M.a, "b"]]) { const mv = P.mv || "idle", cost = BOX_COST[mv]; P.tired = cost > 0 && P.st < cost; P.st = Math.max(0, Math.min(BOX.st, P.st - cost + 3)); out[k] = { mv, tired: P.tired }; }
+    for (const [P, O, k, ok] of [[M.a, M.b, "a", "b"], [M.b, M.a, "b", "a"]]) { let d = boxHit(P.mv || "idle", O.mv || "idle"); if (d && P.tired) d = Math.floor(d / 2); if (d) d = Math.max(1, d + Math.floor(Math.random() * 3) - 1); O.hp = Math.max(0, O.hp - d); out[ok].took = d; }
+    for (const P of [M.a, M.b]) { P.hist.push(P.mv); if (P.hist.length > 8) P.hist.shift(); P.mv = null; }
+    M.beat++; M.beatsDone++;
+    const ko = M.a.hp <= 0 || M.b.hp <= 0;
+    if (ko) { M.phase = "over"; this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "beat", out });
+      const win = M.a.hp > M.b.hp ? M.a : M.b.hp > M.a.hp ? M.b : null; return this.boxEnd(M, win, win === M.a ? M.b : win === M.b ? M.a : null, "ko"); }
+    if (M.beat >= BOX.beats) {
+      if (M.round >= BOX.rounds) { M.phase = "over"; this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "beat", out });
+        const win = M.a.hp > M.b.hp ? M.a : M.b.hp > M.a.hp ? M.b : null; return this.boxEnd(M, win, win === M.a ? M.b : win === M.b ? M.a : null, "points"); }
+      M.round++; M.phase = "rest"; M.next = now + BOX.rest; for (const P of [M.a, M.b]) P.st = Math.min(BOX.st, P.st + 25);
+      this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "beat", out }); setTimeout(() => this.boxTick(M).catch((e) => console.error("box", e)), BOX.rest); return; }
+    M.next = now + BOX.beat; this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "beat", out });
+    setTimeout(() => this.boxTick(M).catch((e) => console.error("box", e)), BOX.beat);
+  }
+  async boxEnd(M, win, lose, how) {
+    M.phase = "over"; M.ended = Date.now(); const now = M.ended, today = etDay(now);
+    const pvp = !M.a.bot && !M.b.bot, real = M.beatsDone >= BOX.minBeats;
+    let pairNote = "";
+    if (pvp && real) { const key = [M.a.uid, M.b.uid].sort((x, y) => x - y).join(":") + ":" + today; this.bxPair = this.bxPair || new Map(); const n = (this.bxPair.get(key) || 0) + 1; this.bxPair.set(key, n); if (n > BOX.pairPerDay) pairNote = "practice"; }
+    const pays = {};
+    for (const P of [M.a, M.b]) { if (P.bot) continue;
+      const won = win === P, lost = lose === P, drew = !win;
+      let earn = 0;
+      if (pvp) { if (real && !pairNote) earn = won ? BOX.pay.win : drew ? BOX.pay.draw : BOX.pay.lose; }
+      else if (won) earn = BOX.pay[(M.a.bot || M.b.bot)] || 0;
+      const r = await this.boxRow(P.uid); const so = r.earn_day === today ? r.earned : 0; const [ws, att] = this.sockFor(P.uid);
+      earn = Math.max(0, Math.min(halfIfEmpty(att, earn), BOX.dayCap - so));
+      await this.env.DB.prepare(`INSERT INTO boxing (uid, wins, losses, draws, kos, earn_day, earned) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET wins = wins + excluded.wins, losses = losses + excluded.losses, draws = draws + excluded.draws, kos = kos + excluded.kos, earn_day = excluded.earn_day, earned = excluded.earned`)
+        .bind(P.uid, won ? 1 : 0, lost ? 1 : 0, drew ? 1 : 0, won && how === "ko" ? 1 : 0, today, so + earn).run();
+      const tk = earn ? await this.credit(P.uid, earn, "boxing") : null; pays[P.name] = earn; if (ws) this.send(ws, { t: "bxpay", earned: earn, tk, capped: so + earn >= BOX.dayCap, practice: !!pairNote || (pvp && !real) });
+    }
+    this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "end", win: win ? win.name : null, how, pays });
+    setTimeout(() => { if (this.bx === M) { this.bx = null; this.gymBroadcast({ t: "bx", s: null, ev: "clear" }); } }, 4000);
+  }
+
+  // ---------- treasure cove ----------
+  coveInit(now) { if (this.cove) return this.cove; this.cove = { t: new Map(), holes: new Map(), last: new Map(), scan: new Map(), chest: new Map() }; for (let i = 0; i < COVE.n; i++) this.coveBury(now); return this.cove; }
+  coveBury(now) { const C = this.cove; for (let tries = 0; tries < 200; tries++) { const x = Math.floor(Math.random() * COVE.w), y = Math.floor(Math.random() * COVE.h), k = x + "," + y;
+      if (!coveDiggable(x, y) || C.t.has(k) || C.holes.has(k)) continue; let r = Math.random(), kind = "coins"; for (const [kk, , p] of COVE.finds) { if (r < p) { kind = kk; break; } r -= p; } C.t.set(k, kind); return; } }
+  coveHoles(now) { const C = this.cove, out = []; for (const [k, v] of C.holes) { if (now - v.t > COVE.holeMs) C.holes.delete(k); else out.push([...k.split(",").map(Number), v.f ? 1 : 0]); } return out; }
+  async coveInfo(a, now) { this.coveInit(now); const r = await this.dailyCove(a.uid, now); return { ok: true, holes: this.coveHoles(now), earned: r.earned, cap: COVE.dayCap, buried: this.cove.t.size }; }
+  async dailyCove(uid, now) { await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS cove (uid INTEGER PRIMARY KEY, day TEXT NOT NULL DEFAULT '', earned INTEGER NOT NULL DEFAULT 0, chests INTEGER NOT NULL DEFAULT 0, finds INTEGER NOT NULL DEFAULT 0)").run();
+    const r = await this.env.DB.prepare("SELECT * FROM cove WHERE uid = ?").bind(uid).first(), today = etDay(now);
+    return r && r.day === today ? r : { uid, day: today, earned: 0, chests: 0, finds: r ? r.finds : 0 }; }
+  covePos(a) { const p = a.pres; if (!p || p.rm !== "cove" || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return null; return [Math.floor(p.x), Math.floor(p.y)]; }
+  coveScan(a, now) { const C = this.coveInit(now), pos = this.covePos(a); if (!pos) return { ok: false, msg: "Head to TREASURE COVE to hunt." };
+    if (now - (C.scan.get(a.uid) || 0) < COVE.scanGap) return { ok: false, slow: true }; C.scan.set(a.uid, now);
+    let best = 99; for (const k of C.t.keys()) { const [x, y] = k.split(",").map(Number); best = Math.min(best, Math.max(Math.abs(x - pos[0]), Math.abs(y - pos[1]))); }
+    const heat = best === 0 ? 4 : best <= 1 ? 3 : best <= 3 ? 2 : best <= 6 ? 1 : 0; return { ok: true, heat }; }
+  async coveDig(ws, a, m, now) {
+    const C = this.coveInit(now), pos = this.covePos(a); if (!pos) return { ok: false, msg: "Head to TREASURE COVE to hunt." };
+    const x = Math.floor(+m.x), y = Math.floor(+m.y); if (!Number.isFinite(x) || !Number.isFinite(y) || Math.max(Math.abs(x - pos[0]), Math.abs(y - pos[1])) > 1) return { ok: false, msg: "Dig right next to where you're standing." };
+    if (!coveDiggable(x, y)) return { ok: false, msg: "You can't dig there." };
+    if (now - (C.last.get(a.uid) || 0) < COVE.digGap) return { ok: false, msg: "Catch your breath first." }; C.last.set(a.uid, now);
+    const k = x + "," + y; if (C.holes.has(k) && now - C.holes.get(k).t <= COVE.holeMs) return { ok: false, msg: "Someone already dug here." };
+    const kind = C.t.get(k); const ev = { t: "cv", n: a.name, x, y };
+    if (!kind) { C.holes.set(k, { t: now, f: 0 }); const junk = Math.random() < 0.3 ? COVE.junk[Math.floor(Math.random() * COVE.junk.length)] : null; ev.f = 0; ev.junk = junk; this.coveBroadcast(ev); return { ok: true, found: null, junk, hint: (this.coveScan({ pres: a.pres, uid: -1 }, now + 9e9) || {}).heat }; }
+    C.t.delete(k); C.holes.set(k, { t: now, f: 1 }); setTimeout(() => { if (this.cove) this.coveBury(Date.now()); }, COVE.respawn);
+    const r = await this.dailyCove(a.uid, now); let find = kind, pay = (COVE.finds.find((q) => q[0] === kind) || [0, 3])[1], item = null;
+    if (find === "chest") { if (r.chests >= COVE.chestPerDay) { find = "gold"; pay = 6; } else { item = "tchest"; await this.prTables(); await this.env.DB.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, item).run(); } }
+    pay = Math.max(0, Math.min(halfIfEmpty(a, pay), COVE.dayCap - r.earned));
+    await this.env.DB.prepare("INSERT INTO cove (uid, day, earned, chests, finds) VALUES (?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET day = excluded.day, earned = excluded.earned, chests = excluded.chests, finds = excluded.finds")
+      .bind(a.uid, r.day, r.earned + pay, r.chests + (item ? 1 : 0), (r.finds || 0) + 1).run();
+    const tk = pay ? await this.credit(a.uid, pay, "treasure") : null;
+    ev.f = 1; ev.find = find; this.coveBroadcast(ev);
+    return { ok: true, found: find, pay, item, tk, capped: r.earned + pay >= COVE.dayCap, furn: item ? await this.furnStorage(a.uid) : undefined };
+  }
+  coveBroadcast(obj) { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === "cove") { try { w.send(s); } catch (e) {} } } }
 
   // ---------- dunk tank ----------
   async dunkThrow(a, m, now) {

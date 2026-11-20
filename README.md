@@ -377,3 +377,27 @@ No API keys or passwords are involved.
 - **Tapping garden plots:** plots sit side by side, so instead of a box around each one (which overlapped the plot next to it), a tap is matched to a plot's real shape: its raised bed, plus the middle of the crops and timer above it when something grows. The bed itself beats the crops of the plot in front, and among beds the one drawn in front wins. The action button, with two plots next to you, uses the one you used last, then the one straight ahead. Tested by tapping every plot at 9 spots at 1280 and 412 pixels wide.
 - **Tapping in player rooms:** tapping the floor right next to a decoration walks to the tile you tapped instead of the piece; plots and machines only respond to taps on their own tile.
 - **Farm entrance:** two posts under a crossbeam with a hanging wheat sign (the front post sits just inside the field's corner), the wooden gate swung open against the inside of the fence (rails, cross brace, iron hinges), and a worn dirt path with stepping stones where llamas walk in.
+
+## Boxing Gym (`gym`)
+
+A brick-walled boxing club: a raised ring with red, white and blue ropes and corner pads, a painted star logo and a spotlight, heavy bags you can punch, lockers, a water cooler, a dumbbell rack, the timekeeper's bell on its table, padded benches for the crowd, fight posters and a live scoreboard over the ring.
+
+- **Box a bot or a llama:** tap the ring (or press BOX). ROOKIE RUSTY is easy; CHAMP DUKE watches what you've been throwing and counters it. CHALLENGE sends any llama in the gym a pop-up to accept (blocked llamas can't challenge each other).
+- **How a fight works:** 3 rounds of 10 beats (1.5 s each), or a knockout. Both fighters pick JAB, HOOK, BLOCK or DODGE every beat (buttons, or A S D F); the server settles each beat. JAB beats DODGE, DODGE beats HOOK (and counters), HOOK beats BLOCK (guard break), BLOCK beats JAB, and a JAB also cuts a HOOK short. Hooks hit hardest but cost the most stamina; BLOCK and resting get it back; tired punches do half.
+- **Cartoon only, no blood:** lunges, gloves flying out, POW / WHAM / BLOCKED / WHOOSH call-outs, stars, dizzy stars when nearly out, and a knockdown just sits the loser down seeing stars.
+- **Everyone watches:** the fighters stand in the ring in their corner's gloves and shorts; everyone in the gym sees the HUD (names, health, stamina, round, beat timer) and the scoreboard. Fighters get the move pad; the dock hides while they fight.
+- **Pay (server only):** ROOKIE win 3, CHAMP win 8; against a llama the winner gets 10 and the loser 2 (a draw pays 4 each) if the fight lasted at least 8 beats, up to 3 paid fights a day between the same two llamas. Boxing pays up to 40 tokens a day and half when hungry or thirsty. Walking out or dropping forfeits. Records (W/L/D/KO) are in the `boxing` table.
+
+## Treasure Cove (`cove`)
+
+A bigger outdoor room (20 x 16): a sandy island in the open sea with a sky that follows the time of day, breathing surf, glinting shallows, palms, rocks, a beached wooden boat with a torn sail, tiki torches, a TREASURE COVE sign, crabs scuttling about, gulls overhead and a dock with a rowboat (the way out).
+
+- **Detector and digging:** the detector (on by default) beeps faster as you get closer: COLD, COOL, WARM, HOT!, RIGHT HERE!. Stand on the spot and press DIG.
+- **Server-side treasure:** 7 treasures are buried at a time and only the server knows where; the detector only ever says how close the nearest one is. Finds: coins (3), gold (6), a gem (10) or, rarely, a PIRATE CHEST (furniture you can only dig up, max 1 a day). Misses sometimes turn up junk (an old boot, a rubber duck...). A new treasure is buried 12 s after one is found.
+- **Shared holes:** every dig leaves a hole everyone in the cove sees for 2 minutes, so you can tell where people have already looked. Finds are called out to the room.
+- **Limits:** 1 scan a second, 1 dig every 3 s, digging only where you stand (or next to it), up to 40 tokens a day (`cove` table), half pay when hungry or thirsty.
+
+## Other changes
+
+- **Clothes tab:** INVENTORY > CLOTHES starts with a WEARING NOW row, then everything else by slot.
+- **Changing booth sign:** a lit CHANGING BOOTH marquee with chasing bulbs stands on top of the booth in ACCOUNT.
