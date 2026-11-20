@@ -434,3 +434,6 @@ Every list on the dashboard (online now, new accounts, staff, muted, banned, tok
 
 ### Typing never triggers game keys
 While you type in any box (bug report, notes, search), keys like space and the arrows go to the box only. The Spit Arena starts only when you click PLAY; space still fires during a round.
+
+### Dock symbols
+The JOBS, FRIENDS, CHAT, SHOP, ROOMS, BAG and MAP buttons keep their coloured tiles, with redrawn 16x16 pixel-art symbols: a gold coin, two happy buddies, a chat bubble, a sofa, a house, a briefcase and a treasure map.
