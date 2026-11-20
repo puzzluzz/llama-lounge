@@ -221,7 +221,8 @@ No API keys or passwords are involved.
 
 ## MAP, event cards and the message box
 
-- **MAP.** The main rooms (LOUNGE, ACRES, CASINO, ARENA, LANES, STORE, ACCOUNT) are no longer a bar next to the chat box. The MAP button in the dock (and MAP in the menu) opens the LLAMA MAP, which shows who's in each room and marks the one you're in. ROOMS is still the button for player rooms. The chat box now gets the full width.
+- **ROOMS (MAP and PLAYER ROOMS).** One ROOMS button in the dock opens a pop-up with two tabs: 🗺️ MAP (LOUNGE, ACRES, CASINO, ARENA, LANES, STORE, ACCOUNT, with how many llamas are in each) and 🏠 PLAYER ROOMS (your room, search, POPULAR / TOP / FEATURED / FRIENDS). The same pop-up is the launch screen ("WELCOME BACK, NAME! WHERE TO?", no X until you pick somewhere; picking a player room joins in the lounge first, then heads over), and it opens when you tap a door or the Acres gate and when you leave a player room. The job board's MAP button opens it on the MAP tab. The daily reward waits until you've picked where to go.
+- **Tabs remember where you were.** ROOMS (MAP or PLAYER ROOMS, plus POPULAR / TOP / FEATURED / FRIENDS), the bag (CLOTHING or ITEMS) and the staff dashboard (PLAYERS or CHAT LOG) reopen on the tab you last had, even after a refresh (saved in the browser's `llamaLounge` storage).
 - **Event cards.** The old message box along the bottom is gone. Each kind of event (buying something, a friend coming online, running low on food and so on) shows a small NEW! card near the top the first time a player runs into it, then never again on that device. Names and item names are ignored when deciding what counts as the same kind of event, so "You bought a CACTUS" and "You bought a SOFA" are one event. Seen events are kept in localStorage `ll_seenMsg`. Every message still goes into the CHAT LOG.
 
 ## Walking, doors, seats and beds
