@@ -233,6 +233,11 @@ No API keys or passwords are involved.
 - The velvet ropes by the casino door block walking all the way to the wall.
 - Chat bubbles are 15% bigger, and the crown stays lined up with the name while the bubble rises.
 
+## PLINKO (casino)
+
+- A PLINKO cabinet stands against the casino's left wall (tiles 0,4 and 0,5). Tap it to walk up and open the game; bet 1, 2 or 5 tokens and press DROP.
+- The server decides the ball's path (8 fair left/right bounces, action `plinko`) and pays `bet x bucket`, rounded: 9X, 3X, 1.3X, .7X, .4X from the edges in. That pays back about 91 to 98% depending on the bet. `PLK` in the page and `PLINKO` in the worker must match.
+
 ## Staff token gifts
 
 - Mods and the owner can give tokens with 🪙 GIVE in the dashboard (online players, or a line in the CHAT LOG). Each gift is 1 to 1000 tokens.

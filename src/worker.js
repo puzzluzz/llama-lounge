@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-24g";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-24h";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -22,7 +22,8 @@ const DM = { len: 300, burst: 8, perDay: 300 };   // private messages: longest m
 const ROOM_IDS = new Set(["lounge", "barn", "casino", "arena", "lanes", "store", "account"]);
 const STAFF_GIVE_DAY = 500;   // most tokens a mod can give out in a day (the owner has no limit)
 const AFK_MS = 12 * 60000;   // no moving, chatting or "I'm still here" for this long: no more fishing or bar tips until they're back
-const SIPS = 3;                                   // sips or bites in every drink and snack   // friends plus sent requests per llama; requests waiting for one llama
+const SIPS = 3;
+const PLINKO = { y: 4, rows: 8, bets: [1, 2, 5], mult: [9, 3, 1.3, 0.7, 0.4, 0.7, 1.3, 3, 9] };   // casino PLINKO: machine on the left wall at y 4-5; pays about 95% over time                                   // sips or bites in every drink and snack   // friends plus sent requests per llama; requests waiting for one llama
 const RESET_MS = 30 * 60 * 1000, VERIFY_MS = 48 * 3600 * 1000;
 const FORGOT_PER_IP = 6, FORGOT_PER_EMAIL = 3, RESET_BAD_PER_IP = 10, PW_CHECK_FAILS = 8;
 
@@ -1327,6 +1328,17 @@ export class Lounge extends DurableObject {
         else { const seg = pickW(WHEEL.slices.map((v) => WHEEL.weight[v])); r = [seg]; pay = WHEEL.slices[seg] * bet; }
         if (pay) tk = await this.credit(uid, pay, "slot win");
         return { ok: true, kind, r, lines, pay, bet, tk };
+      }
+      case "plinko": {
+        // the ball's path is decided here: 8 rows, each a fair left/right bounce; the bucket is the number of rights
+        if (!this.near(a, "casino", (x, y, p) => p.p !== "sit" && Math.round(x) <= 1 && Math.round(y) >= PLINKO.y - 1 && Math.round(y) <= PLINKO.y + 2)) return { ok: false, msg: "Walk up to the PLINKO machine first." };
+        const bet = PLINKO.bets.includes(+m.bet) ? +m.bet : 1;
+        if (now - (await this.timer(uid, "plinko")) < 2400) return { ok: false, msg: "Wait for the ball to land." };
+        await this.setTimer(uid, "plinko", now);
+        let tk = await this.debit(uid, bet, "plinko"); if (tk === null) return { ok: false, msg: `YOU NEED ${bet} TOKEN${bet > 1 ? "S" : ""} TO DROP A BALL.` };
+        const path = Array.from({ length: PLINKO.rows }, () => (Math.random() < 0.5 ? 0 : 1)), slot = path.reduce((s, v) => s + v, 0), pay = Math.round(bet * PLINKO.mult[slot]);
+        if (pay) tk = await this.credit(uid, pay, "plinko win");
+        return { ok: true, path, slot, pay, bet, tk };
       }
       case "harvest": {
         const k = String(m.k || ""); if (!CROP_KEYS.has(k)) return { ok: false };
