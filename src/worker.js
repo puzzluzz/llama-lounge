@@ -106,9 +106,18 @@ const DECO_FLOOR = { wood: 0, checker: 20, carpet: 20, marble: 25, grass: 20, pa
 // Putting one up moves it from your bag onto your room; the one it replaces goes back into your bag. The free lavender and wood aren't items.
 const DECO_ITEMS = Object.fromEntries([...Object.entries(DECO_WALL).filter(([, p]) => p > 0).map(([k, p]) => ["wp_" + k, p]), ...Object.entries(DECO_FLOOR).filter(([, p]) => p > 0).map(([k, p]) => ["fl_" + k, p])]);
 const decoItem = (kind, id) => (kind === "w" ? "wp_" : "fl_") + id;
+DECO_WALL.barn = 0; DECO_FLOOR.meadow = 0;   // free barn-plank wall and meadow floor (farms start with them)
 const PR_WALLS = Object.keys(DECO_WALL), PR_FLOORS = Object.keys(DECO_FLOOR);
+// FARMS: one per llama (on top of the regular rooms). Garden plots only go in a farm, up to FARM.maxPlots each.
+// Crops: seed cost (TOKENS), grow time and what the harvest sells for. Short crops pay best per hour if you tend them; long ones suit time away.
+// A visitor (not the owner) can water a growing plot once per planting: it finishes FARM.waterCut of its grow time sooner.
+const FARM = { max: 1, maxPlots: 6, waterCut: 0.2, w: 12, h: 9, clear: ["0,8", "1,8", "2,8", "3,8"] };   // 6 plots plus paths and a few decorations fit; income is set by the plot cap, not the size   // farms are open fields, bigger than rooms, with a gate where the door would be
+const prDim = (r) => (r && r.kind === "farm" ? FARM : PR);
+const CROPS = { carrot: { n: "CARROTS", seed: 2, ms: 15 * 60e3, pay: 5 }, corn: { n: "CORN", seed: 4, ms: 45 * 60e3, pay: 10 },
+  berry: { n: "STRAWBERRIES", seed: 6, ms: 2 * 3600e3, pay: 15 }, pumpkin: { n: "PUMPKINS", seed: 10, ms: 6 * 3600e3, pay: 26 } };
+const FARM_ONLY = new Set(["plot"]);
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
-const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30, rug_persian: 25, rug_round: 15, rug_stripe: 12, rug_shag: 18,
+const FURN_ITEMS = { plot: 30, scarecrow: 15, wheelbarrow: 14, trough: 12, beehive: 18, appletree: 25, sunflowers: 8, gfence: 6, cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30, rug_persian: 25, rug_round: 15, rug_stripe: 12, rug_shag: 18,
   beanbag: 10, barstool: 7, dbed: 40, coffeetable: 14, roundtable: 16, floorlamp: 16, lavalamp: 12, cubeshelf: 14, dresser: 20, cactus: 5, flowers: 6, boombox: 18 , rug_mat_green: 6, rug_mat_red: 6, rug_mat_blue: 6, rug_mat_coir: 6, rug_mat_pink: 6, rug_mat_purple: 6 };
 // what the store sells right now: one piece per category (the rest stay placeable for anyone who already owns them)
 // vending machines players can put in their rooms, and what each one sells
@@ -126,10 +135,11 @@ const KITS = { living: { n: "COZY LIVING ROOM", items: { sofa: 1, coffeetable: 1
   diner: { n: "RETRO DINER", items: { roundtable: 1, chair_red: 4, barstool: 2, vending: 1 } },
   game: { n: "GAME ROOM", items: { bigtv: 1, beanbag: 2, boombox: 1, lavalamp: 1, snackvend: 1, rug_stripe: 1 } },
   study: { n: "STUDY NOOK", items: { bookshelf: 2, table: 1, chair_walnut: 1, lamp: 1, cubeshelf: 1, cactus: 1 } },
-  starter: { n: "STARTER KIT", items: { chair: 1, table: 1, lamp: 1, plant: 1, rug_mat_green: 1 } } };
+  starter: { n: "STARTER KIT", items: { chair: 1, table: 1, lamp: 1, plant: 1, rug_mat_green: 1 } },
+  farm: { n: "FARM STARTER", items: { plot: 2, scarecrow: 1, sunflowers: 1, trough: 1, gfence: 2 } } };
 const kitPrice = (k) => Math.round(Object.entries(KITS[k].items).reduce((t, [it, n]) => t + (FURN_ITEMS[it] || 0) * n, 0) * 0.8);
 const furnBase = (item) => FURN_VARIANTS[item] || item;   // couches run along their back, so they turn the other way
-const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend", "rug_persian", "rug_round", "rug_stripe", "rug_shag", "rug_mat_green", "rug_mat_red", "rug_mat_blue", "rug_mat_coir", "rug_mat_pink", "rug_mat_purple",
+const FURN_SALE = new Set(["plot", "scarecrow", "wheelbarrow", "trough", "beehive", "appletree", "sunflowers", "gfence", "chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend", "rug_persian", "rug_round", "rug_stripe", "rug_shag", "rug_mat_green", "rug_mat_red", "rug_mat_blue", "rug_mat_coir", "rug_mat_pink", "rug_mat_purple",
   "beanbag", "barstool", "dbed", "coffeetable", "roundtable", "floorlamp", "lavalamp", "cubeshelf", "dresser", "cactus", "flowers", "boombox"]);
 for (const [k, b] of Object.entries(FURN_VARIANTS)) { FURN_ITEMS[k] = FURN_ITEMS[b]; FURN_SALE.add(k); }   // variants cost the same as their base
 const FURN_STAFF = new Set(["adminsign"]);   // only mods and the owner can buy these
@@ -696,6 +706,7 @@ function cleanPresence(p, name, tk, muted, staff) {
   return o;
 }
 
+const fmtDur = (ms) => { const m = Math.ceil(ms / 60000); return m >= 120 ? `${Math.round(m / 6) / 10} hours`.replace(".0 ", " ") : m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
 // what a player can report someone for (the key is stored; staff see the label)
 const REPORT_REASONS = { rude: "Rude or bullying", hate: "Hate speech or slurs", spam: "Spam", scam: "Scam or trade trouble", name: "Bad name, room or outfit", other: "Something else" };
 
@@ -719,7 +730,7 @@ export class Lounge extends DurableObject {
     server.serializeAttachment({ uid, name, staff, peer, pres: null, rate: [Date.now(), 0], nd, wear, act: Date.now() });
     // greet with everyone already here, the leaderboard and table states
     const peers = this.sockets().filter((w) => w !== server && w.readyState === 1).map((w) => w.deserializeAttachment()).filter((a) => a && a.pres && a.uid !== uid).map((a) => ({ peer: a.peer, presence: (prId(a.pres.rm) && (!this.prPriv || this.prPriv.get(prId(a.pres.rm)) !== false)) ? { ...a.pres, s: undefined, e: undefined } : a.pres }));   // never show what's said in a private room
-    server.send(JSON.stringify({ t: "hello", v: VERSION, peer, peers, board: await this.board(), nd: { hu: nd.hu, th: nd.th, rate: { hu: 100 / NEEDS.hungerMs, th: 100 / NEEDS.thirstMs } } }));
+    server.send(JSON.stringify({ t: "hello", now: Date.now(), v: VERSION, peer, peers, board: await this.board(), nd: { hu: nd.hu, th: nd.th, rate: { hu: 100 / NEEDS.hungerMs, th: 100 / NEEDS.thirstMs } } }));
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -797,7 +808,9 @@ export class Lounge extends DurableObject {
       "CREATE TABLE IF NOT EXISTS deco (uid INTEGER NOT NULL, k TEXT NOT NULL, PRIMARY KEY (uid, k))",
       "CREATE TABLE IF NOT EXISTS plike (room INTEGER NOT NULL, uid INTEGER NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (room, uid))"]) await this.env.DB.prepare(q).run();
     try { await this.env.DB.prepare("ALTER TABLE prooms ADD COLUMN feat INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {}   // rooms the owner features in the room browser
-    try { await this.env.DB.prepare("ALTER TABLE pfurn ADD COLUMN off INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {}   // TVs and lamps can be switched off (already there after the first time)
+    try { await this.env.DB.prepare("ALTER TABLE pfurn ADD COLUMN off INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {}
+    for (const col of ["kind TEXT NOT NULL DEFAULT 'room'", "pwh TEXT", "pws TEXT"]) { try { await this.env.DB.prepare("ALTER TABLE prooms ADD COLUMN " + col).run(); } catch (e) {} }   // kind: room or farm; pwh/pws: password hash and salt
+    await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS pplot (fid INTEGER PRIMARY KEY, room INTEGER NOT NULL, crop TEXT NOT NULL, planted INTEGER NOT NULL, ready INTEGER NOT NULL, wat INTEGER NOT NULL DEFAULT 0, wby TEXT)").run();   // TVs and lamps can be switched off (already there after the first time)
     // one llama can own several rooms now: rebuild prooms once without the UNIQUE on owner (ids stay the same, so furniture, likes and invites stay put)
     { const t = await this.env.DB.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'prooms'").first();
       if (t && /owner INTEGER NOT NULL UNIQUE/i.test(t.sql)) await this.env.DB.batch([
@@ -818,7 +831,7 @@ export class Lounge extends DurableObject {
     const li = this.letIn.get(r.id); if (li && (li.get(a.uid) || 0) > Date.now()) return true;
     return !!(await this.env.DB.prepare("SELECT 1 FROM pinv WHERE room = ? AND uid = ?").bind(r.id, a.uid).first());
   }
-  prOut(r) { return { id: r.id, name: r.name, owner: r.oname.toUpperCase(), priv: !!r.priv, wall: r.wall, floor: r.floor, likes: r.likes || 0, liked: !!r.liked, feat: !!r.feat }; }
+  prOut(r) { return { id: r.id, name: r.name, owner: r.oname.toUpperCase(), priv: !!r.priv, wall: r.wall, floor: r.floor, likes: r.likes || 0, liked: !!r.liked, feat: !!r.feat, farm: r.kind === "farm", pw: !!(r.priv && r.pwh) }; }
   async prLikes(id, uid) { const r = await this.env.DB.prepare("SELECT (SELECT COUNT(*) FROM plike WHERE room = ?) AS likes, EXISTS(SELECT 1 FROM plike WHERE room = ? AND uid = ?) AS liked").bind(id, id, uid).first(); return { likes: r.likes || 0, liked: !!r.liked }; }
   // like or unlike someone else's room: only while you're inside it, never your own, a few times a minute at most
   async prLike(ws, a, m) {
@@ -841,7 +854,7 @@ export class Lounge extends DurableObject {
   }
   prCount(id) { const rm = "p:" + id, seen = new Set(); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === rm) seen.add(x.uid); } return seen.size; }
   toRoom(rm, obj) { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === rm) { try { w.send(s); } catch (e) {} } } }
-  async prFurn(id) { return ((await this.env.DB.prepare("SELECT id, item, gx, gy, rot, off FROM pfurn WHERE room = ? ORDER BY id").bind(id).all()).results || []).filter((f) => FURN_ITEMS[f.item]); }
+  async prFurn(id) { return ((await this.env.DB.prepare("SELECT f.id, f.item, f.gx, f.gy, f.rot, f.off, p.crop, p.planted, p.ready, p.wat, p.wby FROM pfurn f LEFT JOIN pplot p ON p.fid = f.id WHERE f.room = ? ORDER BY f.id").bind(id).all()).results || []).filter((f) => FURN_ITEMS[f.item]).map((f) => { if (!f.crop) { delete f.crop; delete f.planted; delete f.ready; delete f.wat; delete f.wby; } return f; }); }
   async prList(a) {
     await this.prTables(); await this.frTable();
     const rows = (await this.env.DB.prepare(`SELECT r.*, u.name AS oname,
@@ -855,7 +868,7 @@ export class Lounge extends DurableObject {
       out.push({ ...this.prOut(r), n, friend: !!r.fr, invited: !!r.inv, can: !!can }); }
     out.sort((x, y) => (y.friend - x.friend) || (y.n - x.n));
     const mines = ((await this.env.DB.prepare("SELECT r.*, u.name AS oname, (SELECT COUNT(*) FROM plike l WHERE l.room = r.id) AS likes FROM prooms r JOIN users u ON u.id = r.owner WHERE r.owner = ? ORDER BY r.id").bind(a.uid).all()).results || []).map((x) => ({ ...this.prOut(x), n: this.prCount(x.id) }));
-    return { ok: true, mine: mines[0] || null, mines, maxRooms: PR.maxRooms, rooms: out.slice(0, 60), staff: a.staff === "owner" || a.staff === "mod", owner: a.staff === "owner" };
+    return { ok: true, mine: mines[0] || null, mines, maxRooms: PR.maxRooms, maxFarms: FARM.max, maxPlots: FARM.maxPlots, crops: CROPS, rooms: out.slice(0, 60), staff: a.staff === "owner" || a.staff === "mod", owner: a.staff === "owner" };
   }
   // search rooms by room name or owner name (private rooms show up too, with a lock, so people can knock)
   async prSearch(a, m) {
@@ -874,10 +887,12 @@ export class Lounge extends DurableObject {
   }
   async prCreate(a, m) {
     await this.prTables();
-    const have = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM prooms WHERE owner = ?").bind(a.uid).first(); if (have && have.n >= PR.maxRooms) return { ok: false, msg: `You can have up to ${PR.maxRooms} rooms for now.` };
-    const name = cleanRoomName(m.name) || (a.name + "'S ROOM").slice(0, PR.nameMax);
+    const farm = m.kind === "farm";
+    if (farm) { const f = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM prooms WHERE owner = ? AND kind = 'farm'").bind(a.uid).first(); if (f && f.n >= FARM.max) return { ok: false, msg: "You already have a farm. Each llama gets one." }; }
+    else { const have = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM prooms WHERE owner = ? AND kind != 'farm'").bind(a.uid).first(); if (have && have.n >= PR.maxRooms) return { ok: false, msg: `You can have up to ${PR.maxRooms} rooms for now.` }; }
+    const name = farm ? (a.name + " ACRES").slice(0, PR.nameMax) : (cleanRoomName(m.name) || (a.name + "'S ROOM").slice(0, PR.nameMax));   // farms are always named after their farmer: NAME ACRES
     if (!WF.nameOk(name)) return { ok: false, msg: "That room name isn't allowed. Try another." };
-    const ins = await this.env.DB.prepare("INSERT INTO prooms (owner, name, priv, wall, floor, t) VALUES (?, ?, 0, 'lavender', 'wood', ?)").bind(a.uid, name, Date.now()).run();
+    const ins = await this.env.DB.prepare("INSERT INTO prooms (owner, name, priv, wall, floor, t, kind) VALUES (?, ?, 0, ?, ?, ?, ?)").bind(a.uid, name, "lavender", farm ? "meadow" : "wood", Date.now(), farm ? "farm" : "room").run();
     return { ...(await this.prList(a)), created: ins.meta.last_row_id };
   }
   async prMine(a, m) { await this.prTables(); const want = Math.floor(+((m && (m.rid || m.room)) || 0)) || prId(a.pres && a.pres.rm) || 0;
@@ -888,6 +903,7 @@ export class Lounge extends DurableObject {
     return { ok: true, room: this.prOut(r), invites: inv }; }
   async prSet(a, m) {
     const r = await this.prMine(a, m); if (!r) return { ok: false, msg: "You don't have a room yet." };
+    if (m.name !== undefined && r.kind === "farm") return { ok: false, msg: "Farms are always named after you." };
     const name = m.name !== undefined ? cleanRoomName(m.name) : r.name; if (!name) return { ok: false, msg: "Give your room a name." };
     if (m.name !== undefined && !WF.nameOk(name)) return { ok: false, msg: "That room name isn't allowed. Try another." };
     const priv = m.priv !== undefined ? (m.priv ? 1 : 0) : r.priv, wall = PR_WALLS.includes(m.wall) ? m.wall : r.wall, floor = PR_FLOORS.includes(m.floor) ? m.floor : r.floor;
@@ -914,7 +930,10 @@ export class Lounge extends DurableObject {
     const id = Math.floor(+m.rid || 0); const r = id > 0 ? await this.prRoom(id) : null; if (!r) return { ok: false, msg: "That room doesn't exist anymore." };
     const owner = await this.user(r.owner); if (!owner || owner.banned) return { ok: false, msg: "That room is closed." };
     if (r.owner !== a.uid && !a.staff && await this.blockedBy(r.owner, a.uid)) return { ok: false, msg: `You can't go into ${r.name}.` };
-    if (!(await this.prCanEnter(a, r))) return { ok: false, locked: true, msg: `${r.name} is private. Knock and the owner can let you in.` };
+    if (!(await this.prCanEnter(a, r))) {
+      if (m.pw && r.pwh) { const ok = await this.prTryPassword(a, r, m.pw); if (ok === "wait") return { ok: false, locked: true, pw: true, msg: "Too many wrong tries. Wait 10 minutes." }; if (!ok) return { ok: false, locked: true, pw: true, msg: "Wrong password." }; }
+      else return { ok: false, locked: true, pw: !!r.pwh, msg: r.pwh ? `${r.name} is private. Enter the password, or knock and the owner can let you in.` : `${r.name} is private. Knock and the owner can let you in.` };
+    }
     a.proom = r.id; ws.serializeAttachment(a);
     return { ok: true, room: { ...this.prOut(r), ...(await this.prLikes(r.id, a.uid)) }, mine: r.owner === a.uid, furn: await this.prFurn(r.id) };
   }
@@ -1050,11 +1069,11 @@ export class Lounge extends DurableObject {
   // tiles a piece covers: the bed is two long (along x for rot 0/2, along y for rot 1/3); everything else is one tile
   furnTiles(item, gx, gy, rot) { if (FURN_DIM[item]) { let [W, D] = FURN_DIM[item]; if (rot % 2) [W, D] = [D, W]; const out = []; for (let i = 0; i < W; i++) for (let j = 0; j < D; j++) out.push([gx + i, gy + j]); return out; }
     const bi = furnBase(item), n = FURN_SIZE[bi] || 1, alongY = FURN_SIDEWAYS.has(bi) ? (rot === 0 || rot === 3) : rot % 2 === 1, out = []; for (let k = 0; k < n; k++) out.push(alongY ? [gx, gy + k] : [gx + k, gy]); return out; }
-  furnFits(item, gx, gy, rot, furn, skipId) {   // null if it fits, otherwise the reason
+  furnFits(item, gx, gy, rot, furn, skipId, D = PR) {   // null if it fits, otherwise the reason (D: the room's size)
     const layer = layerOf(item), wall = layer === "wall", tiles = this.furnTiles(item, gx, gy, rot);
     for (const [x, y] of tiles) {
-      if (!(x >= 0 && y >= 0 && x < PR.w && y < PR.h)) return "That doesn't fit there.";
-      if (layer === "floor" && PR.clear.includes(x + "," + y)) return "Keep the doorway clear.";
+      if (!(x >= 0 && y >= 0 && x < D.w && y < D.h)) return "That doesn't fit there.";
+      if (layer === "floor" && D.clear.includes(x + "," + y)) return D === FARM ? "Keep the gate clear." : "Keep the doorway clear.";
     }
     for (const f of furn) {
       if (f.id === skipId || layerOf(f.item) !== layer) continue;   // rugs only bump into rugs, wall items into wall items
@@ -1067,17 +1086,80 @@ export class Lounge extends DurableObject {
     const r = await this.prOwnRoomHere(a); if (!r) return { ok: false, msg: "Go into your own room to place furniture." };
     const k = String(m.item || ""); if (!Object.hasOwn(FURN_ITEMS, k)) return { ok: false, msg: "That's not furniture." };
     const gx = Math.floor(+m.gx), gy = Math.floor(+m.gy), rot = ((Math.floor(+m.rot) || 0) % 4 + 4) % 4;
-    if (!(gx >= 0 && gy >= 0 && gx < PR.w && gy < PR.h)) return { ok: false, msg: "That's outside the room." };
-    const wall = FURN_WALL.has(k);
+    const DM = prDim(r); if (!(gx >= 0 && gy >= 0 && gx < DM.w && gy < DM.h)) return { ok: false, msg: "That's outside the room." };
+    const wall = FURN_WALL.has(k); if (wall && r.kind === "farm") return { ok: false, msg: "A farm has no walls, so wall pieces can't go here." };
     if (wall && gx !== 0 && gy !== 0) return { ok: false, msg: "Wall items go on a wall. Tap a spot right next to a wall." };
     if (wall && gx === 0 && gy >= PR.h - 2) return { ok: false, msg: "That's where the door is." };
     const furn = await this.prFurn(r.id); if (furn.length >= PR.maxFurn) return { ok: false, msg: `Rooms hold up to ${PR.maxFurn} pieces.` };
-    { const why = this.furnFits(k, gx, gy, rot, furn, -1); if (why) return { ok: false, msg: why }; }
+    if (FARM_ONLY.has(k) && r.kind !== "farm") return { ok: false, msg: "Garden plots only go in a FARM. Make one in ROOMS > PLAYER ROOMS." };
+    if (k === "plot" && furn.filter((f) => f.item === "plot").length >= FARM.maxPlots) return { ok: false, msg: `A farm holds up to ${FARM.maxPlots} garden plots.` };
+    { const why = this.furnFits(k, gx, gy, rot, furn, -1, DM); if (why) return { ok: false, msg: why }; }
     const own = await this.env.DB.prepare("SELECT n FROM finv WHERE uid = ? AND item = ?").bind(a.uid, k).first();
     if (!own || furn.filter((f) => f.item === k).length >= own.n) return { ok: false, msg: "You don't have one of those in storage." };
     await this.env.DB.prepare("INSERT INTO pfurn (room, item, gx, gy, rot) VALUES (?, ?, ?, ?, ?)").bind(r.id, k, gx, gy, rot).run();
     const nf = await this.prFurn(r.id); this.toRoom("p:" + r.id, { t: "prf", room: r.id, furn: nf });
     return { ok: true, furn: nf, storage: await this.furnStorage(a.uid) };
+  }
+  // ---------- FARMING: everything checked here (whose farm, standing next to the plot, money, timers) ----------
+  async farmPlot(a, m) {   // the plot you're standing next to, in the room you're in
+    await this.prTables(); const rid = prId(a.pres && a.pres.rm); if (!rid || a.proom !== rid) return { err: "Walk into the farm first." };
+    const r = await this.prRoom(rid); if (!r || r.kind !== "farm") return { err: "That's not a farm." };
+    const f = await this.env.DB.prepare("SELECT f.*, p.crop, p.planted, p.ready, p.wat FROM pfurn f LEFT JOIN pplot p ON p.fid = f.id WHERE f.id = ? AND f.room = ? AND f.item = 'plot'").bind(Math.floor(+m.fid || 0), rid).first();
+    if (!f) return { err: "That plot is gone." };
+    const x = +a.pres.x, y = +a.pres.y; if (!(Math.abs(x - (f.gx + 0.5)) <= 1.7 && Math.abs(y - (f.gy + 0.5)) <= 1.7)) return { err: "Walk up to the plot first." };
+    return { r, f, rid };
+  }
+  async farmDone(rid) { const nf = await this.prFurn(rid); this.toRoom("p:" + rid, { t: "prf", room: rid, furn: nf }); return nf; }
+  async farmAct(ws, a, m, what) {
+    const P = await this.farmPlot(a, m); if (P.err) return { ok: false, msg: P.err };
+    const { r, f, rid } = P, now = Date.now(), mine = r.owner === a.uid;
+    if (what === "plant") {
+      if (!mine) return { ok: false, msg: "Only the farmer can plant here." };
+      if (f.crop) return { ok: false, msg: "Something's already growing there." };
+      const k = String(m.crop || ""); if (!Object.hasOwn(CROPS, k)) return { ok: false, msg: "Pick a crop to plant." };
+      const C = CROPS[k], tk = await this.debit(a.uid, C.seed, "seeds " + k); if (tk === null) return { ok: false, msg: `${C.n} seeds cost ${C.seed} TOKENS.` };
+      const ins = await this.env.DB.prepare("INSERT OR IGNORE INTO pplot (fid, room, crop, planted, ready, wat) VALUES (?, ?, ?, ?, ?, 0)").bind(f.id, rid, k, now, now + C.ms).run();
+      if (!ins.meta.changes) { await this.credit(a.uid, C.seed, "seeds refund"); return { ok: false, msg: "Something's already growing there." }; }
+      return { ok: true, tk, furn: await this.farmDone(rid), msg: `Planted ${C.n}! Ready in ${fmtDur(C.ms)}.` };
+    }
+    if (what === "water") {
+      if (mine) return { ok: false, msg: "Your crops need a friend to water them. Visitors can water each planting once." };
+      if (!f.crop) return { ok: false, msg: "Nothing is growing there yet." };
+      if (now >= f.ready) return { ok: false, msg: "It's ready to harvest already!" };
+      if (f.wat) return { ok: false, msg: "Someone already watered this one." };
+      if (!a.wtr || now - a.wtr[0] > 3600e3) a.wtr = [now, 0]; if (++a.wtr[1] > 40) { ws.serializeAttachment(a); return { ok: false, msg: "That's a lot of watering! Take a break." }; } ws.serializeAttachment(a);
+      const C = CROPS[f.crop], cut = Math.round(C.ms * FARM.waterCut);
+      const up = await this.env.DB.prepare("UPDATE pplot SET wat = 1, wby = ?, ready = MAX(?, ready - ?) WHERE fid = ? AND wat = 0").bind(a.name, now, cut, f.id).run();
+      if (!up.meta.changes) return { ok: false, msg: "Someone already watered this one." };
+      for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.uid === r.owner) this.send(w, { t: "toast", msg: `${a.name} watered your ${C.n.toLowerCase()} at ${r.name}!` }); }
+      return { ok: true, furn: await this.farmDone(rid), msg: `You watered the ${C.n.toLowerCase()}. They'll be ready sooner!` };
+    }
+    if (what === "harvest") {
+      if (!mine) return { ok: false, msg: "Only the farmer can harvest." };
+      if (!f.crop) return { ok: false, msg: "Nothing is growing there yet." };
+      if (now < f.ready) return { ok: false, msg: `Still growing. Ready in ${fmtDur(f.ready - now)}.` };
+      const del = await this.env.DB.prepare("DELETE FROM pplot WHERE fid = ? AND ready <= ?").bind(f.id, now).run(); if (!del.meta.changes) return { ok: false, msg: "Already harvested." };
+      const C = CROPS[f.crop], tk = await this.credit(a.uid, C.pay, "harvest " + f.crop);
+      return { ok: true, tk, pay: C.pay, crop: f.crop, furn: await this.farmDone(rid), msg: `Harvested ${C.n}! +${C.pay} TOKENS` };
+    }
+    return { ok: false };
+  }
+  // ---------- ROOM PASSWORDS: an extra way into a private room (besides an invite or a knock). Stored as a salted hash; tries are limited. ----------
+  async prPassword(a, m) {
+    const r = await this.prMine(a, m); if (!r) return { ok: false, msg: "You don't have a room yet." };
+    const pw = String(m.pw || "");
+    if (!pw) { await this.env.DB.prepare("UPDATE prooms SET pwh = NULL, pws = NULL WHERE id = ?").bind(r.id).run(); }
+    else { if (pw.length < 4 || pw.length > 24) return { ok: false, msg: "Passwords are 4 to 24 characters." };
+      const salt = b64u(crypto.getRandomValues(new Uint8Array(12))); await this.env.DB.prepare("UPDATE prooms SET pwh = ?, pws = ?, priv = 1 WHERE id = ?").bind(await sha256hex(salt + ":" + pw), salt, r.id).run(); }
+    this.letIn.delete(r.id);   // a new or removed password: people let in by the old one need it again
+    const nr = await this.prRoom(r.id); this.toRoom("p:" + r.id, { t: "prr", room: this.prOut(nr) }); if (nr.priv) await this.prKickUnwelcome(nr);
+    return { ok: true, room: this.prOut(nr), msg: pw ? "Password set. Your room is private, and people with the password can come in." : "Password removed." };
+  }
+  async prTryPassword(a, r, pw) {   // true if right; 5 wrong tries per room every 10 minutes
+    if (!r.pwh || !pw) return false; const k = r.id + ":" + a.uid, now = Date.now(); this.pwTries = this.pwTries || new Map();
+    const t = (this.pwTries.get(k) || []).filter((x) => now - x < 600e3); if (t.length >= 5) return "wait";
+    if ((await sha256hex(r.pws + ":" + String(pw).slice(0, 24))) === r.pwh) { this.pwTries.delete(k); let li = this.letIn.get(r.id); if (!li) { li = new Map(); this.letIn.set(r.id, li); } li.set(a.uid, now + PR.letInMs); return true; }
+    t.push(now); this.pwTries.set(k, t); return false;
   }
   async prToggle(ws, a, m) {   // switch a TV or lamp on or off: anyone in the room can, a couple of times a second at most
     const rm = a.pres && a.pres.rm, rid = rm && rm.startsWith("p:") ? Math.floor(+rm.slice(2) || 0) : 0;
@@ -1098,9 +1180,9 @@ export class Lounge extends DurableObject {
     const E = await this.prMoveRoom(a); if (!E) return { ok: false, msg: "Go into your own room to move furniture." }; const r = E.r;
     const id = Math.floor(+m.fid || 0); const f = await this.env.DB.prepare("SELECT * FROM pfurn WHERE id = ? AND room = ?").bind(id, r.id).first(); if (!f) return { ok: false, msg: "That piece is gone." };
     const gx = Math.floor(+m.gx), gy = Math.floor(+m.gy);
-    if (!(gx >= 0 && gy >= 0 && gx < PR.w && gy < PR.h)) return { ok: false, msg: "That's outside the room." };
+    if (!(gx >= 0 && gy >= 0 && gx < prDim(r).w && gy < prDim(r).h)) return { ok: false, msg: "That's outside the room." };
     if (FURN_WALL.has(f.item)) { if (gx !== 0 && gy !== 0) return { ok: false, msg: "Wall items go on a wall." }; if (gx === 0 && gy >= PR.h - 2) return { ok: false, msg: "That's where the door is." }; }
-    const why = this.furnFits(f.item, gx, gy, f.rot, await this.prFurn(r.id), f.id); if (why) return { ok: false, msg: why };
+    const why = this.furnFits(f.item, gx, gy, f.rot, await this.prFurn(r.id), f.id, prDim(r)); if (why) return { ok: false, msg: why };
     await this.env.DB.prepare("UPDATE pfurn SET gx = ?, gy = ? WHERE id = ?").bind(gx, gy, id).run();
     if (E.staff) await this.logStaff(a.name, "movefurn", `${f.item.replace(/_/g, " ").toUpperCase()} in ${r.oname.toUpperCase()}'S ROOM (${f.gx},${f.gy} to ${gx},${gy})`);
     const nf = await this.prFurn(r.id); this.toRoom("p:" + r.id, { t: "prf", room: r.id, furn: nf });
@@ -1109,9 +1191,9 @@ export class Lounge extends DurableObject {
   async prEditPiece(a, m, what) {
     const E = what === "rot" ? await this.prMoveRoom(a) : { r: await this.prOwnRoomHere(a), staff: false }; const r = E && E.r; if (!r) return { ok: false, msg: "Go into your own room to change furniture." };
     const id = Math.floor(+m.fid || 0); const f = await this.env.DB.prepare("SELECT * FROM pfurn WHERE id = ? AND room = ?").bind(id, r.id).first(); if (!f) return { ok: false, msg: "That piece is gone." };
-    if (what === "rot") { const why = this.furnFits(f.item, f.gx, f.gy, (f.rot + 1) % 4, await this.prFurn(r.id), f.id); if (why) return { ok: false, msg: why === "Something is in the way." ? "No room to turn it there." : why }; }
+    if (what === "rot") { const why = this.furnFits(f.item, f.gx, f.gy, (f.rot + 1) % 4, await this.prFurn(r.id), f.id, prDim(r)); if (why) return { ok: false, msg: why === "Something is in the way." ? "No room to turn it there." : why }; }
     if (what === "rot") { await this.env.DB.prepare("UPDATE pfurn SET rot = (rot + 1) % 4 WHERE id = ?").bind(id).run(); if (E.staff) await this.logStaff(a.name, "turnfurn", `${f.item.replace(/_/g, " ").toUpperCase()} in ${r.oname.toUpperCase()}'S ROOM`); }
-    else await this.env.DB.prepare("DELETE FROM pfurn WHERE id = ?").bind(id).run();
+    else { await this.env.DB.prepare("DELETE FROM pfurn WHERE id = ?").bind(id).run(); await this.env.DB.prepare("DELETE FROM pplot WHERE fid = ?").bind(id).run(); }   // picking up a plot loses what's growing in it
     const nf = await this.prFurn(r.id); this.toRoom("p:" + r.id, { t: "prf", room: r.id, furn: nf });
     return { ok: true, furn: nf, storage: await this.furnStorage(a.uid) };
   }
@@ -1702,6 +1784,10 @@ export class Lounge extends DurableObject {
       case "pr_answer": return this.prAnswer(a, m, now);
       case "pr_invite": return this.prInvite(a, m);
       case "pr_kick": return this.prKick(a, m);
+      case "pr_pw": return this.prPassword(a, m);
+      case "farm_plant": return this.farmAct(ws, a, m, "plant");
+      case "farm_water": return this.farmAct(ws, a, m, "water");
+      case "farm_harvest": return this.farmAct(ws, a, m, "harvest");
       case "pr_place": return this.prPlace(a, m);
       case "pr_move": return this.prMove(a, m);
       case "pr_toggle": return this.prToggle(ws, a, m);
