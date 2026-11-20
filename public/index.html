@@ -1012,7 +1012,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24j";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24k";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -2492,13 +2492,15 @@ function drawBlackjack(f, t){
   const depth=u=>0.5+0.38*Math.sqrt(Math.max(0,1-((u-1)/0.96)**2));
   const curve=[]; for (let u=0.04;u<=1.961;u+=0.06) curve.push([u,0.08+depth(u)]);
   // curved apron, built from solid bands so there are no gaps: gold foot trim, mahogany, gold piping, padded burgundy rail
-  const band=(z0,z1,c0,c1)=>{ for (let i=0;i<curve.length-1;i++){ const [u0,v0]=curve[i], [u1,v1]=curve[i+1]; polyPx([P(gx+u0,gy+v0,z1),P(gx+u1,gy+v1,z1),P(gx+u1,gy+v1,z0),P(gx+u0,gy+v0,z0)], c1 && u0>=1 ? c1 : c0); } };
+  const edge=[[0.04,0.08], ...curve, [1.96,0.08]];   /* the straight ends too, so the sides are closed all the way round */
+  const band=(z0,z1,c0,c1)=>{ for (let i=0;i<edge.length-1;i++){ const [u0,v0]=edge[i], [u1,v1]=edge[i+1]; polyPx([P(gx+u0,gy+v0,z1),P(gx+u1,gy+v1,z1),P(gx+u1,gy+v1,z0),P(gx+u0,gy+v0,z0)], c1 && u0>=1 ? c1 : c0); } };
   band(7,8,INK); band(8,9,'#ffd23f','#c88a10'); band(9,12.5,'#9a4424','#7e3418'); band(12.5,13.5,'#ffd23f','#c88a10');
   { const fl=Math.floor(t*3); for (let i=1;i<curve.length-1;i+=2){ const [x,y]=P(gx+curve[i][0],gy+curve[i][1],10.5); g.fillStyle=INK; g.fillRect(Math.round(x)-1,Math.round(y)-1,3,3); g.fillStyle=((i>>1)+fl)%2?'#ffffff':'#ff5c8a'; g.fillRect(Math.round(x),Math.round(y),1,1); } }
   const felt=[P(gx+0.04,gy+0.08,13),P(gx+1.96,gy+0.08,13),...curve.slice().reverse().map(([u,v])=>P(gx+u,gy+v,13))];
   polyPx(felt,INK); polyPx(felt.map(([x,y],i)=>[x+(i===0?1:i===1?-1:0), y+(i<2?1:-1)]),'#1e8a3c');
   band(13,15.5,'#c03858','#8a1c3c'); band(15.5,16.5,INK);
-  for (let i=0;i<curve.length-1;i++){ const a=P(gx+curve[i][0],gy+curve[i][1],15.5), b=P(gx+curve[i+1][0],gy+curve[i+1][1],15.5); linePx(a[0],a[1],b[0],b[1],'#ff8aa8'); }
+  for (let i=0;i<edge.length-1;i++){ const a=P(gx+edge[i][0],gy+edge[i][1],15.5), b=P(gx+edge[i+1][0],gy+edge[i+1][1],15.5); linePx(a[0],a[1],b[0],b[1],'#ff8aa8'); }
+  { const a=P(gx+0.04,gy+0.08,15.5), b=P(gx+1.96,gy+0.08,15.5); linePx(a[0],a[1]-1,b[0],b[1]-1,INK); linePx(a[0],a[1],b[0],b[1],'#8a1c3c'); }
 
   { const a=P(gx+0.04,gy+0.08,13), b=P(gx+1.96,gy+0.08,13); linePx(a[0],a[1],b[0],b[1],'#ffd23f'); linePx(a[0],a[1]-1,b[0],b[1]-1,INK); }
   { const a=P(gx+0.3,gy+0.38,13), b=P(gx+1.7,gy+0.38,13); for (let i=0;i<=20;i++){ const u=i/20, x=a[0]+(b[0]-a[0])*u, y=a[1]+(b[1]-a[1])*u+Math.sin(u*Math.PI)*4; g.fillStyle='#f8d030'; g.fillRect(Math.round(x),Math.round(y),1,1); } }
