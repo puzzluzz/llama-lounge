@@ -437,3 +437,6 @@ While you type in any box (bug report, notes, search), keys like space and the a
 
 ### Dock symbols
 The JOBS, FRIENDS, CHAT, SHOP, ROOMS, BAG and MAP buttons keep their coloured tiles, with redrawn 16x16 pixel-art symbols: a gold coin, two happy buddies, a chat bubble, a sofa, a house, a briefcase and a treasure map.
+
+### Pixel chat bar
+The chat box is a pixel panel: hard ink border with stepped corners, a shaded bottom lip and a pixel-font placeholder. The send button is a yellow pixel key with a hand-drawn paper plane, and the emote button has a redrawn smiley with blush and an open grin.
