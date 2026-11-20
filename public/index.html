@@ -299,6 +299,7 @@
   @media (hover:hover){ .menu div:hover,.menu div.on{background:var(--soft)} }
   .menu div.mclose{color:var(--sub)}
   #emenu div{font-size:15px}
+  #emenu div[data-e]{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:8px} #emenu div[data-e] .pi{width:36px!important;height:36px!important} #emenu div[data-e] b{font:600 14px var(--pxf);letter-spacing:.04em}   /* big clear icon, name underneath */
   #logbox{top:calc(64px + var(--sat));font-size:14px;line-height:1.45;padding:16px 18px}
   #logbox .ln{margin-bottom:6px} #logbox .x{font-size:18px;background:transparent;color:var(--sub)}
   #pmenu{padding:14px;border-radius:18px} #pmenu .pmb{gap:8px}
@@ -927,7 +928,7 @@
   <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
   <div id="keys">CLICK TO WALK · SPACE ACTION · ENTER TALK<br>M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
   <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">ROOMS</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="market" data-i="🏪">MARKETPLACE</div><div data-a="bug" data-i="🐞">REPORT A BUG</div><div data-a="tour" data-i="💡">TAKE THE TOUR</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
-  <div id="emenu" class="gb menu sheet"><div data-e="heart">♥ HEART</div><div data-e="bang">! WOW</div><div data-e="huh">? HUH</div><div data-e="note">♪ SING</div><div data-e="lol">^^ LOL</div><div data-e="zzz">Z SLEEP</div><div data-e="wave">✋ WAVE</div><div data-e="flex">💪 FLEX</div><div data-e="palm">-_- FACEPALM</div></div>
+  <div id="emenu" class="gb menu sheet"><div class="slt">😄 EMOTES</div><div data-e="heart"><span class="pi pi-heart" aria-hidden="true"></span><b>HEART</b></div><div data-e="bang"><span class="pi pi-em_wow" aria-hidden="true"></span><b>WOW</b></div><div data-e="huh"><span class="pi pi-em_huh" aria-hidden="true"></span><b>HUH</b></div><div data-e="note"><span class="pi pi-music" aria-hidden="true"></span><b>SING</b></div><div data-e="lol"><span class="pi pi-em_lol" aria-hidden="true"></span><b>LOL</b></div><div data-e="zzz"><span class="pi pi-em_zzz" aria-hidden="true"></span><b>SLEEP</b></div><div data-e="wave"><span class="pi pi-hand" aria-hidden="true"></span><b>WAVE</b></div><div data-e="flex"><span class="pi pi-muscle" aria-hidden="true"></span><b>FLEX</b></div><div data-e="palm"><span class="pi pi-em_palm" aria-hidden="true"></span><b>FACEPALM</b></div></div>
   <div id="pmenu" class="gb"><div class="pmtop"><div id="pm_pic" class="pmpic"></div><div class="pmx"><div id="pm_name" class="pmn"></div><div id="pm_meta" class="pmmeta"></div></div><button class="gbbtn pmclose" id="pm_close" aria-label="Close">✕</button></div><div id="pm_info"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_trade">🤝 TRADE</button></div></div>
   <div id="tmenu" class="gb sheet"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
   <div id="lboard" class="gb sheet"><div class="lbt">🏆 HIGH SCORES</div><div class="lbcols"><div><div class="lbh">HAY CATCH</div><div id="lb_hay"></div></div><div><div class="lbh">LLAMA DASH</div><div id="lb_dash"></div></div></div><div class="srow"><button class="gbbtn" id="lbclose">CLOSE</button></div></div>
@@ -1167,7 +1168,7 @@ const PIXSRC={
   reddot:'............/............/...kkkkkk.../..krrrrrRk../.krwwrrrrRk./.krwrrrrrRk./.krrrrrrrRk./.krrrrrrrRk./..kRrrrrRk../...kkkkkk.../............/............',
   chart:'k.........../k........kk./k.......kgk./k......kgk../k..kk.kgk.../k.kgkkgk..../kkgk.kk...../kgk........./kk........../k.........../kkkkkkkkkkkk/............',
   hundred:'............/............/rr..rr...rr./.r.r..r.r..r/.r.r..r.r..r/.r.r..r.r..r/.r.r..r.r..r/rrr.rr...rr./............/RRRRRRRRRRRR/.RRRRRRRRRR./............',
-  smile:'...kkkkkk.../..kyyyyyyk../.kyyyyyyyYk./kyykyyyykyYk/kyykyyyykyYk/kyyyyyyyyyYk/kykyyyyyykYk/kyykyyyykyYk/kyyykkkkyyYk/.kyyyyyyyYk./..kYYYYYYk../...kkkkkk...',
+  smile:'...kkkkkk.../.kkyyyyyykk./kyywyyyyyyyk/kyyykyykyyyk/kyyykyykyyyk/kyyyyyyyyyyk/kpyyyyyyyypk/kyykyyyykyyk/kyyykkkkyyyk/.kyyyyyyYYk./..kkYYYYkk../....kkkk....',
   scroll:'.kkkkkkkkk../kttttttttNk./ktkkkkkkkk../.ktttttttk../.ktSSSSStk../.ktttttttk../.ktSSSSStk../.ktttttttk../.ktSSSStttk./.kkkkkkkkttk/..kttttttttk/..kkkkkkkkk.',
   muscle:'............/.....kkk..../....kfffk.../...kfffffk../...kffkffk../..kfffkkk.../.kffffk...../kfffffffkk../kffffffffffk/kffffffffffk/.kfffffffffk/..kkkkkkkkk.',
   llama:'.kk..kk...../.kwk.kwk..../.kwkkkwk..../.kwwwwwwk.../kwwwwkwwwk../kwwwwwwwwwk./kwwwwwwwwwwk/.kwwwwwwwSwk/..kkwwwwkkk./...kwwwwk.../...kwwwwk.../...kkkkkk...',
@@ -1225,6 +1226,11 @@ const PIXSRC={
   bdg_2y:'..kkk..kkk../..kyk..kyk../...kykkyk.../....kyyk..../...kkkkkk.../..kvvvvvvk../.kvwvvvvvVk./.kvvvvvvvVk./.kvvvvvvVVk./.kvvvvvVVVk./..kVVVVVVk../...kkkkkk...',
   bug:'...k....k.../....k..k..../....kkkk..../..kkkkkkkk../.krwrkkrrrk./krrkrkkrkrrk/krrrrkkrrrrk/krkrrkkrrkrk/krrrrkkrrrrk/.krrrkkrrrk./..kkkkkkkk../............',
   stall:'............/kkkkkkkkkkkk/krwrwrwrwrwk/krwrwrwrwrwk/kkkkkkkkkkkk/.krkrkrkrkr./.k........k./.k.kkkkkk.k./.k.kyyyyk.k./.k.kyYYyk.k./knnnnnnnnnnk/kkkkkkkkkkkk',
+  em_wow:'..kkkkkkkk../.kyyyyyyyyk./kyyyykkyyyYk/kyyyykkyyyYk/kyyyykkyyyYk/kyyyykkyyyYk/kyyyyyyyyyYk/kyyyykkyyyYk/.kyyyyyyyYk./..kkkkkyyk../......kyk.../.......k....',
+  em_huh:'..kkkkkkkk../.kbbbbbbbbk./kbbbwwwwbbbk/kbbwwbbwwbbk/kbbbbbbwwbbk/kbbbbwwwbbbk/kbbbbwwbbbbk/kbbbbbbbbbbk/kbbbbwwbbbbk/.kbbbbbbbbk./..kkkkkbbk../.......kk...',
+  em_lol:'...kkkkkk.../.kkyyyyyykk./kyyyyyyyyyyk/kyykyyyykyyk/kykykyykykyk/kyyyyyyyyyyk/kykkkkkkkkyk/kykrrrrrrkyk/kyykrrrrkyyk/.kyykkkkyyk./..kkyyyykk../....kkkk....',
+  em_zzz:'kkkkkkk...../kbbbbbk...../kkkkbbk...../..kbbk....../.kbbk......./kbbkkkk...../kbbbbbkkkkkk/kkkkkkkkbbbk/........kbk./.......kbk../.......kbbbk/.......kkkkk',
+  em_palm:'...kkkkkk.../.kkyyyyyykk./kyyyyyyyyyyk/kkkkkkkkyyyk/ktttttttkyyk/ktttttttkkyk/kkktttkkkyyk/kyykkkyyyyyk/kyyyyykkkyyk/.kyyyyyyyyk./..kkyyyykk../....kkkk....',
   camr:'............/...kkk....../...kwwk...../....kwwk..../.....kwwk.../......kwwk../......kwwk../.....kwwk.../....kwwk..../...kwwk...../...kkk....../............',
   caml:'............/......kkk.../.....kwwk.../....kwwk..../...kwwk...../..kwwk....../..kwwk....../...kwwk...../....kwwk..../.....kwwk.../......kkk.../............',
   back:'............/......kk..../.....kkk..../....kkk...../...kkk....../..kkk......./..kkk......./...kkk....../....kkk...../.....kkk..../......kk..../............'
@@ -4656,6 +4662,11 @@ const EMO_BMP = {
   flex:{c:'#f84848', r:['..XX...','.X..X..','.X..XX.','XX...XX','XXXXXXX','.XXXXX.']},
   palm:{c:'#3858a8', r:['XX...XX','.......','.......','..XXX..','.......','.......']},
 };
+// emote balloons over a llama use the menu's 12 x 12 pixel icons, drawn once into small canvases
+const EMO_ICON={heart:'heart', bang:'em_wow', huh:'em_huh', note:'music', lol:'em_lol', zzz:'em_zzz', wave:'hand', flex:'muscle', palm:'em_palm'};
+const PIXC={};
+function pixCanvas(name){ if (PIXC[name]) return PIXC[name]; const rows=(PIXSRC[name]||PIXSRC.star).split('/'), c=document.createElement('canvas'); c.width=rows[0].length; c.height=rows.length; const m=c.getContext('2d');
+  rows.forEach((r,j)=>{ for (let i=0;i<r.length;i++){ const col=PIXPAL[r[i]]; if (!col) continue; m.fillStyle=col; m.fillRect(i,j,1,1); } }); return PIXC[name]=c; }
 const DANCE_DIRS=['fr','fl','bl','br'];
 function drawWaveIcon(x, y, t){
   // a little outlined hand that rocks side to side, with motion lines
@@ -4800,10 +4811,11 @@ function drawLlama(o, t, isMe){
   }
   // balloon: emote beats chat dots
   const em = isMe ? me.emote : o.emote, playing = isMe ? (arcade.on || (typeof AR!=='undefined' && AR.on) || (typeof BW!=='undefined' && BW.on)) : (o.a==='arcade' || o.a==='arena' || o.a==='bowl');
-  if (em || playing){ const bx=sx-7, by=y0+oy-28; g.fillStyle=INK; g.fillRect(bx,by,15,11); g.fillRect(bx+2,by+11,3,2); g.fillStyle='#f8f8f8'; g.fillRect(bx+1,by+1,13,9); g.fillRect(bx+3,by+10,1,1);
-    if (em && em.t==='wave') drawWaveIcon(bx+1, by+1, t);
-    else if (em){ const E=EMO_BMP[em.t]; const bounce=(Math.floor(t*6)%2); bmp(E.r, bx+4, by+2+bounce*0, E.c); }
-    else if (playing){ g.fillStyle=INK; g.fillRect(bx+3,by+4,9,4); g.fillStyle='#f84848'; g.fillRect(bx+9,by+5,1,1); g.fillStyle='#f8f8f8'; g.fillRect(bx+4,by+5,1,2); g.fillRect(bx+3+0,by+6,3,0); }
+  if (em || playing){ const bx=sx-3, by=y0+oy-29; g.fillStyle=INK; g.fillRect(bx+1,by,16,16); g.fillRect(bx,by+1,18,14); g.fillRect(bx+1,by+15,4,3); g.fillRect(bx,by+18,2,1);   // rounded speech bubble beside the head, tail pointing back at the llama
+    g.fillStyle='#ffffff'; g.fillRect(bx+1,by+1,16,14); g.fillRect(bx+2,by+15,2,2); g.fillStyle='#e6e0f2'; g.fillRect(bx+1,by+14,16,1);
+    if (em && EMO_ICON[em.t]){ const bounce=Math.floor(t*4)%2, sway = em.t==='wave' ? (Math.floor(t*5)%2 ? -1 : 1) : 0; g.drawImage(pixCanvas(EMO_ICON[em.t]), bx+3+sway, by+2-bounce); }   // the same pixel icons as the EMOTES menu
+    else if (em){ const E=EMO_BMP[em.t]; bmp(E.r, bx+5, by+4, E.c); }
+    else if (playing){ g.fillStyle=INK; g.fillRect(bx+4,by+5,10,5); g.fillStyle='#f84848'; g.fillRect(bx+11,by+6,1,1); g.fillStyle='#f8f8f8'; g.fillRect(bx+5,by+6,1,2); }
   }
   if (dancing && Math.floor(t*3+o.x)%3===0){ g.fillStyle='#b058e0'; g.fillRect(x0-2, y0+12, 2, 2); g.fillRect(x0, y0+7, 1, 6); g.fillRect(x0+1, y0+7, 2, 1); }
   return [sx, y0+oy-2, !!(em||playing)];
