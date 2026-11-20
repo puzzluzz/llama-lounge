@@ -8,6 +8,7 @@
 <title>Llama Lounge</title>
 <meta name="description" content="Llama Lounge: hang out, chat and play games as a llama.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preload" href="/fonts/pixelify-600.woff2" as="font" type="font/woff2" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root{--px:2;--ink:#181020}
@@ -785,6 +786,51 @@
   #rbwrap{display:none!important}
   .m-map .mchip{background:linear-gradient(160deg,#ffb36b,#f0742a);color:#fff}
   #roompick .rpb.here{outline:3px solid var(--ink);background:#fff7d6}
+
+  /* Pixelify Sans (SIL Open Font License, see /fonts/Pixelify-OFL.txt) is served from this site so it always loads */
+  @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:400;font-display:swap;src:url(/fonts/pixelify-400.woff2) format('woff2')}
+  @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:500;font-display:swap;src:url(/fonts/pixelify-500.woff2) format('woff2')}
+  @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:600;font-display:swap;src:url(/fonts/pixelify-600.woff2) format('woff2')}
+  @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/pixelify-700.woff2) format('woff2')}
+  /* ===== modern + pixel look for pop-ups ===== */
+  :root{--pxf:'Pixelify Sans','Press Start 2P',monospace;--cardln:#ddd5ec}
+  .gb.sheet.hasband{padding-top:0!important}
+  .shead.band{margin-top:0!important;box-shadow:none!important}
+  .gb.sheet,#pmenu,#evpop{border-radius:10px!important;box-shadow:8px 8px 0 rgba(12,6,28,.55)!important}
+  .shead.band{border-radius:7px 7px 0 0!important}
+  .shead.band .stx .slt,.shead.band .stx .lbt,.shead.band .stx .dpt,.shead.band .stx .rpt,.shead.band .stx #tm_title{font-family:var(--pxf)!important;font-weight:700!important;font-size:23px!important;letter-spacing:.03em!important;line-height:1.05!important}
+  .shead.band .ssub{font-family:var(--pxf);font-weight:500;font-size:14px;letter-spacing:.05em}
+  .shead.band .sico,.shead .sheetx,#pmenu .pmclose,#evpop .evi{border-radius:6px!important}
+  .shead.band .sico{box-shadow:0 4px 0 var(--ink)!important} .shead .sheetx{box-shadow:0 4px 0 var(--ink)!important}
+  .shead .sheetx:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)!important}
+  /* buttons: chunky pixel buttons with a hard shadow */
+  .gb.sheet .gbbtn,#pmenu .gbbtn{font-family:var(--pxf)!important;font-weight:600!important;font-size:15px!important;letter-spacing:.04em;border:3px solid var(--ink)!important;border-radius:6px!important;box-shadow:0 3px 0 var(--ink)!important;margin-bottom:3px}
+  .gb.sheet .gbbtn:active,#pmenu .gbbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)!important}
+  .gb.sheet .gbbtn:not(.y):not(.on){background:#fff}
+  .gb.sheet .gbbtn:disabled{box-shadow:0 3px 0 rgba(29,21,48,.4)!important}
+  /* tabs */
+  .gb.sheet .autabs{background:#ebe6f5;border:3px solid var(--ink);border-radius:8px;padding:3px;gap:3px}
+  .gb.sheet .autabs button{font-family:var(--pxf)!important;font-weight:600;font-size:15px!important;letter-spacing:.04em;border-radius:5px;height:38px}
+  .gb.sheet .autabs button.on{background:var(--yel);color:var(--ink);box-shadow:0 3px 0 rgba(29,21,48,.35)}
+  /* cards and rows */
+  .gb.sheet .wi,#frbox .frr,.job,#pr_body .prr,.rpb,#dm_list .dmr,#itembox .itg div,#pmenu .pmsc div,#pmenu .pmroom,#pmenu .pmtop,.dq,.gb.sheet .dsec{border:2px solid var(--cardln)!important;border-radius:7px!important;box-shadow:0 3px 0 var(--cardln)!important}
+  .gb.sheet .wi.sel{border-color:var(--ink)!important;box-shadow:0 3px 0 var(--ink)!important}
+  .rpb.here,#roompick .rpb.here{border-color:var(--ink)!important;outline:0!important;box-shadow:0 3px 0 var(--ink)!important}
+  @media (max-width:640px){ #screen .menu>div[data-a],#screen .menu>div[data-e]{border:2px solid var(--cardln);border-radius:7px;box-shadow:0 3px 0 var(--cardln)} }
+  .menu>div[data-a],.menu>div[data-e]{font-family:var(--pxf);font-weight:600;font-size:14px;letter-spacing:.04em}
+  /* pixel font for headings, labels, names and numbers; body text stays easy to read */
+  .gb.sheet .wdh,#frbox .frh,#dm_list .frh,.jroom,.gb.sheet h4,.gb.sheet h5,.lbh,.empty b,.gb.sheet .wi b,.rpx b,#pr_body .prn b,#frbox .frn,#itembox .itg b,#itembox .itg small,#pmenu .pmn,#pmenu .pmsc b,#pmenu .pmsc small,#pmenu .pmmeta,#pmenu .pmroom b,.job .jt b,.job .jp,.gb.sheet .wi small,#evpop .evnew,#pmenu .pmst,#itembox .itrare b,#wd_name{font-family:var(--pxf)!important;letter-spacing:.04em}
+  .gb.sheet .wdh,#frbox .frh,#dm_list .frh,.jroom{font-size:15px!important;font-weight:700!important}
+  .gb.sheet .wi b,.rpx b,#pr_body .prn b,#frbox .frn,.job .jt b,#pmenu .pmroom b{font-weight:600!important;font-size:15px!important}
+  .gb.sheet .wi small{font-weight:500!important;font-size:13px!important}
+  #itembox .itg b,#pmenu .pmsc b{font-size:18px!important;font-weight:700!important} #itembox .itg small,#pmenu .pmsc small{font-size:11px!important;font-weight:500!important}
+  #pmenu .pmn,#wd_name{font-size:22px!important;font-weight:700!important} #pmenu .pmmeta{font-size:13px!important}
+  .empty b{font-size:17px!important}
+  #evpop{font-family:var(--ui)} #evpop .evnew{font-size:12px!important;font-weight:700}
+  @media (max-width:640px){
+    .gb.sheet{border-radius:12px 12px 0 0!important;box-shadow:0 -6px 0 rgba(12,6,28,.4)!important}
+    .shead.band{border-radius:9px 9px 0 0!important}
+  }
 </style>
 </head>
 <body>
@@ -940,7 +986,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24b";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24c";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -7281,7 +7327,7 @@ for (const el of document.querySelectorAll('.gb.sheet')){
   const h=document.createElement('div'); h.className='shead';
   const tt0=el.querySelector('.slt, .lbt, .dpt, #rp_title, #tm_title');
   if (tt0 || SHEET_TITLE[el.id]){
-    h.classList.add('band');
+    h.classList.add('band'); el.classList.add('hasband');
     h.innerHTML='<span class="sgrip"></span><span class="sico"></span><div class="stx"></div><button class="sheetx" type="button" aria-label="Close"><i class="pi pi-x" aria-hidden="true"></i></button>';
     const stx=h.querySelector('.stx'), ico=h.querySelector('.sico');
     let tt=tt0; if (!tt){ tt=document.createElement('div'); tt.className='slt'; tt.textContent=SHEET_TITLE[el.id]; iconize(tt); }
@@ -7293,7 +7339,7 @@ for (const el of document.querySelectorAll('.gb.sheet')){
   } else h.innerHTML='<span class="sgrip"></span><button class="sheetx" type="button" aria-label="Close"><i class="pi pi-x" aria-hidden="true"></i></button>';
   const x=h.querySelector('.sheetx'); x.addEventListener('pointerdown', e=>e.stopPropagation()); x.addEventListener('click', e=>{ e.stopPropagation(); closeSheet(el); });
   el.insertBefore(h, el.firstChild); makeDraggable(el, h);
-  new MutationObserver(()=>{ const vis=!!el.style.display && el.style.display!=='none'; if (vis && !el._vis){ sheetHead(el); if (el._head) popSnd(); } el._vis=vis; }).observe(el, {attributes:true, attributeFilter:['style']}); }
+  new MutationObserver(()=>{ const vis=!!el.style.display && el.style.display!=='none'; if (vis && !el._vis){ el.scrollTop=0; requestAnimationFrame(()=>{ el.scrollTop=0; }); sheetHead(el); if (el._head) popSnd(); } el._vis=vis; }).observe(el, {attributes:true, attributeFilter:['style']}); }
 // the little pop-up you get by tapping a llama already has its own ✕; drag it by the name
 makeDraggable(pmenuEl, document.getElementById('pm_name'));
 
