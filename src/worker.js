@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-24a";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-24b";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -22,7 +22,7 @@ const DM = { len: 300, burst: 8, perDay: 300 };   // private messages: longest m
 const ROOM_IDS = new Set(["lounge", "barn", "casino", "arena", "lanes", "store", "account"]);
 const STAFF_GIVE_DAY = 500;   // most tokens a mod can give out in a day (the owner has no limit)
 const AFK_MS = 12 * 60000;   // no moving, chatting or "I'm still here" for this long: no more fishing or bar tips until they're back
-const SIPS = 5;                                   // sips or bites in every drink and snack   // friends plus sent requests per llama; requests waiting for one llama
+const SIPS = 3;                                   // sips or bites in every drink and snack   // friends plus sent requests per llama; requests waiting for one llama
 const RESET_MS = 30 * 60 * 1000, VERIFY_MS = 48 * 3600 * 1000;
 const FORGOT_PER_IP = 6, FORGOT_PER_EMAIL = 3, RESET_BAD_PER_IP = 10, PW_CHECK_FAILS = 8;
 

@@ -769,6 +769,22 @@
   .gbbtn .pi-play,.gbbtn .pi-playl{margin:0 -3px}
   .job .ji .pi{width:var(--pi2);height:var(--pi2)} .rpi .pi{width:var(--pi3)!important;height:var(--pi3)!important}
   .shead.band .stx>*{justify-content:flex-start!important;text-align:left!important}
+
+  /* first-time event card (replaces the old message box along the bottom) */
+  #evpop{position:absolute;left:50%;top:calc(var(--sat) + 74px);z-index:4;display:flex;align-items:center;gap:10px;width:max-content;max-width:min(420px,calc(100% - 24px));box-sizing:border-box;
+    padding:9px 14px 9px 9px;background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius:16px;box-shadow:0 4px 0 rgba(29,21,48,.35),0 12px 30px rgba(8,4,20,.35);
+    font:700 13.5px/1.35 var(--ui);cursor:pointer;pointer-events:none;opacity:0;translate:-50% -10px;transition:opacity .2s,translate .2s}
+  #evpop.on{opacity:1;translate:-50% 0;pointer-events:auto}
+  #evpop .evi{width:40px;height:40px;flex:none;display:grid;place-items:center;background:#fff3c8;border:2px solid var(--ink);border-radius:10px}
+  #evpop .evi .pi{width:var(--pi2);height:var(--pi2)}
+  #evpop .evnew{position:absolute;top:-11px;left:12px;background:var(--pink);color:#fff;font:800 9.5px/1 var(--ui);letter-spacing:.08em;padding:4px 7px;border-radius:999px;border:2px solid var(--ink)}
+  #tip.on~#evpop,body.tipon #evpop{top:calc(var(--sat) + 134px)}
+  @media (min-width:701px){ #evpop{top:calc(var(--sat) + 70px)} }
+
+  /* the main rooms moved off the chat row into the MAP button, so the chat box gets the full width */
+  #rbwrap{display:none!important}
+  .m-map .mchip{background:linear-gradient(160deg,#ffb36b,#f0742a);color:#fff}
+  #roompick .rpb.here{outline:3px solid var(--ink);background:#fff7d6}
 </style>
 </head>
 <body>
@@ -780,13 +796,14 @@
   <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button class="pbtn ic" id="zout" title="Zoom out" aria-label="Zoom out">−</button><button class="pbtn ic" id="zin" title="Zoom in" aria-label="Zoom in">+</button><button class="pbtn ic" id="musicbtn" title="Music" aria-label="Music">♪</button><button class="pbtn y" id="menubtn" aria-label="Menu"><span class="hamb"><i></i><i></i><i></i></span><span class="mtx">MENU</span></button></div>
   <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
   <div id="keys">ARROWS/WASD WALK · SPACE ACTION<br>ENTER TALK · M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
-  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">CHANGE ROOM</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
+  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">MAP</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
   <div id="emenu" class="gb menu sheet"><div data-e="heart">♥ HEART</div><div data-e="bang">! WOW</div><div data-e="huh">? HUH</div><div data-e="note">♪ SING</div><div data-e="lol">^^ LOL</div><div data-e="zzz">Z SLEEP</div><div data-e="wave">✋ WAVE</div><div data-e="flex">💪 FLEX</div><div data-e="palm">-_- FACEPALM</div></div>
   <div id="pmenu" class="gb"><div class="pmtop"><div id="pm_pic" class="pmpic"></div><div class="pmx"><div id="pm_name" class="pmn"></div><div id="pm_meta" class="pmmeta"></div></div><button class="gbbtn pmclose" id="pm_close" aria-label="Close">✕</button></div><div id="pm_info"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_trade">🤝 TRADE</button></div></div>
   <div id="tmenu" class="gb sheet"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
   <div id="lboard" class="gb sheet"><div class="lbt">🏆 HIGH SCORES</div><div class="lbcols"><div><div class="lbh">HAY CATCH</div><div id="lb_hay"></div></div><div><div class="lbh">LLAMA DASH</div><div id="lb_dash"></div></div></div><div class="srow"><button class="gbbtn" id="lbclose">CLOSE</button></div></div>
   <div id="shop" class="gb sheet"><img id="shopimg" alt=""><div id="shopname"></div><div id="shopprice"></div><div id="shopsub"></div><div class="srow"><a id="shoplink" class="gbbtn" href="#" target="_blank" rel="noopener noreferrer">VIEW PRODUCT ▶</a><button class="gbbtn" id="shopclose">CLOSE</button></div></div>
   <div id="logbox" class="gb sheet"><span class="x" id="logx">✕</span><div id="loglines"></div></div>
+  <div id="evpop" role="status" aria-live="polite"><span class="evnew">NEW!</span><span class="evi"></span><span class="evt"></span></div>
   <div id="tbox" class="gb"><span id="ttext"></span><span id="tarrow">▼</span></div>
   <div id="dock">
   <div id="rbwrap"><button class="rbarrow" id="rb_l" type="button" aria-label="Scroll rooms left">‹</button><div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button><button class="pbtn" data-go="arena">💦 ARENA</button><button class="pbtn" data-go="lanes">🎳 LANES</button><button class="pbtn" data-go="store">🛍️ STORE</button><button class="pbtn" data-go="account">🔐 ACCOUNT</button></div><button class="rbarrow" id="rb_r" type="button" aria-label="Scroll rooms right">›</button></div>
@@ -796,7 +813,7 @@
   </div>
   </div>
   <div id="scrim"></div>
-  <div id="signs"><button id="jobsbtn" class="mbtn m-jobs" aria-label="Jobs: ways to earn coins"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 6.8v10.4"/><path d="M14.8 9.3c-.4-1-1.5-1.6-2.8-1.6-1.6 0-2.8.8-2.8 2s1.2 1.7 2.8 2 2.8.9 2.8 2.1-1.2 2-2.8 2c-1.4 0-2.5-.6-2.9-1.7"/></svg></span><span class="mlb">JOBS</span><span id="jobs_dot" class="fr-req"></span></button><button id="frbtn" class="mbtn m-fr" aria-label="Friends"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9.5" cy="8" r="3.4"/><path d="M3.5 19.5v-1.2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1.2"/><path d="M15.6 4.8a3.3 3.3 0 0 1 0 6.4"/><path d="M18 14.6a4 4 0 0 1 2.5 3.7v1.2"/></svg></span><span class="mlb">FRIENDS</span><span class="fr-on" id="fr_on"></span><span class="fr-req" id="fr_req"></span></button><button id="dmbtn" class="mbtn m-dm" aria-label="Messages"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.6a8 8 0 0 1-11.7 7.1L4 19.8l1.1-4.4a8 8 0 1 1 15.4-3.8z"/><path d="M8.6 11.8h.01M12 11.8h.01M15.4 11.8h.01" stroke-width="3"/></svg></span><span class="mlb">CHAT</span><span class="fr-req" id="dm_un"></span></button><button id="roomsbtn" class="mbtn m-rooms" aria-label="Rooms: player rooms"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.6 12 3.8l8.5 6.8"/><path d="M5.6 9.2V20h12.8V9.2"/><path d="M10 20v-5.2h4V20"/></svg></span><span class="mlb">ROOMS</span><span class="fr-on" id="rooms_on"></span></button><button id="invbtn" class="mbtn m-bag" aria-label="Inventory"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 8.5h11a2 2 0 0 1 2 2V19a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19v-8.5a2 2 0 0 1 2-2z"/><path d="M9 8.5V6.2a3 3 0 0 1 6 0v2.3"/><path d="M4.5 13.5h15"/><path d="M10.5 13.5v2h3v-2"/></svg></span><span class="mlb">BAG</span></button><button id="signshide" type="button" aria-label="Hide these buttons" title="Hide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button></div>
+  <div id="signs"><button id="jobsbtn" class="mbtn m-jobs" aria-label="Jobs: ways to earn coins"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 6.8v10.4"/><path d="M14.8 9.3c-.4-1-1.5-1.6-2.8-1.6-1.6 0-2.8.8-2.8 2s1.2 1.7 2.8 2 2.8.9 2.8 2.1-1.2 2-2.8 2c-1.4 0-2.5-.6-2.9-1.7"/></svg></span><span class="mlb">JOBS</span><span id="jobs_dot" class="fr-req"></span></button><button id="frbtn" class="mbtn m-fr" aria-label="Friends"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9.5" cy="8" r="3.4"/><path d="M3.5 19.5v-1.2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1.2"/><path d="M15.6 4.8a3.3 3.3 0 0 1 0 6.4"/><path d="M18 14.6a4 4 0 0 1 2.5 3.7v1.2"/></svg></span><span class="mlb">FRIENDS</span><span class="fr-on" id="fr_on"></span><span class="fr-req" id="fr_req"></span></button><button id="dmbtn" class="mbtn m-dm" aria-label="Messages"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.6a8 8 0 0 1-11.7 7.1L4 19.8l1.1-4.4a8 8 0 1 1 15.4-3.8z"/><path d="M8.6 11.8h.01M12 11.8h.01M15.4 11.8h.01" stroke-width="3"/></svg></span><span class="mlb">CHAT</span><span class="fr-req" id="dm_un"></span></button><button id="mapbtn" class="mbtn m-map" aria-label="Map: go to another room"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.4 9 4.2l6 2.2 5.5-2.2v13.4L15 19.8l-6-2.2-5.5 2.2z"/><path d="M9 4.2v13.4"/><path d="M15 6.4v13.4"/></svg></span><span class="mlb">MAP</span><span class="fr-on" id="map_on"></span></button><button id="roomsbtn" class="mbtn m-rooms" aria-label="Rooms: player rooms"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.6 12 3.8l8.5 6.8"/><path d="M5.6 9.2V20h12.8V9.2"/><path d="M10 20v-5.2h4V20"/></svg></span><span class="mlb">ROOMS</span><span class="fr-on" id="rooms_on"></span></button><button id="invbtn" class="mbtn m-bag" aria-label="Inventory"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 8.5h11a2 2 0 0 1 2 2V19a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19v-8.5a2 2 0 0 1 2-2z"/><path d="M9 8.5V6.2a3 3 0 0 1 6 0v2.3"/><path d="M4.5 13.5h15"/><path d="M10.5 13.5v2h3v-2"/></svg></span><span class="mlb">BAG</span></button><button id="signshide" type="button" aria-label="Hide these buttons" title="Hide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button></div>
   <button id="signsshow" type="button" aria-label="Show Jobs, Friends, Chat, Rooms and Bag" title="Show buttons"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><i id="signsdot"></i></button>
   <div id="auth" class="gb">
     <div class="rt">🦙 <b>LLAMA LOUNGE</b></div>
@@ -923,7 +940,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24a";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24b";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -3540,9 +3557,9 @@ function doAction(a){
   else if (a==='juke'){ if(!near(JUKE_X,0)) return; face(JUKE_X,0); nextSong(); sendPresence(true); }
   else if (a==='order'){ const id = BAR_IDS[Math.floor(Math.random()*BAR_IDS.length)]; me.h=id; localMsg(`You ordered a ${DRINKS[id].label}!`); sendPresence(true); }
   else if (a==='grab'){ const st=(me.p==='sit')?seatAt(me.gx,me.gy):null; if(!st||st.gy!==2) return; openFw('bar'); return; const gx=me.gx;
-    NET.act('drink').then(r=>{ if (!r.ok){ localMsg(r.msg||'Could not buy a drink.'); return; } tkSet(r.tk); me.h=BAR_IDS[gx%BAR_IDS.length]; me.hl=5; me.autoEat=true; localMsg(`You bought a ${DRINKS[me.h].label} for 1 TOKEN!`); sendPresence(true); }); }
+    NET.act('drink').then(r=>{ if (!r.ok){ localMsg(r.msg||'Could not buy a drink.'); return; } tkSet(r.tk); me.h=BAR_IDS[gx%BAR_IDS.length]; me.hl=SIPS; me.autoEat=true; localMsg(`You bought a ${DRINKS[me.h].label} for 1 TOKEN!`); sendPresence(true); }); }
   else if (a==='sip'||a==='bite'){ if(!me.h) return; const now=performance.now(); if (now-me.sipStart<SIP_T) return; me.sipStart=now; me.sipK=(me.sipK+1)%10000;
-    setTimeout(()=>{ if(!me.h) return; NET.act('sip').then(r=>{ if (r && r.nd) ndSet(r.nd); }); me.hl=Math.max(0,(me.hl||5)-1); if(me.hl===0){ localMsg(DRINKS[me.h].food ? `Yum! You ate the whole ${DRINKS[me.h].label}.` : `You finished your ${DRINKS[me.h].label}!`); me.h=null; } sendPresence(true); }, SIP_T);
+    setTimeout(()=>{ if(!me.h) return; NET.act('sip').then(r=>{ if (r && r.nd) ndSet(r.nd); }); me.hl=Math.max(0,(me.hl||SIPS)-1); if(me.hl===0){ localMsg(DRINKS[me.h].food ? `Yum! You ate the whole ${DRINKS[me.h].label}.` : `You finished your ${DRINKS[me.h].label}!`); me.h=null; } sendPresence(true); }, SIP_T);
     sendPresence(true); }
   else if (a==='sit'||a==='stand') toggleSit();
 }
@@ -3844,7 +3861,7 @@ function presencePayload(){
   const o = { c:me.c, n:me.n||'LLAMA', x:Math.round(tx*100)/100, y:Math.round(ty*100)/100, d:me.d, p:me.p, m:me.moving?1:0 };
   o.s = me.lastSay || null;
   o.h = me.h || null;
-  o.hl = me.h ? (me.hl||5) : null;
+  o.hl = me.h ? (me.hl||SIPS) : null;
   o.sk = me.sipK || null;
   o.e = me.lastEm || null;
   o.a = arcade.on ? 'arcade' : (typeof AR!=='undefined' && AR.on) ? 'arena' : (typeof BW!=='undefined' && BW.on) ? 'bowl' : null;
@@ -3886,7 +3903,7 @@ function readPeer(peer){
   const bj = Array.isArray(pr.bj) ? pr.bj.slice(0,8).map(v=>Math.max(0,Math.min(51,Math.floor(+v||0)))) : null;
   const ea = (pr.ea&&typeof pr.ea==='object'&&/^a\d{1,2},\d{1,2}$/.test(String(pr.ea.a))) ? {k:+pr.ea.k||0, a:String(pr.ea.a)} : null;
   return { w: cleanWear(pr.w), st: ['owner','mod'].includes(pr.st) ? pr.st : '', bj, ea, l, c:pr.c, n:clean(pr.n,12)||'LLAMA', x:Math.min(40,Math.max(0,x)), y:Math.min(40,Math.max(0,y)), d:['fr','fl','br','bl'].includes(pr.d)?pr.d:'fr',
-    p:['sit','dance','bar'].includes(pr.p)?pr.p:'stand', s, e, j, h: DRINK_IDS.includes(pr.h)?pr.h:null, hl:Math.max(0,Math.min(5,Math.floor(+pr.hl||5))), sk:+pr.sk||0, a: pr.a==='arcade'?'arcade':null, sp, td, g:gsc, tg, fk:+pr.fk||0, tk:Math.max(0,Math.min(1e6,Math.floor(+pr.tk||0))), rm: validRoom(pr.rm)?pr.rm:'lounge', fs: (pr.fs&&typeof pr.fs==='object'&&['cast','bite','got'].includes(pr.fs.st)) ? {k:+pr.fs.k||0, st:pr.fs.st, f:Math.max(0,Math.min(2,Math.floor(+pr.fs.f||0))), bx:Math.max(0,Math.min(40,+pr.fs.bx||0)), by:Math.max(0,Math.min(40,+pr.fs.by||0))} : null, sl: (pr.sl&&typeof pr.sl==='object'&&Array.isArray(pr.sl.r)) ? {k:+pr.sl.k||0, r:pr.sl.r.slice(0,3).map(v=>Math.max(0,Math.min(SLOT_SYMS.length-1,Math.floor(+v||0))))} : null };
+    p:['sit','dance','bar'].includes(pr.p)?pr.p:'stand', s, e, j, h: DRINK_IDS.includes(pr.h)?pr.h:null, hl:Math.max(0,Math.min(SIPS,Math.floor(+pr.hl||SIPS))), sk:+pr.sk||0, a: pr.a==='arcade'?'arcade':null, sp, td, g:gsc, tg, fk:+pr.fk||0, tk:Math.max(0,Math.min(1e6,Math.floor(+pr.tk||0))), rm: validRoom(pr.rm)?pr.rm:'lounge', fs: (pr.fs&&typeof pr.fs==='object'&&['cast','bite','got'].includes(pr.fs.st)) ? {k:+pr.fs.k||0, st:pr.fs.st, f:Math.max(0,Math.min(2,Math.floor(+pr.fs.f||0))), bx:Math.max(0,Math.min(40,+pr.fs.bx||0)), by:Math.max(0,Math.min(40,+pr.fs.by||0))} : null, sl: (pr.sl&&typeof pr.sl==='object'&&Array.isArray(pr.sl.r)) ? {k:+pr.sl.k||0, r:pr.sl.r.slice(0,3).map(v=>Math.max(0,Math.min(SLOT_SYMS.length-1,Math.floor(+v||0))))} : null };
 }
 function upsertPeer(peer){
   if (peer.isMe && peer.sameTab) return;
@@ -3983,7 +4000,23 @@ function paginate(s){
   const pages=[]; for(let i=0;i<lines.length;i+=2) pages.push(lines.slice(i,i+2).join('\n')); return pages.length?pages:[''];
 }
 function logLine(t,sys){ const d=document.createElement('div'); d.className='ln'+(sys?' sys':''); d.textContent=t; loglines.appendChild(d); while(loglines.children.length>80) loglines.removeChild(loglines.firstChild); const lb=document.getElementById('logbox'); lb.scrollTop=lb.scrollHeight; }
-function queue(s){ tq.push(paginate(s)); if(tq.length>5) tq.shift(); }
+// ---- event cards: the old message box along the bottom is gone. Each kind of event shows a small card the
+// FIRST time this player runs into it, then never again on this device. Everything still goes in the CHAT LOG.
+const SEEN_K='ll_seenMsg'; let SEEN; try{ SEEN=new Set(JSON.parse(localStorage.getItem(SEEN_K)||'[]')); }catch(_){ SEEN=new Set(); }
+function msgKey(s){ const t=String(s).replace(EMO_RE,' ').replace(/\d+/g,'#');
+  /* names and item names are written in capitals, so leave them out: "You bought a CACTUS!" and "You bought a SOFA!" are the same kind of event */
+  const k=t.replace(/\b[A-Z][A-Z0-9_'.-]*[A-Z0-9]\b/g,' ').replace(/[^a-z#]+/gi,' ').trim().toLowerCase();
+  return (k.replace(/#/g,'').trim().length>=6 ? k : t.toLowerCase().replace(/\s+/g,' ').trim()).slice(0,90); }
+const EVQ=[]; let evCur=null, evTimer=0;
+function queue(s){ s=String(s||'').trim(); if (!s) return; const k=msgKey(s); if (SEEN.has(k)) return; SEEN.add(k);
+  try{ localStorage.setItem(SEEN_K, JSON.stringify([...SEEN].slice(-600))); }catch(_){}
+  if (EVQ.length<3) EVQ.push(s); if (!evCur) evNext(); }
+function evNext(){ const el=document.getElementById('evpop'); clearTimeout(evTimer); evCur=EVQ.shift()||null;
+  if (!evCur){ el.classList.remove('on'); return; }
+  const m=evCur.match(EMO_RE), ic=m ? EMO[m[0].replace(/️/g,'')] : 'star', txt=m && evCur.indexOf(m[0])===0 ? evCur.slice(m[0].length).trim() : evCur;
+  el.querySelector('.evi').innerHTML=pix(ic||'star'); el.querySelector('.evt').textContent=txt;
+  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  evTimer=setTimeout(evNext, Math.min(9000, 3800+txt.length*45)); }
 function chatMsg(name,text,yell){ logLine(name.toUpperCase()+(yell?' YELLS: ':': ')+text); }
 // ---- chat bars: rise slowly, never overlap, blink, vanish ----
 const bars=[];
@@ -4008,7 +4041,7 @@ function mkBubble(text){ return {text, start:performance.now(), dur:Math.min(160
 const bubbleGone = b => !b || performance.now() > b.start + b.dur + 1200;
 
 function sysMsg(text){ queue(text); logLine(text,true); }
-function localMsg(text){ queue(text); }
+function localMsg(text){ queue(text); logLine(String(text),true); }
 function action(text){ me.sayK=(me.sayK+1)%100000; me.lastSay={k:me.sayK, t:text, f:1}; sysMsg(`${(me.n||'YOU').toUpperCase()} ${text}`); sendPresence(true); }
 function updateText(dt){
   if (!tcur && tq.length){ tcur={pages:tq.shift(), pi:0, ci:0, hold:0}; tbox.style.display='block'; }
@@ -4021,6 +4054,7 @@ function updateText(dt){
 }
 function advanceText(){ if(!tcur) return; const page=tcur.pages[tcur.pi]; if(tcur.ci<page.length){ tcur.ci=page.length; return; } if(tcur.pi<tcur.pages.length-1){ tcur.pi++; tcur.ci=0; tcur.hold=0; } else tcur=null; }
 tbox.addEventListener('pointerdown', e=>{ e.stopPropagation(); advanceText(); });
+document.getElementById('evpop').addEventListener('pointerdown', e=>{ e.stopPropagation(); evNext(); });
 
 const chatin = document.getElementById('chatin');
 document.getElementById('chatrow').addEventListener('submit', e => {
@@ -4167,7 +4201,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__ward=(t,k)=>openWardrobe(t,null,k); window.__close=()=>closeAll(); window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__ward=(t,k)=>openWardrobe(t,null,k); window.__close=()=>closeAll(); window.__msg=t=>localMsg(t); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__wear=(sl,id)=>wdWear(sl,id); window.__face=d=>{ me.d=d; }; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
@@ -4378,7 +4412,7 @@ function drawLlama(o, t, isMe){
     const p = (sipping && u>=0.12 && u<0.82) ? 1 : 0;
     const hx = Math.round(hand[0]+(mouth[0]-hand[0])*p), hy = Math.round(hand[1]+(mouth[1]-hand[1])*p);
     const tilt = p ? ((front&&!flip)||(!front&&!flip) ? -1 : 1) : 0;
-    const X=x0+hx, Y=y0+hy, col=DRINKS[h].c; const lvl = Math.max(1, isMe ? (me.hl||5) : (o.hl||5));
+    const X=x0+hx, Y=y0+hy, col=DRINKS[h].c; const lvl = Math.max(1, Math.ceil((isMe ? (me.hl||SIPS) : (o.hl||SIPS))*5/SIPS));   /* the cup or snack art has 5 levels; spread the sips across them */
     // the front leg holding it: from the shoulder to the hoof, so it lifts with the food or drink
     { const C2=CHARS[o.c]||CHARS[isMe?me.c:o.c]||{}, fur=(C2.fur&&C2.fur.a)||['#efe1c8','#c6b08d'], sh = [hand[0]<12 ? 6 : 17, (front?25:24)+oy];   // shoulder on the same side as the hoof
       const ax=x0+sh[0], ay=y0+sh[1], bx=X+(FOOD_PX[h] ? (flip?1:2) : (flip?3:0)), by=Y+(FOOD_PX[h]?2:3);
@@ -4797,7 +4831,7 @@ function drawOverlay(t){
 }
 
 // ======================= BAR DRINKING (tap the cup, tap to sip) =======================
-const SIP_T=1300;
+const SIP_T=1300, SIPS=3;   // sips or bites in every drink and snack (the server's SIPS must match)
 const cupHits=[];
 function stoolTaken(gx){ if (joined && me.p==='sit' && me.gy===2 && me.gx===gx && !me.moving && me.h) return true;
   for (const o of others.values()){ if (sameRoom(o) && o.p==='sit' && Math.floor(o.y)===2 && Math.floor(o.x)===gx && o.h) return true; } return false; }
@@ -4990,7 +5024,8 @@ function spawnSpot(r){ const [cx,cy]=entryFor(r).to; const taken=new Set(); for 
 function roomCount(r){ let n=(joined&&curRoom===r)?1:0; for (const o of others.values()) if(!o.leaving && (o.rm||'lounge')===r) n++; return n; }
 function showRoomPick(first){
   closeAll(); loadingEl.style.display='none';
-  document.getElementById('rp_title').textContent = first ? `WELCOME${acctHasLlama()||store.n?' BACK':''}, ${(me.n||'LLAMA').toUpperCase()}! WHERE TO?` : 'CHANGE ROOM';
+  document.getElementById('rp_title').textContent = first ? `WELCOME${acctHasLlama()||store.n?' BACK':''}, ${(me.n||'LLAMA').toUpperCase()}! WHERE TO?` : 'LLAMA MAP';
+  for (const b of roomPickEl.querySelectorAll('[data-r]')) b.classList.toggle('here', joined && b.dataset.r===curRoom);
   for (const r of ROOMS){ const n=roomCount(r); document.getElementById('rp_n_'+r).textContent = (joined&&curRoom===r) ? `YOU ARE HERE${n>1?' · '+n+' LLAMAS':''}` : (n ? `${n} LLAMA${n>1?'S':''} HERE` : 'NOBODY HERE YET'); }
   document.getElementById('rp_close').style.display = joined ? '' : 'none';
   roomPickEl.dataset.first = first ? '1' : ''; roomPickEl.style.display='flex';
@@ -5167,7 +5202,7 @@ document.getElementById('fw_close').addEventListener('click', ()=>{ fwEl.style.d
 const FOOD_FILL = { chips:{hu:25,th:-3}, candy:{hu:20}, cookie:{hu:30}, soda:{th:30}, juice:{th:35,hu:5}, shake:{th:25,hu:20}, cider:{th:40}, caramel:{th:40,hu:8}, capple:{hu:30}, corn:{hu:35}, pie:{hu:45}, nachos:{hu:35,th:-5}, fries:{hu:35,th:-5}, burger:{hu:55} };   // same as the server
 function buyAt(k,id){ ensureAudio(); document.getElementById('fw_msg').textContent = DRINKS[id] && !DRINKS[id].food ? 'POURING...' : 'WRAPPING IT UP...';
   NET.act('buy',{s:k, k:id, fid:(STANDS[k]&&STANDS[k].fid)||0}).then(r=>{ if (!r.ok){ document.getElementById('fw_msg').textContent=(r.msg||'TRY AGAIN.').toUpperCase(); return; }
-    me.h = DRINKS[r.k] ? r.k : id; me.hl=5; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; if (r.nd) ndSet(r.nd); if (k!=='bar') face(STANDS[k].gx+(me.gx>STANDS[k].gx?1:0),STANDS[k].gy);
+    me.h = DRINKS[r.k] ? r.k : id; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; if (r.nd) ndSet(r.nd); if (k!=='bar') face(STANDS[k].gx+(me.gx>STANDS[k].gx?1:0),STANDS[k].gy);
     tkSet(r.tk, `You bought ${DRINKS[me.h].food?'a':'a cup of'} ${DRINKS[me.h].label}! Your llama ${DRINKS[me.h].food?'is eating':'is drinking'} it now.`); sendPresence(true); fwEl.style.display='none'; }); }
 // ---- carrot patch: harvest ripe plots for tokens (timers kept per player) ----
 const REGROW_MS = 90000;
@@ -5471,7 +5506,7 @@ const TIPS = {
   juke:'<b>JUKEBOX</b> Tap it to change the song. Everyone hears it. The ♪ button mutes it for you.',
   lamp:'<b>LAMP</b> Tap the lamp to switch it on and off for everyone.',
   bar:'<b>BAR</b> Tap the cup in front of you to pick it up.',
-  bar2:'<b>DRINK</b> Your llama drinks it on its own, a sip at a time (5 sips a cup). MENU > DROP DRINK puts it down.',
+  bar2:'<b>DRINK</b> Your llama drinks it on its own, a sip at a time (3 sips a cup). MENU > DROP DRINK puts it down.',
   table:'<b>TABLE GAMES</b> Tap the table to start HIGH ROLL or HIGH CARD. Anyone sitting here joins in!',
   dance: (matchMedia && matchMedia('(pointer: coarse)').matches) ? '<b>DANCE FLOOR</b> Your llama dances while the jukebox plays. Tap the pink FLIP button to do a FLIP!' : '<b>DANCE FLOOR</b> Your llama dances while the jukebox plays. Press F to do a FLIP!',
   merch:'<b>MERCH WALL</b> Tap a framed shirt to see it in the shop, or the logo over the door to visit the site.',
@@ -5480,8 +5515,8 @@ const TIPS = {
   slots:'<b>SLOTS</b> The machine pops up when you sit. Pick your bet and press SPIN. Three of a kind wins; the prize list is on the machine.',
   roulette:'<b>ROULETTE</b> Pick a bet (a colour, odd or even, a half, a dozen or one number), choose your chip and SPIN. One number pays 35 to 1.',
   blackjack:'<b>BLACKJACK</b> Pick your bet and DEAL. Get closer to 21 than the dealer without going over. Blackjack pays 3 to 2.',
-  door:'<b>ROOMS</b> Use the room buttons at the bottom left to go to LLAMA ACRES or the LLAMA CASINO.',
-  gate:'<b>ROOMS</b> Use the room buttons at the bottom left to go back to the LLAMA LOUNGE or the LLAMA CASINO.',
+  door:'<b>MAP</b> Tap MAP at the bottom to go to LLAMA ACRES, the LLAMA CASINO or any other room.',
+  gate:'<b>MAP</b> Tap MAP at the bottom to go back to the LLAMA LOUNGE or any other room.',
   pond:'<b>FISHING POND</b> Press FISH (or tap the pond) to cast a line. Wait for a bite to catch a fish for TOKENS!',
   fishing:'<b>FISHING</b> Watch the bobber... Fish bite every 10 to 20 seconds. Common fish pay 1, big orange ones 2, rare GOLDEN fish 5. Press STOP or walk away to reel in.',
   crops:'<b>CARROT PATCH</b> Tap a ripe plot (or press HARVEST) for 1 TOKEN. Plots regrow in 90 seconds.',
@@ -5525,6 +5560,7 @@ function updateTip(){
   const show = k && !tipHidden[k];
   if ((show?k:null)!==tipKey){ tipKey = show?k:null; if (show){ tipTxt.innerHTML=TIPS[k]; tipEl.style.display='flex'; } else tipEl.style.display='none'; }
 }
+new MutationObserver(()=>document.body.classList.toggle('tipon', tipEl.style.display==='flex')).observe(tipEl,{attributes:true,attributeFilter:['style']});
 document.getElementById('tipx').addEventListener('click', ()=>{ if(tipKey){ tipHidden[tipKey]=true; store.tipHidden=tipHidden; saveStore(); tipKey=null; tipEl.style.display='none'; } });
 document.getElementById('tipall').addEventListener('click', ()=>{ tipsOff=true; store.tipsOff=true; saveStore(); mtips.textContent='TIPS: OFF'; tipKey=null; tipEl.style.display='none'; localMsg('Tips are off. Turn them back on in the MENU.'); });
 mtips.textContent = tipsOff ? 'TIPS: OFF' : 'TIPS: ON';
@@ -5839,6 +5875,7 @@ $id('afk_here').addEventListener('click', e=>{ e.stopPropagation(); afkHere(); }
 $id('afk_back').addEventListener('click', ()=>location.reload());
 $id('invbtn').addEventListener('click', ()=>{ ensureAudio(); openWardrobe('clothing'); });
 $id('roomsbtn').addEventListener('click', ()=>{ ensureAudio(); if (joined) openRooms(); });
+$id('mapbtn').addEventListener('click', ()=>{ ensureAudio(); if (joined) showRoomPick(false); });
 
 
 // ======================= ITEM DETAIL CARD (tap any furniture in the shop or your items) =======================

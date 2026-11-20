@@ -171,7 +171,7 @@ No API keys or passwords are involved.
 
 - **Chat log:** Dashboard > CHAT LOG shows every public chat line, newest first, kept forever (stored in `chatlog`). Lines sent while muted are logged and tagged MUTED. Filter by name, or tap a line to MUTE, KICK, BAN or SHOW ONLY that player. Mods can mute, kick and ban players. Only the owner can unban or change mods, and nobody can act on the owner.
 - **Private messages:** friends can message each other from the 💬 sign, the 💬 button in the friends list, or MESSAGE on a friend's llama. Messages are kept forever (stored in `dms`). Each llama can send 300 a day, and muted llamas can't send any.
-- **Food and drink:** every drink and snack has 5 sips or bites, and each one fills a fifth of what it gives.
+- **Food and drink:** every drink and snack has 3 sips or bites, and each one fills a third of what it gives.
 - **Pop-ups:** every pop-up has a header strip with a grab bar and ✕. Drag the strip to move the pop-up. It can't leave the screen, and it goes back to its usual spot when it closes.
 - **Walking:** paths go around chairs, stools, benches and logs. A llama only steps onto a seat when it's going to sit there.
 - Mods have a gold heart 💛 badge. The owner has the crown 👑.
@@ -216,6 +216,11 @@ No API keys or passwords are involved.
 - **Llama profile cards.** Tapping another llama shows their picture, when they joined, OWNER/MOD/FRIEND tags, best scores, their limited rares and their room with VISIT (or KNOCK if it's private). The server action `who` only returns public things: no tokens, email or friends list, and it's limited to 30 lookups a minute.
 - Empty lists (no friends, no items, no clothes) show your llama instead of a blank space. The friends list shows each friend's llama face.
 
+## MAP, event cards and the message box
+
+- **MAP.** The main rooms (LOUNGE, ACRES, CASINO, ARENA, LANES, STORE, ACCOUNT) are no longer a bar next to the chat box. The MAP button in the dock (and MAP in the menu) opens the LLAMA MAP, which shows who's in each room and marks the one you're in. ROOMS is still the button for player rooms. The chat box now gets the full width.
+- **Event cards.** The old message box along the bottom is gone. Each kind of event (buying something, a friend coming online, running low on food and so on) shows a small NEW! card near the top the first time a player runs into it, then never again on that device. Names and item names are ignored when deciding what counts as the same kind of event, so "You bought a CACTUS" and "You bought a SOFA" are one event. Seen events are kept in localStorage `ll_seenMsg`. Every message still goes into the CHAT LOG.
+
 ## Staff token gifts
 
 - Mods and the owner can give tokens with 🪙 GIVE in the dashboard (online players, or a line in the CHAT LOG). Each gift is 1 to 1000 tokens.
@@ -250,7 +255,7 @@ No API keys or passwords are involved.
 - **Room size:** player rooms are 11 wide by 7 deep (`PR.w`/`PR.h`, and `ROOM_DIMS` for `p:` rooms in the game). The long wall is on the right, and the door is at the front of the short left wall (tile 0,6). When rooms shrank, every placed piece was put back in its owner's 🎒 INVENTORY > ITEMS (the placed list was cleared, and storage counts anything not placed).
 - **Wallpaper and floors for sale:** 11 wallpapers (`DECO_WALL`: plain paints plus wood paneling, Regency stripes, teal damask, exposed brick, starry night and a rose print) and 9 floors (`DECO_FLOOR`: oak, checkerboard, carpet, marble, lawn, parquet, painted tiles, cobblestone, tartan). Lavender paint and oak planks are free. Buy them in the furniture shop's 🎨 sections (`deco_buy`, only in the store), once each, kept in the `deco` table. Then put them up from 🏠 ROOMS > SETTINGS, where ones you don't own show a 🔒 (`pr_set` refuses unowned ones). Every pixel comes from the pattern functions, so the room, shop swatches and settings swatches always match.
 - **Ponchos:** a classic striped serape poncho and an orange poncho (35 tokens each, shirt slot). Worn, they drape from a V neck over both front legs: sloped shoulders, woven stripes, shading, and a deep V hem with tassel fringe (`ITEMS[...].pon`, stripe bands in `st`). They have their own laid-flat icon for racks and the inventory, and hang first on the store's top two racks.
-- **Phones:** every room button fits across the bottom (no sideways scrolling), and tips use smaller text. While an emote bubble (like 👋 wave) is showing, the name tag moves above it instead of covering it.
+- **Phones:** tips use smaller text. While an emote bubble (like 👋 wave) is showing, the name tag moves above it instead of covering it.
 - **Shortcut buttons:** Jobs, Friends, Chat, Rooms and Bag are glass tiles like the rest of the UI. Each has a coloured icon chip (line icons), a small label, a pink badge for requests or unread messages, and a green pill for how many are online or in rooms.
 - **Taps on phones:** a finger can wobble up to 20px and it still counts as a tap, so tapping a bed or chair in your own room lies or sits you down instead of starting a drag.
 - **Shop and bag pictures:** furniture pictures are drawn once and blown up by whole numbers only, using the screen's real pixel density, so every pixel stays square and crisp (no warped or uneven pixels). Pieces get a soft floor shadow; rugs and wall pictures don't. Wallpaper and floor swatches are doubled the same way.
