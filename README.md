@@ -230,6 +230,7 @@ No API keys or passwords are involved.
 - **Staff moves:** the owner and mods can hold and move (or turn) pieces in anyone's player room. The server re-checks the role from the database every time and writes each move to the staff log on the dashboard ("moved SOFA in CHARLIE'S ROOM (3,1 to 5,1)"). Staff can't put pieces away or place their own items in someone else's room.
 - **Casino dealers:** Rico runs the roulette wheel, and Lucky, Dot and Ace deal blackjack (Ace's table runs along the left wall, between PLINKO and the ropes; its seats are in `BJ_SEATS` on both sides). They're NPC llamas (`CHARS.rico/lucky/dot`, `npc:true`, outfit `dealer`, green `visorCol`) drawn like Penny in the store. They get busy while someone is playing at their table. The tiles they stand on are blocked.
 - **Casino tables** are drawn in the slot machine style: gold feet, burgundy pedestals, mahogany sides with gold trim and chase lights, and a padded burgundy rail.
+- The status card (top left) shows how many llamas are in your room and how many are online in total ("2 HERE · 14 ONLINE").
 - Walking is tap or click only (no WASD or arrow keys). Arrows still work in menus and arcade games.
 - Tapping a door in any room (or the farm gate in LLAMA ACRES) opens the LLAMA MAP.
 - Llamas never step straight from one seat to another: to switch seats on a sofa they get up, step off and walk around.
