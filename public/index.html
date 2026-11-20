@@ -1694,7 +1694,7 @@ function buildCasinoWorld(){
 const ARENA_RING = { cx:6.5, cy:6, r:2.9 };
 function buildArenaWorld(){
   clearWorld();
-  for (let x=1; x<=11; x+=2){ SEATS.push({gx:x,gy:1,dir:'br',lift:9}); FURN.push({t:'stool',gx:x,gy:1,c:'casino'}); }
+  for (let x=1; x<=11; x+=2){ SEATS.push({gx:x,gy:1,dir:'fl',lift:9}); FURN.push({t:'stool',gx:x,gy:1,c:'casino'}); }   // spectators face the mat
   FURN.push({t:'fern',gx:12,gy:11,flip:true}); block(12,11); FURN.push({t:'fern',gx:0,gy:0}); block(0,0);
 }
 // LLAMA LANES: four lanes running toward the back wall, pins at the far end, an approach area by the door
