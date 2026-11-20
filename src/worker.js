@@ -400,12 +400,55 @@ function ensureAuthSchema(env) {
   })().catch((e) => { authSchema = null; throw e; });
   return authSchema;
 }
+let pkReady = null; async function ensurePk(env) { if (!pkReady) pkReady = pkSchema(env).catch((e) => { pkReady = null; throw e; }); return pkReady; }
 async function setPassword(env, uid, pw) {
   const salt = new Uint8Array(16); crypto.getRandomValues(salt); const h = await pbkdf2(pw, salt, PBKDF2_ITERS);
   await env.DB.prepare("UPDATE users SET salt = ?, hash = ?, iters = ? WHERE id = ?").bind(b64(salt), b64(h), PBKDF2_ITERS, uid).run();
   await env.DB.prepare("DELETE FROM sessions WHERE uid = ?").bind(uid).run();   // sign out everywhere
 }
 async function checkPassword(u, pw) { const h = await pbkdf2(pw, unb64(u.salt), u.iters); return sameBytes(h, unb64(u.hash)); }
+
+
+// ---------- PASSKEYS (second login step for staff) ----------
+// A passkey is a key pair kept by the person's device (Face ID, fingerprint or screen lock). The server stores only the PUBLIC key
+// and checks a fresh signature at every login, so a stolen password alone can't get into an account that has one.
+// Backup codes (8, one-time, only their hashes are stored) get you in if every device with the passkey is lost.
+const PK = { chalMs: 5 * 60000, maxTries: 5, codes: 8 };
+const unb64u = (s) => unb64(String(s || "").replace(/-/g, "+").replace(/_/g, "/") + "===".slice((String(s || "").length + 3) % 4));
+async function pkSchema(env) {
+  for (const col of ["pk_on INTEGER NOT NULL DEFAULT 0", "pk_bk TEXT NOT NULL DEFAULT '[]'"]) { try { await env.DB.prepare("ALTER TABLE users ADD COLUMN " + col).run(); } catch (e) { if (!/duplicate column/i.test(String(e && e.message || e))) throw e; } }
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS passkeys (id TEXT PRIMARY KEY, uid INTEGER NOT NULL, spki TEXT NOT NULL, alg INTEGER NOT NULL, counter INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL)").run();
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS pk_chal (hash TEXT PRIMARY KEY, uid INTEGER NOT NULL, kind TEXT NOT NULL, chal TEXT NOT NULL, expires INTEGER NOT NULL, tries INTEGER NOT NULL DEFAULT 0)").run();
+}
+const rpIdOf = (env, url) => new URL(siteUrl(env, url)).hostname;
+async function pkChallenge(env, uid, kind) {
+  const raw = new Uint8Array(32); crypto.getRandomValues(raw); const chal = b64u(raw);
+  const tk = new Uint8Array(24); crypto.getRandomValues(tk); const ticket = b64u(tk);
+  await env.DB.prepare("DELETE FROM pk_chal WHERE expires < ?").bind(Date.now()).run();
+  await env.DB.prepare("INSERT INTO pk_chal (hash, uid, kind, chal, expires) VALUES (?, ?, ?, ?, ?)").bind(await sha256hex(ticket), uid, kind, chal, Date.now() + PK.chalMs).run();
+  return { chal, ticket };
+}
+async function pkTicket(env, ticket, kind) { const row = await env.DB.prepare("SELECT * FROM pk_chal WHERE hash = ? AND kind = ?").bind(await sha256hex(String(ticket || "")), kind).first(); return row && row.expires > Date.now() ? row : null; }
+// what the browser signed: the challenge, the action and the exact site
+function pkClient(env, url, b64json, chal, type) { let c; try { c = JSON.parse(new TextDecoder().decode(unb64u(b64json))); } catch (e) { return false; }
+  return c && c.type === type && c.challenge === chal && c.origin === new URL(siteUrl(env, url)).origin; }
+// authenticator data: right site, the person was present and verified (Face ID, fingerprint or PIN)
+async function pkAuthData(env, url, ad) { if (!ad || ad.length < 37) return null; const want = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(rpIdOf(env, url))));
+  if (!sameBytes(ad.slice(0, 32), want)) return null; const flags = ad[32]; if (!(flags & 1) || !(flags & 4)) return null; return { counter: ((ad[33] << 24) | (ad[34] << 16) | (ad[35] << 8) | ad[36]) >>> 0 }; }
+// ECDSA signatures come DER-encoded; WebCrypto wants the raw 64 bytes
+function derToRaw(der) { let i = 2; if (der[1] & 0x80) i += der[1] & 0x7f; const read = () => { i++; let len = der[i++]; let v = der.slice(i, i + len); i += len; while (v.length > 32 && v[0] === 0) v = v.slice(1); const out = new Uint8Array(32); out.set(v, 32 - v.length); return out; };
+  const r = read(), s2 = read(), raw = new Uint8Array(64); raw.set(r, 0); raw.set(s2, 32); return raw; }
+async function pkVerifySig(spkiB64, alg, data, sig) {
+  if (alg === -7) { const k = await crypto.subtle.importKey("spki", unb64(spkiB64), { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]); return crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, k, derToRaw(sig), data); }
+  if (alg === -257) { const k = await crypto.subtle.importKey("spki", unb64(spkiB64), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]); return crypto.subtle.verify("RSASSA-PKCS1-v1_5", k, sig, data); }
+  return false; }
+async function pkBackupCodes(env, uid) { const codes = [], hashes = []; const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  for (let i = 0; i < PK.codes; i++) { const b = new Uint8Array(8); crypto.getRandomValues(b); const c = [...b].map((x) => A[x % A.length]).join(""); codes.push(c.slice(0, 4) + "-" + c.slice(4)); hashes.push(await sha256hex("bk:" + c)); }
+  await env.DB.prepare("UPDATE users SET pk_bk = ? WHERE id = ?").bind(JSON.stringify(hashes), uid).run(); return codes; }
+// the second step at login (or after a password reset): hand back a ticket and what the browser needs to ask for the passkey
+async function pkLoginStep(env, url, u) { const { chal, ticket } = await pkChallenge(env, u.id, "login");
+  const keys = ((await env.DB.prepare("SELECT id FROM passkeys WHERE uid = ?").bind(u.id).all()).results || []).map((r) => ({ type: "public-key", id: r.id }));
+  return json({ need2fa: "passkey", t: ticket, opts: { challenge: chal, rpId: rpIdOf(env, url), allowCredentials: keys, userVerification: "required", timeout: 60000 } }); }
 
 // same-origin check for anything that changes state
 function originOk(req, url) { const o = req.headers.get("origin"); return !o || o === url.origin; }
@@ -426,7 +469,7 @@ export default {
       return env.LOUNGE.get(env.LOUNGE.idFromName("main")).fetch(fwd);
     }
     if (url.pathname.startsWith("/api/")) {
-      try { await ensureAuthSchema(env); await sweepBans(env); return await api(req, env, url, ctx); } catch (e) { console.error(e); return json({ error: "server error" }, 500); }
+      try { await ensureAuthSchema(env); await ensurePk(env); await sweepBans(env); return await api(req, env, url, ctx); } catch (e) { console.error(e); return json({ error: "server error" }, 500); }
     }
     return env.ASSETS ? env.ASSETS.fetch(req) : new Response("not found", { status: 404 });
   },
@@ -485,8 +528,78 @@ async function api(req, env, url, ctx) {
     { const bm = await banMsg(env, u); if (bm) return json({ error: bm }, 403); }
     await env.DB.prepare("DELETE FROM login_attempts WHERE k = ?").bind(uk).run();
     await env.DB.prepare("DELETE FROM sessions WHERE expires < ?").bind(Date.now()).run();
+    if (u.pk_on) return pkLoginStep(env, url, u);   // password was right; now the passkey
     const tok = await newSession(env, u.id);
     return json(profileOf(env, u), 200, { "set-cookie": sessCookie(tok, SESSION_DAYS * 86400) });
+  }
+
+  // second login step: a passkey signature, or one backup code
+  if (path === "/api/login2") {
+    if (await blocked(env, "l2:" + ip, IP_MAX_FAILS)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
+    const row = await pkTicket(env, body.t, "login"); if (!row) return json({ error: "That took too long. Log in again." }, 400);
+    if (row.tries >= PK.maxTries) return json({ error: "Too many tries. Log in again." }, 429);
+    await env.DB.prepare("UPDATE pk_chal SET tries = tries + 1 WHERE hash = ?").bind(row.hash).run();
+    const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(row.uid).first(); if (!u || !u.pk_on) return json({ error: "Log in again." }, 400);
+    { const bm = await banMsg(env, u); if (bm) return json({ error: bm }, 403); }
+    let ok = false;
+    if (body.code) { const c = String(body.code).toUpperCase().replace(/[^A-Z0-9]/g, ""), h = await sha256hex("bk:" + c); const list = JSON.parse(u.pk_bk || "[]"); const i = list.indexOf(h);
+      if (c.length === 8 && i >= 0) { list.splice(i, 1); await env.DB.prepare("UPDATE users SET pk_bk = ? WHERE id = ?").bind(JSON.stringify(list), u.id).run(); ok = true;
+        if (u.email) later(sendMail(env, u.email, "A Llama Lounge backup code was used", [`Hi ${u.name.toUpperCase()}, one of your backup codes was just used to log in. ${list.length} left.`, "If this wasn't you, tell the owner right away."])); } }
+    else if (body.cred && typeof body.cred === "object") { const C = body.cred, key = await env.DB.prepare("SELECT * FROM passkeys WHERE id = ? AND uid = ?").bind(String(C.id || ""), u.id).first();
+      if (key && pkClient(env, url, C.clientDataJSON, row.chal, "webauthn.get")) { const ad = unb64u(C.authenticatorData), info = await pkAuthData(env, url, ad);
+        if (info && !(key.counter > 0 && info.counter <= key.counter)) { const cd = new Uint8Array(await crypto.subtle.digest("SHA-256", unb64u(C.clientDataJSON))), data = new Uint8Array(ad.length + 32); data.set(ad, 0); data.set(cd, ad.length);
+          try { ok = await pkVerifySig(key.spki, key.alg, data, unb64u(C.signature)); } catch (e) { ok = false; }
+          if (ok) await env.DB.prepare("UPDATE passkeys SET counter = ? WHERE id = ?").bind(info.counter, key.id).run(); } } }
+    if (!ok) { await bump(env, "l2:" + ip); return json({ error: body.code ? "That backup code didn't work." : "That passkey didn't work. Try again, or use a backup code." }, 401); }
+    await env.DB.prepare("DELETE FROM pk_chal WHERE hash = ?").bind(row.hash).run();
+    const tok = await newSession(env, u.id);
+    return json(profileOf(env, u), 200, { "set-cookie": sessCookie(tok, SESSION_DAYS * 86400) });
+  }
+  // add a passkey (needs your password again), then finish with what your device signed
+  if (path === "/api/pk/start") {
+    const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
+    if (await blocked(env, "pw:" + u.id, PW_CHECK_FAILS)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
+    if (!(await checkPassword(u, String(body.p || "")))) { await bump(env, "pw:" + u.id); return json({ error: "Password is wrong." }, 401); }
+    const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM passkeys WHERE uid = ?").bind(u.id).first(); if (n && n.n >= 5) return json({ error: "You already have 5 passkeys. Remove them and start again." }, 400);
+    const { chal, ticket } = await pkChallenge(env, u.id, "reg"), uidBytes = enc.encode("ll:" + u.id);
+    const have = ((await env.DB.prepare("SELECT id FROM passkeys WHERE uid = ?").bind(u.id).all()).results || []).map((r) => ({ type: "public-key", id: r.id }));
+    return json({ ok: true, t: ticket, opts: { challenge: chal, rp: { name: "Llama Lounge", id: rpIdOf(env, url) }, user: { id: b64u(uidBytes), name: u.name.toUpperCase(), displayName: u.name.toUpperCase() },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }], authenticatorSelection: { residentKey: "preferred", userVerification: "required" }, excludeCredentials: have, attestation: "none", timeout: 60000 } });
+  }
+  if (path === "/api/pk/finish") {
+    const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
+    const row = await pkTicket(env, body.t, "reg"); if (!row || row.uid !== u.id) return json({ error: "That took too long. Try again." }, 400);
+    await env.DB.prepare("DELETE FROM pk_chal WHERE hash = ?").bind(row.hash).run();
+    const C = body.cred || {}, alg = Math.floor(+C.alg), id = String(C.id || "");
+    if (!/^[A-Za-z0-9_-]{16,1400}$/.test(id) || ![-7, -257].includes(alg) || !C.spki) return json({ error: "Your device made a passkey we can't use. Try another device." }, 400);
+    if (!pkClient(env, url, C.clientDataJSON, row.chal, "webauthn.create")) return json({ error: "That passkey wasn't for this site." }, 400);
+    if (!(await pkAuthData(env, url, unb64u(C.authenticatorData)))) return json({ error: "Your device didn't confirm it's you (Face ID, fingerprint or PIN)." }, 400);
+    try { await crypto.subtle.importKey("spki", unb64u(C.spki), alg === -7 ? { name: "ECDSA", namedCurve: "P-256" } : { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]); } catch (e) { return json({ error: "Your device made a passkey we can't use. Try another device." }, 400); }
+    await env.DB.prepare("INSERT INTO passkeys (id, uid, spki, alg, counter, created) VALUES (?, ?, ?, ?, 0, ?)").bind(id, u.id, b64(unb64u(C.spki)), alg, Date.now()).run();
+    const first = !u.pk_on; await env.DB.prepare("UPDATE users SET pk_on = 1 WHERE id = ?").bind(u.id).run();
+    const codes = first ? await pkBackupCodes(env, u.id) : null;
+    await env.DB.prepare("DELETE FROM sessions WHERE uid = ? AND token_hash != ?").bind(u.id, await sha256hex(cookieToken(req) || "")).run();   // other devices have to log in with it now
+    if (u.email) later(sendMail(env, u.email, "A passkey was added to your Llama Lounge account", [`Hi ${u.name.toUpperCase()}, a passkey was just added. From now on you'll confirm logins with it.`, "If this wasn't you, tell the owner right away."]));
+    return json({ ok: true, codes });
+  }
+  if (path === "/api/pk/status") {
+    const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
+    const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM passkeys WHERE uid = ?").bind(u.id).first();
+    return json({ ok: true, on: !!u.pk_on, keys: n ? n.n : 0, codes: JSON.parse(u.pk_bk || "[]").length });
+  }
+  if (path === "/api/pk/codes") {   // new backup codes (the old ones stop working); needs your password
+    const u = await sessionUser(env, req); if (!u || !u.pk_on) return json({ error: "not logged in" }, 401);
+    if (await blocked(env, "pw:" + u.id, PW_CHECK_FAILS)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
+    if (!(await checkPassword(u, String(body.p || "")))) { await bump(env, "pw:" + u.id); return json({ error: "Password is wrong." }, 401); }
+    return json({ ok: true, codes: await pkBackupCodes(env, u.id) });
+  }
+  if (path === "/api/pk/off") {   // remove every passkey; needs your password
+    const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
+    if (await blocked(env, "pw:" + u.id, PW_CHECK_FAILS)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
+    if (!(await checkPassword(u, String(body.p || "")))) { await bump(env, "pw:" + u.id); return json({ error: "Password is wrong." }, 401); }
+    await env.DB.prepare("DELETE FROM passkeys WHERE uid = ?").bind(u.id).run(); await env.DB.prepare("UPDATE users SET pk_on = 0, pk_bk = '[]' WHERE id = ?").bind(u.id).run();
+    if (u.email) later(sendMail(env, u.email, "Passkeys removed from your Llama Lounge account", [`Hi ${u.name.toUpperCase()}, all passkeys were just removed. Logins only need your password now.`, "If this wasn't you, tell the owner right away."]));
+    return json({ ok: true });
   }
   if (path === "/api/logout") {
     const tok = cookieToken(req); if (tok) await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(await sha256hex(tok)).run();
@@ -561,6 +674,7 @@ async function api(req, env, url, ctx) {
     await env.DB.prepare("UPDATE users SET email_ok = 1 WHERE id = ?").bind(u.id).run();   // opening the email proves it's theirs
     await env.DB.prepare("DELETE FROM email_tokens WHERE uid = ? AND kind = 'reset'").bind(u.id).run();
     await env.DB.prepare("DELETE FROM login_attempts WHERE k = ?").bind("u:" + u.name.toLowerCase()).run();
+    if (u.pk_on) { later(sendMail(env, u.email, "Your Llama Lounge password was reset", [`Hi ${u.name.toUpperCase()}, your password was just reset. You'll still need your passkey to log in.`])); return pkLoginStep(env, url, u); }
     later(sendMail(env, u.email, "Your Llama Lounge password was reset", [`Hi ${u.name.toUpperCase()}, your password was just reset and every other device was logged out.`, "If this wasn't you, reset it again right away and tell a staff member."]));
     const tok = await newSession(env, u.id);
     const nu = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(u.id).first();
@@ -2480,7 +2594,7 @@ export class Lounge extends DurableObject {
     if (sr.length >= 20) return { ok: false, msg: "Slow down. Too many staff actions in a minute." }; sr.push(now); this.staffRate.set(a.uid, sr);
     const cmd = String(m.cmd || ""), target = String(m.target || "").trim();
     if (cmd === "give") return this.staffGive(a, target, m.amount);
-    const ownerOnly = ["unban", "mod", "unmod"];   // mods can mute, kick and ban players; only the owner can unban or change mods
+    const ownerOnly = ["unban", "mod", "unmod", "pkreset"];   // pkreset: clear a staff member's passkeys if they lose their device   // mods can mute, kick and ban players; only the owner can unban or change mods
     if (![...ownerOnly, "mute", "unmute", "kick", "ban"].includes(cmd) || !/^[A-Za-z0-9_]{3,12}$/.test(target)) return { ok: false, msg: a.staff === "owner" ? "Use /mute, /unmute, /kick, /ban, /unban, /mod or /unmod NAME" : "Use /mute, /unmute, /kick or /ban NAME" };
     if (ownerOnly.includes(cmd) && a.staff !== "owner") return { ok: false, msg: "Only the owner can do that." };
     const u = await this.env.DB.prepare("SELECT id, name, role FROM users WHERE name = ?").bind(target).first();
@@ -2489,6 +2603,7 @@ export class Lounge extends DurableObject {
     if (u.id === a.uid) return { ok: false, msg: "You can't do that to yourself." };
     if (theirs === "owner") return { ok: false, msg: "Nobody can moderate the owner." };
     if (theirs === "mod" && a.staff !== "owner") return { ok: false, msg: "Mods can't moderate other mods." };
+    if (cmd === "pkreset"){ await ensurePk(this.env); await this.env.DB.prepare("DELETE FROM passkeys WHERE uid = ?").bind(u.id).run(); await this.env.DB.prepare("UPDATE users SET pk_on = 0, pk_bk = '[]' WHERE id = ?").bind(u.id).run(); await this.logStaff(a.name, cmd, u.name.toUpperCase()); return { ok: true, msg: `${u.name.toUpperCase()}'s passkeys were cleared. They can log in with their password and add a new one.` }; }
     if (cmd === "mute" || cmd === "unmute") await this.env.DB.prepare("UPDATE users SET muted = ? WHERE id = ?").bind(cmd === "mute" ? 1 : 0, u.id).run();
     // ban length: whole hours from 1 to 8760 (a year), or 0 / nothing for permanent
     const hrs = cmd === "ban" ? Math.floor(+m.hours || 0) : 0;

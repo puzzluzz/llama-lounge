@@ -410,3 +410,17 @@ A second treasure hunt, in a jungle clearing (20 x 16) ringed by thick undergrow
 - **Server:** both hunts share one code path (`HUNTS` in `src/worker.js`): each room has its own diggable area, finds, rare item and daily table.
 - **Notices:** while the detector or the boxing HUD is on screen, NEW! notices drop just below it instead of hiding behind it.
 - **Booth sign:** the CHANGING BOOTH marquee's two posts stand on the corners of the booth's roof.
+
+## Passkeys for staff logins
+
+Staff can add a passkey so a stolen password alone can't get into their account.
+
+- **Setting it up:** ACCOUNT desk > PASSKEY (STAFF LOGIN): enter your password, tap ADD A PASSKEY and confirm with Face ID, your fingerprint or your screen lock. You get 8 one-time backup codes (shown once; only their hashes are stored). Adding one logs out every other device, which then has to use it. ADD ANOTHER DEVICE, NEW BACKUP CODES (old ones stop working) and TURN OFF all need your password.
+- **Logging in:** after the right password the server hands back a 5-minute ticket instead of a session; the device signs a fresh challenge and the server checks the signature against the stored public key (ES256 or RS256), the site (origin and RP ID), that the person was verified, and the signature counter. Or type a backup code. 5 tries per ticket, plus the usual per-IP limit. A password reset also asks for the passkey before it logs you in. Emails go out (once email sending is on) when a passkey is added, removed or a backup code is used.
+- **Lost device:** use a backup code, or the owner can press RESET PASSKEY next to a mod in DASHBOARD > STAFF (or type `/pkreset NAME`). Nobody can reset the owner's; keep the owner's backup codes safe.
+- **Note:** passkeys belong to the site's address. If the game moves to a new domain, staff add their passkey again there.
+- Tables: `passkeys` (credential id, public key, algorithm, counter), `pk_chal` (short-lived challenges); `users.pk_on`, `users.pk_bk`.
+
+## Fight call-outs
+
+POW!, WHAM!, KAPOW! and friends pop up on comic-book bursts (bigger orange ones for hooks and counters), BLOCKED! on a blue shield, WHOOSH! with speed lines and CUT OFF! on a purple burst. Each is drawn pixel by pixel once and cached; it pops in small, floats up and blinks out.

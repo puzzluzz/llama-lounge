@@ -433,6 +433,10 @@
   #banbox #bn_go,#banbox #bn_yes{background:#ff5c7a!important;color:#fff!important} #banbox #bn_go:disabled,#banbox #bn_yes:disabled{opacity:.6}
   #banbox .bnsure{display:none;text-align:center;padding:6px 0 0} #banbox.sure .bnsure{display:block} #banbox.sure #bn_who,#banbox.sure .bnopts,#banbox.sure .bnrow,#banbox.sure #bn_row1{display:none}
   #banbox .bnq{font:800 19px/1.35 var(--ui);color:var(--ink);margin:8px 0 6px} #banbox .bnq b{color:#d02848} #banbox .bnsub{font:500 14px/1.45 var(--ui);color:var(--sub);margin-bottom:10px}
+  #auth.v-pk #au_tl{display:none!important} #au_pkbk{display:none;margin-top:14px;padding-top:12px;border-top:2px dashed var(--cardln)} #au_pkbk label{display:block} #au_code{text-transform:uppercase;letter-spacing:.12em}
+  #acctbox .pkcodes{margin-top:10px;background:#fffbe8;border:2px solid #000;border-radius:8px;padding:10px} #acctbox .pkcodes b{font:800 13px var(--pxf);display:block} #acctbox .pkcodes small{display:block;font:700 12px/1.4 var(--ui);color:var(--sub);margin:4px 0 8px}
+  #acctbox .pkgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px} #acctbox .pkgrid code{font:800 14px ui-monospace,Menlo,Consolas,monospace;background:#fff;border:2px solid var(--cardln);border-radius:6px;padding:6px;text-align:center;letter-spacing:.06em}
+  #acctbox .pkbtns{flex-wrap:wrap;gap:6px} #acctbox #pk_off.sure{background:#ff6a80;color:#fff}
   /* BOXING GYM: panel, challenge pop-up, fight HUD and move pad */
   #boxbox{width:min(calc(100% - 24px),440px)} #boxbox .bxh{font:800 12px var(--pxf);letter-spacing:.06em;color:var(--sub);margin:14px 0 6px}
   #boxbox .bxbots{display:grid;grid-template-columns:1fr 1fr;gap:8px} #boxbox .bxbot{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;border:2px solid var(--cardln);border-radius:7px;background:#fff;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--cardln);font-family:var(--ui)}
@@ -1029,6 +1033,7 @@
       <label id="au_tl" class="aucheck"><input type="checkbox" id="au_t"><span>I'm 13 or older and I agree to the <a href="/terms" target="_blank" rel="noopener">Terms and Privacy</a></span></label>
       <div id="au_err" role="alert"></div>
       <div class="srow"><button class="gbbtn y" id="au_go" type="submit">LOG IN</button></div>
+      <div id="au_pkbk"><label>OR A BACKUP CODE<input id="au_code" maxlength="9" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="ABCD-1234"></label><div class="srow"><button class="gbbtn" id="au_usecode" type="button">USE BACKUP CODE</button></div></div>
       <div class="aulinks"><button type="button" class="aulink" id="au_forgot">Forgot password?</button><button type="button" class="aulink" id="au_back">Back to log in</button></div>
     </form>
     <div class="aunote" id="au_note"></div>
@@ -5565,7 +5570,7 @@ document.getElementById('chatrow').addEventListener('submit', e => {
   if (cmd==='/roll'){ const v=1+Math.floor(Math.random()*6); const ti=nearTable(); if(ti>=0){ me.tdK=(me.tdK||0)+1; me.lastTable={k:me.tdK,i:ti,v,coin:false}; tableShow(ti,v,false); } action(`rolled a ${v}!`); return; }
   if (cmd==='/flip'){ const h=Math.random()<0.5; const ti=nearTable(); if(ti>=0){ me.tdK=(me.tdK||0)+1; me.lastTable={k:me.tdK,i:ti,v:h?1:2,coin:true}; tableShow(ti,h?1:2,true); } action(`flipped a coin: ${h?'HEADS':'TAILS'}!`); return; }
   { const bm=/^\/ban\s+(\S+)(?:\s+(\d+|perm|permanent))?\s*$/.exec(cmd); if (bm && me.st){ openBan(bm[1], bm[2]===undefined ? undefined : (/^\d+$/.test(bm[2]) ? +bm[2] : 0)); return; } }   // every ban goes through the pop-up and its are-you-sure step
-  { const mm=/^\/(mute|unmute|ban|unban|kick|mod|unmod)\s+(\S+)(?:\s+(\d+|perm|permanent))?/.exec(cmd); if (mm){ NET.act('admin',{cmd:mm[1], target:mm[2], hours: mm[3] && /^\d+$/.test(mm[3]) ? +mm[3] : 0}).then(r=>localMsg(r.msg||'Done.')); return; } }
+  { const mm=/^\/(mute|unmute|ban|unban|kick|mod|unmod|pkreset)\s+(\S+)(?:\s+(\d+|perm|permanent))?/.exec(cmd); if (mm){ NET.act('admin',{cmd:mm[1], target:mm[2], hours: mm[3] && /^\d+$/.test(mm[3]) ? +mm[3] : 0}).then(r=>localMsg(r.msg||'Done.')); return; } }
   if (WF.slur(raw)){ localMsg("That message has a word that isn't allowed here, so it wasn't sent."); NET.act('wf_hit',{}); return; }   // the server checks too
   if (cmd==='/tour' || cmd==='/gus'){ if (TOUR.on) return; tourStart(); return; }   // GUS comes back for another tour
   if (cmd.startsWith('/yell ')){ const t2=WF.mask(raw.slice(6).trim()); if(!t2) return; me.sayK=(me.sayK+1)%100000; me.lastSay={k:me.sayK, t:t2, y:1}; chatMsg(me.n||'YOU', t2, true); addBar(me.n||'YOU', t2, me.c, me.x, me.y, true, true); sendPresence(true); return; }
@@ -5713,7 +5718,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__ward=(t,k)=>openWardrobe(t,null,k); window.__arc=()=>startArcade(); window.__fsky=()=>({key:FSKY.key, n:FSKY.clouds.length, w:FSKY.clouds.map(c=>c.width), OX, OY, LW, LH, X0:FSKY.X0}); window.__scr=(gx,gy,h)=>{ const [x,y]=P(gx,gy,h||0); return [x*S,y*S]; }; window.__pred=()=>({on:PRED.on, piece:PRED.piece&&PRED.piece.item, box:document.getElementById('plotbox').style.display}); window.__fi=(k,cs)=>furnIcon(k,cs); window.__go=r=>goRoom(r); window.__arena=()=>openArena(); window.__bowl=()=>openBowl(); window.__close=()=>closeAll(); window.__dash=()=>openDash(); window.__mkt=()=>openMarket(); window.__tour=()=>tourStart(); window.__period=v=>{ period=v; rebuildBG(); }; window.__juke=v=>{ juke.s=v; }; window.__tnext=()=>$id('tour_next').click(); window.__msg=t=>localMsg(t); window.__give=k=>{ me.h=k; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; }; window.__prgo=id=>prGo(id); window.__plk=()=>plkGo(); window.__cvs=()=>({earned:CVS.earned, heat:CVS.heat, holes:[...COVEH.keys()].length, dig:!!CVS.dig, tk:wallet.get()}); window.__fb=(k,r,bg)=>{ const D=FURN_DEF[k], c=document.createElement('canvas'); c.width=90; c.height=90; const sg=g, sOX=OX, sOY=OY; try{ g=c.getContext('2d'); g.fillStyle=bg||'#5aa83c'; g.fillRect(0,0,90,90); OX=45; OY=50; drawFurn({...D.mk(), rot:r, gx:0, gy:0}, 0); } finally { g=sg; OX=sOX; OY=sOY; } return c.toDataURL(); }; window.__plots=()=>FURN.filter(f=>f.item==='plot').map(f=>[f.fid,f.gx,f.gy,!!plotState(f)]); window.__plotR=()=>{ me.plotF=null; plotCur=null; }; window.__plotF=()=>[me.plotF||null, plotCur, $id('plotbox').style.display]; window.__act=(n,a)=>NET.act(n,a); window.__doorPt=()=>{ const d=DOORWAY[curRoom]; if (curRoom==='barn'){ const [x,y]=P(14.5,0); return [x*S,(y-24)*S]; } if (d[0]===0){ const [x,y]=P(0,d[1]+0.5); return [x*S,(y-22)*S]; } if (d[1]===0){ const [x,y]=P(d[0]+0.5,0); return [x*S,(y-22)*S]; } const [x,y]=P(d[0]+0.5,d[1]+0.5); return [x*S,y*S]; }; window.__room=()=>curRoom; window.__walk=(x,y)=>walkTo(x,y); window.__path=()=>me.path.map(p=>p.join(',')).join(' '); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__ward=(t,k)=>openWardrobe(t,null,k); window.__arc=()=>startArcade(); window.__fsky=()=>({key:FSKY.key, n:FSKY.clouds.length, w:FSKY.clouds.map(c=>c.width), OX, OY, LW, LH, X0:FSKY.X0}); window.__scr=(gx,gy,h)=>{ const [x,y]=P(gx,gy,h||0); return [x*S,y*S]; }; window.__pred=()=>({on:PRED.on, piece:PRED.piece&&PRED.piece.item, box:document.getElementById('plotbox').style.display}); window.__fi=(k,cs)=>furnIcon(k,cs); window.__go=r=>goRoom(r); window.__arena=()=>openArena(); window.__bowl=()=>openBowl(); window.__close=()=>closeAll(); window.__dash=()=>openDash(); window.__mkt=()=>openMarket(); window.__tour=()=>tourStart(); window.__period=v=>{ period=v; rebuildBG(); }; window.__juke=v=>{ juke.s=v; }; window.__tnext=()=>$id('tour_next').click(); window.__msg=t=>localMsg(t); window.__give=k=>{ me.h=k; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; }; window.__prgo=id=>prGo(id); window.__plk=()=>plkGo(); window.__bxw=(t,k,sm)=>bxWordImg(t,k,sm).toDataURL(); window.__pkAdd=p=>pkAdd(p); window.__api=(u,b)=>apiPost(u,b); window.__auView=()=>auView; window.__acct=()=>!!(acct && acct.name); window.__cvs=()=>({earned:CVS.earned, heat:CVS.heat, holes:[...COVEH.keys()].length, dig:!!CVS.dig, tk:wallet.get()}); window.__fb=(k,r,bg)=>{ const D=FURN_DEF[k], c=document.createElement('canvas'); c.width=90; c.height=90; const sg=g, sOX=OX, sOY=OY; try{ g=c.getContext('2d'); g.fillStyle=bg||'#5aa83c'; g.fillRect(0,0,90,90); OX=45; OY=50; drawFurn({...D.mk(), rot:r, gx:0, gy:0}, 0); } finally { g=sg; OX=sOX; OY=sOY; } return c.toDataURL(); }; window.__plots=()=>FURN.filter(f=>f.item==='plot').map(f=>[f.fid,f.gx,f.gy,!!plotState(f)]); window.__plotR=()=>{ me.plotF=null; plotCur=null; }; window.__plotF=()=>[me.plotF||null, plotCur, $id('plotbox').style.display]; window.__act=(n,a)=>NET.act(n,a); window.__doorPt=()=>{ const d=DOORWAY[curRoom]; if (curRoom==='barn'){ const [x,y]=P(14.5,0); return [x*S,(y-24)*S]; } if (d[0]===0){ const [x,y]=P(0,d[1]+0.5); return [x*S,(y-22)*S]; } if (d[1]===0){ const [x,y]=P(d[0]+0.5,0); return [x*S,(y-22)*S]; } const [x,y]=P(d[0]+0.5,d[1]+0.5); return [x*S,y*S]; }; window.__room=()=>curRoom; window.__walk=(x,y)=>walkTo(x,y); window.__path=()=>me.path.map(p=>p.join(',')).join(' '); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__wear=(sl,id)=>wdWear(sl,id); window.__face=d=>{ me.d=d; }; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
@@ -7384,6 +7389,7 @@ const AU_VIEWS = {
   login:  {sub:'Welcome back! Log in with your llama name or email.', u:'NAME OR EMAIL', ua:'username', um:254, e:false, p:'PASSWORD', pa:'current-password', go:'LOG IN', forgot:true, back:false, note:"Don't reuse a password from another site."},
   signup: {sub:'Make your llama account. You start with 10 tokens!', u:'LLAMA NAME', ua:'username', um:12, e:true, p:'PASSWORD', pa:'new-password', go:'MAKE MY LLAMA', forgot:false, back:false, note:'Names: 3 to 12 letters, numbers or _. Passwords: 8+ characters, stored encrypted. Your email is only used for password resets and is never shown to other players.'},
   forgot: {sub:"Enter your account's email and we'll send you a link to pick a new password.", u:null, e:true, p:null, go:'SEND RESET LINK', forgot:false, back:true, note:'The link works once and expires in 30 minutes. Check your spam folder too.'},
+  pk:     {sub:'This account has a passkey. Confirm it\'s you with Face ID, your fingerprint or your screen lock.', u:null, e:false, p:null, go:'USE MY PASSKEY', forgot:false, back:true, note:'No device with you? Use one of the backup codes you saved when you set up the passkey.'},
   reset:  {sub:'Pick a new password for your llama. This logs you out everywhere else.', u:null, e:false, p:'NEW PASSWORD', pa:'new-password', go:'SAVE NEW PASSWORD', forgot:false, back:true, note:'8+ characters. Make it one you don\'t use anywhere else.'},
 };
 function authView(v, msg, good){
@@ -7394,12 +7400,13 @@ function authView(v, msg, good){
   $id('au_el').style.display=V.e?'':'none'; $id('au_tl').style.display = v==='signup' ? '' : 'none';
   $id('au_pl').style.display=V.p?'':'none'; if (V.p){ $id('au_pt').textContent=V.p; $id('au_p').autocomplete=V.pa; }
   $id('au_go').textContent=V.go; $id('au_forgot').style.display=V.forgot?'':'none'; $id('au_back').style.display=V.back?'':'none';
-  $id('au_note').textContent=V.note; auErr.textContent=msg||''; auErr.classList.toggle('good', !!good);
+  $id('au_note').textContent=V.note; auErr.textContent=msg||''; auErr.classList.toggle('good', !!good); $id('au_pkbk').style.display = v==='pk' ? 'block' : 'none'; $id('au_tabs').style.visibility = v==='pk' ? 'hidden' : '';
   setTimeout(()=>{ const f = V.u ? $id('au_u') : V.e ? $id('au_e') : $id('au_p'); if (authEl.style.display==='block') f.focus(); }, 50);
 }
 function showAuth(v, msg, good){ closeAll(); authEl.style.display='block'; authView(v||'login', msg, good); }
 async function doAuth(){
   const v=auView, u=$id('au_u').value.trim(), e=$id('au_e').value.trim(), p=$id('au_p').value;
+  if (v==='pk') return pkLogin(false);
   const busy={login:'LOGGING IN...', signup:'MAKING YOUR ACCOUNT...', forgot:'SENDING...', reset:'SAVING...'}[v];
   if ((v==='signup'||v==='forgot') && !/^\S+@\S+\.\S+$/.test(e)){ auErr.classList.remove('good'); auErr.textContent='Enter a real email.'; return; }
   if (v==='signup' && !$id('au_t').checked){ auErr.classList.remove('good'); auErr.textContent='Please tick the box to confirm you\'re 13 or older and agree to the Terms.'; return; }
@@ -7407,6 +7414,7 @@ async function doAuth(){
   for (const b of authEl.querySelectorAll('button')) b.disabled=true;
   const r = v==='login' ? await apiPost('/api/login',{u,p}) : v==='signup' ? await apiPost('/api/signup',{u,e,p,t:1}) : v==='forgot' ? await apiPost('/api/forgot',{e}) : await apiPost('/api/reset',{t:resetTok,p});
   for (const b of authEl.querySelectorAll('button')) b.disabled=false;
+  if (r.need2fa==='passkey'){ PKL.t=r.t; PKL.opts=r.opts; PKL.reset = v==='reset'; $id('au_p').value=''; authView('pk'); return; }
   if (!r.ok){ auErr.textContent = r.error||'Something went wrong.'; return; }
   if (v==='forgot'){ authView('login', r.mailOn===false ? "Password reset emails aren't switched on yet. Ask a staff member in the game for help." : 'If that email has an account, a reset link is on its way. Check your inbox and spam folder.', r.mailOn!==false); $id('au_u').value=e; return; }
   if (v==='reset'){ resetTok=''; pendingNote='Your password was changed. Every other device was logged out.'; }
@@ -7415,7 +7423,46 @@ async function doAuth(){
 $id('au_form').addEventListener('submit', e=>{ e.preventDefault(); doAuth(); });
 for (const b of $id('au_tabs').children) b.addEventListener('click', ()=>authView(b.dataset.v));
 $id('au_forgot').addEventListener('click', ()=>{ const u=$id('au_u').value.trim(); if (u.includes('@')) $id('au_e').value=u; authView('forgot'); });
-$id('au_back').addEventListener('click', ()=>{ resetTok=''; authView('login'); });
+$id('au_back').addEventListener('click', ()=>{ resetTok=''; PKL.t=null; authView('login'); });
+// ---- passkeys: the second login step for staff, and adding one from the ACCOUNT desk ----
+const PKL = { t:null, opts:null, reset:false };
+const pkEnc = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const pkDec = s => Uint8Array.from(atob(String(s).replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((String(s).length+3)%4)), c=>c.charCodeAt(0));
+const pkSupported = () => !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext);
+async function pkLogin(useCode){ auErr.classList.remove('good');
+  if (!PKL.t){ authView('login', 'That took too long. Log in again.'); return; }
+  let body={t:PKL.t};
+  if (useCode){ const c=$id('au_code').value.trim(); if (c.replace(/[^A-Za-z0-9]/g,'').length!==8){ auErr.textContent='Backup codes look like ABCD-1234.'; return; } body.code=c; }
+  else { if (!pkSupported()){ auErr.textContent='This browser can\'t use passkeys. Use a backup code, or try another browser.'; return; }
+    auErr.textContent='WAITING FOR YOUR PASSKEY...';
+    try { const o=PKL.opts; const cred=await navigator.credentials.get({publicKey:{challenge:pkDec(o.challenge), rpId:o.rpId, allowCredentials:(o.allowCredentials||[]).map(c=>({type:'public-key', id:pkDec(c.id)})), userVerification:'required', timeout:o.timeout||60000}});
+      const R=cred.response; body.cred={id:cred.id, clientDataJSON:pkEnc(R.clientDataJSON), authenticatorData:pkEnc(R.authenticatorData), signature:pkEnc(R.signature)}; }
+    catch(err){ auErr.textContent='The passkey was cancelled or didn\'t work. Try again, or use a backup code.'; return; } }
+  for (const b of authEl.querySelectorAll('button')) b.disabled=true;
+  const r=await apiPost('/api/login2', body);
+  for (const b of authEl.querySelectorAll('button')) b.disabled=false;
+  if (!r.ok){ auErr.textContent=r.error||'That didn\'t work.'; if (/Log in again/.test(r.error||'')){ PKL.t=null; } return; }
+  PKL.t=null; $id('au_code').value=''; if (PKL.reset){ resetTok=''; pendingNote='Your password was changed. Every other device was logged out.'; }
+  authEl.style.display='none'; applyProfile(r); afterLogin(); }
+$id('au_usecode').addEventListener('click', ()=>pkLogin(true));
+$id('au_code').addEventListener('keydown', e=>{ if (e.key==='Enter'){ e.preventDefault(); pkLogin(true); } });
+async function pkAdd(p){ if (!pkSupported()) return {error:'This browser or device can\'t make passkeys. Try Safari on iPhone, Chrome on Android, or a recent browser on your computer.'};
+  const s=await apiPost('/api/pk/start',{p}); if (!s.ok) return s; const o=s.opts;
+  let cred; try { cred=await navigator.credentials.create({publicKey:{...o, challenge:pkDec(o.challenge), user:{...o.user, id:pkDec(o.user.id)}, excludeCredentials:(o.excludeCredentials||[]).map(c=>({type:'public-key', id:pkDec(c.id)}))}}); }
+  catch(err){ return {error: err && err.name==='InvalidStateError' ? 'This device already has a passkey for your llama.' : 'Making the passkey was cancelled or didn\'t work.'}; }
+  const R=cred.response; if (!R.getPublicKey || !R.getAuthenticatorData) return {error:'This browser is too old for passkeys. Update it and try again.'};
+  return apiPost('/api/pk/finish',{t:s.t, cred:{id:cred.id, alg:R.getPublicKeyAlgorithm(), spki:pkEnc(R.getPublicKey()), authenticatorData:pkEnc(R.getAuthenticatorData()), clientDataJSON:pkEnc(R.clientDataJSON)}}); }
+function pkCodesHtml(codes){ return `<div class="pkcodes"><b>YOUR BACKUP CODES</b><small>Save these somewhere safe (not on this device). Each one works once if you can't use your passkey. They won't be shown again.</small><div class="pkgrid">${codes.map(c=>`<code>${esc(c)}</code>`).join('')}</div><div class="srow"><button class="gbbtn s" type="button" id="pk_copy">COPY ALL</button></div></div>`; }
+function pkSection(){ const el=$id('ac_pk'); if (!el) return;
+  apiPost('/api/pk/status').then(r=>{ if (!r.ok){ el.innerHTML='<div class="acv">Could not load.</div>'; return; }
+    el.innerHTML = (r.on ? `<div class="acst ok">✅ ON · ${r.keys} PASSKEY${r.keys===1?'':'S'} · ${r.codes} BACKUP CODE${r.codes===1?'':'S'} LEFT</div>` : `<div class="acv">Staff logins can be stolen with just a password. Add a passkey and every login will also ask for Face ID, your fingerprint or your screen lock.</div>`)
+      + `<input id="pk_p" type="password" autocomplete="current-password" placeholder="Your password" maxlength="72"><div class="srow pkbtns"><button class="gbbtn y" id="pk_add">${r.on?'ADD ANOTHER DEVICE':'ADD A PASSKEY'}</button>${r.on?'<button class="gbbtn" id="pk_codes">NEW BACKUP CODES</button><button class="gbbtn" id="pk_off">TURN OFF</button>':''}</div><div id="pk_out"></div>`;
+    const pw=()=>$id('pk_p').value, out=$id('pk_out'), showCodes=codes=>{ out.innerHTML=pkCodesHtml(codes); $id('pk_copy').onclick=()=>{ try{ navigator.clipboard.writeText(codes.join('\n')); acMsg('Copied! Paste them somewhere safe.', true); }catch(_){ acMsg('Copy didn\'t work. Write them down instead.'); } }; };
+    $id('pk_add').onclick=async ()=>{ if (!pw()) return acMsg('Enter your password first.'); acMsg('FOLLOW THE STEPS ON YOUR DEVICE...'); const r2=await pkAdd(pw()); if (!r2.ok) return acMsg(r2.error||'That did not work.');
+      $id('pk_p').value=''; acMsg('Passkey added! Logins on this llama now need it.', true); pkSection(); if (r2.codes) setTimeout(()=>showCodes(r2.codes), 300); };
+    const c=$id('pk_codes'); if (c) c.onclick=async ()=>{ if (!pw()) return acMsg('Enter your password first.'); const r2=await apiPost('/api/pk/codes',{p:pw()}); if (!r2.ok) return acMsg(r2.error||'That did not work.'); $id('pk_p').value=''; acMsg('New backup codes made. The old ones stopped working.', true); showCodes(r2.codes); };
+    const o=$id('pk_off'); if (o) o.onclick=async ()=>{ if (!pw()) return acMsg('Enter your password first.'); if (!o.classList.contains('sure')){ o.classList.add('sure'); o.textContent='REALLY TURN OFF?'; return; } const r2=await apiPost('/api/pk/off',{p:pw()}); if (!r2.ok) return acMsg(r2.error||'That did not work.'); acMsg('Passkeys removed. Logins only need your password now.', true); pkSection(); };
+    acInputs(); }); }
 for (const b of document.querySelectorAll('.eye')) b.addEventListener('click', ()=>{ const i=$id(b.dataset.for); const show=i.type==='password'; i.type=show?'text':'password'; b.textContent=show?'HIDE':'SHOW'; i.focus(); });
 for (const el of authEl.querySelectorAll('input')) el.addEventListener('keydown', e=>e.stopPropagation());
 // email links land on /#reset=... or /#verify=... (the part after # never reaches any server log). Read it, then wipe it from the address bar.
@@ -8112,7 +8159,24 @@ function boxLook(o, isMe){ const S=BXS.s; if (!S || curRoom!=='gym') return null
   return { W, dx:Math.round(dx), dy:Math.round(dy), pose, dir: side==='a' ? 'fr' : 'bl', side }; }
 // pixel glove (6x5) for punches and guards
 function bxGlove(X, Y, side){ const C = side==='a' ? ['#e8303c','#a8141e','#ff8a90'] : ['#3a6ae8','#1c3488','#8ab0ff']; g.fillStyle=INK; g.fillRect(X-1,Y-1,8,7); g.fillStyle=C[0]; g.fillRect(X,Y,6,5); g.fillStyle=C[2]; g.fillRect(X+1,Y,2,1); g.fillStyle=C[1]; g.fillRect(X,Y+4,6,1); g.fillStyle='#f8f4ea'; g.fillRect(X+(side==='a'?0:5),Y+1,1,3); }
-const BX_WORDS = { jab:['POP!','PAF!','JAB!'], hook:['POW!','WHAM!','BAM!'], counter:['COUNTER!'], block:['BLOCKED!'], dodge:['WHOOSH!'], cut:['CUT OFF!'] };
+
+// comic call-outs for the fight: each word drawn once (pixel-exact, cached) on a burst that suits it
+const BXW = {};
+const BXW_STYLE = { hit:{b:['#ffd23f','#ff8a24'], t:'#e8303c', r:1}, big:{b:['#ffe866','#ff5a24'], t:'#ffffff', r:1.25}, cut:{b:['#d8b0ff','#9a60e0'], t:'#ffffff', r:0.9}, block:{shield:1, b:['#8ab0ff','#2c5ad8'], t:'#ffffff'}, whoosh:{lines:1, t:'#ffffff'} };
+function bxWordImg(txt, kind, small){ const key=txt+'|'+kind+'|'+(small?1:0); if (BXW[key]) return BXW[key]; const S=BXW_STYLE[kind]||BXW_STYLE.hit, sc=small?1:2;
+  const tw=pfW(txt,sc), th=5*sc, padX=S.shield?8:S.lines?14:Math.round(12*(S.r||1)*(small?0.6:1)), padY=S.shield?6:S.lines?4:Math.round(14*(S.r||1)*(small?0.6:1));
+  const W=tw+padX*2+4, H=th+padY*2+4, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'), cx=W/2, cy=H/2;
+  const fill=(inside,col)=>{ x.fillStyle=col; for (let j=0;j<H;j++) for (let i=0;i<W;i++) if (inside(i+0.5,j+0.5)) x.fillRect(i,j,1,1); };
+  if (S.shield){ const inS=(i,j,g2)=>{ const u=(i-cx)/(W/2-1-g2), v=(j-2-g2)/(H-4-2*g2); return v>=0 && v<=1 && Math.abs(u)<=(v<0.6?1:1-(v-0.6)*1.6); };
+    fill((i,j)=>inS(i,j,0),INK); fill((i,j)=>inS(i,j,2),S.b[1]); fill((i,j)=>inS(i,j,3)&&j<H*0.45,S.b[0]); }
+  else if (!S.lines){ const n=small?10:14, spike=(i,j,R0,R1)=>{ const a=Math.atan2((j-cy)/(H/2),(i-cx)/(W/2)), d=Math.hypot((i-cx)/(W/2),(j-cy)/(H/2)); const k=(a/(2*Math.PI)*n+n)%1, rr=R0+(R1-R0)*Math.abs(k*2-1); return d<=rr; };
+    fill((i,j)=>spike(i,j,0.99,0.72),INK); fill((i,j)=>spike(i,j,0.92,0.66),S.b[1]); fill((i,j)=>spike(i,j,0.8,0.6),S.b[0]); fill((i,j)=>Math.hypot((i-cx)/(W/2),(j-cy)/(H/2))<0.5,S.b[0]); }
+  else { x.fillStyle='#ffffff'; for (const [yy,len] of [[cy-4,9],[cy,12],[cy+4,8]]){ x.fillRect(1,Math.round(yy),len,1); x.fillRect(W-1-len,Math.round(yy),len,1); } x.fillStyle='#c8e8ff'; x.fillRect(3,Math.round(cy-2),5,1); x.fillRect(W-8,Math.round(cy+2),5,1); }
+  const tx=Math.round(cx-tw/2), ty=Math.round(cy-th/2);
+  for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1],[1,2],[0,2],[2,2]]) pfDraw(x,txt,tx+dx,ty+dy,INK,sc);
+  pfDraw(x,txt,tx,ty,S.t,sc); if (!small && S.t==='#ffffff'){ x.fillStyle='rgba(255,255,255,0)'; }
+  return BXW[key]=c; }
+const BX_WORDS = { jab:['POP!','BIFF!','JAB!','THWAP!'], hook:['POW!','WHAM!','BAM!','KAPOW!'], counter:['COUNTER!'], block:['BLOCKED!'], dodge:['WHOOSH!'], cut:['CUT OFF!'] };
 function bxHead(side){ const L = side==='b' && BXS.s && BXS.s.b.bot ? BOT_LL : null; let x, y;
   if (L){ x=L.x; y=L.y; } else { const n=BXS.s && BXS.s[side] && BXS.s[side].n; if (me.n && n===String(me.n).toUpperCase()){ x=me.x; y=me.y; } else { const o=[...others.values()].find(q=>sameRoom(q) && String(q.n||'').toUpperCase()===n); if (!o) return null; x=o.x; y=o.y; } }
   const [sx,sy]=P(x,y,RING.H); return [Math.round(sx), Math.round(sy)-34]; }
@@ -8124,9 +8188,9 @@ function drawBoxFx(t){ const S=BXS.s; if (!S || curRoom!=='gym') return; const n
   if (BXS.out && now-BXS.outT<600) for (const side of ['a','b']){ const R=BXS.out[side]; if (R && R.mv==='block'){ const H=bxHead(side); if (H){ const sg=side==='a'?1:-1; bxGlove(H[0]+sg*5-3, H[1]+6, side); bxGlove(H[0]+sg*2-3, H[1]+11, side); } } }
   // words and stars where the hits land
   for (let i=BXFX.bursts.length-1;i>=0;i--){ const b=BXFX.bursts[i], u=(now-b.t)/900; if (u>=1){ BXFX.bursts.splice(i,1); continue; } const H=bxHead(b.side); if (!H) continue;
-    const X=H[0]+b.ox, Y=H[1]-6+(b.oy||0)-Math.round(u*14), sc=u<0.12?1:2; const w=pfW(b.txt,sc);
+    const img=bxWordImg(b.txt, b.kind||'hit', u<0.07), X=H[0]+b.ox, Y=H[1]-10+(b.oy||0)-Math.round(Math.min(u,0.7)*12);
     if (b.star) for (let k=0;k<6;k++){ const a=k*1.047+u*2, r=6+u*14; g.fillStyle=k%2?'#fff6a0':'#ffd23f'; const px=Math.round(H[0]+Math.cos(a)*r), py=Math.round(H[1]+4+Math.sin(a)*r*0.6); g.fillRect(px-1,py,3,1); g.fillRect(px,py-1,1,3); }
-    if (u<0.85){ pfDraw(g,b.txt,X-(w>>1)+1,Y+1,INK,sc); pfDraw(g,b.txt,X-(w>>1),Y,b.col,sc); } }
+    if (u<0.78 || Math.floor(u*30)%2===0) g.drawImage(img, Math.round(X-img.width/2), Math.round(Y-img.height/2)); }
   // dizzy stars over anyone nearly out, and over a knocked-down fighter
   for (const side of ['a','b']){ const P2=S[side]; const ko = S.phase==='over' && BXS.how==='ko' && BXS.win && BXS.win!==P2.n; if (P2.hp>25 && !ko) continue; const H=bxHead(side); if (!H) continue;
     const yy = ko ? H[1]+16 : H[1]-4; for (let k=0;k<3;k++){ const a=t*4+k*2.1, X=Math.round(H[0]+Math.cos(a)*9), Y=Math.round(yy+Math.sin(a)*3); g.fillStyle='#ffd23f'; g.fillRect(X-1,Y,3,1); g.fillRect(X,Y-1,1,3); } } }
@@ -8147,11 +8211,11 @@ NET.handlers.bx = m => { const prevMine = bxMe(); const S=m.s; BXS.s=S;
   if (m.ev==='bell'){ BXFX.bellT=performance.now(); sfxTone(1320,0.25,'triangle',0.06); sfxTone(1320,0.25,'triangle',0.05,0.32); }
   if (m.ev==='beat' && m.out){ BXS.out=m.out; BXS.outT=performance.now(); BXS.pick=null;
     for (const [side,o] of [['a','b'],['b','a']]){ const R=m.out[side], Q=m.out[o]; if (!R) continue;
-      if (Q && Q.took){ const kind = R.mv==='dodge' ? 'counter' : R.mv; const W=BX_WORDS[kind]||BX_WORDS.jab; BXFX.bursts.push({side:o, txt:W[Math.floor(Math.random()*W.length)], col: kind==='hook'||kind==='counter' ? '#ffd23f' : '#ffffff', t:performance.now(), ox:0, star: kind==='hook'||kind==='counter'});
+      if (Q && Q.took){ const kind = R.mv==='dodge' ? 'counter' : R.mv; const W=BX_WORDS[kind]||BX_WORDS.jab; BXFX.bursts.push({side:o, txt:W[Math.floor(Math.random()*W.length)], kind: kind==='hook'||kind==='counter' ? 'big' : 'hit', t:performance.now(), ox:0, star: kind==='hook'||kind==='counter'});
         const L = o==='b' && S.b.bot ? BOT_LL : (S[o].n===String(me.n||'').toUpperCase() ? me : [...others.values()].find(q=>String(q.n||'').toUpperCase()===S[o].n)); if (L) L.flinch=performance.now()+260; }
-      if (R.mv==='block' && Q && (Q.mv==='jab') && !R.took) BXFX.bursts.push({side, txt:'BLOCKED!', col:'#8ab0ff', t:performance.now(), ox:0});
-      if (R.mv==='dodge' && Q && Q.mv==='hook') BXFX.bursts.push({side, txt:'WHOOSH!', col:'#ffffff', t:performance.now(), ox:-12, oy:14});
-      if (R.mv==='hook' && Q && Q.mv==='jab') BXFX.bursts.push({side, txt:'CUT OFF!', col:'#ff8a90', t:performance.now(), ox:0}); }
+      if (R.mv==='block' && Q && (Q.mv==='jab') && !R.took) BXFX.bursts.push({side, txt:'BLOCKED!', kind:'block', t:performance.now(), ox:0});
+      if (R.mv==='dodge' && Q && Q.mv==='hook') BXFX.bursts.push({side, txt:'WHOOSH!', kind:'whoosh', t:performance.now(), ox:side==='a'?-16:16, oy:16});
+      if (R.mv==='hook' && Q && Q.mv==='jab') BXFX.bursts.push({side, txt:'CUT OFF!', kind:'cut', t:performance.now(), ox:0, oy:-6}); }
     if (m.out.a.took || m.out.b.took) sfxTone(110,0.08,'square',0.06); }
   if (m.ev==='end'){ BXS.win=m.win; BXS.how=m.how; BXS.pays=m.pays; BXS.endT=performance.now(); BXFX.bellT=performance.now(); sfxTone(1320,0.3,'triangle',0.06); sfxTone(1320,0.3,'triangle',0.05,0.35); sfxTone(1320,0.3,'triangle',0.05,0.7);
     localMsg(m.win ? `${m.win} wins ${m.how==='ko'?'by KNOCKOUT':m.how==='forfeit'?'(the other llama left)':'on points'}!` : 'It\'s a DRAW!'); }
@@ -8304,12 +8368,13 @@ function openAccount(ask){
         <input id="ac_op" type="password" autocomplete="current-password" placeholder="Current password" maxlength="72">
         <input id="ac_np" type="password" autocomplete="new-password" placeholder="New password (8+ characters)" maxlength="72">
         <div class="srow"><button class="gbbtn" id="ac_pw">CHANGE PASSWORD</button></div></div>
+      ${me.st ? '<div class="acsec"><div class="ach">🔑 PASSKEY (STAFF LOGIN)</div><div id="ac_pk"><div class="acv">LOADING...</div></div></div>' : ''}
       <div class="acsec"><div class="ach">BLOCKED LLAMAS</div><div id="ac_blocks"><div class="acv">LOADING...</div></div></div>
       <div class="acmsg"></div><div class="srow"><button class="gbbtn" id="ac_close">DONE</button></div>`;
     const drawBlocks=()=>{ const el=$id('ac_blocks'); if (!el) return; const list=[...BLOCKS].sort();
       el.innerHTML = list.length ? list.map(n=>`<div class="acblk"><span>${esc(n)}</span><button class="gbbtn s" data-unb="${esc(n)}">UNBLOCK</button></div>`).join('') : '<div class="acv">Nobody. To block someone, tap their llama and press BLOCK.</div>';
       for (const b of el.querySelectorAll('[data-unb]')) b.addEventListener('click', ()=>{ b.disabled=true; blockDo(b.dataset.unb, false).then(drawBlocks); }); };
-    NET.act('block_list').then(r=>{ if (r && r.ok) blocksSet(r.blocks); drawBlocks(); });
+    NET.act('block_list').then(r=>{ if (r && r.ok) blocksSet(r.blocks); drawBlocks(); }); if (me.st) pkSection();
     $id('ac_close').onclick=()=>{ acctEl.style.display='none'; };
     $id('ac_pw').onclick=async ()=>{ const o=$id('ac_op').value, n=$id('ac_np').value; if (n.length<8) return acMsg('New passwords need 8+ characters.');
       acMsg('SAVING...'); const r=await apiPost('/api/password',{old:o,p:n}); if (!r.ok) return acMsg(r.error||'That did not work.');
@@ -8369,7 +8434,7 @@ function dashDo(cmd, target){
   if (cmd==='give'){ const v=prompt(`How many tokens to give ${target}? (1 to 1000)`, '10'); if (v===null) return; const n=Math.floor(+v); if (!(n>=1 && n<=1000)){ localMsg('Give between 1 and 1000 tokens.'); return; }
     NET.act('admin',{cmd:'give', target, amount:n}).then(r=>{ localMsg(r.msg||(r.ok?'Done.':'That did not work.')); loadDash(); }); return; }
   if (cmd==='ban'){ openBan(target); return; }   // pick how long first
-  if ((cmd==='ban'||cmd==='mod'||cmd==='unmod') && !confirm(`${{ban:'Ban',mod:'Make',unmod:'Remove'}[cmd]} ${target}${cmd==='mod'?' a mod':cmd==='unmod'?' as a mod':''}?`)) return;
+  if ((cmd==='ban'||cmd==='mod'||cmd==='unmod'||cmd==='pkreset') && !confirm(`${{ban:'Ban',mod:'Make',unmod:'Remove',pkreset:'Clear the passkeys of'}[cmd]} ${target}${cmd==='mod'?' a mod':cmd==='unmod'?' as a mod':''}?`)) return;
   NET.act('admin',{cmd, target}).then(r=>{ localMsg(r.msg||(r.ok?'Done.':'That did not work.')); loadDash(); }); }
 let dsTab=(['chat','reports'].includes(store.dsTab)?store.dsTab:'players'), dsChat={lines:[], open:null, q:'', more:true}, dsTimer=null;
 for (const b of document.querySelectorAll('#ds_tabs button')) b.addEventListener('click', ()=>{ dsTab=b.dataset.t; store.dsTab=dsTab; saveStore(); for (const x of document.querySelectorAll('#ds_tabs button')) x.classList.toggle('on', x===b); dsChat={lines:[], open:null, q:dsChat.q, more:true}; loadDash(); });
@@ -8450,7 +8515,7 @@ function loadDash(){
       for (const s2 of r.signups.slice(0,30)){ const d=new Date(s2.t); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · <b>${esc(s2.n)}</b> made an account</div>`; }
       if (!r.signups.length) h+='<div class="dl">NO ACCOUNTS YET.</div>'; }
     h+='<h4>STAFF</h4>';
-    for (const p of r.staff){ const st=p.role==='admin'?'owner':'mod'; h+=`<div class="dr">${badgeHtml(st)}<span class="nm">${esc(p.n)} <small>${st==='owner'?'OWNER':'MOD'}</small></span>${owner&&st==='mod'?btn('UNMOD','unmod',p.n):''}</div>`; }
+    for (const p of r.staff){ const st=p.role==='admin'?'owner':'mod'; h+=`<div class="dr">${badgeHtml(st)}<span class="nm">${esc(p.n)} <small>${st==='owner'?'OWNER':'MOD'}</small></span>${owner&&st==='mod'?btn('RESET PASSKEY','pkreset',p.n)+btn('UNMOD','unmod',p.n):''}</div>`; }
     if (owner) h+=`<div class="addrow" style="margin-top:4px"><input id="ds_new" maxlength="12" placeholder="PLAYER NAME" spellcheck="false" autocapitalize="off"><button class="gbbtn s gd" id="ds_addmod">MAKE MOD</button></div>`;
     h+=`<h4>MUTED (${r.muted.length})</h4>`;
     for (const p of r.muted) h+=`<div class="dr">${badgeHtml('')}<span class="nm">${esc(p.n)}</span>${canAct(p.n, p.role==='mod'?'mod':'')?btn('UNMUTE','unmute',p.n):''}</div>`;
@@ -8463,7 +8528,7 @@ function loadDash(){
     for (const gf of (r.gifts||[]).slice(0,30)){ const d=new Date(gf.t), mine=gf.by===(me.n||'').toUpperCase(); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(gf.by)} gave ${esc(gf.to)} <b>${gf.n}</b> 🪙 ${gf.undo ? `<s>UNDONE</s> <small>by ${esc(gf.undo.by)} (${gf.undo.n} taken back)</small>` : ((owner||mine) && gf.id ? `<button class="gbbtn s" data-undo="${gf.id}" data-to="${esc(gf.to)}" data-n="${gf.n}">↩ UNDO</button>` : '')}</div>`; }
     if (!(r.gifts||[]).length) h+='<div class="dl">NO TOKEN GIFTS YET.</div>';
     h+='<h4>STAFF LOG</h4>';
-    const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:',give:'gave tokens to',undogift:'took back a gift from',roomreset:'reset the room name of', movefurn:'moved', turnfurn:'turned', wfwarn:'warned'};
+    const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:',pkreset:'cleared the passkeys of',give:'gave tokens to',undogift:'took back a gift from',roomreset:'reset the room name of', movefurn:'moved', turnfurn:'turned', wfwarn:'warned'};
     for (const e of r.log.slice(0,20)){ const d=new Date(e.t); h+=`<div class="dl">${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(e.by)} ${WORD[e.cmd]||esc(e.cmd)} ${esc(e.target)}</div>`; }
     if (!r.log.length) h+='<div class="dl">NO STAFF ACTIONS YET.</div>';
     if (owner && Array.isArray(r.bugs)){   // OWNER ONLY: bug reports from players
