@@ -1023,7 +1023,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24m";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24n";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1210,6 +1210,7 @@ CHARS.penny = { label:'Penny', blurb:'Runs the LLAMA STORE.', ears:'up', npc:tru
 const DEALER_VISOR=['#3fb86a','#1f7a44','#9ae8b0'];
 CHARS.rico  = { label:'Rico',  blurb:'Spins the roulette wheel.', ears:'up',    npc:true, outfit:'dealer', hat:'visor', visorCol:DEALER_VISOR, fur:{ a:['#ead9b6','#c4a77a','#fff4dc'] }, tag:'#3fb86a' };
 CHARS.lucky = { label:'Lucky', blurb:'Deals blackjack.',          ears:'droop', npc:true, outfit:'dealer', hat:'visor', visorCol:DEALER_VISOR, fur:{ a:['#9a7450','#74543a','#c09670'] }, tag:'#3fb86a' };
+CHARS.ace   = { label:'Ace',   blurb:'Deals blackjack.',          ears:'droop', npc:true, outfit:'dealer', hat:'visor', visorCol:DEALER_VISOR, fur:{ a:['#6a5a4c','#4c3e32','#8c7a68'] }, tag:'#3fb86a' };
 CHARS.dot   = { label:'Dot',   blurb:'Deals blackjack.',          ears:'up',    npc:true, outfit:'dealer', hat:'visor', visorCol:DEALER_VISOR, fur:{ a:['#c4c4d4','#9494a8','#ececf4'] }, tag:'#3fb86a' };
 const CHAR_IDS = Object.keys(CHARS).filter(k=>!CHARS[k].npc);
 const SW = 28, SH = 46;
@@ -1551,7 +1552,7 @@ const SLOT_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,4,8],[6,4,2]];   // LUCKY LINES: 
 const WHEEL_SLICES = [0,1,0,2,0,1,0,5,0,1,0,3,0,1,0,100];        // PRIZE WHEEL (same as the server)
 const WHEEL_ODDS = {1:'3 IN 10', 2:'1 IN 12', 3:'1 IN 25', 5:'1 IN 33', 100:'1 IN 667'};
 const WHEEL_COL = {0:['#3a3050','#4a4068'], 1:['#3878d0','#58a0f0'], 2:['#28a048','#58d070'], 3:['#d07818','#f8a038'], 5:['#c02860','#f05890'], 100:['#c09018','#f8d030']};
-const ROUL_SEATS = [[5,5],[5,6],[8,5],[8,6],[6,7],[7,7]], BJ_SEATS = [[10,5],[11,5],[10,9],[11,9]];   // the server checks the same seats
+const ROUL_SEATS = [[5,5],[5,6],[8,5],[8,6],[6,7],[7,7]], BJ_SEATS = [[10,5],[11,5],[10,9],[11,9],[1,7],[2,7]];   // the server checks the same seats
 const seatIn = (list,x,y) => curRoom==='casino' && list.some(([a,b])=>a===x&&b===y);
 const isSlotSeat = (x,y) => curRoom==='casino' && y===1 && CASINO_SLOT_X.includes(x);
 const DANCE = new Set(), CROPS = [], POND = [];
@@ -1637,7 +1638,7 @@ function buildBarnWorld(){
   FURN.push({t:'dunksign',gx:DUNK_SEAT[0]+2,gy:DUNK_SEAT[1]}); block(DUNK_SEAT[0]+2,DUNK_SEAT[1]);
 }
 // LLAMA CASINO: red carpet, slot row on the back wall, a roulette table, two blackjack tables
-const PLK={gx:0, gy:4, rows:8, bets:[1,2,5], mult:[9,3,1.3,0.7,0.4,0.7,1.3,3,9]};   // must match PLINKO in src/worker.js
+const PLK={gx:0, gy:3, rows:8, bets:[1,2,5], mult:[9,3,1.3,0.7,0.4,0.7,1.3,3,9]};   // must match PLINKO in src/worker.js
 function buildCasinoWorld(){
   clearWorld();
   for (const x of CASINO_SLOT_X){ FURN.push({t:'slots',gx:x,gy:0}); block(x,0); SEATS.push({gx:x,gy:1,dir:'br',lift:9}); FURN.push({t:'stool',gx:x,gy:1}); }
@@ -1646,13 +1647,13 @@ function buildCasinoWorld(){
   FURN.push({t:'roulette',gx:6,gy:5,dz:1}); for (const [x,y] of [[6,5],[7,5],[6,6],[7,6]]) block(x,y);
   for (const [x,y,d] of [[5,5,'fr'],[5,6,'fr'],[8,5,'bl'],[8,6,'bl'],[6,7,'br'],[7,7,'br']]){ SEATS.push({gx:x,gy:y,dir:d,lift:9}); FURN.push({t:'stool',gx:x,gy:y,c:'casino'}); }
   // two blackjack tables on the right (2 x 1), players sit on the front side facing the dealer
-  for (const ty of [4,8]){ FURN.push({t:'blackjack',gx:10,gy:ty,dz:0.5}); block(10,ty); block(11,ty);
-    for (const x of [10,11]){ SEATS.push({gx:x,gy:ty+1,dir:'br',lift:9}); FURN.push({t:'stool',gx:x,gy:ty+1,c:'casino'}); } }
+  for (const [tx,ty] of [[10,4],[10,8],[1,6]]){ FURN.push({t:'blackjack',gx:tx,gy:ty,dz:0.5}); block(tx,ty); block(tx+1,ty);   /* the third table sits by the left wall, between PLINKO and the ropes */
+    for (const x of [tx,tx+1]){ SEATS.push({gx:x,gy:ty+1,dir:'br',lift:9}); FURN.push({t:'stool',gx:x,gy:ty+1,c:'casino'}); } }
   // velvet ropes marking the way in from the door
   for (const [x,y] of [[2,9],[2,11]]){ FURN.push({t:'stanchion',gx:x,gy:y}); block(x,y); block(0,y); block(1,y); }
   // dealers stand behind each table, facing the players
   FURN.push({t:'dealer',c:'rico',gx:6,gy:4,x:7,y:4.45,game:'roul'}); block(6,4); block(7,4);
-  for (const [ty,c] of [[4,'lucky'],[8,'dot']]){ FURN.push({t:'dealer',c,gx:10,gy:ty-1,x:11,y:ty-0.55,game:'bj',ty}); block(10,ty-1); block(11,ty-1); }
+  for (const [tx,ty,c] of [[10,4,'lucky'],[10,8,'dot'],[1,6,'ace']]){ FURN.push({t:'dealer',c,gx:tx,gy:ty-1,x:tx+1,y:ty-0.55,game:'bj',tx,ty}); block(tx,ty-1); block(tx+1,ty-1); }
   FURN.push({t:'plinko',gx:PLK.gx,gy:PLK.gy}); block(PLK.gx,PLK.gy); block(PLK.gx,PLK.gy+1);   /* PLINKO against the empty left wall */   /* the rope runs to the wall: nobody walks through it */
 }
 // SPIT ARENA room: a painted ring in the middle (tap it or press PLAY), spectator stools along the back wall
@@ -3140,7 +3141,7 @@ function drawFurn(f,t){
     case 'dealer': { // casino dealers, drawn with the player sprite code; they get busy while someone is playing
       const [px,py]=P(f.x,f.y); let busy=false;
       if (f.game==='roul') busy = typeof rlAnim!=='undefined' && rlAnim && (performance.now()-rlAnim.t0)/1000 < 2.6;
-      else { const at=(x,y)=>y===f.ty+1 && (x===10||x===11); busy = (me.bj && me.p==='sit' && at(me.gx,me.gy)) || [...others.values()].some(o=>sameRoom(o) && o.bj && o.p==='sit' && at(Math.floor(o.x),Math.floor(o.y))); }
+      else { const at=(x,y)=>y===f.ty+1 && (x===f.tx||x===f.tx+1); busy = (me.bj && me.p==='sit' && at(me.gx,me.gy)) || [...others.values()].some(o=>sameRoom(o) && o.bj && o.p==='sit' && at(Math.floor(o.x),Math.floor(o.y))); }
       const fr = busy ? (Math.floor(t*(f.game==='roul'?6:2.5))%2) : ((t+f.gy*0.7)%5 < 0.35 ? 1 : 0);
       g.drawImage(sprite(f.c,'fl',fr,'stand'), Math.round(px)-14, Math.round(py)-45); break; }
     case 'roulette': drawRoulette(f, t); break;
@@ -4706,7 +4707,7 @@ function drawCasinoSigns(t){
   pfDraw(m,'CASINO',11,8,'#7a5008',sc); pfDraw(m,'CASINO',10,7,(Math.floor(t*2)%6===0)?'#fff0a0':'#f8d030',sc);
   const lit=Math.floor(t*8); let k=0; const bulb=(x,y)=>{ const on=(k++ + lit)%3===0; m.fillStyle=on?'#ffffff':'#f8a830'; m.fillRect(x,y,1,1); };
   for (let x=4;x<W-4;x+=3) bulb(x,4); for (let y=7;y<H-4;y+=3) bulb(W-5,y); for (let x=W-5;x>=4;x-=3) bulb(x,H-5); for (let y=H-8;y>=7;y-=3) bulb(4,y);
-  wallPlate(marquee, 182, 52, 1);
+  wallPlate(marquee, 130, 52, 1);   /* centred on the back wall */
 }
 function drawSigns(t){
   if (!SIGNS.bar) return;
@@ -4976,15 +4977,16 @@ function drawOverlay(t){
       // measure (and shorten if it won't fit) once per zoom level
       if (b._S!==S){ b._S=S; c.font=`800 ${11*u}px Inter, system-ui, sans-serif`; const hw=c.measureText(b.head).width + (crown ? 15*u : 0); c.font=`500 ${12*u}px Inter, system-ui, sans-serif`;
         const maxW=Math.min(LW-10, 340*u) - hw - 22*u; let txt=b.body; if (c.measureText(txt).width>maxW){ while (txt.length>1 && c.measureText(txt+'…').width>maxW) txt=txt.slice(0,-1); txt=txt.trimEnd()+'…'; }
-        b._txt=txt; b._hw=hw; b.w=hw+5*u+c.measureText(txt).width+20*u; b.h=22*u; }
+        b._txt=txt; b._hw=hw; b.w=hw+5*u+c.measureText(txt).width+26*u; b.h=22*u; }   /* even padding: 13 on each side, so the words sit centred over the llama */
       let bx=OX+b.x-b.w/2; bx=snapD(Math.max(3*u, Math.min(LW-b.w-3*u, bx))); const by=snapD(OY+b.y);
       c.shadowColor='rgba(0,0,0,0.3)'; c.shadowBlur=8*S*DPR*u; c.shadowOffsetY=2*S*DPR*u;
       c.fillStyle = b.yell ? '#ff5c8a' : b.mine ? '#fff4c8' : '#ffffff'; pill(bx, by, b.w, b.h, 8*u); c.fill();
+      { const tx=snapD(Math.max(bx+10*u, Math.min(bx+b.w-10*u, OX+b.x))); c.beginPath(); c.moveTo(tx-4*u, by+b.h-0.5*u); c.lineTo(tx+4*u, by+b.h-0.5*u); c.lineTo(tx, by+b.h+4*u); c.closePath(); c.fill(); }   /* little pointer down to the llama, like the name tag */
       c.shadowColor='transparent'; c.shadowBlur=0; c.shadowOffsetY=0;
-      const tag=(CHARS[b.cid]||{}).tag||'#f8d030'; c.fillStyle=tag; pill(bx+5*u, by+5*u, 3*u, b.h-10*u, 1.5*u); c.fill();
+      const tag=(CHARS[b.cid]||{}).tag||'#f8d030'; c.fillStyle=tag; pill(bx+6*u, by+5*u, 3*u, b.h-10*u, 1.5*u); c.fill();
       c.textBaseline='middle';
-      c.font=`800 ${11*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#c03070'; if (crown && PIXIMG.crown && PIXIMG.crown.complete){ const sm=c.imageSmoothingEnabled; c.imageSmoothingEnabled=false; c.drawImage(PIXIMG.crown, snapD(bx+12*u), snapD(by+b.h/2-6*u), snapD(12*u), snapD(12*u)); c.imageSmoothingEnabled=sm; } c.fillText(b.head, bx+12*u+(crown?15*u:0), by+b.h/2+0.5*u);
-      c.font=`${b.yell?800:500} ${12*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#1d1530'; c.fillText(b._txt, bx+12*u+b._hw+5*u, by+b.h/2+0.5*u);
+      c.font=`800 ${11*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#c03070'; if (crown && PIXIMG.crown && PIXIMG.crown.complete){ const sm=c.imageSmoothingEnabled; c.imageSmoothingEnabled=false; c.drawImage(PIXIMG.crown, snapD(bx+13*u), snapD(by+b.h/2-6*u), snapD(12*u), snapD(12*u)); c.imageSmoothingEnabled=sm; } c.fillText(b.head, bx+13*u+(crown?15*u:0), by+b.h/2+0.5*u);
+      c.font=`${b.yell?800:500} ${12*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#1d1530'; c.fillText(b._txt, bx+13*u+b._hw+5*u, by+b.h/2+0.5*u);
       c.textBaseline='alphabetic';
     }
   } else if (arcadeText){ drawArcadeText(c, t); }

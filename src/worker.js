@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-24m";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-24n";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -23,7 +23,7 @@ const ROOM_IDS = new Set(["lounge", "barn", "casino", "arena", "lanes", "store",
 const STAFF_GIVE_DAY = 500;   // most tokens a mod can give out in a day (the owner has no limit)
 const AFK_MS = 12 * 60000;   // no moving, chatting or "I'm still here" for this long: no more fishing or bar tips until they're back
 const SIPS = 3;
-const PLINKO = { y: 4, rows: 8, bets: [1, 2, 5], mult: [9, 3, 1.3, 0.7, 0.4, 0.7, 1.3, 3, 9] };   // casino PLINKO: machine on the left wall at y 4-5; pays about 95% over time                                   // sips or bites in every drink and snack   // friends plus sent requests per llama; requests waiting for one llama
+const PLINKO = { y: 3, rows: 8, bets: [1, 2, 5], mult: [9, 3, 1.3, 0.7, 0.4, 0.7, 1.3, 3, 9] };   // casino PLINKO: machine on the left wall at y 4-5; pays about 95% over time                                   // sips or bites in every drink and snack   // friends plus sent requests per llama; requests waiting for one llama
 const RESET_MS = 30 * 60 * 1000, VERIFY_MS = 48 * 3600 * 1000;
 const FORGOT_PER_IP = 6, FORGOT_PER_EMAIL = 3, RESET_BAD_PER_IP = 10, PW_CHECK_FAILS = 8;
 
@@ -44,7 +44,7 @@ const SLOT_BETS = [1, 2, 5, 10];
 // casino tables (seats are where players sit; the server checks them)
 const TABLE_BETS = [1, 2, 5, 10];
 const ROUL_SEATS = [[5, 5], [5, 6], [8, 5], [8, 6], [6, 7], [7, 7]];
-const BJ_SEATS = [[10, 5], [11, 5], [10, 9], [11, 9]];
+const BJ_SEATS = [[10, 5], [11, 5], [10, 9], [11, 9], [1, 7], [2, 7]];   // the third table is by the left wall
 const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
 // roulette bets: what wins and what it pays back in total (stake included). Single zero: the house edge is 2.7%.
 const ROUL = {
