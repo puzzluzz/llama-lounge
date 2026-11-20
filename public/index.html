@@ -3771,6 +3771,7 @@ function startStep(){ if (me.fish) stopFish(true);
 function walkTo(tx,ty,pending){
   if (userTap) camMan=false;   // tapping somewhere to walk: the camera goes back to following your llama
   if (me.bar){ leaveBar(tx,ty,pending); return true; }
+  if (me.cash){ leaveCash(tx,ty,pending); return true; }
   me.pending = pending||null;
   if (me.moving){ const rest=findPath(me.to[0],me.to[1],tx,ty); if(!rest) return false; me.path=[me.path[0],...rest]; return true; }
   if (me.gx===tx && me.gy===ty){ arrive(); return true; }
@@ -3784,6 +3785,7 @@ const onDance = () => DANCE.has(me.gy*N+me.gx);
 function arrive(){
   if (me.act && !arcade.on) me.act=null;
   if (me.bar){ me.p='bar'; me.d = Math.random()<0.5?'fr':'fl'; me.barT = 2.6+Math.random()*2.8; sendPresence(true); if (!me.barOn){ me.barOn=true; me.shift=0; setTimeout(()=>NET.act('bar_tick'), 400); } return; }
+  if (me.cash){ me.p='wipe'; me.d='fl'; me.cashT=2.5+Math.random()*3; sendPresence(true); if (!me.cashOn){ me.cashOn=true; me.shift=0; setTimeout(()=>NET.act('shop_tick'), 400); } return; }
   if (me.after){ const af=me.after; me.after=null; if (af[0]!==me.gx||af[1]!==me.gy){ if (walkTo(af[0],af[1],af[2])) return; } else if (af[2]){ me.p='stand'; sendPresence(true); doAction(af[2]); return; } }
   let s=seatAt(me.gx,me.gy); if (s && seatTaken(s.gx,s.gy)){ s=null; localMsg("Someone's already sitting there."); }
   if (s){ me.p='sit'; me.d=s.dir; if (isSlotSeat(s.gx,s.gy)) setTimeout(openSlots, 150); else if (seatIn(ROUL_SEATS,s.gx,s.gy)) setTimeout(()=>openTable('roul'),150); else if (seatIn(BJ_SEATS,s.gx,s.gy)) setTimeout(()=>openTable('bj'),150); }
@@ -3806,6 +3808,8 @@ function keyStep(){
   return false;
 }
 function updateMe(dt){
+  if (me.cash && me.p==='wipe'){ me.shift=(me.shift||0)+dt; if (me.shift>=TOKENS.BAR_EVERY){ me.shift=0; NET.act('shop_tick').then(r=>{ if (r.ok && Number.isFinite(r.tk)) tkSet(r.tk, '+1 TOKEN! Penny says thanks for the help!'); }); }
+    me.cashT-=dt; if (me.cashT<=0 && !me.moving){ const nx = me.gx===CASH_SPOTS[0][0] ? CASH_SPOTS[1][0] : CASH_SPOTS[0][0]; me.path=[[nx,CASH_SPOTS[0][1]]]; me.prog=0; startStep(); } }   // wipe one end of the counter, then the other
   if (me.bar && me.p==='bar'){ me.shift=(me.shift||0)+dt; if (me.shift>=TOKENS.BAR_EVERY){ me.shift=0; NET.act('bar_tick').then(r=>{ if (r.ok && Number.isFinite(r.tk)) tkSet(r.tk, '+1 TOKEN! Tips from working the bar!'); }); } }
   if (me.moving){
     me.anim+=dt; me.prog+=dt/(me.stepT||STEP);
@@ -3848,6 +3852,8 @@ function context(){
   if (curRoom==='lanes') return me.h ? (DRINKS[me.h].food ? 'bite' : 'sip') : 'bowl';
   if (isP(curRoom)){ if (pvNear() && !PRED.on) return 'pvend'; if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip'; return me.p==='sit' ? 'stand' : 'sit'; }
   if (curRoom==='store'){
+    if (me.cash) return 'unhelp';
+    if (me.p!=='sit' && !me.moving && me.gx===CASH_DOOR[0] && me.gy===CASH_DOOR[1]) return 'help';
     if (me.p!=='sit' && STORE_COUNTER.some(([x,y])=>near(x,y))) return 'shop';
     if (standNear()==='vend') return 'vend';
     if (standNear()==='svend') return 'svend';
@@ -3871,7 +3877,7 @@ function context(){
   if (me.h) return DRINKS[me.h].food ? 'bite' : 'sip';
   return me.p==='sit' ? 'stand' : 'sit';
 }
-const ALABEL = {pvend:'BUY', vend:'DRINKS', svend:'SNACKS', clothes:'CLOTHES', shop:'SHOP', dunk:'THROW', grab:'ORDER', arena:'PLAY', bowl:'BOWL', fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
+const ALABEL = {help:'HELP', unhelp:'LEAVE', pvend:'BUY', vend:'DRINKS', svend:'SNACKS', clothes:'CLOTHES', shop:'SHOP', dunk:'THROW', grab:'ORDER', arena:'PLAY', bowl:'BOWL', fish:'FISH', reel:'STOP', spin:'SPIN', harvest:'HARVEST', fw:'CIDER', snack:'SNACKS', eat:'EAT', bite:'EAT', goBarn:'OUTSIDE', goLounge:'INSIDE', goLoungeC:'LOUNGE', goCasino:'CASINO', roul:'BET', bj:'CARDS', unbar:'LEAVE', bartend:'BAR', flip:'FLIP', tmenu0:'GAMES', tmenu1:'GAMES', lamp:'LAMP', arcade:'PLAY', juke:'MUSIC', order:'ORDER', grab:'GRAB', sip:'SIP', sit:'SIT', stand:'STAND'};
 const alabel=document.getElementById('alabel'); let lastLabel='';
 function updateALabel(){ const c=context(); const l = arcade.on ? (arcade.mode==='menu'?'SELECT':arcade.over?'RETRY':arcade.mode==='dash'?'JUMP':'---') : (c?ALABEL[c]:'SIT'); if(l!==lastLabel){ alabel.textContent=l; lastLabel=l; } }
 // ---- bartending: slip past the rope, pace behind the bar pouring drinks ----
@@ -3901,6 +3907,26 @@ function leaveBar(tx,ty,pending){
   if (me.moving){ me.path=[me.path[0], ...out]; me.p='stand'; }
   else { me.path=out; me.prog=0; startStep(); }
 }
+// ---- helping the LLAMA STORE cashier: in at the end of the counter, wipe it down from behind, never on PENNY's tile ----
+const CASH_SPOTS=[[10,1],[9,1]], CASH_DOOR=[11,1];   // PENNY stands at (8,1); these two tiles are next to her
+const otherHelpers = () => [...others.values()].filter(o=>!o.leaving && o.p==='wipe' && sameRoom(o));
+function cashClick(){ if (curRoom!=='store') return; if (me.cash){ leaveCash(CASH_DOOR[0],CASH_DOOR[1],null); return; }
+  if (otherHelpers().length){ localMsg("Someone's already helping Penny. Try again in a bit."); return; }
+  if (me.gx===CASH_DOOR[0] && me.gy===CASH_DOOR[1] && !me.moving) enterCash(); else walkTo(CASH_DOOR[0],CASH_DOOR[1],'help'); }
+function enterCash(){ if (otherHelpers().length){ localMsg("Someone's already helping Penny. Try again in a bit."); return; } if (me.p==='sit') me.p='stand';
+  me.cash=true; me.shift=0; me.h=null; me.path=[CASH_SPOTS[0]]; me.prog=0; startStep(); action('is helping at the counter!');
+  localMsg(`You're wiping down the counter for Penny. You earn 1 TOKEN every ${TOKENS.BAR_EVERY} seconds back here. Tap the floor to stop.`); }
+function leaveCash(tx,ty,pending){
+  me.cash=false; if (me.cashOn){ me.cashOn=false; NET.act('shop_off'); } const from = me.moving ? me.to : [me.gx,me.gy];
+  const out=[]; if (from[0]<CASH_SPOTS[0][0]) out.push(CASH_SPOTS[0]); out.push(CASH_DOOR);
+  me.after = (tx===CASH_DOOR[0]&&ty===CASH_DOOR[1]&&!pending) ? null : [tx,ty,pending||null]; me.pending=null;
+  if (me.moving){ me.path=[me.path[0], ...out]; me.p='stand'; } else { me.path=out; me.prog=0; startStep(); } }
+// a cleaning rag swishing over the counter top in front of each helper (drawn after the counter so it sits on top)
+const RAGS=[];
+function drawRags(t){ for (const [x,y,walking] of RAGS){ if (walking) continue; const sw=Math.sin(t*7+x*3)*0.25, [cx,cy]=P(x+sw, y+1.3, 20), X=Math.round(cx), Y=Math.round(cy);
+    g.fillStyle=INK; g.fillRect(X-5,Y-3,11,6); g.fillRect(X-4,Y-4,9,1); g.fillStyle='#5ab0e8'; g.fillRect(X-4,Y-2,9,4); g.fillStyle='#8ad0f8'; g.fillRect(X-4,Y-3,9,1); g.fillStyle='#d8f0ff'; g.fillRect(X-3,Y-2,3,1); g.fillStyle='#3a88c8'; g.fillRect(X-4,Y,9,1); g.fillRect(X-2,Y-2,1,3); g.fillRect(X+2,Y-2,1,3);   // folded cloth with stitching
+    if (Math.sin(t*5+x)>0.85){ const sx2=X+(sw>0?-6:6), sy2=Y-2; g.fillStyle='#ffffff'; g.fillRect(sx2,sy2-1,1,3); g.fillRect(sx2-1,sy2,3,1); } }
+  RAGS.length=0; }
 function ropeClick(){ if (me.bar){ leaveBar(7,1,null); return; } if (otherBartenders().length>=BAR_MAX){ localMsg('The bar is full! Two llamas are already pouring.'); return; } if (near(7,0)) doAction('bartend'); else walkTo(7,1,'bartend'); }
 function face(tx,ty){ me.d = dirFrom(tx-me.gx, ty-me.gy, me.d); }
 function doAction(a){
@@ -3931,6 +3957,8 @@ function doAction(a){
   if (a==='spin'){ if (slotEl.style.display==='block') slotSpin(); else openSlots(); return; }
   if (a==='bartend'){ if(me.bar||me.moving||!near(7,0)) return; enterBar(); return; }
   if (a==='unbar'){ if(me.bar) leaveBar(7,1,null); return; }
+  if (a==='help'){ cashClick(); return; }
+  if (a==='unhelp'){ if (me.cash) leaveCash(CASH_DOOR[0],CASH_DOOR[1],null); return; }
   if (a==='arcade'){ if(!near(ARC_X,0)) return; face(ARC_X,0); sendPresence(true); startArcade(); }
   else if (a==='tmenu0'||a==='tmenu1'){ openTableMenu(+a.slice(5)); }
   else if (a==='flip'){ if(!onDance()||me.moving||me.p==='sit') return; const now=performance.now(); if(now-(me.flipStart||-9999)<FLIP_T) return; me.flipStart=now; me.flK=(me.flK||0)+1; sendPresence(true); }
@@ -4802,7 +4830,8 @@ function drawLlama(o, t, isMe){
   let fr = walking ? Math.floor((o.anim||0)*6.5)%4 : 0, dir=o.d;
   let hop = 0;
   if (dancing){ const a=(o.anim||0); dir = DANCE_DIRS[Math.floor(a*2.5)%4]; fr = Math.floor(a*8)%4; hop = (Math.floor(a*5)%2)?2:0; }
-  const bartending = o.p==='bar'; const pose = (dancing||bartending) ? 'stand' : o.p;
+  const bartending = o.p==='bar', wiping = o.p==='wipe'; const pose = (dancing||bartending||wiping) ? 'stand' : o.p;
+  if (wiping) RAGS.push([o.x, o.y, isMe ? me.moving : !!o.walking]);
   const x0 = sx-14, y0 = sy-45-lift-hop;
   const fl = (isMe?me.flinch:o.flinch)||0; const jit = performance.now()<fl ? (Math.floor(t*30)%2?1:-1) : 0;
   const su=((isMe?me.sipStart:o.sipStart)!=null)?(performance.now()-(isMe?me.sipStart:o.sipStart))/SIP_T:2; const gulp=((isMe?me.h:o.h) && su>=0.3 && su<=0.8 && Math.floor(su*12)%2)?1:0;
@@ -5171,7 +5200,7 @@ function render(t){
     else { const fa = (!it.me && it.l.leaving) ? Math.max(0, Math.min(1, 1-(performance.now()-it.l.leaving)/LEAVE_T)) : 1; g.globalAlpha=fa; const pos = drawLlama(it.l, t, it.me); g.globalAlpha=1; overlayItems.push({l:it.l, x:pos[0], y:pos[1], me:it.me, balloon:pos[2] || fishAbove(it.l, it.me), fa}); }
   }
   if (isP(curRoom)) prGhost(t);
-  drawSpits(t); drawDunk(t);
+  drawRags(t); drawSpits(t); drawDunk(t);
   drawFishing(t);
   drawNight(t);
   arcadeText=null; drawArcade(t);
@@ -7845,6 +7874,7 @@ const JOBS = {
     {i:'🎣', t:'Go fishing', h:'Stand by the pond and press FISH.', p:'1, 2 or 5 a fish', go:()=>walkTo(14,5,'fish')},
     {i:'⚾', t:'Dunk tank', h:'Throw at the target by the barn. A bullseye dunks the llama on the seat.', p:'1 a throw, 3 a dunk', risk:true, go:()=>walkTo(DUNK_TGT[0],DUNK_TGT[1]+2,'dunk')},
     {i:'💦', t:'Sit on the dunk tank', h:'Be the llama on the seat. Get paid every time someone dunks you.', p:'1 coin a dunk', go:()=>walkTo(DUNK_SEAT[0],DUNK_SEAT[1])} ],
+  store: [ {i:'🛍️', t:'Help the cashier', h:'Go behind the counter and wipe it down for Penny.', p:'1 coin / 30 sec', go:()=>cashClick()} ],
   arena: [ {i:'💦', t:'Spit Arena rounds', h:'60-second spit-ball rounds. Bonus for your first round each day and for winning.', p:'up to 6 + bonuses', go:()=>openArena()} ],
   lanes: [ {i:'🎳', t:'Hay bale bowling', h:'5-frame games. Turkeys and a perfect game pay extra.', p:'up to 15 + bonuses', go:()=>openBowl()} ],
   casino: [
