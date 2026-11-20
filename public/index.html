@@ -423,6 +423,13 @@
   #pmenu .pmmod .mh{display:flex;align-items:center;gap:6px;font:800 12px var(--ui);letter-spacing:.05em;color:#8a5a00;margin-bottom:4px} #pmenu .pmmod .mh .pi{width:16px;height:16px}
   #pmenu .pmmod .mi{font:600 12px/1.5 var(--ui);color:var(--sub);margin-bottom:6px} #pmenu .pmmod .mi b{color:var(--ink)}
   #pmenu .pmmod .mb{display:grid;grid-template-columns:repeat(3,1fr);gap:6px} #pmenu .pmmod .mb .gbbtn{min-height:36px!important;font-size:12px!important;padding:5px 2px;margin:0}
+  #banbox{width:min(calc(100% - 24px),420px);z-index:9!important} #banbox .bnopts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+  #banbox .bnopts button{font:800 13px/1.2 var(--ui);padding:9px 4px;border:2px solid var(--cardln);border-radius:7px;background:#fff;color:var(--ink);cursor:pointer;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+  #banbox .bnopts button small{font:700 10.5px var(--ui);color:var(--sub)} #banbox .bnopts button.on{border-color:var(--ink);background:#ffe1e6;box-shadow:0 3px 0 var(--ink)}
+  #banbox .bnopts button.perm{grid-column:1/-1;flex-direction:row;gap:6px} #banbox .bnopts button.perm.on{background:#ffd0d8}
+  #banbox .bnrow{display:flex;align-items:center;gap:8px;margin:2px 0 4px} #banbox .bnrow input{flex:1;min-width:0;box-sizing:border-box;border:3px solid var(--ink);border-radius:8px;padding:9px 10px;font:600 15px var(--ui)} #banbox .bnrow span{font:800 12px var(--ui);color:var(--sub)}
+  #banbox .prmsg{min-height:18px;font-weight:700;color:#c03050}
+  #banbox #bn_go{background:#ff5c7a!important;color:#fff!important} #banbox #bn_go:disabled{opacity:.6}
   #repbox{width:min(calc(100% - 24px),440px)} #repbox .rpr{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
   #repbox .rpr button{font:700 13px/1.25 var(--ui);text-align:left;padding:9px 10px;border:2px solid var(--cardln);border-radius:7px;background:#fff;color:var(--ink);cursor:pointer;min-height:44px}
   #repbox .rpr button.on{border-color:var(--ink);background:#fff3c8;box-shadow:0 3px 0 var(--ink)}
@@ -448,7 +455,7 @@
   #tourbox .tbr{display:flex;gap:6px;align-items:center} #tourbox .tbr small{flex:1;font:600 12px var(--pxf);color:var(--sub)} #tourbox .gbbtn{padding:6px 10px!important;min-height:0!important;font-size:13px!important}
   #tourring{position:fixed;z-index:8;pointer-events:none;display:none;border:4px solid #ffd23f;border-radius:16px;box-shadow:0 0 0 4px rgba(29,21,48,.85),0 0 22px 6px rgba(255,210,63,.75);animation:tourPulse 1.1s ease-in-out infinite}
   body.touring #tourring.on{display:block} @keyframes tourPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.08);opacity:.75}}
-  #frbox,#acctbox,#dmbox,#catbox,#wardbox,#roomsbox,#bugbox,#repbox,#mktbox,#wfbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);max-height:86vh;z-index:6;animation:popIn .18s ease-out}
+  #frbox,#acctbox,#dmbox,#catbox,#wardbox,#roomsbox,#bugbox,#repbox,#banbox,#mktbox,#wfbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);max-height:86vh;z-index:6;animation:popIn .18s ease-out}
   #frbox{width:min(calc(100% - 24px),420px)}
   #dmbox{width:min(calc(100% - 24px),440px)}
   #dmbox .dmhead{display:flex;align-items:center;gap:6px;margin-bottom:8px} #dmbox .dmhead .slt{flex:1;text-align:left;margin:0}
@@ -999,6 +1006,7 @@
   <div id="mktbox" class="gb sheet"><div class="slt">🏪 MARKETPLACE</div><div class="autabs" id="mk_tabs"><button type="button" data-t="buy">BUY</button><button type="button" data-t="sell">SELL</button><button type="button" data-t="mine">MY LISTINGS</button></div><div id="mk_body"></div><div class="prmsg" id="mk_msg"></div></div>
   <div id="wfbox" class="gb sheet"><div class="slt">⚠️ WATCH YOUR LANGUAGE</div><p class="fre" id="wf_text"></p><div class="srow"><button class="gbbtn y" id="wf_ok">I UNDERSTAND</button></div></div>
   <div id="bugbox" class="gb sheet"><div class="slt">🐞 REPORT A BUG</div><div class="fre">Something broken or weird? Tell us what you were doing and what happened. The owner reads every report.</div><textarea id="bug_text" maxlength="800" rows="6" placeholder="What happened? What did you expect?"></textarea><div class="srow"><button class="gbbtn y" id="bug_send">SEND REPORT</button></div><div class="prmsg" id="bug_msg"></div></div>
+  <div id="banbox" class="gb sheet"><div class="slt" id="bn_title">🔨 BAN</div><div class="fre" id="bn_who"></div><div class="bnopts" id="bn_opts"></div><div class="bnrow"><input id="bn_hours" type="number" inputmode="numeric" min="1" max="8760" step="1" placeholder="Or type hours (1 to 8760)"><span>HOURS</span></div><div class="prmsg" id="bn_msg"></div><div class="srow"><button class="gbbtn bad" id="bn_go">BAN</button><button class="gbbtn" id="bn_cancel">CANCEL</button></div></div>
   <div id="repbox" class="gb sheet"><div class="slt" id="rp_title">🚩 REPORT</div><div class="fre" id="rp_who"></div><div class="rpr" id="rp_reasons"></div><textarea id="rp_note" maxlength="400" rows="3" placeholder="Anything else staff should know? (optional)"></textarea><div class="fre rpsmall">Staff also see what they said in chat lately, so you don't need to copy it.</div><div class="prmsg" id="rp_msg"></div><div class="srow"><button class="gbbtn y" id="rp_send">SEND REPORT</button><button class="gbbtn" id="rp_cancel">CANCEL</button></div></div>
   <div id="acctbox" class="gb sheet"><div class="slt" id="ac_title">🔐 ACCOUNT</div><div id="ac_body"></div></div>
   <div id="kicked"></div>
@@ -4537,7 +4545,8 @@ document.getElementById('chatrow').addEventListener('submit', e => {
   const cmd = raw.toLowerCase();
   if (cmd==='/roll'){ const v=1+Math.floor(Math.random()*6); const ti=nearTable(); if(ti>=0){ me.tdK=(me.tdK||0)+1; me.lastTable={k:me.tdK,i:ti,v,coin:false}; tableShow(ti,v,false); } action(`rolled a ${v}!`); return; }
   if (cmd==='/flip'){ const h=Math.random()<0.5; const ti=nearTable(); if(ti>=0){ me.tdK=(me.tdK||0)+1; me.lastTable={k:me.tdK,i:ti,v:h?1:2,coin:true}; tableShow(ti,h?1:2,true); } action(`flipped a coin: ${h?'HEADS':'TAILS'}!`); return; }
-  { const mm=/^\/(mute|unmute|ban|unban|kick|mod|unmod)\s+(\S+)/.exec(cmd); if (mm){ NET.act('admin',{cmd:mm[1], target:mm[2]}).then(r=>localMsg(r.msg||'Done.')); return; } }
+  { const bm=/^\/ban\s+(\S+)\s*$/.exec(cmd); if (bm && me.st){ openBan(bm[1]); return; } }   // no length given: pick one in the pop-up
+  { const mm=/^\/(mute|unmute|ban|unban|kick|mod|unmod)\s+(\S+)(?:\s+(\d+|perm|permanent))?/.exec(cmd); if (mm){ NET.act('admin',{cmd:mm[1], target:mm[2], hours: mm[3] && /^\d+$/.test(mm[3]) ? +mm[3] : 0}).then(r=>localMsg(r.msg||'Done.')); return; } }
   if (WF.slur(raw)){ localMsg("That message has a word that isn't allowed here, so it wasn't sent."); NET.act('wf_hit',{}); return; }   // the server checks too
   if (cmd==='/tour' || cmd==='/gus'){ if (TOUR.on) return; tourStart(); return; }   // GUS comes back for another tour
   if (cmd.startsWith('/yell ')){ const t2=WF.mask(raw.slice(6).trim()); if(!t2) return; me.sayK=(me.sayK+1)%100000; me.lastSay={k:me.sayK, t:t2, y:1}; chatMsg(me.n||'YOU', t2, true); addBar(me.n||'YOU', t2, me.c, me.x, me.y, true, true); sendPresence(true); return; }
@@ -4562,7 +4571,7 @@ function items(m){ return [...m.children].filter(c=>!c.classList.contains('sheet
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ { const dp=document.getElementById('dailypop'); if (dp) dp.style.display='none'; const ib=document.getElementById('itembox'); if (ib) ib.style.display='none'; } if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; { const pk=document.getElementById('plkbox'); if (pk) pk.style.display='none'; } if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; { const wb=document.getElementById('wfbox'); if (wb) wb.style.display='none'; const bb=document.getElementById('bugbox'); if (bb) bb.style.display='none'; { const rb=document.getElementById('repbox'); if (rb) rb.style.display='none'; } const mk=document.getElementById('mktbox'); if (mk) mk.style.display='none'; } const dmb=document.getElementById('dmbox'); if (dmb) dmb.style.display='none'; const ctb=document.getElementById('catbox'); if (ctb) ctb.style.display='none'; const wdb=document.getElementById('wardbox'); if (wdb) wdb.style.display='none'; const prb=document.getElementById('roomsbox'); if (prb && joined) prb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+function closeAll(){ { const dp=document.getElementById('dailypop'); if (dp) dp.style.display='none'; const ib=document.getElementById('itembox'); if (ib) ib.style.display='none'; } if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; { const pk=document.getElementById('plkbox'); if (pk) pk.style.display='none'; } if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; { const wb=document.getElementById('wfbox'); if (wb) wb.style.display='none'; const bb=document.getElementById('bugbox'); if (bb) bb.style.display='none'; { const bx=document.getElementById('banbox'); if (bx) bx.style.display='none'; } { const rb=document.getElementById('repbox'); if (rb) rb.style.display='none'; } const mk=document.getElementById('mktbox'); if (mk) mk.style.display='none'; } const dmb=document.getElementById('dmbox'); if (dmb) dmb.style.display='none'; const ctb=document.getElementById('catbox'); if (ctb) ctb.style.display='none'; const wdb=document.getElementById('wardbox'); if (wdb) wdb.style.display='none'; const prb=document.getElementById('roomsbox'); if (prb && joined) prb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
   const a=el.dataset.a;
@@ -7084,9 +7093,28 @@ const ROOM_SHORT={lounge:'LOUNGE', barn:'ACRES', casino:'CASINO', arena:'ARENA',
 const esc = s => String(s).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const badgeHtml = st => st ? `<span class="badge" title="${st==='owner'?'Owner':'Mod'}">${pix('crown')}</span>` : '<span class="badge"></span>';
 function openDash(){ if (!me.st) return; closeAll(); for (const x of document.querySelectorAll('#ds_tabs button')) x.classList.toggle('on', x.dataset.t===dsTab); dsBody.innerHTML='<div class="dl">LOADING...</div>'; dashEl.style.display='block'; loadDash(); }
+// BAN pop-up: pick a length in hours or PERMANENT (the server checks who can ban whom and the length again)
+const BAN_OPTS=[[1,'1 HOUR',''],[6,'6 HOURS',''],[24,'24 HOURS','1 day'],[72,'72 HOURS','3 days'],[168,'168 HOURS','1 week'],[720,'720 HOURS','30 days'],[0,'PERMANENT','']];
+let banName='', banHrs=null;
+function openBan(n){ banName=String(n).toUpperCase(); banHrs=null; const box=$id('banbox');
+  $id('bn_title').textContent='🔨 BAN '+banName; $id('bn_who').textContent=`How long should ${banName} be banned? They're removed right away and can't log in until it ends.`;
+  $id('bn_opts').innerHTML=BAN_OPTS.map(([h,l,sub])=>`<button type="button" data-h="${h}" class="${h?'':'perm'}">${h?'':pix('hammer')}${l}${sub?`<small>${sub}</small>`:''}</button>`).join('');
+  const pick=h=>{ banHrs=h; for (const x of $id('bn_opts').querySelectorAll('button')) x.classList.toggle('on', +x.dataset.h===h && $id('bn_hours').value===''); $id('bn_msg').textContent='';
+    $id('bn_go').textContent = h===0 ? 'BAN PERMANENTLY' : h ? `BAN FOR ${h} ${h===1?'HOUR':'HOURS'}` : 'BAN'; };
+  for (const b of $id('bn_opts').querySelectorAll('button')) b.addEventListener('click', ()=>{ $id('bn_hours').value=''; pick(+b.dataset.h); });
+  const hi=$id('bn_hours'); hi.value=''; hi.onkeydown=e=>e.stopPropagation(); hi.oninput=()=>{ const v=Math.floor(+hi.value); pick(hi.value===''?null:(v>=1&&v<=8760?v:NaN)); };
+  pick(null); $id('bn_go').disabled=false; box.style.display='block'; if (typeof sheetHead==='function') sheetHead(box); }
+$id('bn_cancel').addEventListener('click', ()=>{ $id('banbox').style.display='none'; });
+$id('bn_go').addEventListener('click', ()=>{ const m=$id('bn_msg');
+  if (banHrs===null){ m.textContent='Pick how long first.'; return; } if (Number.isNaN(banHrs)){ m.textContent='Type a whole number of hours from 1 to 8760.'; return; }
+  if (banHrs===0 && !confirm(`Ban ${banName} PERMANENTLY? Only the owner can undo it.`)) return;
+  const b=$id('bn_go'); b.disabled=true;
+  NET.act('admin',{cmd:'ban', target:banName, hours:banHrs}).then(r=>{ b.disabled=false; if (!r.ok){ m.textContent=r.msg||'That did not work.'; return; }
+    $id('banbox').style.display='none'; localMsg(r.msg||'Banned.'); if (dashEl.style.display==='block') loadDash(); }); });
 function dashDo(cmd, target){
   if (cmd==='give'){ const v=prompt(`How many tokens to give ${target}? (1 to 1000)`, '10'); if (v===null) return; const n=Math.floor(+v); if (!(n>=1 && n<=1000)){ localMsg('Give between 1 and 1000 tokens.'); return; }
     NET.act('admin',{cmd:'give', target, amount:n}).then(r=>{ localMsg(r.msg||(r.ok?'Done.':'That did not work.')); loadDash(); }); return; }
+  if (cmd==='ban'){ openBan(target); return; }   // pick how long first
   if ((cmd==='ban'||cmd==='mod'||cmd==='unmod') && !confirm(`${{ban:'Ban',mod:'Make',unmod:'Remove'}[cmd]} ${target}${cmd==='mod'?' a mod':cmd==='unmod'?' as a mod':''}?`)) return;
   NET.act('admin',{cmd, target}).then(r=>{ localMsg(r.msg||(r.ok?'Done.':'That did not work.')); loadDash(); }); }
 let dsTab=(['chat','reports'].includes(store.dsTab)?store.dsTab:'players'), dsChat={lines:[], open:null, q:'', more:true}, dsTimer=null;
@@ -7174,7 +7202,7 @@ function loadDash(){
     for (const p of r.muted) h+=`<div class="dr">${badgeHtml('')}<span class="nm">${esc(p.n)}</span>${canAct(p.n, p.role==='mod'?'mod':'')?btn('UNMUTE','unmute',p.n):''}</div>`;
     if (!r.muted.length) h+='<div class="dl">NOBODY IS MUTED.</div>';
     h+=`<h4>BANNED (${r.banned.length})</h4>`;
-    for (const p of r.banned) h+=`<div class="dr">${badgeHtml('')}<span class="nm">${esc(p.n)}</span>${owner?btn('UNBAN','unban',p.n):''}</div>`;
+    for (const p of r.banned) h+=`<div class="dr">${badgeHtml('')}<span class="nm">${esc(p.n)} <small>${p.until ? 'UNTIL '+esc(chatWhen(p.until).toUpperCase()) : 'PERMANENT'}</small></span>${owner?btn('UNBAN','unban',p.n):''}</div>`;
     if (!r.banned.length) h+='<div class="dl">NOBODY IS BANNED.</div>';
     h+='<h4>🪙 TOKEN GIFTS</h4>'+`<div class="dl">${btn('🪙 GIVE MYSELF TOKENS','give',me.n,'gd')}</div>`;
     { const td=Object.entries(r.giftsToday||{}); h+=`<div class="dl">TODAY: ${td.length ? td.map(([by,n])=>`${esc(by)} gave ${n}`).join(' · ') : 'no gifts yet'}. Mods can give up to ${r.giftCap||500} a day (gifts to themselves count too).</div>`; }

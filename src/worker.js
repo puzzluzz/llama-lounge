@@ -306,11 +306,30 @@ async function sendVerify(env, url, u, email) {
   const tok = await newLink(env, u.id, "verify", email, VERIFY_MS);
   return sendMail(env, email, "Confirm your Llama Lounge email", [`Hi ${u.name.toUpperCase()}!`, "Tap the button to confirm this is your email. That way you can reset your password if you ever forget it.", "Didn't make a Llama Lounge account? You can ignore this email."], `${siteUrl(env, url)}/#verify=${tok}`, "CONFIRM MY EMAIL");
 }
+// names that could pass for staff or the game's own llamas can't be taken at sign-up (looks only: powers come from users.role, never a name)
+function staffyName(name) {
+  const l = String(name).toLowerCase().replace(/0/g, "o").replace(/[1!|]/g, "i").replace(/4|@/g, "a").replace(/3/g, "e").replace(/5|\$/g, "s").replace(/7/g, "t"), flat = l.replace(/[^a-z]/g, ""), parts = l.split(/[^a-z]+/).filter(Boolean);
+  if (/(admin|owner|moderat|staff|official|support|llamalounge|system|helpdesk)/.test(flat)) return true;
+  return parts.some((w) => ["mod", "mods", "gus", "penny", "dev", "devs"].includes(w)) || /^(mod|gus|penny)(s)?$/.test(flat) || /^mod[a-z]?$|mod$/.test(flat) && flat.length <= 6;
+}
+// TIMED BANS: a ban with ban_until > 0 lifts itself once that time passes. Checked whenever the person tries to get in, and swept for everyone about once a minute.
+let banSweepAt = 0;
+async function sweepBans(env) { const now = Date.now(); if (now - banSweepAt < 60000) return; banSweepAt = now;
+  try { await ensureAuthSchema(env); await env.DB.prepare("UPDATE users SET banned = 0, ban_until = 0 WHERE banned = 1 AND ban_until > 0 AND ban_until <= ?").bind(now).run(); } catch (e) { console.error("ban sweep", e); } }
+// returns null if they may play (lifting an expired ban), or the message to show
+async function banMsg(env, u) {
+  if (!u || !u.banned) return null;
+  const until = +u.ban_until || 0, now = Date.now();
+  if (until > 0 && until <= now) { await env.DB.prepare("UPDATE users SET banned = 0, ban_until = 0 WHERE id = ?").bind(u.id).run(); u.banned = 0; u.ban_until = 0; return null; }
+  if (!until) return "This account is banned.";
+  const h = Math.ceil((until - now) / 36e5);
+  return `This account is banned for ${h >= 48 ? Math.ceil(h / 24) + " more days" : h + (h === 1 ? " more hour" : " more hours")}.`;
+}
 // add the email columns and link table once per server start (safe to run on an existing database)
 let authSchema = null;
 function ensureAuthSchema(env) {
   if (!authSchema) authSchema = (async () => {
-    for (const col of ["email TEXT", "email_ok INTEGER NOT NULL DEFAULT 0", "terms INTEGER NOT NULL DEFAULT 0"]) {   // terms: when they ticked "13 or older and I agree to the Terms"
+    for (const col of ["email TEXT", "email_ok INTEGER NOT NULL DEFAULT 0", "terms INTEGER NOT NULL DEFAULT 0", "ban_until INTEGER NOT NULL DEFAULT 0"]) {   // ban_until: when a timed ban ends (0 = permanent or not banned)   // terms: when they ticked "13 or older and I agree to the Terms"
       try { await env.DB.prepare("ALTER TABLE users ADD COLUMN " + col).run(); } catch (e) { if (!/duplicate column/i.test(String(e && e.message || e))) throw e; }
     }
     await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users (email)").run();
@@ -335,20 +354,21 @@ export default {
     if (url.pathname === "/ws") {
       if (!originOk(req, url) || !req.headers.get("origin")) return new Response("bad origin", { status: 403 });
       if (req.headers.get("upgrade") !== "websocket") return new Response("expected websocket", { status: 426 });
+      await ensureAuthSchema(env); await sweepBans(env);
       const u = await sessionUser(env, req);
       if (!u) return new Response("not logged in", { status: 401 });
-      if (u.banned) return new Response("banned", { status: 403 });
+      if (await banMsg(env, u)) return new Response("banned", { status: 403 });
       // hand the verified identity to the room; the Durable Object is not reachable from the internet directly
       const fwd = new Request("https://room/ws", { headers: { upgrade: "websocket", "x-uid": String(u.id), "x-name": u.name.toUpperCase(), "x-staff": staffRole(env, u) } });
       return env.LOUNGE.get(env.LOUNGE.idFromName("main")).fetch(fwd);
     }
     if (url.pathname.startsWith("/api/")) {
-      try { await ensureAuthSchema(env); return await api(req, env, url, ctx); } catch (e) { console.error(e); return json({ error: "server error" }, 500); }
+      try { await ensureAuthSchema(env); await sweepBans(env); return await api(req, env, url, ctx); } catch (e) { console.error(e); return json({ error: "server error" }, 500); }
     }
     return env.ASSETS ? env.ASSETS.fetch(req) : new Response("not found", { status: 404 });
   },
   // twice a day: back up the database (see BACKUP above)
-  async scheduled(event, env, ctx) { ctx.waitUntil(makeBackup(env, "automatic").then((b) => console.log("backup done", JSON.stringify(b))).catch((e) => console.error("backup failed", e && e.message))); },
+  async scheduled(event, env, ctx) { banSweepAt = 0; ctx.waitUntil(sweepBans(env)); ctx.waitUntil(makeBackup(env, "automatic").then((b) => console.log("backup done", JSON.stringify(b))).catch((e) => console.error("backup failed", e && e.message))); },
 };
 
 async function api(req, env, url, ctx) {
@@ -356,7 +376,7 @@ async function api(req, env, url, ctx) {
   const path = url.pathname;
   if (req.method === "GET" && path === "/api/me") {
     const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
-    if (u.banned) return json({ error: "This account is banned." }, 403);
+    { const bm = await banMsg(env, u); if (bm) return json({ error: bm }, 403); }
     const t = await env.DB.prepare("SELECT k, t FROM timers WHERE uid = ? AND k LIKE 'crop:%'").bind(u.id).all();
     return json(profileOf(env, u, (t.results || []).map((r) => ({ k: r.k.slice(5), left: Math.max(0, r.t - Date.now()) }))));
   }
@@ -370,6 +390,7 @@ async function api(req, env, url, ctx) {
     const name = String(body.u || "").trim(), pw = String(body.p || ""), email = normEmail(body.e);
     if (!/^[A-Za-z0-9_]{3,12}$/.test(name)) return json({ error: "Names are 3 to 12 letters, numbers or _." }, 400);
     if (!WF.nameOk(name)) return json({ error: "That name isn't allowed. Pick a different one." }, 400);
+    if (staffyName(name)) return json({ error: "That name sounds like staff. Pick a different one." }, 400);
     if (body.t !== 1 && body.t !== true) return json({ error: "Please confirm you're 13 or older and agree to the Terms." }, 400);
     if (!emailOk(email)) return json({ error: "Enter a real email. It's how you reset your password." }, 400);
     if (pw.length < 8 || pw.length > 72) return json({ error: "Passwords need 8 to 72 characters." }, 400);
@@ -398,7 +419,7 @@ async function api(req, env, url, ctx) {
     const salt = u ? unb64(u.salt) : new Uint8Array(16);
     const h = await pbkdf2(pw, salt, u ? u.iters : PBKDF2_ITERS);
     if (!u || !sameBytes(h, unb64(u.hash))) { await bump(env, uk); await bump(env, ik); return json({ error: "Wrong name, email or password." }, 401); }
-    if (u.banned) return json({ error: "This account is banned." }, 403);
+    { const bm = await banMsg(env, u); if (bm) return json({ error: bm }, 403); }
     await env.DB.prepare("DELETE FROM login_attempts WHERE k = ?").bind(uk).run();
     await env.DB.prepare("DELETE FROM sessions WHERE expires < ?").bind(Date.now()).run();
     const tok = await newSession(env, u.id);
@@ -472,7 +493,7 @@ async function api(req, env, url, ctx) {
     if (!row) { await bump(env, "rs:" + ip); return json({ error: "This reset link expired or was already used. Ask for a new one." }, 400); }
     const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(row.uid).first();
     if (!u || u.email !== row.email) return json({ error: "This reset link is no longer valid. Ask for a new one." }, 400);
-    if (u.banned) return json({ error: "This account is banned." }, 403);
+    { const bm = await banMsg(env, u); if (bm) return json({ error: bm }, 403); }
     await setPassword(env, u.id, np);   // also signs out every device
     await env.DB.prepare("UPDATE users SET email_ok = 1 WHERE id = ?").bind(u.id).run();   // opening the email proves it's theirs
     await env.DB.prepare("DELETE FROM email_tokens WHERE uid = ? AND kind = 'reset'").bind(u.id).run();
@@ -2121,7 +2142,7 @@ export class Lounge extends DurableObject {
     await this.reportTable(); const tst = staffRole(this.env, u);
     const reps = (tst && st !== "owner") ? 0 : ((await this.env.DB.prepare("SELECT COUNT(*) AS n FROM reports WHERE tuid = ? AND done = 0").bind(u.id).first()) || {}).n || 0;
     const can = u.id !== a.uid && tst !== "owner" && (st === "owner" || tst !== "mod");
-    return { ok: true, me: st, n: u.name.toUpperCase(), st: tst, muted: !!u.muted, banned: !!u.banned, wfn: +u.wfn || 0, reports: reps, can };
+    return { ok: true, me: st, n: u.name.toUpperCase(), st: tst, muted: !!u.muted, banned: !!u.banned, until: +u.ban_until || 0, wfn: +u.wfn || 0, reports: reps, can };
   }
   async logStaff(by, cmd, target) {
     const log = (await this.ctx.storage.get("modlog")) || [];
@@ -2137,7 +2158,8 @@ export class Lounge extends DurableObject {
     const rows = async (sql) => ((await this.env.DB.prepare(sql).all()).results || []).map((r) => ({ n: r.name.toUpperCase(), role: r.role }));
     const staff = await rows("SELECT name, role FROM users WHERE role IN ('admin','mod') ORDER BY role, name");
     const muted = await rows("SELECT name, role FROM users WHERE muted = 1 ORDER BY name LIMIT 50");
-    const banned = await rows("SELECT name, role FROM users WHERE banned = 1 ORDER BY name LIMIT 50");
+    await ensureAuthSchema(this.env); await sweepBans(this.env);
+    const banned = ((await this.env.DB.prepare("SELECT name, role, ban_until FROM users WHERE banned = 1 ORDER BY name LIMIT 50").all()).results || []).map((r) => ({ n: r.name.toUpperCase(), role: r.role, until: +r.ban_until || 0 }));
     // every token gift by staff, from the permanent ledger (newest first), plus what each mod has given today
     const undone = new Map(); for (const r of ((await this.env.DB.prepare("SELECT reason, delta FROM ledger WHERE reason LIKE 'gift undone #%' ORDER BY id DESC LIMIT 300").all()).results || [])) { const mm = /^gift undone #(\d+) by (\w+)/.exec(r.reason); if (mm) undone.set(+mm[1], { by: mm[2].toUpperCase(), n: -r.delta }); }
     const gifts = ((await this.env.DB.prepare("SELECT l.id, l.delta, l.t, l.reason, u.name FROM ledger l JOIN users u ON u.id = l.uid WHERE l.reason LIKE 'staff gift by %' ORDER BY l.id DESC LIMIT 100").all()).results || [])
@@ -2168,16 +2190,20 @@ export class Lounge extends DurableObject {
     if (theirs === "owner") return { ok: false, msg: "Nobody can moderate the owner." };
     if (theirs === "mod" && a.staff !== "owner") return { ok: false, msg: "Mods can't moderate other mods." };
     if (cmd === "mute" || cmd === "unmute") await this.env.DB.prepare("UPDATE users SET muted = ? WHERE id = ?").bind(cmd === "mute" ? 1 : 0, u.id).run();
-    if (cmd === "ban" || cmd === "unban") await this.env.DB.prepare("UPDATE users SET banned = ? WHERE id = ?").bind(cmd === "ban" ? 1 : 0, u.id).run();
+    // ban length: whole hours from 1 to 8760 (a year), or 0 / nothing for permanent
+    const hrs = cmd === "ban" ? Math.floor(+m.hours || 0) : 0;
+    if (cmd === "ban" && (hrs < 0 || hrs > 8760 || !Number.isFinite(hrs))) return { ok: false, msg: "Pick 1 to 8760 hours, or PERMANENT." };
+    const until = cmd === "ban" && hrs > 0 ? Date.now() + hrs * 36e5 : 0, len = hrs > 0 ? `${hrs} ${hrs === 1 ? "HOUR" : "HOURS"}` : "PERMANENTLY";
+    if (cmd === "ban" || cmd === "unban") { await ensureAuthSchema(this.env); await this.env.DB.prepare("UPDATE users SET banned = ?, ban_until = ? WHERE id = ?").bind(cmd === "ban" ? 1 : 0, until, u.id).run(); }
     if (cmd === "ban") await this.env.DB.prepare("DELETE FROM sessions WHERE uid = ?").bind(u.id).run();
     if (cmd === "mod" || cmd === "unmod") await this.env.DB.prepare("UPDATE users SET role = ? WHERE id = ? AND role != 'admin'").bind(cmd === "mod" ? "mod" : "player", u.id).run();
     for (const w of this.sockets()) { const a2 = w.deserializeAttachment(); if (!a2 || a2.uid !== u.id) continue;
-      if (cmd === "ban" || cmd === "kick") { this.send(w, { t: "kick", msg: cmd === "ban" ? "You have been banned from the lounge." : "You were removed from the lounge." }); try { w.close(4003, cmd); } catch (e) {} }
+      if (cmd === "ban" || cmd === "kick") { this.send(w, { t: "kick", msg: cmd === "ban" ? (hrs > 0 ? `You have been banned from the lounge for ${hrs} ${hrs === 1 ? "hour" : "hours"}.` : "You have been banned from the lounge.") : "You were removed from the lounge." }); try { w.close(4003, cmd); } catch (e) {} }
       else { // their badge and mute show up straight away
         a2.uc = null; if (cmd === "mod" || cmd === "unmod") a2.staff = cmd === "mod" ? "mod" : ""; w.serializeAttachment(a2);
         if (cmd === "mod" || cmd === "unmod") this.send(w, { t: "staff", st: cmd === "mod" ? "mod" : "", msg: cmd === "mod" ? "You are now a MOD! Open MENU > DASHBOARD." : "You are no longer a mod." }); } }
-    await this.logStaff(a.name, cmd, u.name.toUpperCase());
-    const done = { mute: "muted", unmute: "unmuted", kick: "kicked", ban: "banned", unban: "unbanned", mod: "is now a MOD", unmod: "is no longer a mod" }[cmd];
+    await this.logStaff(a.name, cmd, u.name.toUpperCase() + (cmd === "ban" ? (hrs > 0 ? ` FOR ${len}` : " PERMANENTLY") : ""));
+    const done = { mute: "muted", unmute: "unmuted", kick: "kicked", ban: hrs > 0 ? `banned for ${len.toLowerCase()}` : "banned permanently", unban: "unbanned", mod: "is now a MOD", unmod: "is no longer a mod" }[cmd];
     return { ok: true, msg: `${u.name.toUpperCase()} ${done}.` };
   }
 }
