@@ -114,6 +114,15 @@ const FURN_SIDEWAYS = new Set(["loveseat", "sofa"]);
 // colour variants: same piece and price as their base, their own item so they're bought, stored and placed separately
 const FURN_VARIANTS = { sofa_gray: "sofa", sofa_green: "sofa", sofa_red: "sofa", loveseat_mustard: "loveseat", loveseat_teal: "loveseat", loveseat_purple: "loveseat",
   armchair_mustard: "armchair", armchair_red: "armchair", armchair_gray: "armchair", bed_blue: "bed", bed_green: "bed", bed_purple: "bed", chair_walnut: "chair", chair_white: "chair", chair_red: "chair" };
+// themed room kits: a set of pieces for 20% less than buying them one by one (the same list is in public/index.html)
+const MARKET = { fee: 0.05, max: 10, maxPrice: 100000 };   // marketplace: 5% of each sale, 10 listings each, price cap
+const KITS = { living: { n: "COZY LIVING ROOM", items: { sofa: 1, coffeetable: 1, armchair: 1, floorlamp: 1, rug_shag: 1, plant: 1, tv: 1 } },
+  bedroom: { n: "DREAMY BEDROOM", items: { dbed: 1, dresser: 1, lavalamp: 1, rug_round: 1, bookshelf: 1, flowers: 1 } },
+  diner: { n: "RETRO DINER", items: { roundtable: 1, chair_red: 4, barstool: 2, vending: 1 } },
+  game: { n: "GAME ROOM", items: { bigtv: 1, beanbag: 2, boombox: 1, lavalamp: 1, snackvend: 1, rug_stripe: 1 } },
+  study: { n: "STUDY NOOK", items: { bookshelf: 2, table: 1, chair_walnut: 1, lamp: 1, cubeshelf: 1, cactus: 1 } },
+  starter: { n: "STARTER KIT", items: { chair: 1, table: 1, lamp: 1, plant: 1, rug_mat_green: 1 } } };
+const kitPrice = (k) => Math.round(Object.entries(KITS[k].items).reduce((t, [it, n]) => t + (FURN_ITEMS[it] || 0) * n, 0) * 0.8);
 const furnBase = (item) => FURN_VARIANTS[item] || item;   // couches run along their back, so they turn the other way
 const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend", "rug_persian", "rug_round", "rug_stripe", "rug_shag", "rug_mat_green", "rug_mat_red", "rug_mat_blue", "rug_mat_coir", "rug_mat_pink", "rug_mat_purple",
   "beanbag", "barstool", "dbed", "coffeetable", "roundtable", "floorlamp", "lavalamp", "cubeshelf", "dresser", "cactus", "flowers", "boombox"]);
@@ -355,6 +364,7 @@ async function api(req, env, url, ctx) {
   if (path === "/api/signup") {
     const name = String(body.u || "").trim(), pw = String(body.p || ""), email = normEmail(body.e);
     if (!/^[A-Za-z0-9_]{3,12}$/.test(name)) return json({ error: "Names are 3 to 12 letters, numbers or _." }, 400);
+    if (!WF.nameOk(name)) return json({ error: "That name isn't allowed. Pick a different one." }, 400);
     if (!emailOk(email)) return json({ error: "Enter a real email. It's how you reset your password." }, 400);
     if (pw.length < 8 || pw.length > 72) return json({ error: "Passwords need 8 to 72 characters." }, 400);
     if (await blocked(env, "su:" + ip, SIGNUPS_PER_IP_HOUR)) return json({ error: "Too many new accounts from here. Try again later." }, 429);
@@ -601,12 +611,44 @@ const LANES = { minGap: 2200, dayCap: 40, expire: 30 * 60000 };
 
 // ---------- realtime room ----------
 const PRES_KEYS = new Set(["bj", "c", "n", "x", "y", "d", "p", "m", "s", "h", "hl", "sk", "e", "a", "sp", "td", "g", "fk", "rm", "fs", "sl", "j", "l", "ea"]);
+// ---- word filter (the same copy lives in src/worker.js and public/index.html) ----
+// SLURS: a message with one of these isn't sent at all. SWEARS: masked with stars in chat and DMs.
+// Names and room names can't contain either. Checks see through leetspeak (n1gg3r), repeated letters,
+// accents, and spaced-out letters (f a g). Words match whole (with -s/-es/-ed/-ing endings) unless listed in *_ROOT,
+// which also match inside longer words (motherfucker).
+const WF = (() => {
+  const SLUR_ROOT = ["nigger", "nigga", "niggah", "nigguh", "niglet", "faggot", "fagot", "wetback", "towelhead", "raghead", "sandnigger", "porchmonkey", "jigaboo", "zipperhead", "golliwog", "kneegrow", "heilhitler", "siegheil", "whitepower", "gasthejews", "killalljews", "tranny", "trannies", "shemale", "retard"];
+  const SLUR_WORD = ["fag", "fags", "faggy", "dyke", "chink", "chinks", "gook", "gooks", "spic", "spick", "spics", "kike", "kyke", "kikes", "beaner", "beaners", "coon", "coons", "wog", "wogs", "paki", "pakis", "negro", "negroes", "jap", "japs", "gyppo", "pikey", "darkie", "darky", "camel jockey", "mongoloid", "spaz", "spastic"];
+  const SWEAR_ROOT = ["fuck", "fuk", "fck", "shit", "bitch", "cunt", "asshole", "motherf", "whore", "slut", "dickhead", "cocksucker", "wanker", "twat", "bollock", "pussy", "jackass", "dumbass", "fatass", "bullshit", "porn", "jizz", "blowjob", "handjob"];
+  const SWEAR_WORD = ["ass", "asses", "arse", "dick", "dicks", "cock", "cocks", "tits", "titties", "boobs", "cum", "bastard", "bastards", "prick", "piss", "pissed", "damnit", "goddamn", "skank", "hoe", "hoes", "rape", "raped", "rapist", "nude", "nudes", "sex", "sexy", "penis", "vagina", "dildo", "milf", "thot", "wtf", "stfu", "fml", "kys"];
+  const LEET = { "0": "o", "1": "i", "!": "i", "|": "i", "3": "e", "4": "a", "@": "a", "5": "s", "$": "s", "7": "t", "+": "t", "8": "b", "9": "g", "6": "g", "2": "z", "€": "e", "£": "l" };
+  const letters = (s) => String(s).toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[0-9!|@$+€£]/g, (c) => LEET[c] || c).replace(/[^a-z]/g, "");
+  const pat = (w) => w.replace(/[^a-z]/g, "").split("").map((c) => c + "+").join("");   // n+i+g+g+e+r+ : any number of each letter, but never fewer
+  const rx = (list, whole) => new RegExp(whole ? "^(?:" + list.map(pat).join("|") + ")(?:e?s|e?d|ing)?$" : "(?:" + list.map(pat).join("|") + ")");
+  const slurRoot = rx(SLUR_ROOT), slurWord = rx(SLUR_WORD.filter((w) => !w.includes(" ")), true), swearRoot = rx(SWEAR_ROOT), swearWord = rx(SWEAR_WORD, true);
+  const slurPhrase = rx(SLUR_WORD.filter((w) => w.includes(" ")));
+  // the words of a message (letters only), plus runs of single letters joined up ("f a g" -> "fag")
+  const words = (text) => { const raw = String(text).split(/[\s_.,;:\-*~/\\()[\]{}"'`^#%&=<>?]+/).map(letters).filter(Boolean), out = raw.slice(); let run = "";
+    for (const w of raw) { if (w.length === 1) run += w; else { if (run.length > 1) out.push(run); run = ""; } } if (run.length > 1) out.push(run); return out; };
+  const isSlurWord = (w) => slurRoot.test(w) || slurWord.test(w);
+  const isSwearWord = (w) => swearRoot.test(w) || swearWord.test(w);
+  return {
+    // true if the text has a slur anywhere (also caught when letters are spread over several words: "nig ger")
+    slur(text) { const ws = words(text); return ws.some(isSlurWord) || slurRoot.test(letters(text)) || slurPhrase.test(letters(text)); },
+    // chat and DMs: swear words become stars (same length), everything else stays as typed
+    mask(text) { return String(text).replace(/[^\s]+/g, (tok) => { const w = letters(tok); return w && (isSwearWord(w) || isSlurWord(w)) ? "*".repeat(Math.min(tok.length, 12)) : tok; }); },
+    // names and room names: no slurs and no swears, even inside other letters ("xxfuckxx")
+    nameOk(text) { const l = letters(text), ws = words(text); return !(this.slur(text) || swearRoot.test(l) || ws.some(isSwearWord)); },
+  };
+})();
+
 function cleanPresence(p, name, tk, muted, staff) {
   const o = {};
   if (!p || typeof p !== "object") return o;
   for (const k of Object.keys(p)) if (PRES_KEYS.has(k)) o[k] = p[k];
   o.n = name; o.tk = tk; if (staff) o.st = staff; else delete o.st;   // the server decides who you are, what you hold and your staff badge
-  if (o.s && typeof o.s === "object") { o.s = { k: +o.s.k || 0, t: String(o.s.t || "").slice(0, 120), y: o.s.y ? 1 : 0, f: o.s.f ? 1 : 0 }; if (muted) delete o.s; }
+  if (o.s && typeof o.s === "object") { o.s = { k: +o.s.k || 0, t: String(o.s.t || "").slice(0, 120), y: o.s.y ? 1 : 0, f: o.s.f ? 1 : 0 }; if (muted) delete o.s;
+    else if (!o.s.f) { if (WF.slur(o.s.t)) delete o.s; else o.s.t = WF.mask(o.s.t); } }   // slurs never go out; swears go out as stars
   if (JSON.stringify(o).length > 3000) return { c: o.c, n: name, x: o.x, y: o.y, d: o.d, p: o.p, m: o.m, rm: o.rm, tk, ...(staff ? { st: staff } : {}) };
   return o;
 }
@@ -664,7 +706,8 @@ export class Lounge extends DurableObject {
       if (m.p && (first || +m.p.x !== a.pres.x || +m.p.y !== a.pres.y || m.p.rm !== a.pres.rm || (m.p.s && typeof m.p.s === "object" && +m.p.s.k !== a.ck))) a.act = now;
       // chat log for staff: every new line, muted ones too (marked); action lines like "sat down" are marked as actions
       const rs = m.p && m.p.s;
-      if (rs && typeof rs === "object" && rs.t && +rs.k !== a.ck) { const was = a.ck; a.ck = +rs.k; if (!first && was !== undefined) { await this.chatLog(a, m.p.rm, (rs.f ? "* " : "") + String(rs.t).slice(0, 120), !!a.uc.muted); if (!rs.f && !a.uc.muted) { try { await this.questTick(ws, a.uid, "chat"); } catch (e) {} } } }
+      if (rs && typeof rs === "object" && rs.t && +rs.k !== a.ck) { const was = a.ck; a.ck = +rs.k; const bad = !rs.f && WF.slur(String(rs.t)); if (bad) this.send(ws, { t: "filtered" });
+        if (!first && was !== undefined) { await this.chatLog(a, m.p.rm, (bad ? "BLOCKED: " : rs.f ? "* " : "") + String(rs.t).slice(0, 120), !!a.uc.muted); if (!rs.f && !a.uc.muted && !bad) { try { await this.questTick(ws, a.uid, "chat"); } catch (e) {} } } }
       else if (first && rs && typeof rs === "object") a.ck = +rs.k;
       if (first && a.ck === undefined) a.ck = 0;
       if (a.pres && m.p && m.p.rm !== a.pres.rm) this.tradeDrop(a.uid, `${a.name} left the room, so the trade was cancelled.`);
@@ -775,6 +818,7 @@ export class Lounge extends DurableObject {
     await this.prTables();
     const have = await this.env.DB.prepare("SELECT id FROM prooms WHERE owner = ?").bind(a.uid).first(); if (have) return { ok: false, msg: "You already have a room. One per llama for now." };
     const name = cleanRoomName(m.name) || (a.name + "'S ROOM").slice(0, PR.nameMax);
+    if (!WF.nameOk(name)) return { ok: false, msg: "That room name isn't allowed. Try another." };
     try { await this.env.DB.prepare("INSERT INTO prooms (owner, name, priv, wall, floor, t) VALUES (?, ?, 0, 'lavender', 'wood', ?)").bind(a.uid, name, Date.now()).run(); }
     catch (e) { if (String(e).includes("UNIQUE")) return { ok: false, msg: "You already have a room." }; throw e; }
     return this.prList(a);
@@ -786,6 +830,7 @@ export class Lounge extends DurableObject {
   async prSet(a, m) {
     const r = await this.prMine(a); if (!r) return { ok: false, msg: "You don't have a room yet." };
     const name = m.name !== undefined ? cleanRoomName(m.name) : r.name; if (!name) return { ok: false, msg: "Give your room a name." };
+    if (m.name !== undefined && !WF.nameOk(name)) return { ok: false, msg: "That room name isn't allowed. Try another." };
     const priv = m.priv !== undefined ? (m.priv ? 1 : 0) : r.priv, wall = PR_WALLS.includes(m.wall) ? m.wall : r.wall, floor = PR_FLOORS.includes(m.floor) ? m.floor : r.floor;
     // a wallpaper or floor you haven't bought can't be put up (free ones, and whatever the room already has, are fine)
     // putting up a wallpaper or floor uses one from your bag; the one coming down goes back into your bag. One batch, so it's all or nothing.
@@ -865,6 +910,70 @@ export class Lounge extends DurableObject {
     const tk = await this.debit(a.uid, price, "deco " + k); if (tk === null) return { ok: false, msg: `That costs ${price} TOKENS. Play some games to earn more!` };
     await this.env.DB.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, item).run();
     return { ok: true, tk, deco: await this.decoOwned(a.uid), furn: await this.furnStorage(a.uid) };
+  }
+  // ---- MARKETPLACE: list a piece for tokens; it waits in the market (out of your bag) until someone buys it or you take it back ----
+  // Every step is one database batch with guards, so an item or token can never be spent twice. The market keeps MARKET.fee of each sale.
+  async mktTable() { if (this.mktReady) return; await this.rareTables();
+    await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS market (id INTEGER PRIMARY KEY AUTOINCREMENT, seller INTEGER NOT NULL, item TEXT NOT NULL, rare INTEGER, price INTEGER NOT NULL, t INTEGER NOT NULL)").run();
+    await this.env.DB.prepare("CREATE INDEX IF NOT EXISTS market_seller ON market (seller)").run(); this.mktReady = true; }
+  async mktList(a) {
+    await this.mktTable();
+    const rows = (await this.env.DB.prepare("SELECT m.id, m.item, m.price, m.t, m.seller, u.name, r.serial FROM market m JOIN users u ON u.id = m.seller LEFT JOIN rares r ON r.id = m.rare ORDER BY m.id DESC LIMIT 300").all()).results || [];
+    return { ok: true, fee: MARKET.fee, max: MARKET.max, list: rows.map((r) => ({ id: r.id, item: r.item, price: r.price, t: r.t, seller: r.name.toUpperCase(), serial: r.serial || null, mine: r.seller === a.uid })) };
+  }
+  async mktSell(a, m) {
+    await this.mktTable(); await this.prTables();
+    const price = Math.floor(+m.price || 0); if (!(price >= 1 && price <= MARKET.maxPrice)) return { ok: false, msg: `Pick a price from 1 to ${MARKET.maxPrice} TOKENS.` };
+    const n = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM market WHERE seller = ?").bind(a.uid).first(); if (n && n.n >= MARKET.max) return { ok: false, msg: `You can have up to ${MARKET.max} things for sale at once.` };
+    const db = this.env.DB, now = Date.now(); let item = String(m.item || ""), rid = null;
+    if (m.rare) { const r = await db.prepare("SELECT id, item FROM rares WHERE id = ? AND owner = ?").bind(Math.floor(+m.rare), a.uid).first(); if (!r) return { ok: false, msg: "You don't own that rare." }; item = r.item; rid = r.id; }
+    else if (!(Object.hasOwn(FURN_ITEMS, item) || Object.hasOwn(DECO_ITEMS, item)) || Object.hasOwn(RARES, item)) return { ok: false, msg: "You can't sell that here." };
+    if (FURN_STAFF.has(item)) return { ok: false, msg: "Staff items can't be sold." };
+    const st = [
+      db.prepare("INSERT INTO trade_guard (ok) SELECT CASE WHEN COALESCE((SELECT n FROM finv WHERE uid = ? AND item = ?), 0) - (SELECT COUNT(*) FROM pfurn p JOIN prooms r ON r.id = p.room WHERE r.owner = ? AND p.item = ?) >= 1 THEN 1 ELSE 0 END").bind(a.uid, item, a.uid, item),
+      db.prepare("UPDATE finv SET n = n - 1 WHERE uid = ? AND item = ?").bind(a.uid, item)];
+    if (rid) st.push(db.prepare("INSERT INTO trade_guard (ok) SELECT CASE WHEN (SELECT owner FROM rares WHERE id = ?) = ? THEN 1 ELSE 0 END").bind(rid, a.uid), db.prepare("UPDATE rares SET owner = 0 WHERE id = ?").bind(rid));
+    st.push(db.prepare("INSERT INTO market (seller, item, rare, price, t) VALUES (?, ?, ?, ?, ?)").bind(a.uid, item, rid, price, now), db.prepare("DELETE FROM finv WHERE uid = ? AND n <= 0").bind(a.uid), db.prepare("DELETE FROM trade_guard"));
+    try { await db.batch(st); } catch (e) { return { ok: false, msg: "Pick that up from your room first (only things in your bag can be sold)." }; }
+    return { ...(await this.mktList(a)), furn: await this.furnStorage(a.uid), rares: await this.rareInfo(a.uid), msg: "Listed! You'll get the tokens when it sells." };
+  }
+  async mktBack(a, m) {   // take your own listing back
+    await this.mktTable(); const L = await this.env.DB.prepare("SELECT * FROM market WHERE id = ?").bind(Math.floor(+m.lid || 0)).first();
+    if (!L || L.seller !== a.uid) return { ok: false, msg: "That listing is gone." };
+    const db = this.env.DB, st = [db.prepare("INSERT INTO trade_guard (ok) SELECT CASE WHEN EXISTS (SELECT 1 FROM market WHERE id = ? AND seller = ?) THEN 1 ELSE 0 END").bind(L.id, a.uid), db.prepare("DELETE FROM market WHERE id = ?").bind(L.id),
+      db.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, L.item)];
+    if (L.rare) st.push(db.prepare("UPDATE rares SET owner = ? WHERE id = ?").bind(a.uid, L.rare));
+    st.push(db.prepare("DELETE FROM trade_guard"));
+    try { await db.batch(st); } catch (e) { return { ok: false, msg: "That listing just sold!" }; }
+    return { ...(await this.mktList(a)), furn: await this.furnStorage(a.uid), rares: await this.rareInfo(a.uid), msg: "Taken off the market. It's back in your bag." };
+  }
+  async mktBuy(ws, a, m) {
+    await this.mktTable(); const L = await this.env.DB.prepare("SELECT * FROM market WHERE id = ?").bind(Math.floor(+m.lid || 0)).first();
+    if (!L) return { ok: false, msg: "Someone just bought that one." }; if (L.seller === a.uid) return { ok: false, msg: "That's your own listing." };
+    if (Math.floor(+m.price) !== L.price) return { ok: false, msg: "The price changed. Take another look." };
+    if (!L.rare) { const h = await this.env.DB.prepare("SELECT n FROM finv WHERE uid = ? AND item = ?").bind(a.uid, L.item).first(); if (h && h.n >= 20) return { ok: false, msg: "You have plenty of those." }; }
+    const db = this.env.DB, now = Date.now(), fee = Math.floor(L.price * MARKET.fee), got = L.price - fee, seller = await this.user(L.seller), sname = seller ? seller.name.toUpperCase() : "?";
+    const st = [db.prepare("INSERT INTO trade_guard (ok) SELECT CASE WHEN EXISTS (SELECT 1 FROM market WHERE id = ?) THEN 1 ELSE 0 END").bind(L.id), db.prepare("DELETE FROM market WHERE id = ?").bind(L.id),
+      db.prepare("UPDATE users SET tk = tk - ? WHERE id = ?").bind(L.price, a.uid), db.prepare("INSERT INTO trade_guard (ok) SELECT CASE WHEN (SELECT tk FROM users WHERE id = ?) >= 0 THEN 1 ELSE 0 END").bind(a.uid),
+      db.prepare("UPDATE users SET tk = tk + ? WHERE id = ?").bind(got, L.seller),
+      db.prepare("INSERT INTO ledger (uid, delta, reason, t) VALUES (?, ?, ?, ?)").bind(a.uid, -L.price, `market buy ${L.item} from ${sname}`, now),
+      db.prepare("INSERT INTO ledger (uid, delta, reason, t) VALUES (?, ?, ?, ?)").bind(L.seller, got, `market sale ${L.item} to ${a.name} (fee ${fee})`, now),
+      db.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, L.item)];
+    if (L.rare) st.push(db.prepare("UPDATE rares SET owner = ? WHERE id = ?").bind(a.uid, L.rare));
+    st.push(db.prepare("DELETE FROM trade_guard"), db.prepare("INSERT INTO trades (t, a, b, a_gave, b_gave) VALUES (?, ?, ?, ?, ?)").bind(now, L.seller, a.uid, JSON.stringify({ market: L.id, item: L.item, rare: L.rare }), JSON.stringify({ tk: L.price })));
+    try { await db.batch(st); } catch (e) { const gone = !(await db.prepare("SELECT 1 FROM market WHERE id = ?").bind(L.id).first()); return { ok: false, msg: gone ? "Someone just bought that one." : `That costs ${L.price} TOKENS. Play some games to earn more!` }; }
+    const me = await this.user(a.uid), [w, x] = this.sockOf(L.seller);
+    if (w && seller) { if (x) { x.uc = { ...(x.uc || {}), t: Date.now(), tk: seller.tk + got }; w.serializeAttachment(x); } this.send(w, { t: "mkt_sold", item: L.item, price: L.price, got, to: a.name, tk: seller.tk + got }); }
+    return { ...(await this.mktList(a)), tk: me.tk, furn: await this.furnStorage(a.uid), rares: await this.rareInfo(a.uid), msg: "Bought! It's in your bag." };
+  }
+  async kitBuy(a, m) {
+    await this.prTables();
+    const k = String(m.kit || ""); if (!Object.hasOwn(KITS, k)) return { ok: false, msg: "That kit isn't for sale." };
+    const items = Object.entries(KITS[k].items), have = new Map(((await this.env.DB.prepare("SELECT item, n FROM finv WHERE uid = ?").bind(a.uid).all()).results || []).map((r) => [r.item, r.n]));
+    if (items.some(([it, n]) => (have.get(it) || 0) + n > 20)) return { ok: false, msg: "You have plenty of some of these already." };
+    const price = kitPrice(k), tk = await this.debit(a.uid, price, "kit " + k); if (tk === null) return { ok: false, msg: `That kit costs ${price} TOKENS. Play some games to earn more!` };
+    await this.env.DB.batch(items.map(([it, n]) => this.env.DB.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, ?) ON CONFLICT(uid, item) DO UPDATE SET n = n + ?").bind(a.uid, it, n, n)));
+    return { ok: true, tk, furn: await this.furnStorage(a.uid), msg: `You bought the ${KITS[k].n} kit!` };
   }
   async furnBuy(a, m) {
     await this.prTables();
@@ -1190,8 +1299,9 @@ export class Lounge extends DurableObject {
   async dmSend(ws, a, m) {
     await this.dmTable(); await this.frTable();
     const now = Date.now(); if (!a.dmr || now - a.dmr[0] > 10000) a.dmr = [now, 0]; if (++a.dmr[1] > DM.burst) { ws.serializeAttachment(a); return { ok: false, msg: "Slow down a little." }; } ws.serializeAttachment(a);
-    const text = String(m.text || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, DM.len);
+    const text = WF.mask(String(m.text || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, DM.len));
     if (!text) return { ok: false, msg: "Type a message first." };
+    if (WF.slur(text)) return { ok: false, msg: "That message has a word that isn't allowed here." };
     const me = await this.user(a.uid); if (!me || me.banned) return { ok: false, msg: "You can't send messages." };
     if (me.muted) return { ok: false, msg: "You're muted, so you can't send messages right now." };
     const T = await this.frTarget(a, m); if (T.err) return { ok: false, msg: T.err };
@@ -1475,6 +1585,14 @@ export class Lounge extends DurableObject {
       case "tg_start": return this.tableStart(ws, a, m);
       case "admin": return this.admin(a, m);
       case "dash": return this.dashboard(a);
+      case "bug_report": return this.bugReport(a, m);
+      case "kit_buy": return this.kitBuy(a, m);
+      case "mkt_list": return this.mktList(a);
+      case "mkt_sell": return this.mktSell(a, m);
+      case "mkt_back": return this.mktBack(a, m);
+      case "mkt_buy": return this.mktBuy(ws, a, m);
+      case "bug_done": return this.bugEdit(a, m, false);
+      case "bug_del": return this.bugEdit(a, m, true);
       case "arena_info": return this.arenaInfo(a, now);
       case "arena_join": return this.arenaJoin(ws, a, m, now);
       case "arena_end": return this.arenaEnd(ws, a, m, now);
@@ -1870,6 +1988,21 @@ export class Lounge extends DurableObject {
     await this.logStaff(a.name, "give", `${u.name.toUpperCase()} ${n}`);
     return { ok: true, msg: `Gave ${u.name.toUpperCase()} ${n} TOKENS.` };
   }
+  async bugTable() { if (this.bugReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS bugs (id INTEGER PRIMARY KEY AUTOINCREMENT, uid INTEGER NOT NULL, name TEXT NOT NULL, t INTEGER NOT NULL, room TEXT, text TEXT NOT NULL, ver TEXT, ua TEXT, scr TEXT, done INTEGER NOT NULL DEFAULT 0)").run(); this.bugReady = true; }
+  async bugReport(a, m) {
+    await this.bugTable();
+    const text = WF.mask(String(m.text || "").replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, " ").trim().slice(0, 800)); if (text.length < 5) return { ok: false, msg: "Tell us a little more first." };
+    const n = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM bugs WHERE uid = ? AND t > ?").bind(a.uid, Date.now() - 864e5).first(); if (n && n.n >= 5) return { ok: false, msg: "Thanks! You've sent 5 reports today. Try again tomorrow." };
+    const s = (v, k) => String(v || "").replace(/[^\x20-\x7e]/g, "").slice(0, k);
+    await this.env.DB.prepare("INSERT INTO bugs (uid, name, t, room, text, ver, ua, scr) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(a.uid, a.name, Date.now(), s(m.room, 24), text, s(m.ver, 20), s(m.ua, 160), s(m.scr, 12)).run();
+    return { ok: true };
+  }
+  async bugEdit(a, m, del) {
+    if ((await this.staffNow(a)) !== "owner") return { ok: false, msg: "Only the owner can do that." };
+    await this.bugTable(); const id = Math.floor(+m.bid || 0);
+    if (del) await this.env.DB.prepare("DELETE FROM bugs WHERE id = ?").bind(id).run(); else await this.env.DB.prepare("UPDATE bugs SET done = ? WHERE id = ?").bind(m.done ? 1 : 0, id).run();
+    return { ok: true };
+  }
   async logStaff(by, cmd, target) {
     const log = (await this.ctx.storage.get("modlog")) || [];
     log.unshift({ t: Date.now(), by, cmd, target }); await this.ctx.storage.put("modlog", log.slice(0, 40));
@@ -1891,9 +2024,12 @@ export class Lounge extends DurableObject {
       .map((r) => ({ id: r.id, by: r.reason.slice(14).toUpperCase(), to: r.name.toUpperCase(), n: r.delta, t: r.t, undo: undone.get(r.id) || null }));
     const today = {}; for (const g2 of gifts) if (etDay(g2.t) === etDay(Date.now())) today[g2.by] = (today[g2.by] || 0) + g2.n;
     // newest sign-ups: owner only. Mods never receive this list (name and join time only, never emails)
+    // bug reports from players: owner only, like the sign-ups list
+    let bugs = null;
+    if (a.staff === "owner") { await this.bugTable(); bugs = (await this.env.DB.prepare("SELECT id, name, t, room, text, ver, ua, scr, done FROM bugs ORDER BY done, id DESC LIMIT 60").all()).results || []; }
     let signups = null;
     if (a.staff === "owner") signups = ((await this.env.DB.prepare("SELECT name, created FROM users ORDER BY created DESC LIMIT 30").all()).results || []).map((r) => ({ n: r.name.toUpperCase(), t: r.created }));
-    return { ok: true, me: a.staff, online, staff, muted, banned, gifts, giftsToday: today, giftCap: STAFF_GIVE_DAY, log: (await this.ctx.storage.get("modlog")) || [], ...(signups ? { signups } : {}) };
+    return { ok: true, me: a.staff, online, staff, muted, banned, gifts, giftsToday: today, giftCap: STAFF_GIVE_DAY, log: (await this.ctx.storage.get("modlog")) || [], ...(signups ? { signups } : {}), ...(bugs ? { bugs } : {}) };
   }
   async admin(a, m) {
     if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can do that." };
