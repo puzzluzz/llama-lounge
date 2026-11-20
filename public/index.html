@@ -686,6 +686,89 @@
   @media (max-width:640px){ #rbwrap{width:100%;max-width:none} #rbwrap #roombar{flex:1 1 auto} .rbarrow,#rbwrap.over .rbarrow{display:none} }
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
   @media (max-height:520px) and (min-width:641px){ #dock{bottom:6px;padding:6px} .pbtn{height:38px} #chatin{height:38px} #saybtn{width:30px;height:30px} }
+
+  /* ---------- pixel icons ---------- */
+  .pi{display:inline-block;width:var(--pi1,16px);height:var(--pi1,16px);vertical-align:-.2em;background:no-repeat center/100% 100%;image-rendering:pixelated;image-rendering:crisp-edges;flex:none;font-style:normal}
+  .menu div[data-i]::before,.menu div.on::before{content:''!important;display:block;width:var(--pi2);height:var(--pi2);background:var(--ic) no-repeat center/100% 100%;image-rendering:pixelated;flex:none}
+  .gbbtn .pi{margin:0 1px}
+  #roombar .ri .pi,.rpi .pi{width:var(--pi2);height:var(--pi2)}
+  .wdbox .pi,.afki .pi{width:var(--pi3);height:var(--pi3)}
+  /* ---------- pop-up look: ink outline, colored header with a pixel icon tile ---------- */
+  .gb.sheet{border:3px solid var(--ink)!important}
+  .shead.band{height:auto!important;min-height:70px;justify-content:flex-start;gap:12px;margin:-20px -20px 14px;padding:16px 14px 14px 16px;background:var(--hc,#6b4bd8);color:var(--ht,#fff);
+    border-radius:17px 17px 0 0;border-bottom:3px solid var(--ink);box-shadow:0 -30px 0 var(--hc,#6b4bd8)}
+  .shead.band .sgrip{top:7px;margin:0 0 0 -21px;height:4px;background:rgba(255,255,255,.45)}
+  .shead.band:hover .sgrip{background:rgba(255,255,255,.7)}
+  .shead.band .sico{width:48px;height:48px;box-sizing:border-box;border:3px solid var(--ink);border-radius:12px;background:#fff;display:grid;place-items:center;flex:none;box-shadow:0 3px 0 rgba(29,21,48,.35)}
+  .shead.band .sico .pi{width:var(--pi3);height:var(--pi3);max-width:36px;max-height:36px}
+  .shead.band .stx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .shead.band .stx .slt,.shead.band .stx .lbt,.shead.band .stx .dpt,.shead.band .stx .rpt,.shead.band .stx #tm_title{color:var(--ht,#fff)!important;margin:0!important;text-align:left!important;font:800 18px/1.2 var(--ui)!important;letter-spacing:.03em;overflow:hidden;text-overflow:ellipsis}
+  .shead.band .stx .pi{display:none}
+  .shead.band .ssub{font:700 11.5px/1.3 var(--ui);letter-spacing:.06em;opacity:.88;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .shead.band .dmhead{margin:0!important;gap:8px} .shead.band .dmback{background:rgba(255,255,255,.95);border:3px solid var(--ink);width:34px;height:34px;line-height:26px;border-radius:10px}
+  .shead.band .sheetx,.shead .sheetx{background:#fff;border:3px solid var(--ink);border-radius:12px;width:40px;height:40px;display:grid;place-items:center;box-shadow:0 3px 0 rgba(29,21,48,.35);align-self:flex-start}
+  .shead .sheetx .pi{width:var(--pi1);height:var(--pi1)}
+  .shead .sheetx:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(29,21,48,.35)}
+  #screen .menu>div.shead.band,.menu>.shead.band{display:flex!important;flex-direction:row;grid-column:1/-1;min-height:70px;height:auto;padding:16px 14px 14px 16px;border-radius:17px 17px 0 0;font-size:inherit;gap:12px;background:var(--hc)}
+  .menu>.shead.band::before{content:none!important}
+  @media (max-width:640px){
+    .shead.band{margin:-8px -18px 14px;border-radius:23px 23px 0 0}
+    #screen .menu>div.shead.band{margin:-8px -18px 4px;border-radius:23px 23px 0 0}
+    .gb.sheet{border-bottom:0!important}
+  }
+  @media (min-width:641px){ .gb.sheet{animation:pxIn .16s ease-out} }
+  @keyframes pxIn{from{opacity:0;scale:.95}to{opacity:1;scale:1}}
+  /* empty lists get a little llama instead of a blank space */
+  .empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:14px 10px 10px;color:var(--sub)}
+  .empty img{width:96px;height:96px;image-rendering:pixelated}
+  .empty b{color:var(--ink);font:800 14px var(--ui);letter-spacing:.04em} .empty small{font:500 13.5px/1.45 var(--ui);max-width:300px}
+
+  #frbox .frf{position:relative;width:44px;height:40px;border-radius:12px;background:#fff;border:2px solid #e4def0;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;flex:none}
+  #frbox .frf .lpic{display:block;image-rendering:pixelated}
+  #frbox .frf .frd{position:absolute;right:2px;bottom:2px;border:2px solid #fff}
+
+  .menu .shead.band div{background:transparent!important;min-height:0!important;height:auto!important;padding:0!important;border-radius:0!important;display:block;text-align:left!important;font-size:inherit;white-space:normal;cursor:inherit;box-shadow:none!important;gap:0;line-height:1.2}
+  .menu .shead.band .stx{display:flex!important;flex-direction:column;gap:3px}
+  .menu .shead.band div::before{content:none!important}
+
+  /* item detail card */
+  #itembox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);max-height:86vh;width:min(calc(100% - 24px),400px);z-index:7!important;animation:popIn .18s ease-out}
+  #itembox .itv{position:relative;display:flex;justify-content:center;align-items:center;background:repeating-conic-gradient(#f6f3fb 0 25%,#efebf7 0 50%) 0 0/24px 24px;border-radius:16px;border:2px solid #e6e0f2;padding:10px;min-height:180px}
+  #itembox .itv canvas{image-rendering:pixelated}
+  #itembox .itrot{position:absolute;right:8px;bottom:8px;min-height:34px;padding:6px 10px;font-size:12px;background:#fff;border:2px solid #e0d8ee}
+  #itembox .itd{font:500 14.5px/1.5 var(--ui);color:var(--ink);margin:12px 2px 10px}
+  #itembox .itg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+  #itembox .itg div{background:var(--soft);border-radius:12px;padding:8px 4px;text-align:center;display:flex;flex-direction:column;gap:3px;justify-content:center}
+  #itembox .itg b{font:800 15px var(--ui);display:flex;align-items:center;justify-content:center;gap:4px} #itembox .itg small{font:800 9.5px/1.2 var(--ui);letter-spacing:.04em;color:var(--sub)}
+  #itembox .itf{display:flex;align-items:center;gap:8px;font:600 13.5px var(--ui);color:var(--ink);padding:6px 4px}
+  #itembox .itrare{display:flex;gap:10px;align-items:center;background:linear-gradient(135deg,#fff6d6,#ffe9f2);border:2px solid #f0c860;border-radius:14px;padding:10px 12px;margin:0 0 10px}
+  #itembox .itrare .pi{width:var(--pi2);height:var(--pi2)} #itembox .itrare b{display:block;font:800 13px var(--ui);color:#8a5a00} #itembox .itrare small{font:600 12.5px var(--ui);color:var(--sub)}
+  #it_msg{font:700 13px var(--ui);color:#b0203a;text-align:center;min-height:0;margin-top:6px} #it_msg.good{color:#1f8a4c} #it_msg:empty{display:none}
+  .wi.fi{cursor:pointer}
+  #wd_sub .wdd{display:block;color:var(--ink);font-weight:600;margin-bottom:3px} #wd_sub .wdo{display:flex;align-items:center;gap:5px;margin-top:4px;font:800 11px var(--ui);letter-spacing:.04em;color:var(--sub)}
+  /* llama profile card */
+  #pmenu{width:min(340px,calc(100vw - 16px));box-sizing:border-box;border:3px solid var(--ink)!important;padding:12px!important;text-align:left!important}
+  #pmenu .pmtop{display:flex;gap:12px;align-items:center;background:var(--soft);border-radius:14px;padding:8px 8px 8px 6px;margin-bottom:10px}
+  #pmenu .pmpic{width:72px;height:96px;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;flex:none;background:linear-gradient(#fff,#efeaf8);border-radius:12px;border:2px solid #e2dbef}
+  #pmenu .pmpic .lpic{image-rendering:pixelated;display:block}
+  #pmenu .pmx{flex:1;min-width:0} #pmenu .pmn{color:var(--ink)!important;margin:0 0 4px!important;font:800 18px/1.2 var(--ui)!important;text-align:left}
+  #pmenu .pmmeta{font:700 11px/1.7 var(--ui);letter-spacing:.05em;color:var(--sub)}
+  #pmenu .pmst{display:inline-flex;align-items:center;gap:4px;font:800 10.5px var(--ui);padding:2px 7px;border-radius:999px;background:#fff;color:var(--ink);margin-right:4px}
+  #pmenu .pmst.own{background:#fff1c2} #pmenu .pmst.mod{background:#fff6d0} #pmenu .pmst.fr{background:#fff3c8}
+  #pmenu .pmclose{align-self:flex-start;width:36px;height:36px;min-height:0;padding:0;background:#fff;border:2px solid var(--ink);border-radius:10px}
+  #pmenu .pmsc{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:8px}
+  #pmenu .pmsc div{background:var(--soft);border-radius:10px;padding:6px 2px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px}
+  #pmenu .pmsc b{font:800 15px var(--ui)} #pmenu .pmsc small{font:800 8.5px/1.1 var(--ui);letter-spacing:.03em;color:var(--sub)}
+  #pmenu .pmr{display:flex;gap:6px;align-items:center;font:700 12px var(--ui);color:#8a5a00;background:#fff6d6;border-radius:10px;padding:6px 8px;margin-bottom:8px}
+  #pmenu .pmroom{display:flex;gap:8px;align-items:center;background:var(--soft);border-radius:12px;padding:8px 8px 8px 10px;margin-bottom:10px}
+  #pmenu .pmroom>span{flex:1;min-width:0;display:flex;flex-direction:column} #pmenu .pmroom b{font:800 13.5px var(--ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis} #pmenu .pmroom small{font:700 10.5px var(--ui);color:var(--sub);letter-spacing:.04em;display:flex;align-items:center;gap:3px}
+  #pmenu .pmroom .gbbtn{min-height:34px;padding:6px 12px;font-size:12px}
+  #pmenu .pmb{display:grid!important;grid-template-columns:repeat(4,1fr);gap:6px!important} #pmenu .pmb .gbbtn{flex-direction:column;gap:3px;padding:8px 2px;font-size:11px;min-height:52px}
+  #pmenu .pmb .gbbtn .pi{width:var(--pi2);height:var(--pi2)}
+  .menu .shead.band .stx{align-items:flex-start!important;justify-content:center!important}
+  .gbbtn .pi-play,.gbbtn .pi-playl{margin:0 -3px}
+  .job .ji .pi{width:var(--pi2);height:var(--pi2)} .rpi .pi{width:var(--pi3)!important;height:var(--pi3)!important}
+  .shead.band .stx>*{justify-content:flex-start!important;text-align:left!important}
 </style>
 </head>
 <body>
@@ -699,7 +782,7 @@
   <div id="keys">ARROWS/WASD WALK · SPACE ACTION<br>ENTER TALK · M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
   <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">CHANGE ROOM</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
   <div id="emenu" class="gb menu sheet"><div data-e="heart">♥ HEART</div><div data-e="bang">! WOW</div><div data-e="huh">? HUH</div><div data-e="note">♪ SING</div><div data-e="lol">^^ LOL</div><div data-e="zzz">Z SLEEP</div><div data-e="wave">✋ WAVE</div><div data-e="flex">💪 FLEX</div><div data-e="palm">-_- FACEPALM</div></div>
-  <div id="pmenu" class="gb"><div id="pm_name" class="pmn"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_trade">🤝 TRADE</button><button class="gbbtn" id="pm_close">✕</button></div></div>
+  <div id="pmenu" class="gb"><div class="pmtop"><div id="pm_pic" class="pmpic"></div><div class="pmx"><div id="pm_name" class="pmn"></div><div id="pm_meta" class="pmmeta"></div></div><button class="gbbtn pmclose" id="pm_close" aria-label="Close">✕</button></div><div id="pm_info"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_trade">🤝 TRADE</button></div></div>
   <div id="tmenu" class="gb sheet"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
   <div id="lboard" class="gb sheet"><div class="lbt">🏆 HIGH SCORES</div><div class="lbcols"><div><div class="lbh">HAY CATCH</div><div id="lb_hay"></div></div><div><div class="lbh">LLAMA DASH</div><div id="lb_dash"></div></div></div><div class="srow"><button class="gbbtn" id="lbclose">CLOSE</button></div></div>
   <div id="shop" class="gb sheet"><img id="shopimg" alt=""><div id="shopname"></div><div id="shopprice"></div><div id="shopsub"></div><div class="srow"><a id="shoplink" class="gbbtn" href="#" target="_blank" rel="noopener noreferrer">VIEW PRODUCT ▶</a><button class="gbbtn" id="shopclose">CLOSE</button></div></div>
@@ -737,6 +820,7 @@
     <div class="wdtop"><canvas id="wd_prev" width="28" height="46" title="Tap to turn around"></canvas><div class="wdinfo"><b id="wd_name"></b><small id="wd_sub"></small><div class="srow" id="wd_acts"></div></div></div>
     <div class="autabs" id="wd_tabs"><button type="button" data-t="clothing">👕 CLOTHING</button><button type="button" data-t="storage">📦 ITEMS</button></div>
     <div id="wd_msg"></div><div id="wd_body"></div></div>
+  <div id="itembox" class="gb sheet"><div class="slt" id="it_title">ITEM</div><div id="it_body"></div><div id="it_msg"></div></div>
   <div id="roomsbox" class="gb sheet"><div class="slt" id="pr_title">🏠 ROOMS</div><div id="pr_body"></div></div>
   <div id="dmbox" class="gb sheet"><div class="dmhead"><button class="dmback" id="dm_back" aria-label="Back">‹</button><div class="slt" id="dm_title">💬 MESSAGES</div></div>
     <div id="dm_list"></div>
@@ -839,7 +923,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-23f";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24a";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -878,6 +962,120 @@ async function apiPost(path, body){ const r = await fetch(path, {method:'POST', 
 <script>
 (() => {
 'use strict';
+
+// ======================= PIXEL ICONS =======================
+// Every icon in the game is 12x12 pixel art, drawn here once at start-up. Any emoji that ends up in the page
+// (labels, titles, messages, even chat) is swapped for its pixel icon automatically, so nothing shows as an emoji.
+const PIXPAL={k:'#1d1530',w:'#ffffff',y:'#ffd23f',Y:'#c88a10',o:'#f08a24',r:'#e83850',R:'#a01c34',p:'#ff6e9c',P:'#c8306a',b:'#4aa8ff',B:'#2060c0',c:'#b8e4ff',g:'#48c060',G:'#22803a',l:'#a8e878',n:'#a86a34',N:'#6a3e1c',t:'#e8b878',s:'#d0ccdc',S:'#7c7890',v:'#9a60e0',V:'#5e34a0',f:'#f8dcb8'};
+const PIXSRC={
+  coin:'...kkkkkk.../..kyyyyyyk../.kyyyyyyyYk./kyywYYYYyyYk/kywYyyyyYyYk/kywYyyyyYyYk/kyyYyyyyYyYk/kyyYyyyyYyYk/kyyyYYYYyYYk/.kyyyyyyyYk./..kYYYYYYk../...kkkkkk...',
+  star:'.....kk...../....kyyk..../....kwyk..../kkkkkwyykkkk/kyywwyyyyyYk/.kyyyyyyyYk./..kyyyyyYk../..kyyyyyYk../.kyyYkkyyYk./.kyYk..kyYk./kyYk....kYYk/kkk......kkk',
+  splash:'.....kk...../....kck...../...kcbk..k../...kbbk.kck./..kcbbbkkbk./..kcbbbk.k../.kcbbbbbk.../.kcwbbbbk.../.kcwbbbBk.k./..kcbbBk.kck/...kkkk...k./............',
+  drop:'.....kk...../....kcck..../....kcbk..../...kcbbbk.../...kcbbbk.../..kcbbbbbk../..kcwbbbbk../.kcwbbbbbBk./.kcwbbbbbBk./.kcbbbbbBBk./..kBbbbBBk../...kkkkkk...',
+  bag:'....kkkk..../...kk..kk.../...k....k.../.kkkkkkkkkk./.kppppppppk./.kpwpppppPk./.kpwpppppPk./.kpppkkpppk./.kppkyykppk./.kpppkkppPk./.kPPPPPPPPk./.kkkkkkkkkk.',
+  backpack:'....kkkk..../...knnnnk.../..kknkknkk../.knnnnnnnnk./.kntnnnnnNk./.knttkkkkNk./.knnkyyykNk./.knnkkkkkNk./.knnnnnnnNk./.knnnnnnNNk./.kNNNNNNNNk./..kkkkkkkk..',
+  house:'.....kk...../....krrk..../...krrrrk.../..krrrrrrk../.krrrrrrrrk./kRRRRRRRRRRk/.kttttttttk./.kkkktkkkkk./.kkcktknnnk./.kkkktknnyk./.kttttknnnk./kkkkkkkkkkkk',
+  burger:'...kkkkkk.../..ktttttwk../.kttwtttttk./.kttttttttk./.kkkkkkkkkk./kgglgglgglgk/kNNNNNNNNNNk/.krrrrrrrrk./.kkkkkkkkkk./.kttttttttk./..knnnnnnk../...kkkkkk...',
+  bowl:'....kkkk..../...kwwwSk.../..kwwSwwSk../..kwwwwwSk../...kwwwSk.../...krrrRk.../..kwwwwwSk../.kwwwwwwwSk./.kwwwwwwwSk./.kwwwwwwSSk./..kwwwwSSk../...kkkkkk...',
+  chat:'.kkkkkkkkkk./kwwwwwwwwwck/kwkwkwkwwwck/kwwwwwwwwwck/kwkkkwkkwwck/kwwwwwwwwwck/kcwwwwwwwcck/.kkkwwkkkkk./...kwwk...../...kwk....../...kk......./............',
+  lock:'............/....kkkk..../...kssssk.../..ksk..ksk../..ksk..kSk../.kkkkkkkkkk./.kyyyyyyyYk./.kywykkyyYk./.kyyykkyyYk./.kyyyykyyYk./.kYYYYYYYYk./.kkkkkkkkkk.',
+  slots:'.kkkkkkkkk../krrrrrrrrRk./krkkkkkkkRkk/krkwkwkwkRky/krkpkykrkRky/krkwkwkwkRkk/krkkkkkkkRk./krryyyyyrRk./krrrrrrrrRk./kRRRRRRRRRk./kSSSSSSSSSk./.kkkkkkkkk..',
+  gift:'..kk...kk.../.kyyk.kyyk../..kyykyyk.../kkkkkkkkkkkk/kppppyypppPk/kppppyypppPk/kkkkkkkkkkkk/.kppppyyppk./.kppppyyppk./.kppppyyppk./.kPPPPYYPPk./.kkkkkkkkkk.',
+  trophy:'.kkkkkkkkkk./kkyyyyyyyYkk/kykywyyyyYky/kykywyyyyYky/.kkywyyyyYk./..kyyyyyYk../...kyyyYk.../....kyYk..../....kyYk..../...kkkkkk.../..kYyyyyYk../..kkkkkkkk..',
+  door:'..kkkkkkkk../..knnnnnnk../..kntttnNk../..kntttnNk../..kntttnNk../..knnnnnNk../..knttnyNk../..kntttnNk../..kntttnNk../..kntttnNk../..knnnnnNk../.kkkkkkkkkk.',
+  shield:'.kkkkkkkkkk./.kbbbbbwwbk./.kbbbbbwwBk./.kbbbbbwwBk./.kwwwwwwwBk./.kwwwwwbbBk./.kbbbbwbbBk./..kbbbwbBk../..kbbbwbBk../...kbbwBk.../....kbBk..../.....kk.....',
+  handshake:'............/.......kk.../kkkkkkkkgk../kggggggggGk./kkkkkkkkGk../.......kk.../...kk......./..kbkkkkkkkk/.kbbbbbbbbbk/..kBkkkkkkkk/...kk......./............',
+  cocktail:'kkkkkkkkkkkk/kcwwwccccc.k/.kcpccccck../..kcpcccy.../...kcccyyk../....kcck..../.....kk...../.....kk...../.....kk...../.....kk...../...kkkkkk.../..kssssssk..',
+  cup:'.......kk.../......kk..../..kkkkkkkk../..kwwwkwwk../..krrrrrrk../..kwrrrrRk../..kwrrrrRk../..kwyyyyRk../..kwrrrrRk../..krrrrrRk../...krrrRk.../...kkkkkk...',
+  shirt:'............/..kkk..kkk../.kbbbkkbbbk./kbbbbbbbbbbk/kbwbbbbbbbBk/kkkbbbbbbkkk/..kbbbbbbk../..kwbbbbBk../..kbbbbbBk../..kbbbbbBk../..kBBBBBBk../..kkkkkkkk..',
+  box:'............/..kkkkkkkk../.kttttttttk./kttttnnttttk/kkkkknnkkkkk/kttttnnttttk/kttttttttttk/ktwttttttnNk/ktwttttttnNk/kttttttttnNk/knnnnnnnnnNk/kkkkkkkkkkkk',
+  palette:'...kkkkkk.../..kttttttk../.kttrrtttbk./ktttrrttbbtk/kttttttttttk/kyytttkktttk/kyytttk.kttk/ktttttkkttk./kgggtttttk../kgggttttk.../.kttttkk..../..kkkk......',
+  fire:'.....k....../....kok..k../...kook.kok./..koook.kok./..koooykkook/.kooyyyoooko/.kooyyyyoook/.koyywyyyook/.koyywwyyook/..koyyyyyok./...kooooookk/....kkkkkk..',
+  check:'............/..........kk/.........kgk/........kggk/.kk....kggk./kgggk.kggk../kggggkggk.../.kggggggk.../..kgggggk.../...kgggk..../....kkk...../............',
+  wheat:'.....k....../....kyk...../...kykyk..../...kyyyk.k../..kykyk.kyk./..kyyyk.kyyk/...kykykyk../....kyyyk.../.....kyk..../.....kYk..../.....kYk..../.....kkk....',
+  crown:'............/.k...kk...k./kyk.kyyk.kyk/kyykkyykkyyk/kyyyyyyyyyyk/kyyryyyybyYk/kyyyyyyyyyYk/kywyyyyyyyYk/kyyyyyyyyyYk/kYYYYYYYYYYk/kkkkkkkkkkkk/............',
+  heart:'............/.kkk...kkk../krrrk.krrrk./krwrrkrrrrRk/krwrrrrrrrRk/krrrrrrrrrRk/.krrrrrrrRk./..krrrrrRk../...krrrRk.../....krRk..../.....kk...../............',
+  goldheart:'............/.kkk...kkk../kyyyk.kyyyk./kywyykyyyyYk/kywyyyyyyyYk/kyyyyyyyyyYk/.kyyyyyyyYk./..kyyyyyYk../...kyyyYk.../....kyYk..../.....kk...../............',
+  envelope:'............/kkkkkkkkkkkk/kSwwwwwwwwSk/kwSwwwwwwSwk/kwwSwwwwSwwk/kwwwSkkSwwwk/kwwwkSSkwwwk/kwwkwwwwkwwk/kwkwwwwwwkwk/kkSSSSSSSSkk/kkkkkkkkkkkk/............',
+  pepper:'........kk../.......kgk../......kgk.../....kkkkk.../...krrrrRk../..krwrrrRk../..krwrrrRk../.krrrrrrRk../.krrrrrRk.../krrrrrRk..../kRRRRkk...../kkkkk.......',
+  sparkle:'.....kk...../.....kbk..../.....kbk..../..k..kbk..k./..kbkkbkkbk./kkkkbbbbkkkk/kbbbbwbbbbBk/kkkkbbbbkkkk/..kbkkbkkBk./..k..kbk..k./.....kBk..../.....kk.....',
+  chair:'..kkkkkk..../..knnnnNk.../..kntttNk.../..kntttNk.../..knnnnNk.../..kNnnnNk.../.kkkkkkkkk../.ktttttttNk./.knnnnnnnNk./.kNk....kNk./.kNk....kNk./.kkk....kkk.',
+  bulb:'...kkkkk..../..kyyyyyk.../.kyywyyyYk../.kywyyyyYk../.kywyyyyYk../.kyyyyyyYk../..kyyyyYk.../...kyyYk..../...kssSk..../...kSSSk..../...kssSk..../....kkk.....',
+  hand:'...kk......./..kffkkk..../..kffkffk.../..kffkffkk../..kffkffkfk./kkkffffffffk/kfkffffffffk/kffffffffffk/.kffffffffk./..kffffffk../...kffffk.../....kkkk....',
+  dice:'.kkkkkkkkkk./kwwwwwwwwwSk/kwkkwwwwwwSk/kwkkwwwwwwSk/kwwwwkkwwwSk/kwwwwkkwwwSk/kwwwwwwkkwSk/kwwwwwwkkwSk/kwwwwwwwwwSk/kSSSSSSSSSSk/.kkkkkkkkkk./............',
+  ball:'...kkkkkk.../..kwwwwwSk../.kwrwwwrwSk./kwwrwwwrwwSk/kwrwwwwwrwSk/kwrwwwwwrwSk/kwwrwwwrwwSk/kwwrwwwrwSSk/.kwrwwwrSSk./..kSwwwSSk../...kkkkkk.../............',
+  wheel:'...kkkkkk.../..kRrrrrRk../.kRkkkkkkRk./kRkpkyykbkRk/kRkkpkkbkkRk/kRkyykkyykRk/kRkkbkkpkkRk/kRkbkyykpkRk/.kRkkkkkkRk./..kRRRRRRk../...kSkkSk.../..kkk..kkk..',
+  hourglass:'.kkkkkkkkkk./.knnnnnnnnk./..kwwwwwwk../..kwyyyywk../...kwyywk.../....kwyk..../....kwyk..../...kwwywk.../..kwwyywwk../..kwyyyyyk../.knnnnnnnnk./.kkkkkkkkkk.',
+  disk:'kkkkkkkkkkk./kbkwwwwwkbkk/kbkwwwwwkbBk/kbkwwwwwkbBk/kbkkkkkkkbBk/kbbbbbbbbbBk/kbbkkkkkbbBk/kbbkSSwkbbBk/kbbkSSwkbbBk/kBBkkkkkBBBk/kkkkkkkkkkkk/............',
+  gold1:'.kk......kk./.kbk....kbk./..kbk..kbk../...kbkkbk.../...kkkkkk.../..kyyyyyYk../.kyyykkyyYk./.kyykkkyyYk./.kyyykkyyYk./.kyykkkkyYk./..kYyyyyYk../...kkkkkk...',
+  silver2:'.kk......kk./.kbk....kbk./..kbk..kbk../...kbkkbk.../...kkkkkk.../..kwwwwwSk../.kwwkkkwwSk./.kwwwwkwwSk./.kwwwkwwwSk./.kwwkkkkwSk./..kSwwwwSk../...kkkkkk...',
+  bronze3:'.kk......kk./.kbk....kbk./..kbk..kbk../...kbkkbk.../...kkkkkk.../..koooooNk../.kookkkooNk./.kooookkoNk./.koooookoNk./.kookkkooNk./..kNooooNk../...kkkkkk...',
+  reddot:'............/............/...kkkkkk.../..krrrrrRk../.krwwrrrrRk./.krwrrrrrRk./.krrrrrrrRk./.krrrrrrrRk./..kRrrrrRk../...kkkkkk.../............/............',
+  chart:'k.........../k........kk./k.......kgk./k......kgk../k..kk.kgk.../k.kgkkgk..../kkgk.kk...../kgk........./kk........../k.........../kkkkkkkkkkkk/............',
+  hundred:'............/............/rr..rr...rr./.r.r..r.r..r/.r.r..r.r..r/.r.r..r.r..r/.r.r..r.r..r/rrr.rr...rr./............/RRRRRRRRRRRR/.RRRRRRRRRR./............',
+  smile:'...kkkkkk.../..kyyyyyyk../.kyyyyyyyYk./kyykyyyykyYk/kyykyyyykyYk/kyyyyyyyyyYk/kykyyyyyykYk/kyykyyyykyYk/kyyykkkkyyYk/.kyyyyyyyYk./..kYYYYYYk../...kkkkkk...',
+  scroll:'.kkkkkkkkk../kttttttttNk./ktkkkkkkkk../.ktttttttk../.ktSSSSStk../.ktttttttk../.ktSSSSStk../.ktttttttk../.ktSSSStttk./.kkkkkkkkttk/..kttttttttk/..kkkkkkkkk.',
+  muscle:'............/.....kkk..../....kfffk.../...kfffffk../...kffkffk../..kfffkkk.../.kffffk...../kfffffffkk../kffffffffffk/kffffffffffk/.kfffffffffk/..kkkkkkkkk.',
+  llama:'.kk..kk...../.kwk.kwk..../.kwkkkwk..../.kwwwwwwk.../kwwwwkwwwk../kwwwwwwwwwk./kwwwwwwwwwwk/.kwwwwwwwSwk/..kkwwwwkkk./...kwwwwk.../...kwwwwk.../...kkkkkk...',
+  zzz:'............/......kkkkk./......kbbbk./.......kbk../......kbbbk./..kkkkkkkkk./..kbbbbk..../....kbk...../...kbk....../..kbbbbk..../..kkkkkk..../............',
+  speaker:'.......k..../......kk..k./....kkSk...k/.kkkkwSk.k.k/.kSSkwSk..kk/.kSSkwSk..kk/.kSSkwSk.k.k/.kkkkwSk...k/....kkSk..k./......kk..../.......k..../............',
+  music:'....kkkkkkkk/....kbbbbbbk/....kbkkkkbk/....kbk..kbk/....kbk..kbk/....kbk..kbk/.kkkkbk.kkbk/kbbbbbkkbbbk/kbbbbbkbbbbk/.kbbbk.kbbk./..kkk...kk../............',
+  bed:'............/kk........../kNk........./kNkkkkkkkkk./kNwwSkpppppk/kNwwSkpppppk/kNkkkkkkkkkk/kNnnnnnnnnNk/kNNNNNNNNNNk/kNk......kNk/kkk......kkk/............',
+  plate:'............/............/....kkkk..../..kkwwwwkk../.kwwssssSwk./kwwsrrrrsSwk/kwwsryyrsSwk/kwwsrrrrsSwk/.kwSssssSwk./..kkwwwwkk../....kkkk..../............',
+  books:'............/.kkk.kkk..../.kbk.krk.kk./.kbk.krkkgk./.kwk.kwkgkk./.kbk.krkgk../.kbk.krkkgk./.kbk.krk.kgk/.kwk.kwk.kwk/.kbk.krk.kgk/kkkkkkkkkkkk/kNNNNNNNNNNk',
+  tv:'..k......k../...k....k.../....k..k..../kkkkkkkkkkkk/kSkkkkkkkkSk/kSkbbbbbckSk/kSkbbbbbbkSk/kSkbbbbbbkSk/kSkkkkkkkkSk/kSSSSSSSSSSk/kkkkkkkkkkkk/..kk....kk..',
+  plant:'....kk....../...kglk.kk../...kgglkglk./....kgglglk./.kk..kgglk../kglkkkgglk../.kgglkgk..../..kkkkkkkk../..knnnnnNk../..kntnnnNk../...knnnNk.../...kkkkkk...',
+  yarn:'...kkkkkk.../..kpppppPk../.kpwkpppkPk./kpwppkpkppPk/kpppppkppPPk/kppppkpkpPPk/kpppkpppkPPk/kppkpppppkPk/.kPkpppppPk./..kPPPPPPkk./...kkkkkk.kk/...........k',
+  apple:'.....kk...../.....kNkk.../...kkkkglk../..krrrrkkk../.krwrrrrrRk./.krwrrrrrRk./.krrrrrrrRk./.krrrrrrrRk./.krrrrrrRRk./..kRrrrRRk../...kkkkkk.../............',
+  corn:'.....kk...../....kyyk..../...kyYyYk.../...kyyyyk.../...kyYyYk.../.k.kyyyyk.k./kgkkyYyYkkgk/kggkyyyykggk/.kggkyykggk./..kgggggggk./...kGGGGGk../....kkkkk...',
+  cookie:'...kkkkkk.../..kttttttk../.ktNtttttnk./ktttttNtttnk/kttNttttttnk/ktttttttNtnk/kttttNttttnk/ktNtttttttnk/.ktttttNtnk./..knnnnnnk../...kkkkkk.../............',
+  warn:'.....kk...../....kyyk..../....kyyk..../...kyyyyk.../...kykkyk.../..kyykkyyk../..kyykkyyk../.kyyykkyyyk./.kyyyyyyyyk./kyyyykkyyyyk/kyyyyyyyyyYk/kkkkkkkkkkkk',
+  search:'..kkkkk...../.kcccccSk.../kccwwcccSk../kcwcccccSk../kcwcccccSk../kcccccccSk../.kcccccSkk../..kkkkkkSSk./........kSSk/.........kSk/..........kk/............',
+  gear:'....kkkk..../.kk.kSSk.kk./kSSkkSSkkSSk/.kSSSSSSSSk./.kSSkkkkSSk./kkSk....kSkk/kSSk....kSSk/kkSk....kSkk/.kSSkkkkSSk./.kSSSSSSSSk./kSSkkSSkkSSk/.kk.kkkk.kk.',
+  globe:'...kkkkkk.../..kbbggbbk../.kbgggbbbbk./kbbgggbbgbBk/kbbbggbggbBk/kbbbbgggbbBk/kbbbgggbbbBk/kbbbbggbbbBk/kbbbbbbggBBk/.kbbbbbbBBk./..kBBBBBBk../...kkkkkk...',
+  up:'.....kk...../....kgGk..../...kgggGk.../..kggggggk../.kgggggggGk./kkkkggGGkkkk/....kgGk..../....kgGk..../....kgGk..../....kgGk..../....kgGk..../....kkkk....',
+  turkey:'............/.......kkk../......knnnk./.....knttnNk/....kntttnNk/...knttttnNk/...kntttnNk./..kknnnnNk../.kwkkkkkk.../kwwk......../kwk........./.k..........',
+  joystick:'....kkk...../...krrrk..../...kwrrk..../...krrRk..../....kkk...../.....kk...../.....kk...../.kkkkkkkkkk./kSSSSSSkrkSk/kSSSSSSkkkSk/kSSSSSSSSSSk/.kkkkkkkkkk.',
+  carrot:'.......k.kk./......kgkgk./.....kglgk../....kkgkk.../...koook..../..koooook.../..kwoooNk.../.kooooNk..../.kooooNk..../kooooNk...../koNNk......./kkk.........',
+  fish:'............/..kkk......./.kcbbk...kk./kcbbbbkk.kbk/kcwkbbbbkbBk/kcbbbbbbbbBk/kcbbbbbbbbBk/.kcBbbbBkkBk/..kBBBBk..kk/...kkkk...../............/............',
+  pin:'...kkkkk..../..krrrrrk.../.krwwrrrRk../.krwkkrrRk../.krrkkrrRk../.krrrrrrRk../..krrrrRk.../...krrRk..../...krRk...../....kk....../...kSSk...../....kk......',
+  sofa:'............/.kkkkkkkkkk./kppppppppppk/kpwppppppPPk/kpkkkkkkkkPk/kppppppppppk/kPkpppppppkk/kPkpppppppPk/kPPPPPPPPPPk/kkkkkkkkkkkk/.kk......kk./............',
+  cards:'.kkkkkkk..../kwwwwwwwk.../kwrwwwwwkkk./kwwwwwwkwwwk/kwwwrwwkwkwk/kwwrrrwkwkwk/kwwwrwwkkkkk/kwwwwwwkwkwk/kwwwwwrkwwwk/kwwwwwwkwwwk/.kkkkkkkkkkk/............',
+  ticket:'............/.kkkkkkkkkk./kyyyyyyyyyyk/kykkyyyyykyk/.kyyyyyyyyk./..kyyyyyyk../.kyyyyyyyyk./kykkyyyyykyk/kyyyyyyyyyyk/.kkkkkkkkkk./............/............',
+  x:'............/.kk......kk./.kkk....kkk./..kkk..kkk../...kkkkkk.../....kkkk..../....kkkk..../...kkkkkk.../..kkk..kkk../.kkk....kkk./.kk......kk./............',
+  hammer:'............/.kkkkkk...../kSSSSSSk..../kSwwwwSSkk../kSSSSSSkNk../.kkkkkkkNNk./.......kNNk./........kNNk/.........kNk/..........kk/............/............',
+  broom:'............/..........kk/.........knk/........knk./.......knk../..kkkkknk.../.kyyyykk..../kyyyyyyk..../kyYyYyyk..../kyYyYyk...../kYYYYk....../kkkkk.......',
+  key:'............/..kkkk....../.kyyyyk...../kyykkyyk..../kykk.kyk..../kyykkyykkkkk/.kyyyyyyyyyk/..kkkkkkykyk/........kkkk/............/............/............',
+  bell:'.....kk...../....kyyk..../...kyyyyk.../..kywyyyYk../..kywyyyYk../..kywyyyYk../.kyyyyyyyYk./.kyyyyyyyYk./kkkkkkkkkkkk/kYYYYYYYYYYk/kkkkkkkkkkkk/.....kk.....',
+  eye:'............/............/...kkkkkk.../..kwwwwwwk../.kwwkkkkwwk./kwwkbbwbkwwk/kwwkbbbbkwwk/.kwwkkkkwwk./..kwwwwwwk../...kkkkkk.../............/............',
+  arrowr:'............/......kk..../......kgk.../......kggk../kkkkkkkgggk./kgggggggggGk/kgggggggggGk/kkkkkkkgggk./......kggk../......kgk.../......kk..../............',
+  people:'............/..kkk...kkk./.kpppk.kbbbk/.kpppk.kbbbk/.kpppk.kbbbk/..kkk...kkk./.kpppkkkbbbk/kpppppkbbbbk/kpppppkbbbbk/kppppppkbbbk/kkkkkkkkkkkk/............',
+  clock:'...kkkkkk.../..kwwwwwwk../.kwwwkwwwSk./kwwwwkwwwwSk/kwwwwkwwwwSk/kwwwwkkkwwSk/kwwwwwwwwwSk/kwwwwwwwwwSk/.kwwwwwwwSk./..kSSSSSSk../...kkkkkk.../............',
+  play:'............/............/....k......./....kk....../....kkk...../....kkkk..../....kkkk..../....kkk...../....kk....../....k......./............/............',
+  undo:'............/...k......../..kk......../.kkkkkkkk.../kkkkkkkkkk../.kkk.....kk./..kk......kk/...k......kk/..........kk/.........kk./.....kkkkk../.....kkkk...',
+  playl:'............/............/.......k..../......kk..../.....kkk..../....kkkk..../....kkkk..../.....kkk..../......kk..../.......k..../............/............'
+};
+const PIXURL={};
+const EMO={'🪙':'coin','💰':'coin','⭐':'star','💦':'splash','💧':'drop','🛍':'bag','🎒':'backpack','🏠':'house','🍔':'burger','🎳':'bowl','💬':'chat','🔐':'lock','🔒':'lock','🎰':'slots','🎁':'gift','🏆':'trophy','🚪':'door','🛡':'shield','🤝':'handshake','🍸':'cocktail','🥤':'cup','👕':'shirt','📦':'box','🎨':'palette','🔥':'fire','✅':'check','✔':'check','✓':'check','🌾':'wheat','👑':'crown','💛':'goldheart','📨':'envelope','📧':'envelope','🌶':'pepper','✳':'sparkle','🪑':'chair','💡':'bulb','✋':'hand','👋':'hand','🎲':'dice','⚾':'ball','🎡':'wheel','⏳':'hourglass','⏰':'clock','💾':'disk','🥇':'gold1','🥈':'silver2','🥉':'bronze3','🔴':'reddot','📈':'chart','💯':'hundred','😄':'smile','📜':'scroll','📋':'scroll','💪':'muscle','🦙':'llama','💤':'zzz','🔊':'speaker','🎵':'music','🛏':'bed','🍽':'plate','📚':'books','📺':'tv','🪴':'plant','🧶':'yarn','🍎':'apple','🌽':'corn','🍪':'cookie','⚠':'warn','🔍':'search','⚙':'gear','🌍':'globe','⬆':'up','🦃':'turkey','🕹':'joystick','🥕':'carrot','🎣':'fish','📍':'pin','🛋':'sofa','🃏':'cards','✕':'x','👥':'people','🎫':'ticket','🔨':'hammer','🧹':'broom','🔑':'key','🔔':'bell','👁':'eye','➡':'arrowr','🕐':'clock','▶':'play','◀':'playl','↩':'undo','♥':'heart'};
+(function(){ const c=document.createElement('canvas'); c.width=c.height=12; const x=c.getContext('2d'); let css='';
+  for (const [n,src] of Object.entries(PIXSRC)){ x.clearRect(0,0,12,12); src.split('/').forEach((r,j)=>{ for (let i=0;i<r.length;i++){ const col=PIXPAL[r[i]]; if (col){ x.fillStyle=col; x.fillRect(i,j,1,1); } } }); PIXURL[n]=c.toDataURL(); css+=`.pi-${n}{background-image:url(${PIXURL[n]})}`; }
+  /* sizes are whole multiples of the 12px art in real screen pixels, so every art pixel stays square */
+  const dpr=window.devicePixelRatio||1, snap=t=>Math.max(1,Math.round(t*dpr/12))*12/dpr;
+  const st=document.createElement('style'); st.textContent=`:root{--pi1:${snap(16)}px;--pi2:${snap(24)}px;--pi3:${snap(36)}px}`+css; document.head.appendChild(st); })();
+const pix = (n, cls) => `<i class="pi pi-${n}${cls?' '+cls:''}" aria-hidden="true"></i>`;
+const EMO_KEYS=Object.keys(EMO).sort((a,b)=>b.length-a.length).map(e=>e.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+const EMO_RE=new RegExp('('+EMO_KEYS+')\\uFE0F?','gu'), EMO_HAS=new RegExp(EMO_KEYS,'u');
+const ICO_SKIP=new Set(['SCRIPT','STYLE','TEXTAREA','INPUT','OPTION','TITLE','CANVAS','SVG','svg']);
+function iconText(t){ const p=t.parentNode, s=t.data; if (!p || ICO_SKIP.has(p.nodeName) || !EMO_HAS.test(s)) return;
+  const f=document.createDocumentFragment(); let last=0, m; EMO_RE.lastIndex=0;
+  while ((m=EMO_RE.exec(s))){ if (m.index>last) f.appendChild(document.createTextNode(s.slice(last,m.index))); const i=document.createElement('i'); i.className='pi pi-'+EMO[m[1]]; i.setAttribute('aria-hidden','true'); f.appendChild(i); last=m.index+m[0].length; }
+  if (last<s.length) f.appendChild(document.createTextNode(s.slice(last))); p.replaceChild(f,t); }
+function iconize(root){ if (!root) return; if (root.nodeType===3) return iconText(root); if (root.nodeType!==1 || ICO_SKIP.has(root.nodeName)) return;
+  const w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT), list=[]; let n; while ((n=w.nextNode())) if (EMO_HAS.test(n.data)) list.push(n); list.forEach(iconText); }
+iconize(document.body);
+new MutationObserver(ms=>{ for (const m of ms){ if (m.type==='characterData') iconText(m.target); else for (const n of m.addedNodes) iconize(n); } }).observe(document.body, {childList:true, subtree:true, characterData:true});
+// menu tiles draw their icon from data-i
+for (const d of document.querySelectorAll('.menu [data-i]')){ const k=EMO[d.dataset.i.replace(/\uFE0F/g,'')]; if (k) d.style.setProperty('--ic', `url(${PIXURL[k]})`); }
 
 // ======================= CHARACTERS & SPRITES =======================
 const OUT = '#1a1020', HOOF = '#2b1d18';
@@ -3816,7 +4014,7 @@ function updateText(dt){
   if (!tcur && tq.length){ tcur={pages:tq.shift(), pi:0, ci:0, hold:0}; tbox.style.display='block'; }
   if (!tcur){ tbox.style.display='none'; return; }
   const page=tcur.pages[tcur.pi];
-  if (tcur.ci < page.length){ tcur.ci=Math.min(page.length, tcur.ci+dt*90); ttext.textContent=page.slice(0,Math.floor(tcur.ci)); tarrow.style.display='none'; return; }
+  if (tcur.ci < page.length){ tcur.ci=Math.min(page.length, tcur.ci+dt*90); { let n=Math.floor(tcur.ci); const cc=page.charCodeAt(n-1); if (cc>=0xD800 && cc<=0xDBFF) n++; if (page.charCodeAt(n)===0xFE0F) n++; ttext.textContent=page.slice(0,n); } tarrow.style.display='none'; return; }
   ttext.textContent=page; const more = tcur.pi<tcur.pages.length-1; tarrow.style.display = more?'block':'none';
   tcur.hold+=dt; const wait = more?1.5:(tq.length?0.9:2.2);
   if (tcur.hold>wait) advanceText();
@@ -3854,7 +4052,7 @@ function items(m){ return [...m.children].filter(c=>!c.classList.contains('sheet
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ { const dp=document.getElementById('dailypop'); if (dp) dp.style.display='none'; } if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; const dmb=document.getElementById('dmbox'); if (dmb) dmb.style.display='none'; const ctb=document.getElementById('catbox'); if (ctb) ctb.style.display='none'; const wdb=document.getElementById('wardbox'); if (wdb) wdb.style.display='none'; const prb=document.getElementById('roomsbox'); if (prb) prb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+function closeAll(){ { const dp=document.getElementById('dailypop'); if (dp) dp.style.display='none'; const ib=document.getElementById('itembox'); if (ib) ib.style.display='none'; } if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; const dmb=document.getElementById('dmbox'); if (dmb) dmb.style.display='none'; const ctb=document.getElementById('catbox'); if (ctb) ctb.style.display='none'; const wdb=document.getElementById('wardbox'); if (wdb) wdb.style.display='none'; const prb=document.getElementById('roomsbox'); if (prb) prb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
   const a=el.dataset.a;
@@ -3969,7 +4167,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__ward=(t,k)=>openWardrobe(t,null,k); window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__ward=(t,k)=>openWardrobe(t,null,k); window.__close=()=>closeAll(); window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__wear=(sl,id)=>wdWear(sl,id); window.__face=d=>{ me.d=d; }; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
@@ -4611,7 +4809,7 @@ function cupClick(gx){ const st=(me.p==='sit'&&!me.moving)?seatAt(me.gx,me.gy):n
 // ======================= PLAYER MENU (tap another llama) =======================
 const pmenuEl=document.getElementById('pmenu'); let pmTarget=null;
 function openPlayerMenu(id, cx, cy){ const o=others.get(id); if(!o) return; closeAll(); pmTarget=id;
-  document.getElementById('pm_name').textContent=o.n.toUpperCase(); if (typeof pmFriendBtn==='function') pmFriendBtn();
+  document.getElementById('pm_name').textContent=o.n.toUpperCase(); if (typeof pmFriendBtn==='function') pmFriendBtn(); pmCard(o); pmLoad(o);
   pmenuEl.style.display='block'; const r=pmenuEl.getBoundingClientRect();
   pmenuEl.style.left=Math.max(8,Math.min(innerWidth-r.width-8, cx-r.width/2))+'px'; pmenuEl.style.top=Math.max(8,Math.min(innerHeight-r.height-70, cy-r.height-12))+'px'; }
 document.getElementById('pm_spit').addEventListener('click', ()=>{ const id=pmTarget; closeAll(); if(id) spitAt(id); });
@@ -5238,7 +5436,7 @@ function afkLogout(){ document.getElementById('afkbox').style.display='none'; if
 function afkTick(){
   if (!joined || NET.closedForGood) return; const now=Date.now();
   if (!afkShownAt){ if (now-lastInput > AFK_ASK) afkAsk(); else if (now-lastInput < 60000 && now-afkPing > 60000){ afkPing=now; NET.act('afk_ok'); } return; }
-  afkCount(); if (now-afkBlink>1000){ afkBlink=now; document.title = (Math.floor(now/1000)%2) ? '⚠️ Are you still there?' : (afkTitle||document.title); }
+  afkCount(); if (now-afkBlink>1000){ afkBlink=now; document.title = (Math.floor(now/1000)%2) ? '(!) Are you still there?' : (afkTitle||document.title); }
   if (now-afkShownAt > AFK_GRACE) afkLogout(); }
 function drawFishBmp(f, x, y){ const K=FISH_KINDS[f]; g.fillStyle=INK; g.fillRect(x,y,9,5); g.fillRect(x+9,y+1,2,3); g.fillStyle=K.c; g.fillRect(x+1,y+1,7,3); g.fillRect(x+9,y+2,1,1); g.fillStyle=K.d; g.fillRect(x+1,y+3,7,1); g.fillStyle='#f8f8f8'; g.fillRect(x+2,y+1,1,1); g.fillStyle=INK; g.fillRect(x+2,y+2,1,1); }
 /* the bite "!" and a freshly caught fish show above the head, so the name tag moves up out of their way (like an emote bubble) */
@@ -5486,7 +5684,13 @@ addEventListener('hashchange', async ()=>{ const v=await handleEmailLink(); if (
 const FR = { friends:[], inc:[], out:[] }; const frEl=$id('frbox'), frBody=$id('fr_body');
 const isFriend = n => FR.friends.includes(String(n||'').toUpperCase());
 function frWhere(n){ for (const o of others.values()) if (!o.leaving && o.n && o.n.toUpperCase()===n) return o.rm||'lounge'; return null; }
-function frSet(fr){ if (!fr) return; FR.friends=fr.friends||[]; FR.inc=fr.inc||[]; FR.out=fr.out||[];
+// a llama picture at a whole-number size (crop = how many sprite rows from the top: 22 is just the head)
+const picCache=new Map();
+function llamaPic(c, wear, cssH, crop){ if (!CHARS[c]) c=me.c&&CHARS[me.c]?me.c:Object.keys(CHARS)[0]; const dpr=window.devicePixelRatio||1, H=crop||SH, k=Math.max(1,Math.round(cssH*dpr/H)), key=[c,wearKey(wear||{}),k,H].join('|');
+  let u=picCache.get(key); if (!u){ const cv=document.createElement('canvas'); cv.width=SW*k; cv.height=H*k; const x=cv.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(sprite(c,'fr',0,'stand',wear||{}),0,0,SW,H,0,0,SW*k,H*k); u=cv.toDataURL(); picCache.set(key,u); }
+  return `<img class="lpic" src="${u}" style="width:${SW*k/dpr}px;height:${H*k/dpr}px" alt="">`; }
+const emptyBox=(t,sub)=>`<div class="empty">${llamaPic(me.c, me.w, 88)}<b>${t}</b>${sub?`<small>${sub}</small>`:''}</div>`;
+function frSet(fr){ if (!fr) return; FR.c={...(FR.c||{}), ...(fr.c||{})}; FR.friends=fr.friends||[]; FR.inc=fr.inc||[]; FR.out=fr.out||[];
   const b=$id('fr_badge'); b.textContent=FR.inc.length; b.classList.toggle('on', FR.inc.length>0); $id('menubtn').classList.toggle('frdot', FR.inc.length>0);
   const q=$id('fr_req'); q.textContent=FR.inc.length; q.classList.toggle('on', FR.inc.length>0); frSign();
   if (frEl.style.display==='block') frDraw(); pmFriendBtn(); }
@@ -5499,17 +5703,17 @@ function frMsg(t, good){ const el=$id('fr_msg'); el.textContent=t||''; el.classL
 function frLoad(){ NET.act('fr_list').then(r=>{ if (r.ok) frSet(r.fr); }); }
 function frDo(a, n){ return NET.act(a, {n}).then(r=>{ if (r.fr) frSet(r.fr); if (r.msg) frMsg(r.msg, r.ok); return r; }); }
 function frDraw(){
-  const row = (n, sub, on, btns) => `<div class="frr"><span class="frd${on?' on':''}"></span><span class="frn">${esc(n)}${sub?`<small>${sub}</small>`:''}</span>${btns}</div>`;
+  const row = (n, sub, on, btns) => `<div class="frr"><span class="frf">${llamaPic(FR.c&&FR.c[n], null, 34, 22)}<span class="frd${on?' on':''}"></span></span><span class="frn">${esc(n)}${sub?`<small>${sub}</small>`:''}</span>${btns}</div>`;
   let h='';
   if (FR.inc.length){ h+='<div class="frh">FRIEND REQUESTS</div>'; for (const n of FR.inc) h+=row(n, 'wants to be friends', !!frWhere(n), `<button class="gbbtn y" data-fa="fr_accept" data-n="${esc(n)}">ACCEPT</button><button class="gbbtn frx" data-fa="fr_decline" data-n="${esc(n)}" aria-label="Decline">✕</button>`); }
   const list=[...FR.friends].sort((a,b)=>(!!frWhere(b))-(!!frWhere(a)) || a.localeCompare(b));
   h+=`<div class="frh">FRIENDS · ${FR.friends.filter(n=>frWhere(n)).length} ONLINE</div>`;
   if (list.some(n=>{ const r2=frWhere(n); return r2 && r2!==curRoom; })) h+=`<div class="fre">Tap 📨 INVITE to ask a friend over to ${esc(roomName(curRoom))}.</div>`;
-  if (!list.length) h+='<div class="fre">No friends yet. Tap another llama and press ⭐ ADD, or type their name above.</div>';
+  if (!list.length) h+=emptyBox('NO FRIENDS YET', 'Tap another llama and press ⭐ ADD, or type their name above.');
   for (const n of list){ const rm=frWhere(n);
     h+=row(n, rm ? (rm===curRoom ? 'Here with you' : 'In '+roomName(rm)) : 'Offline', !!rm, `<button class="gbbtn frm" data-dm="${esc(n)}" aria-label="Message ${esc(n)}">💬</button>` + (rm && rm!==curRoom ? `<button class="gbbtn frinv" data-inv="${esc(n)}" aria-label="Invite ${esc(n)} to this room">📨<span class="ilb"> INVITE</span></button><button class="gbbtn y" data-go2="${rm}">GO ▶</button>` : '') + `<button class="gbbtn frx" data-fa="fr_remove" data-n="${esc(n)}" aria-label="Remove friend">✕</button>`); }
   if (FR.out.length){ h+='<div class="frh">SENT</div>'; for (const n of FR.out) h+=row(n, 'waiting for them to accept', !!frWhere(n), `<button class="gbbtn" data-fa="fr_remove" data-n="${esc(n)}">CANCEL</button>`); }
-  frBody.innerHTML=h;
+  frBody.innerHTML=h; sheetHead(frEl);
 }
 frBody.addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; ensureAudio();
   if (b.dataset.go2){ closeAll(); showSwap(b.dataset.go2); return; }
@@ -5553,7 +5757,7 @@ function wdInfo(){
   const id=WD.pick, acts=$id('wd_acts'); acts.innerHTML='';
   if (!id){ $id('wd_name').textContent='YOUR LLAMA'; const on=WEAR_SLOTS.filter(s2=>me.w[s2]).map(s2=>ITEMS[me.w[s2]].n); $id('wd_sub').textContent = on.length ? 'Wearing: '+on.join(', ') : 'Tap an item to try it on.'; return; }
   const it=ITEMS[id], own=INV.owned.includes(id), on=me.w[it.s]===id, inStore=curRoom==='store';
-  $id('wd_name').textContent=it.n; $id('wd_sub').textContent = own ? (on ? 'You have this on.' : 'In your closet.') : `${it.p} TOKENS · ${inStore ? 'Trying it on. Buy it to keep it.' : 'Buy it at the LLAMA STORE.'}`;
+  $id('wd_name').textContent=it.n; const ow=ISTAT&&ISTAT.wear?ISTAT.wear[id]||0:null; $id('wd_sub').innerHTML = `<span class="wdd">${esc(WEAR_DESC[id]||'')}</span>` + esc(own ? (on ? 'You have this on.' : 'In your closet.') : `${it.p} TOKENS · ${inStore ? 'Trying it on. Buy it to keep it.' : 'Buy it at the LLAMA STORE.'}`) + (ow!=null ? `<span class="wdo">${pix('people')} ${ow} LLAMA${ow===1?'':'S'} HAVE ONE</span>` : ''); if (!ISTAT) itemStats().then(()=>{ if (WD.pick===id) wdInfo(); });
   const btn=(label,cls,fn,dis)=>{ const b=document.createElement('button'); b.className='gbbtn '+(cls||''); b.textContent=label; b.disabled=!!dis; b.addEventListener('click',fn); acts.appendChild(b); };
   if (!own) btn(inStore ? `BUY · ${it.p} 🪙` : 'BUY IN THE STORE', 'y', ()=>wdBuy(id), !inStore);
   else if (on) btn('TAKE OFF','',()=>wdWear(it.s,null)); else btn('WEAR IT','y',()=>wdWear(it.s,id));
@@ -5564,7 +5768,7 @@ function wdDraw(){
   const shop=WD.tab==='shop';
   for (const b of $id('wd_tabs').children) b.classList.toggle('on', b.dataset.t===WD.tab);
   $id('wd_tabs').style.display = shop ? 'none' : ''; $id('wardbox').querySelector('.wdtop').style.display = (WD.tab==='storage' || (shop && WD.kind==='furn')) ? 'none' : '';
-  $id('wd_title').textContent = shop ? (WD.kind==='furn' ? '🛋️ LLAMA STORE FURNITURE' : '🛍️ LLAMA STORE CLOTHES') : '🎒 INVENTORY';
+  $id('wd_title').textContent = shop ? (WD.kind==='furn' ? '🛋️ FURNITURE SHOP' : '🛍️ CLOTHES SHOP') : '🎒 INVENTORY';
   let h='';
   if (shop) h+=`<div class="autabs" id="wd_kind"><button type="button" data-k="clothes" class="${WD.kind==='clothes'?'on':''}">👕 CLOTHES</button><button type="button" data-k="furn" class="${WD.kind==='furn'?'on':''}">🛋️ FURNITURE</button></div>`;
   if (shop && WD.kind==='furn'){ const own=k=>{ const r=WD.furn.find(x=>x.item===k); return r?r.n:0; };
@@ -5573,7 +5777,7 @@ function wdDraw(){
       const skew=Date.now()-(RR.now||Date.now());
       for (const r of RR.list){ const left=r.max-r.sold, notYet=r.open>Date.now()-skew, mineN=(RR.mine||[]).filter(m=>m.item===r.k).map(m=>'#'+m.serial);
         const when=notYet ? new Date(r.open).toLocaleString([], {weekday:'short', hour:'numeric', minute:'2-digit'}) : '';
-        h+=`<div class="wi fi rare"><canvas width="80" height="80" data-fk="${r.k}"></canvas><b>${esc(r.n)}</b><small>${r.p} 🪙 · ${left>0?`<span class="rl">${left} OF ${r.max} LEFT</span>`:'<span class="rso">SOLD OUT</span>'}${mineN.length?` · <span class="own">YOURS: ${mineN.join(' ')}</span>`:''}</small>`+
+        h+=`<div class="wi fi rare" data-f="${r.k}"><canvas width="80" height="80" data-fk="${r.k}"></canvas><b>${esc(r.n)}</b><small>${r.p} 🪙 · ${left>0?`<span class="rl">${left} OF ${r.max} LEFT</span>`:'<span class="rso">SOLD OUT</span>'}${mineN.length?` · <span class="own">YOURS: ${mineN.join(' ')}</span>`:''}</small>`+
           (notYet ? `<button class="gbbtn" disabled>DROPS ${esc(when.toUpperCase())}</button>` : left<=0 ? '<button class="gbbtn" disabled>SOLD OUT</button>' : `<button class="gbbtn y" data-buyr="${r.k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button>`)+'</div>'; }
       h+='</div>'; } }
     for (const [cat,label] of FURN_CATS){ if ((cat==='staff' && !me.st) || cat==='rares') continue; const ORD=Object.keys(FURN_DEF), ks=ORD.filter(k=>FURN_DEF[k].cat===cat).sort((p,q)=>ORD.indexOf(furnBase(p))-ORD.indexOf(furnBase(q))); if (!ks.length) continue;   /* colours sit right after their base piece */ h+=`<div class="wdh">${label}</div><div class="wdg">`;
@@ -5585,13 +5789,13 @@ function wdDraw(){
     if (curRoom!=='store') h='<div class="fre">Browse and try things on here. To buy, visit the 🛍️ LLAMA STORE.</div>'+h;
     h+='<div class="srow"><button class="gbbtn" id="wd_toinv">🎒 MY INVENTORY</button></div>'; }
   else if (WD.tab==='storage'){ const list=WD.furn.filter(x=>FURN_DEF[x.item]&&x.n>0), inMine=isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine;
-    if (!list.length) h='<div class="wdstore"><div class="wdbox">📦</div><b>NO ITEMS YET</b><small>Buy furniture at the 🛍️ LLAMA STORE, then place it in your room.</small></div>';
+    if (!list.length) h=emptyBox('NO ITEMS YET', 'Buy furniture at the 🛍️ LLAMA STORE, then place it in your room.');
     else { const card=x=>{ const left=x.n-x.placed; return `<div class="wi fi${inMine&&left>0?' drag':''}" data-pf="${x.item}"><canvas width="80" height="80" data-fk="${x.item}"></canvas><b>${esc(FURN_DEF[x.item].n)}</b><small class="own">${left} LEFT${x.placed?` · ${x.placed} PLACED`:''}</small>${inMine?`<button class="gbbtn y" data-placef="${x.item}" ${left<=0?'disabled':''}>PLACE</button>`:''}</div>`; };
       h=`<div class="fre">${inMine ? 'Drag a picture into your room, or tap PLACE. Only you can place furniture, and only in your own room.' : 'Furniture you own. You can place it in your own room.'}</div>`;
       for (const [cat,label] of [...FURN_CATS,[null,'📦 OTHER']]){ const ls=list.filter(x=>(FURN_DEF[x.item].cat||null)===cat); if (ls.length) h+=`<div class="wdh">${label}</div><div class="wdg">${ls.map(card).join('')}</div>`; }
       h+=`<div class="srow"><button class="gbbtn y" id="wd_place">${inMine?'🛋️ ARRANGE MY ROOM':'🏠 GO TO MY ROOM'}</button></div>`; } }
   else { const mine=INV.owned.filter(k=>ITEMS[k]);
-    if (!mine.length) h='<div class="fre">No clothes yet. Buy some at the 🛍️ LLAMA STORE, then wear them anywhere.</div>';
+    if (!mine.length) h=emptyBox('NO CLOTHES YET', 'Buy some at the 🛍️ LLAMA STORE, then wear them anywhere.');
     h+='<div class="srow"><button class="gbbtn" id="wd_toshop">🛍️ BROWSE THE STORE</button></div>';
     for (const s2 of WEAR_SLOTS){ const list=mine.filter(k=>ITEMS[k].s===s2); if (list.length) h+=`<div class="wdh">${SLOT_NAMES[s2]}</div><div class="wdg">`+list.map(wdCard).join('')+'</div>'; } }
   const body=$id('wd_body'); body.innerHTML=h;
@@ -5601,14 +5805,15 @@ function wdDraw(){
   { const kk=$id('wd_kind'); if (kk) for (const b of kk.children) b.onclick=()=>{ WD.kind=b.dataset.k; WD.pick=null; wdMsg(''); wdDraw(); }; }
   { const pl=$id('wd_place'); if (pl) pl.onclick=()=>{ if (isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine){ closeAll(); prEditStart(); } else { closeAll(); NET.act('pr_list').then(r=>{ if (r.ok && r.mine){ PRED.pending=true; prGo(r.mine.id); } else openRooms(); }); } }; }
   for (const cv of body.querySelectorAll('canvas[data-ic]')){ const id=cv.dataset.ic, ic=ITEMS[id].s==='shirt'?teeIcon(id):itemIcon(id), x=cv.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(ic, Math.floor((20-ic.width)/2), Math.floor((16-ic.height)/2)); }
-  wdPreview(); wdInfo();
+  wdPreview(); wdInfo(); sheetHead($id('wardbox'));
 }
 $id('wd_body').addEventListener('click', e=>{
   const bd=e.target.closest('[data-buyd]'); if (bd){ const k=bd.dataset.buyd, [kind,id]=k.split(':'), T=(kind==='w'?DECO_WALL:DECO_FLOOR)[id]; wdMsg('BUYING...'); NET.act('deco_buy',{k}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); DECO_OWN=r.deco||DECO_OWN; tkSet(r.tk, `You bought ${T.n}! Put it up from 🏠 ROOMS > SETTINGS.`); wdDraw(); }); return; }
   const br=e.target.closest('[data-buyr]'); if (br){ const k=br.dataset.buyr; br.disabled=true; wdMsg('BUYING...'); NET.act('rare_buy',{item:k}).then(r=>{ if (Number.isFinite(r.tk)) tkSet(r.tk); if (!r.ok){ wdMsg(r.msg||'That did not work.'); br.disabled=false; return; }
     WD.rares=r.rares; WD.furn=r.furn; localMsg(`⭐ ${r.msg} It's in your 🎒 ITEMS.`); wdMsg(r.msg); wdDraw(); }); return; }
   const bf=e.target.closest('[data-buyf]'); if (bf){ const k=bf.dataset.buyf; wdMsg('BUYING...'); NET.act('furn_buy',{item:k}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); WD.furn=r.furn; tkSet(r.tk, `You bought a ${FURN_DEF[k].n}! It's in your items.`); wdMsg(`Bought a ${FURN_DEF[k].n}! It's in your 🎒 ITEMS.`, true); wdDraw(); }); return; }
-  const c=e.target.closest('.wi'); if (!c || c.classList.contains('fi')) return; ensureAudio(); WD.pick = WD.pick===c.dataset.id ? null : c.dataset.id; wdMsg(''); wdDraw(); });
+  const c=e.target.closest('.wi'); if (c && c.classList.contains('fi') && !e.target.closest('button')){ const k=c.dataset.f||c.dataset.pf; if (k && FURN_DEF[k]){ ensureAudio(); openItem(k); } return; }
+  if (!c || c.classList.contains('fi')) return; ensureAudio(); WD.pick = WD.pick===c.dataset.id ? null : c.dataset.id; wdMsg(''); wdDraw(); });
 for (const b of $id('wd_tabs').children) b.addEventListener('click', ()=>{ WD.tab=b.dataset.t; wdDraw(); });
 $id('wd_prev').addEventListener('click', ()=>{ WD.dir=(WD.dir+1)%4; wdPreview(); });
 // inventory ITEMS: PLACE picks the piece in edit mode; pressing a card and pulling it out of the sheet starts a drag into the room
@@ -5635,19 +5840,97 @@ $id('afk_back').addEventListener('click', ()=>location.reload());
 $id('invbtn').addEventListener('click', ()=>{ ensureAudio(); openWardrobe('clothing'); });
 $id('roomsbtn').addEventListener('click', ()=>{ ensureAudio(); if (joined) openRooms(); });
 
+
+// ======================= ITEM DETAIL CARD (tap any furniture in the shop or your items) =======================
+const FURN_DESC={ vending:'Keeps the hay soda ice cold. Every good hangout needs one.', snackvend:'Crunchy, sweet snacks for when the munchies hit.',
+  chair:'A sturdy wooden chair. Llamas sit, chairs hold. Simple.', armchair:'Deep, squishy and perfect for judging everyone\'s outfits.',
+  bed:'Soft sheets and a fluffy pillow. Climb in and catch some Z\'s.', dbed:'Room for two llamas and all of their drama.',
+  bookshelf:'Full of books nobody has read. Makes you look smart.', tv:'Plays llama reality shows all day long.', bigtv:'Bigger screen, bigger drama. Movie night at your place.',
+  loveseat:'A cozy two seater for you and your favorite llama.', sofa:'Three seats of pure comfort. Bring the whole herd.', plant:'A big leafy friend that never talks back.',
+  adminsign:'Lets everyone know who keeps the lounge running.', table:'A little table with a flickering candle. Very fancy.', lamp:'A side table with a warm, glowing lamp.',
+  beanbag:'Flop down and sink in. Getting back up is the hard part.', barstool:'Tall, spinny and great for posing.', coffeetable:'Holds snacks, drinks and the remote you can never find.',
+  roundtable:'Gather round for games, gossip and snacks.', floorlamp:'Tall lamp, warm light, instant cozy.', lavalamp:'Groovy blobs that float up and down forever.',
+  cubeshelf:'Cubbies for all your stuff. Neat freaks love it.', dresser:'Drawers for hats, shades and bandanas.', cactus:'Low care, high style. Please do not hug.',
+  flowers:'A pot of bright flowers to cheer up any corner.', boombox:'Old school beats. Turn it up!', statue:'A sparkling crystal llama. Only 50 were ever made.',
+  throne:'A solid gold seat fit for llama royalty. Only 25 were ever made.', rug_persian:'A fancy patterned rug that ties the whole room together.',
+  rug_round:'A braided round rug, soft under your hooves.', rug_stripe:'A long striped runner for halls and walkways.', rug_shag:'Super fluffy. Your hooves will thank you.' };
+const WEAR_DESC={ cap:'A bright pink cap for sunny days and bad hair days.', cowboy:'Yeehaw! For llamas who ride the range.', beanie:'Warm, cozy and a little bit artsy.',
+  party:'Every day is a party when you wear this.', tophat:'Very fancy. Monocle not included.', flowers:'A crown of fresh flowers. Instant spring.',
+  shades:'Too cool for school.', hearts:'See the world through love-colored glasses.', stars:'For llamas who were born to be famous.',
+  bandana:'A classic red bandana with outlaw style.', bowtie:'Dapper and ready for a night out.', scarf:'Toasty and stylish when the wind picks up.', lei:'Aloha! Fresh flowers from the islands.',
+  tee_smile:'Spread good vibes wherever you walk.', tee_cancelled:'A La Llama P.I.C. classic.', tee_wild:'A La Llama P.I.C. classic.', tee_cancel:'A La Llama P.I.C. classic.',
+  tee_woke:'A La Llama P.I.C. classic.', tee_lounge:'Show some love for the Llama Lounge.', tee_acres:'Straight from the farm at LLAMA ACRES.', tee_arena:'Rep the Spit Arena.',
+  poncho:'A woven poncho. The most llama thing you can wear.', poncho_orange:'The classic poncho in a bold orange.', gloves:'Float like a butterfly, spit like a llama.', shorts:'Ready for the ring.' };
+const ITD={k:null, rot:0}; let ISTAT=null, ISTAT_T=0, ISTAT_P=null;
+function itemStats(){ if (ISTAT && Date.now()-ISTAT_T<60000) return Promise.resolve(ISTAT); if (ISTAT_P) return ISTAT_P;
+  ISTAT_P=NET.act('item_stats').then(r=>{ ISTAT_P=null; if (r && r.ok){ ISTAT=r; ISTAT_T=Date.now(); } return ISTAT; }).catch(()=>{ ISTAT_P=null; return ISTAT; }); return ISTAT_P; }
+const canTurn = k => { const D=FURN_DEF[k]; return !!D && !D.wall && D.mk.length>0; };
+function itMsg(t,good){ const el=$id('it_msg'); el.textContent=t||''; el.classList.toggle('good',!!good); }
+function openItem(k){ const D=FURN_DEF[k]; if (!D) return; ITD.k=k; ITD.rot=D.iconRot||0; itMsg(''); itDraw(); const el=$id('itembox'); el.style.display='block'; sheetHead(el); el.scrollTop=0;
+  itemStats().then(()=>{ if (ITD.k===k && el.style.display==='block') itDraw(); }); }
+function itDraw(){ const k=ITD.k, D=FURN_DEF[k], base=furnBase(k); if (!D) return;
+  const cat=FURN_CATS.find(c=>c[0]===D.cat), em=cat ? cat[1].split(' ')[0] : '📦';
+  $id('it_title').textContent=`${em} ${D.n}`;
+  const tl=furnTiles(k,0,0,0), W=Math.max(...tl.map(t=>t[0]))+1, Dp=Math.max(...tl.map(t=>t[1]))+1;
+  const mine=(WD.furn||[]).find(x=>x.item===k), have=mine?mine.n:0, placed=mine?mine.placed||0:0, owners=ISTAT&&ISTAT.furn ? (ISTAT.furn[k]||0) : null;
+  const inStore=curRoom==='store', inMine=prInMine();
+  let feat='';
+  if (D.seat) feat+=`<div class="itf">${pix(base==='bed'||base==='dbed'?'bed':'chair')}<span>${base==='bed'||base==='dbed' ? 'Llamas can climb in and lie down' : D.seatAll ? `Seats ${tl.length} llamas` : 'A llama can sit here'}</span></div>`;
+  if (D.wall) feat+=`<div class="itf">${pix('pin')}<span>Hangs on the wall</span></div>`;
+  if (D.rug) feat+=`<div class="itf">${pix('yarn')}<span>Lies flat, so you can put things on top</span></div>`;
+  if (D.staff) feat+=`<div class="itf">${pix('shield')}<span>Only staff can buy this</span></div>`;
+  let rare=''; const RR=WD.rares; if (D.rare && RR && RR.list){ const r=RR.list.find(x=>x.k===k); if (r){ const left=r.max-r.sold, ser=(RR.mine||[]).filter(m=>m.item===k).map(m=>'#'+m.serial);
+    rare=`<div class="itrare">${pix('star')}<div><b>LIMITED RARE · ${r.max} EVER MADE</b><small>${left>0?`${left} left in the store`:'Sold out. Trade with other llamas to get one.'}${ser.length?` · Yours: ${ser.join(' ')}`:''}</small></div></div>`; } }
+  const stat=(v,l)=>`<div><b>${v}</b><small>${l}</small></div>`;
+  let h=`<div class="itv"><canvas id="it_cv"></canvas>${canTurn(k)?`<button type="button" class="gbbtn itrot" id="it_rot" aria-label="Turn it">${pix('arrowr')} TURN</button>`:''}</div>
+    <div class="itd">${esc(FURN_DESC[base]||FURN_DESC[k]||'A fine piece for any llama pad.')}</div>${rare}
+    <div class="itg">${stat(`${pix('coin')} ${D.p}`,'PRICE')}${stat(D.wall?'WALL':`${W} x ${Dp}`, D.wall?'SPOT':'TILES')}${stat(have,'YOU OWN')}${stat(owners==null?'...':owners, owners===1?'LLAMA OWNS ONE':'LLAMAS OWN ONE')}</div>${feat}`;
+  let btn='';
+  if (inMine && have-placed>0) btn+=`<button class="gbbtn y" id="it_place">${pix('sofa')} PLACE IN MY ROOM</button>`;
+  if (D.staff && !me.st) btn+='';
+  else if (D.rare){ const r=RR&&RR.list&&RR.list.find(x=>x.k===k); if (r && r.max-r.sold>0 && r.open<=Date.now()) btn+=`<button class="gbbtn${inMine?'':' y'}" id="it_buy" ${inStore?'':'disabled'}>${inStore?`BUY · ${D.p} ${'🪙'}`:'BUY IT IN THE STORE'}</button>`; }
+  else if (D.cat) btn+=`<button class="gbbtn${inMine&&have-placed>0?'':' y'}" id="it_buy" ${inStore?'':'disabled'}>${inStore?`BUY · ${D.p} 🪙`:'BUY IT IN THE STORE'}</button>`;
+  if (btn) h+=`<div class="srow">${btn}</div>`;
+  $id('it_body').innerHTML=h;
+  const cv=$id('it_cv'), ic=furnIcon(k,168,ITD.rot); cv.width=ic.width; cv.height=ic.height; cv.style.width=cv.style.height='168px'; cv.getContext('2d').drawImage(ic,0,0);
+  { const b=$id('it_rot'); if (b) b.onclick=()=>{ ITD.rot=(ITD.rot+1)%4; itDraw(); }; }
+  { const b=$id('it_place'); if (b) b.onclick=()=>prTakeOut(k); }
+  { const b=$id('it_buy'); if (b) b.onclick=()=>itBuy(k, b); }
+  sheetHead($id('itembox')); }
+function itBuy(k, b){ const D=FURN_DEF[k]; b.disabled=true; itMsg('BUYING...');
+  NET.act(D.rare?'rare_buy':'furn_buy',{item:k}).then(r=>{ if (Number.isFinite(r.tk)) tkSet(r.tk); if (!r.ok){ itMsg(r.msg||'That did not work.'); b.disabled=false; return; }
+    WD.furn=r.furn||WD.furn; if (r.rares) WD.rares=r.rares; ISTAT=null; localMsg(`You bought ${D.rare?'the':'a'} ${D.n}! It's in your 🎒 ITEMS.`); itMsg(D.rare ? (r.msg||'Yours!') : `Bought! It's in your 🎒 ITEMS.`, true); wdDraw(); itDraw(); itemStats().then(()=>itDraw()); }); }
+
+// ======================= LLAMA PROFILE CARD (tap another llama) =======================
+const PM={n:null, p:null};
+function pmCard(o){ const P=PM.p&&PM.p.n===o.n.toUpperCase() ? PM.p : null;
+  $id('pm_pic').innerHTML=llamaPic(o.c, o.w||{}, 92);
+  const since = P&&P.since ? new Date(P.since).toLocaleDateString([], {month:'short', year:'numeric'}).toUpperCase() : '';
+  const st = P&&P.st==='owner' ? `<span class="pmst own">${pix('crown')} OWNER</span>` : P&&P.st==='mod' ? `<span class="pmst mod">${pix('goldheart')} MOD</span>` : '';
+  $id('pm_meta').innerHTML = (since?`LLAMA SINCE ${since}`:'LOADING...') + (st?'<br>'+st:'') + (isFriend(o.n)?` <span class="pmst fr">${pix('star')} FRIEND</span>`:'');
+  if (!P){ $id('pm_info').innerHTML=''; return; }
+  const sc=(ic,v,l)=>`<div>${pix(ic)}<b>${v}</b><small>${l}</small></div>`;
+  let h=`<div class="pmsc">${sc('joystick',P.hay,'HAY CATCH')}${sc('fire',P.dash,'LLAMA DASH')}${sc('splash',P.arena,'SPIT ARENA')}${sc('bowl',P.bowl,'BOWLING')}</div>`;
+  if (P.rares && P.rares.length) h+=`<div class="pmr">${pix('star')}<span>${P.rares.map(r=>`${esc((FURN_DEF[r.item]||{n:r.item}).n)} #${r.serial}`).join(', ')}</span></div>`;
+  if (P.room) h+=`<div class="pmroom">${pix('house')}<span><b>${esc(P.room.name)}</b><small>${P.room.priv?`${pix('lock')} PRIVATE`:'OPEN TO ALL'}${P.room.likes?` · ♥ ${P.room.likes}`:''}</small></span><button class="gbbtn y" id="pm_visit">${P.room.priv?'KNOCK':'VISIT'}</button></div>`;
+  $id('pm_info').innerHTML=h;
+  { const b=$id('pm_visit'); if (b) b.onclick=()=>{ const R2=P.room; closeAll(); if (!R2.priv) prGo(R2.id); else { localMsg('KNOCKING...'); NET.act('pr_knock',{rid:R2.id}).then(r=>{ if (r.open) prGo(R2.id); else if (r.msg) localMsg(r.msg); }); } }; }
+}
+function pmLoad(o){ const n=o.n.toUpperCase(); if (PM.p && PM.p.n===n && Date.now()-PM.t<30000) return; NET.act('who',{n:o.n}).then(r=>{ if (r.ok && r.p){ PM.p=r.p; PM.t=Date.now(); const cur=others.get(pmTarget); if (cur && cur.n.toUpperCase()===r.p.n && pmenuEl.style.display==='block') pmCard(cur); } }); }
+
 // ======================= PLAYER ROOMS (UI) =======================
 // one room per llama; only its owner can change it. Public rooms are open; private ones need an invite or a knock.
 const PRUI={view:'list', list:null, info:null, q:'', found:null, tab:'pop'};
 const furnIconCache=new Map(); let adminSignCv=null;
-function furnBox(item){ const D=FURN_DEF[item], big=document.createElement('canvas'); big.width=220; big.height=180; const sg=g, sOX=OX, sOY=OY;
-  try { g=big.getContext('2d'); g.imageSmoothingEnabled=false; OX=110; OY=90; drawFurn({...D.mk(D.iconRot||0), gx:0, gy:0}, 0); } catch(e){} finally { g=sg; OX=sOX; OY=sOY; }
+function furnBox(item, rot){ const D=FURN_DEF[item], big=document.createElement('canvas'); big.width=220; big.height=180; const sg=g, sOX=OX, sOY=OY;
+  try { g=big.getContext('2d'); g.imageSmoothingEnabled=false; OX=110; OY=90; drawFurn({...D.mk(rot==null ? (D.iconRot||0) : rot), gx:0, gy:0}, 0); } catch(e){} finally { g=sg; OX=sOX; OY=sOY; }
   let src=big; if (D.wall && adminSignCv) src=adminSignCv;
   const W=src.width, H=src.height, px=src.getContext('2d').getImageData(0,0,W,H).data; let x0=W,y0=H,x1=-1,y1=-1;
   for (let yy=0;yy<H;yy++) for (let xx=0;xx<W;xx++) if (px[(yy*W+xx)*4+3]>0){ if(xx<x0)x0=xx; if(xx>x1)x1=xx; if(yy<y0)y0=yy; if(yy>y1)y1=yy; }
   return x1<0 ? null : {src, x0, y0, w:x1-x0+1, h:y1-y0+1}; }
 /* Shop and bag pictures: drawn once at 1x, then blown up by a WHOLE number so every art pixel stays square (no warped, uneven pixels). */
-function furnIcon(item, CS=88){ const R=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1))), S=CS*R, key=item+'@'+S; let c=furnIconCache.get(key); if (c) return c; c=document.createElement('canvas'); c.width=S; c.height=S;   /* sized in real screen pixels, so whole-number blow-ups stay crisp on phones too */
-  const b=furnBox(item); if (b){ const m=c.getContext('2d'), room=S-6*R, fit=Math.min(room/b.w, room/b.h), k=fit>=1 ? Math.floor(fit) : fit, dw=Math.round(b.w*k), dh=Math.round(b.h*k), dx=Math.round((S-dw)/2), dy=Math.round((S-dh)/2);
+function furnIcon(item, CS=88, rot){ const R=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1))), S=CS*R, key=item+'@'+S+'@'+(rot==null?'':rot); let c=furnIconCache.get(key); if (c) return c; c=document.createElement('canvas'); c.width=S; c.height=S;   /* sized in real screen pixels, so whole-number blow-ups stay crisp on phones too */
+  const b=furnBox(item, rot); if (b){ const m=c.getContext('2d'), room=S-6*R, fit=Math.min(room/b.w, room/b.h), k=fit>=1 ? Math.floor(fit) : fit, dw=Math.round(b.w*k), dh=Math.round(b.h*k), dx=Math.round((S-dw)/2), dy=Math.round((S-dh)/2);
     if (!FURN_DEF[item].wall && !FURN_DEF[item].rug){ m.fillStyle='rgba(40,20,70,.13)'; m.beginPath(); m.ellipse(S/2, Math.min(S-3*R, dy+dh-Math.max(2*R,dh*0.06)), Math.min(S/2-2*R, dw*0.48), Math.max(3*R, dw*0.12), 0, 0, Math.PI*2); m.fill(); }
     m.imageSmoothingEnabled = k<1; m.imageSmoothingQuality='high'; m.drawImage(b.src, b.x0, b.y0, b.w, b.h, dx, dy, dw, dh); }
   furnIconCache.set(key,c); return c; }
@@ -5663,7 +5946,7 @@ function prDraw(){
   $id('pr_title').textContent='🏠 ROOMS';
   const L=PRUI.list; if (!L){ B.innerHTML='<div class="fre">Loading...</div>'; return; }
   const keepFocus = document.activeElement && document.activeElement.id==='pr_q';
-  h+=`<input id="pr_q" class="prq" type="search" maxlength="24" placeholder="🔍 Search rooms or owners" value="${esc(PRUI.q)}" autocapitalize="off" spellcheck="false">`;
+  h+=`<input id="pr_q" class="prq" type="search" maxlength="24" placeholder="Search rooms or owners" value="${esc(PRUI.q)}" autocapitalize="off" spellcheck="false">`;
   if (PRUI.q.trim().length>=2){
     const btn2=x=> curRoom==='p:'+x.id ? '<span class="prcnt">YOU\'RE HERE</span>' : x.can ? `<button class="gbbtn y" data-go="${x.id}">GO ▶</button>` : `<button class="gbbtn" data-knock="${x.id}">🚪 KNOCK</button>`;
     h+='<div class="prsec">SEARCH RESULTS</div>';
@@ -6907,6 +7190,7 @@ document.getElementById('jobs_close').addEventListener('click', ()=>{ jobsEl.sty
 
 // ======================= POP-UP HEADER: ✕ CLOSE + DRAG TO MOVE =======================
 function closeSheet(el){ ensureAudio();
+  if (el.id==='itembox'){ el.style.display='none'; return; }
   if (el===arBox) arenaClose(); else if (el===bwBox) bowlClose();
   else if (el===rulesEl){ if (joined) rulesEl.style.display='none'; }
   else if (el===pick){ if (joined) pick.style.display='none'; }
@@ -6934,11 +7218,45 @@ function makeDraggable(el, handle){
   new MutationObserver(()=>{ if (el.style.display==='none' && el.dataset.moved){ sheetReset(el); el.style.removeProperty('width'); } }).observe(el, {attributes:true, attributeFilter:['style']});
 }
 addEventListener('resize', ()=>{ for (const el of document.querySelectorAll('[data-moved]')) sheetClamp(el); });
+// ======================= POP-UP LOOK =======================
+// every pop-up gets a colored header: a pixel icon tile, its title and a helpful second line
+const SHEET_COL={menu:'#6b4bd8', wardbox:'#ff5c8a', frbox:'#f0b020', roomsbox:'#1fa58a', dmbox:'#3a8ef0', acctbox:'#5468e8', jobsbox:'#f09a20', lboard:'#f0b020', catbox:'#ff5c8a',
+  logbox:'#6c6880', sndbox:'#3a8ef0', slotbox:'#d62d6a', tblbox:'#1f8a4c', dkbox:'#1c6ad8', dailypop:'#ff5c8a', tradeask:'#1fa58a', tradebox:'#1fa58a', dashbox:'#2a2340',
+  roompick:'#6b4bd8', tmenu:'#1f8a4c', itembox:'#ff5c8a'};
+const SHEET_TITLE={menu:'🦙 MENU'};
+const SHEET_ICON={menu:'llama', dashbox:'shield', logbox:'chat', lboard:'trophy', tblbox:'cards', slotbox:'slots', tmenu:'dice', roompick:'door', itembox:'sofa', tradeask:'handshake'};
+const tokTxt=()=>{ const n=wallet.get(); return `YOU HAVE ${n} TOKEN${n===1?'':'S'}`; };
+const SHEET_SUB={
+  menu:()=>`${(me.n||'').toUpperCase()} · ${tokTxt().slice(9)}`,
+  wardbox:()=> WD.tab==='shop' ? (curRoom==='store' ? tokTxt() : 'BUY THINGS AT THE LLAMA STORE') : (()=>{ const c=INV.owned.filter(k=>ITEMS[k]).length, f=(WD.furn||[]).reduce((n,x)=>n+(x.n||0),0); return `${c} CLOTHES · ${f} ITEM${f===1?'':'S'}`; })(),
+  frbox:()=>{ const f=FR.friends||[], on=f.filter(n=>frWhere(n)).length; return f.length ? `${f.length} FRIEND${f.length>1?'S':''} · ${on} ONLINE NOW` : 'MAKE SOME FRIENDS!'; },
+  roomsbox:()=>'FIND A ROOM TO HANG OUT IN', dmbox:()=>'PRIVATE CHATS WITH FRIENDS', acctbox:()=>`SIGNED IN AS ${(me.n||'').toUpperCase()}`,
+  jobsbox:tokTxt, slotbox:tokTxt, tblbox:tokTxt, dkbox:tokTxt, lboard:()=>'THE BEST LLAMAS IN THE LOUNGE', logbox:()=>'EVERYTHING SAID IN THIS ROOM',
+  sndbox:()=>'MUSIC AND SOUND EFFECTS', dailypop:()=>'COME BACK EVERY DAY FOR MORE', tradebox:()=>'BOTH LLAMAS PRESS READY TO SWAP', tradeask:()=>'SWAP ITEMS AND TOKENS SAFELY',
+  catbox:()=>'REAL SHIRTS FROM LA LLAMA P.I.C.', dashbox:()=>'STAFF ONLY', roompick:()=>'PICK A ROOM TO VISIT', tmenu:()=>'PICK A GAME TO PLAY',
+  itembox:()=>ITD.k&&FURN_DEF[ITD.k] ? (FURN_CATS.find(c=>c[0]===FURN_DEF[ITD.k].cat)||[0,''])[1].replace(/^\S+\s/,'') : '' };
+const lightCol=c=>{ const n=parseInt(c.slice(1),16); return ((n>>16)*299+(n>>8&255)*587+(n&255)*114)/1000 > 165; };
+function sheetHead(el){ if (!el || !el._head) return; let col=SHEET_COL[el.id]||'#6b4bd8'; if (el.id==='wardbox') col = WD.tab==='shop' ? '#ff5c8a' : '#8a5cf0';
+  el.style.setProperty('--hc', col); el.style.setProperty('--ht', lightCol(col)?'#1d1530':'#fff');
+  const f=SHEET_SUB[el.id]; let t=''; try{ t=f?f():''; }catch(_){} const sb=el._head.sub; if (sb.textContent!==t) sb.textContent=t; sb.style.display=t?'':'none'; }
+function popSnd(){ sfxTone(660,0.05,'square',0.05); sfxTone(990,0.06,'square',0.04,0.045); }
 for (const el of document.querySelectorAll('.gb.sheet')){
   const h=document.createElement('div'); h.className='shead';
-  h.innerHTML='<span class="sgrip"></span><button class="sheetx" type="button" aria-label="Close">✕</button>';
+  const tt0=el.querySelector('.slt, .lbt, .dpt, #rp_title, #tm_title');
+  if (tt0 || SHEET_TITLE[el.id]){
+    h.classList.add('band');
+    h.innerHTML='<span class="sgrip"></span><span class="sico"></span><div class="stx"></div><button class="sheetx" type="button" aria-label="Close"><i class="pi pi-x" aria-hidden="true"></i></button>';
+    const stx=h.querySelector('.stx'), ico=h.querySelector('.sico');
+    let tt=tt0; if (!tt){ tt=document.createElement('div'); tt.className='slt'; tt.textContent=SHEET_TITLE[el.id]; iconize(tt); }
+    stx.appendChild(tt.parentNode && tt.parentNode.classList && tt.parentNode.classList.contains('dmhead') ? tt.parentNode : tt);
+    const sub=document.createElement('div'); sub.className='ssub'; stx.appendChild(sub); h.sub=sub; el._head=h;
+    /* the title's own leading icon moves into the big tile, even when the title text changes later */
+    const grab=()=>{ const f=tt.firstElementChild; if (f && f.classList.contains('pi')) ico.replaceChildren(f); else if (!ico.firstChild) ico.innerHTML=pix(SHEET_ICON[el.id]||'star'); };
+    new MutationObserver(grab).observe(tt, {childList:true, subtree:true, characterData:true}); grab();
+  } else h.innerHTML='<span class="sgrip"></span><button class="sheetx" type="button" aria-label="Close"><i class="pi pi-x" aria-hidden="true"></i></button>';
   const x=h.querySelector('.sheetx'); x.addEventListener('pointerdown', e=>e.stopPropagation()); x.addEventListener('click', e=>{ e.stopPropagation(); closeSheet(el); });
-  el.insertBefore(h, el.firstChild); makeDraggable(el, h); }
+  el.insertBefore(h, el.firstChild); makeDraggable(el, h);
+  new MutationObserver(()=>{ const vis=!!el.style.display && el.style.display!=='none'; if (vis && !el._vis){ sheetHead(el); if (el._head) popSnd(); } el._vis=vis; }).observe(el, {attributes:true, attributeFilter:['style']}); }
 // the little pop-up you get by tapping a llama already has its own ✕; drag it by the name
 makeDraggable(pmenuEl, document.getElementById('pm_name'));
 

@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-23f";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-24a";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -982,6 +982,28 @@ export class Lounge extends DurableObject {
       "CREATE TABLE IF NOT EXISTS trade_guard (ok INTEGER NOT NULL CHECK (ok = 1))",   // a trade step that would break the rules inserts 0 here, which aborts the whole trade
       "CREATE TABLE IF NOT EXISTS trades (id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER NOT NULL, a INTEGER NOT NULL, b INTEGER NOT NULL, a_gave TEXT NOT NULL, b_gave TEXT NOT NULL)"]) await this.env.DB.prepare(q).run();
     this.rareReady = true; }
+  // how many llamas own each piece of furniture and each piece of clothing (cached for a minute)
+  async itemStats() {
+    const now = Date.now(); if (this.istat && now - this.istat.t < 60000) return this.istat.v;
+    await this.prTables(); await this.invTables();
+    const f = (await this.env.DB.prepare("SELECT item, COUNT(*) AS n FROM finv WHERE n > 0 GROUP BY item").all()).results || [];
+    const w = (await this.env.DB.prepare("SELECT item, COUNT(*) AS n FROM inv GROUP BY item").all()).results || [];
+    const v = { furn: Object.fromEntries(f.map((r) => [r.item, r.n])), wear: Object.fromEntries(w.map((r) => [r.item, r.n])) };
+    this.istat = { t: now, v }; return v;
+  }
+  async whoCard(name) {
+    if (!/^[A-Za-z0-9_]{3,12}$/.test(name)) return { ok: false, msg: "No llama has that name." };
+    const DB = this.env.DB, u = await DB.prepare("SELECT id, name, c, created, role, best_hay, best_dash, banned FROM users WHERE name = ?").bind(name).first();
+    if (!u || u.banned) return { ok: false, msg: "No llama has that name." };
+    const safe = async (fn, d) => { try { return await fn(); } catch (e) { return d; } };
+    const ar = await safe(() => this.arenaRow(u.id), {}), bw = await safe(() => this.bowlRow(u.id), {});
+    await this.prTables(); await this.rareTables();
+    const r = await DB.prepare("SELECT id, name, priv FROM prooms WHERE owner = ?").bind(u.id).first();
+    const room = r ? { id: r.id, name: r.name, priv: !!r.priv, likes: (await this.prLikes(r.id, 0)).likes } : null;
+    const rares = ((await DB.prepare("SELECT item, serial FROM rares WHERE owner = ? ORDER BY item, serial").bind(u.id).all()).results || []).map((x) => ({ item: x.item, serial: x.serial }));
+    return { ok: true, p: { n: u.name.toUpperCase(), c: u.c || null, since: u.created, st: u.role === "admin" ? "owner" : u.role === "mod" ? "mod" : "",
+      hay: u.best_hay || 0, dash: u.best_dash || 0, arena: ar.best || 0, wins: ar.wins || 0, bowl: bw.best || 0, room, rares } };
+  }
   async rareInfo(uid) {
     await this.rareTables();
     const sold = new Map(((await this.env.DB.prepare("SELECT item, COUNT(*) AS n FROM rares GROUP BY item").all()).results || []).map((r) => [r.item, r.n]));
@@ -1177,9 +1199,9 @@ export class Lounge extends DurableObject {
   async frTable() { if (this.frReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS friends (a INTEGER NOT NULL, b INTEGER NOT NULL, st TEXT NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (a, b))").run(); await this.env.DB.prepare("CREATE INDEX IF NOT EXISTS friends_b ON friends (b)").run(); this.frReady = true; }
   async frList(uid) {
     await this.frTable();
-    const rows = (await this.env.DB.prepare("SELECT f.a, f.st, u.name FROM friends f JOIN users u ON u.id = CASE WHEN f.a = ? THEN f.b ELSE f.a END WHERE (f.a = ? OR f.b = ?) AND u.banned = 0 ORDER BY u.name").bind(uid, uid, uid).all()).results || [];
-    const out = { friends: [], inc: [], out: [] };
-    for (const r of rows) (r.st === "ok" ? out.friends : r.a === uid ? out.out : out.inc).push(r.name.toUpperCase());
+    const rows = (await this.env.DB.prepare("SELECT f.a, f.st, u.name, u.c FROM friends f JOIN users u ON u.id = CASE WHEN f.a = ? THEN f.b ELSE f.a END WHERE (f.a = ? OR f.b = ?) AND u.banned = 0 ORDER BY u.name").bind(uid, uid, uid).all()).results || [];
+    const out = { friends: [], inc: [], out: [], c: {} };
+    for (const r of rows) { (r.st === "ok" ? out.friends : r.a === uid ? out.out : out.inc).push(r.name.toUpperCase()); if (r.c) out.c[r.name.toUpperCase()] = r.c; }
     return out;
   }
   toUid(uid, obj) { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.uid === uid) { try { w.send(s); } catch (e) {} } } }
@@ -1470,6 +1492,13 @@ export class Lounge extends DurableObject {
       case "dm_read": { const T = await this.frTarget(a, m); if (!T.err) { await this.dmTable(); await this.env.DB.prepare("UPDATE dms SET rd = 1 WHERE a = ? AND b = ? AND rd = 0").bind(T.u.id, uid).run(); } return { ok: true }; }
       case "sip": return this.sipHeld(ws, a, now);
       case "fr_list": return { ok: true, fr: await this.frList(uid) };
+      case "item_stats": return { ok: true, ...(await this.itemStats()) };
+      case "who": {
+        // a public profile card for another llama: nothing private (no tokens, email or friends)
+        const k = "who:" + uid; const lim = (this.whoLim = this.whoLim || new Map()); const w = lim.get(k) || { t: now, n: 0 };
+        if (now - w.t > 60000) { w.t = now; w.n = 0; } w.n++; lim.set(k, w); if (w.n > 30) return { ok: false, msg: "Slow down a little." };
+        return await this.whoCard(String(m.n || "").trim());
+      }
       case "fr_add": return this.frAdd(ws, a, m);
       case "room_invite": return this.roomInvite(ws, a, m);
       case "fr_accept": return this.frAccept(a, m);

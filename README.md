@@ -208,6 +208,14 @@ No API keys or passwords are involved.
 - **Staff:** mods and the owner can enter any room, and can reset a room's name from the rooms list (↺) if it breaks the rules.
 - **Stored in:** `prooms` (rooms), `pinv` (invites), `pfurn` (placed furniture) and `finv` (furniture owned).
 
+## Pop-ups, pixel icons, item cards and profile cards
+
+- **Pixel icons, no emoji.** Every icon is 12x12 pixel art drawn in `PIXSRC` at the top of the game script. Any emoji that lands in the page (labels, titles, messages, even chat) is swapped for its pixel icon automatically (`EMO` maps each emoji to an icon). To add one, draw it in `PIXSRC` and map the emoji in `EMO`. Icons are shown at whole-number sizes (`--pi1`, `--pi2`, `--pi3`) so the pixels stay square.
+- **Pop-up headers.** Every pop-up with a title gets a colored header: a big icon tile, the title and a second line (`SHEET_COL` for colors, `SHEET_SUB` for the second line, like "YOU HAVE 755 TOKENS" or "3 FRIENDS · 1 ONLINE NOW").
+- **Item cards.** Tap any furniture in the shop or in ITEMS for a big picture you can TURN, a description (`FURN_DESC`), price, tile size, how many you own and how many llamas own one (server action `item_stats`, cached for a minute). BUY works in the store; PLACE IN MY ROOM works in your own room. Clothes show a description (`WEAR_DESC`) and an owner count when tapped.
+- **Llama profile cards.** Tapping another llama shows their picture, when they joined, OWNER/MOD/FRIEND tags, best scores, their limited rares and their room with VISIT (or KNOCK if it's private). The server action `who` only returns public things: no tokens, email or friends list, and it's limited to 30 lookups a minute.
+- Empty lists (no friends, no items, no clothes) show your llama instead of a blank space. The friends list shows each friend's llama face.
+
 ## Staff token gifts
 
 - Mods and the owner can give tokens with 🪙 GIVE in the dashboard (online players, or a line in the CHAT LOG). Each gift is 1 to 1000 tokens.
