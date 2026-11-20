@@ -228,7 +228,7 @@ No API keys or passwords are involved.
 
 - **Moving furniture:** hold a piece for 5 seconds (a ring fills up) to pick it up, then drag it. A quick drag does nothing, so pieces don't get bumped by accident. ARRANGE MY ROOM (edit mode) still drags right away.
 - **Staff moves:** the owner and mods can hold and move (or turn) pieces in anyone's player room. The server re-checks the role from the database every time and writes each move to the staff log on the dashboard ("moved SOFA in CHARLIE'S ROOM (3,1 to 5,1)"). Staff can't put pieces away or place their own items in someone else's room.
-- **Casino dealers:** Rico runs the roulette wheel, and Lucky, Dot and Ace deal blackjack (Ace's table is by the left wall, between PLINKO and the ropes; its seats are in `BJ_SEATS` on both sides). They're NPC llamas (`CHARS.rico/lucky/dot`, `npc:true`, outfit `dealer`, green `visorCol`) drawn like Penny in the store. They get busy while someone is playing at their table. The tiles they stand on are blocked.
+- **Casino dealers:** Rico runs the roulette wheel, and Lucky, Dot and Ace deal blackjack (Ace's table runs along the left wall, between PLINKO and the ropes; its seats are in `BJ_SEATS` on both sides). They're NPC llamas (`CHARS.rico/lucky/dot`, `npc:true`, outfit `dealer`, green `visorCol`) drawn like Penny in the store. They get busy while someone is playing at their table. The tiles they stand on are blocked.
 - **Casino tables** are drawn in the slot machine style: gold feet, burgundy pedestals, mahogany sides with gold trim and chase lights, and a padded burgundy rail.
 - Walking is tap or click only (no WASD or arrow keys). Arrows still work in menus and arcade games.
 - Tapping a door in any room (or the farm gate in LLAMA ACRES) opens the LLAMA MAP.
@@ -241,6 +241,13 @@ No API keys or passwords are involved.
 
 - A PLINKO cabinet stands against the casino's left wall (tiles 0,3 and 0,4). Tap it to walk up and open the game; bet 1, 2 or 5 tokens and press DROP.
 - The server decides the ball's path (8 fair left/right bounces, action `plinko`) and pays `bet x bucket`, rounded: 9X, 3X, 1.3X, .7X, .4X from the edges in. That pays back about 91 to 98% depending on the bet. `PLK` in the page and `PLINKO` in the worker must match.
+
+## SHOP (furniture) and the LLAMA STORE (clothes)
+
+- Furniture, wallpaper and floors are bought from the **SHOP** button in the dock, from any room (the server no longer checks where you are for `furn_buy` and `deco_buy`).
+- In your own room, drag any picture from the SHOP into the room to buy it and put it down in one go (`furn_buy` then `pr_place`; if it doesn't fit, it waits in ITEMS).
+- The **LLAMA STORE** is for clothes. Its left side has a lounge corner (the sofa and armchair are real seats), three model llamas wearing outfits (tap one to try the look on) and the **LIMITED RARES** showcase. Limited rares are only sold there (`rare_buy` still requires the store), from the rares view (`openWardrobe('shop', null, 'rares')`).
+- The casino's third blackjack table runs along the left wall (`rot:1`): Ace deals from the wall side and the stools are on the right (seats 2,6 and 2,7).
 
 ## Staff token gifts
 

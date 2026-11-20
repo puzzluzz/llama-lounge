@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-24n";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-24o";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -44,7 +44,7 @@ const SLOT_BETS = [1, 2, 5, 10];
 // casino tables (seats are where players sit; the server checks them)
 const TABLE_BETS = [1, 2, 5, 10];
 const ROUL_SEATS = [[5, 5], [5, 6], [8, 5], [8, 6], [6, 7], [7, 7]];
-const BJ_SEATS = [[10, 5], [11, 5], [10, 9], [11, 9], [1, 7], [2, 7]];   // the third table is by the left wall
+const BJ_SEATS = [[10, 5], [11, 5], [10, 9], [11, 9], [2, 6], [2, 7]];   // the third table is by the left wall
 const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
 // roulette bets: what wins and what it pays back in total (stake included). Single zero: the house edge is 2.7%.
 const ROUL = {
@@ -843,7 +843,6 @@ export class Lounge extends DurableObject {
     await this.prTables();
     const k = String(m.k || ""), [kind, id] = k.split(":"), table = kind === "w" ? DECO_WALL : kind === "f" ? DECO_FLOOR : null;
     const price = table && Object.hasOwn(table, id) ? table[id] : 0; if (!price) return { ok: false, msg: "The store doesn't sell that." };
-    if (!a.pres || a.pres.rm !== "store") return { ok: false, msg: "Visit the LLAMA STORE to buy wallpaper and floors." };
     if ((await this.decoOwned(a.uid)).includes(k)) return { ok: false, msg: "You already have that one." };
     const tk = await this.debit(a.uid, price, "deco " + k); if (tk === null) return { ok: false, msg: `That costs ${price} TOKENS. Play some games to earn more!` };
     await this.env.DB.prepare("INSERT OR IGNORE INTO deco (uid, k) VALUES (?, ?)").bind(a.uid, k).run();
@@ -853,7 +852,6 @@ export class Lounge extends DurableObject {
     await this.prTables();
     const k = String(m.item || ""); const price = Object.hasOwn(FURN_ITEMS, k) && FURN_SALE.has(k) ? FURN_ITEMS[k] : 0; if (!price) return { ok: false, msg: "The store doesn't sell that." };
     if (FURN_STAFF.has(k) && !(await this.staffNow(a))) return { ok: false, msg: "Only staff can buy that." };
-    if (!a.pres || a.pres.rm !== "store") return { ok: false, msg: "Visit the LLAMA STORE to buy furniture." };
     const have = await this.env.DB.prepare("SELECT n FROM finv WHERE uid = ? AND item = ?").bind(a.uid, k).first(); if (have && have.n >= 20) return { ok: false, msg: "You have plenty of those." };
     const tk = await this.debit(a.uid, price, "furniture " + k); if (tk === null) return { ok: false, msg: `That costs ${price} TOKENS. Play some games to earn more!` };
     await this.env.DB.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, k).run();
