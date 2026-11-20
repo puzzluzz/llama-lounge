@@ -831,6 +831,12 @@
     .gb.sheet{border-radius:12px 12px 0 0!important;box-shadow:0 -6px 0 rgba(12,6,28,.4)!important}
     .shead.band{border-radius:9px 9px 0 0!important}
   }
+
+  /* staff crown badge: same gold crown for the owner and mods, with room before the name */
+  .badge{display:inline-flex!important;align-items:center;justify-content:center;width:auto!important;min-width:var(--pi1);margin-right:6px;vertical-align:-.25em}
+  .badge .pi{display:block}
+  /* dock buttons: pixel art icons */
+  #signs .mchip .pi.dk{width:var(--q2);height:var(--q2);display:block}
 </style>
 </head>
 <body>
@@ -859,7 +865,7 @@
   </div>
   </div>
   <div id="scrim"></div>
-  <div id="signs"><button id="jobsbtn" class="mbtn m-jobs" aria-label="Jobs: ways to earn coins"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 6.8v10.4"/><path d="M14.8 9.3c-.4-1-1.5-1.6-2.8-1.6-1.6 0-2.8.8-2.8 2s1.2 1.7 2.8 2 2.8.9 2.8 2.1-1.2 2-2.8 2c-1.4 0-2.5-.6-2.9-1.7"/></svg></span><span class="mlb">JOBS</span><span id="jobs_dot" class="fr-req"></span></button><button id="frbtn" class="mbtn m-fr" aria-label="Friends"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9.5" cy="8" r="3.4"/><path d="M3.5 19.5v-1.2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1.2"/><path d="M15.6 4.8a3.3 3.3 0 0 1 0 6.4"/><path d="M18 14.6a4 4 0 0 1 2.5 3.7v1.2"/></svg></span><span class="mlb">FRIENDS</span><span class="fr-on" id="fr_on"></span><span class="fr-req" id="fr_req"></span></button><button id="dmbtn" class="mbtn m-dm" aria-label="Messages"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.6a8 8 0 0 1-11.7 7.1L4 19.8l1.1-4.4a8 8 0 1 1 15.4-3.8z"/><path d="M8.6 11.8h.01M12 11.8h.01M15.4 11.8h.01" stroke-width="3"/></svg></span><span class="mlb">CHAT</span><span class="fr-req" id="dm_un"></span></button><button id="mapbtn" class="mbtn m-map" aria-label="Map: go to another room"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.4 9 4.2l6 2.2 5.5-2.2v13.4L15 19.8l-6-2.2-5.5 2.2z"/><path d="M9 4.2v13.4"/><path d="M15 6.4v13.4"/></svg></span><span class="mlb">MAP</span><span class="fr-on" id="map_on"></span></button><button id="roomsbtn" class="mbtn m-rooms" aria-label="Rooms: player rooms"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.6 12 3.8l8.5 6.8"/><path d="M5.6 9.2V20h12.8V9.2"/><path d="M10 20v-5.2h4V20"/></svg></span><span class="mlb">ROOMS</span><span class="fr-on" id="rooms_on"></span></button><button id="invbtn" class="mbtn m-bag" aria-label="Inventory"><span class="mchip"><svg class="mico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 8.5h11a2 2 0 0 1 2 2V19a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19v-8.5a2 2 0 0 1 2-2z"/><path d="M9 8.5V6.2a3 3 0 0 1 6 0v2.3"/><path d="M4.5 13.5h15"/><path d="M10.5 13.5v2h3v-2"/></svg></span><span class="mlb">BAG</span></button><button id="signshide" type="button" aria-label="Hide these buttons" title="Hide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button></div>
+  <div id="signs"><button id="jobsbtn" class="mbtn m-jobs" aria-label="Jobs: ways to earn coins"><span class="mchip"><i class="pi pi-d_jobs dk" aria-hidden="true"></i></span><span class="mlb">JOBS</span><span id="jobs_dot" class="fr-req"></span></button><button id="frbtn" class="mbtn m-fr" aria-label="Friends"><span class="mchip"><i class="pi pi-d_friends dk" aria-hidden="true"></i></span><span class="mlb">FRIENDS</span><span class="fr-on" id="fr_on"></span><span class="fr-req" id="fr_req"></span></button><button id="dmbtn" class="mbtn m-dm" aria-label="Messages"><span class="mchip"><i class="pi pi-d_chat dk" aria-hidden="true"></i></span><span class="mlb">CHAT</span><span class="fr-req" id="dm_un"></span></button><button id="mapbtn" class="mbtn m-map" aria-label="Map: go to another room"><span class="mchip"><i class="pi pi-d_map dk" aria-hidden="true"></i></span><span class="mlb">MAP</span><span class="fr-on" id="map_on"></span></button><button id="roomsbtn" class="mbtn m-rooms" aria-label="Rooms: player rooms"><span class="mchip"><i class="pi pi-d_rooms dk" aria-hidden="true"></i></span><span class="mlb">ROOMS</span><span class="fr-on" id="rooms_on"></span></button><button id="invbtn" class="mbtn m-bag" aria-label="Inventory"><span class="mchip"><i class="pi pi-d_bag dk" aria-hidden="true"></i></span><span class="mlb">BAG</span></button><button id="signshide" type="button" aria-label="Hide these buttons" title="Hide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button></div>
   <button id="signsshow" type="button" aria-label="Show Jobs, Friends, Chat, Rooms and Bag" title="Show buttons"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><i id="signsdot"></i></button>
   <div id="auth" class="gb">
     <div class="rt">🦙 <b>LLAMA LOUNGE</b></div>
@@ -986,7 +992,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24c";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24d";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1056,7 +1062,7 @@ const PIXSRC={
   fire:'.....k....../....kok..k../...kook.kok./..koook.kok./..koooykkook/.kooyyyoooko/.kooyyyyoook/.koyywyyyook/.koyywwyyook/..koyyyyyok./...kooooookk/....kkkkkk..',
   check:'............/..........kk/.........kgk/........kggk/.kk....kggk./kgggk.kggk../kggggkggk.../.kggggggk.../..kgggggk.../...kgggk..../....kkk...../............',
   wheat:'.....k....../....kyk...../...kykyk..../...kyyyk.k../..kykyk.kyk./..kyyyk.kyyk/...kykykyk../....kyyyk.../.....kyk..../.....kYk..../.....kYk..../.....kkk....',
-  crown:'............/.k...kk...k./kyk.kyyk.kyk/kyykkyykkyyk/kyyyyyyyyyyk/kyyryyyybyYk/kyyyyyyyyyYk/kywyyyyyyyYk/kyyyyyyyyyYk/kYYYYYYYYYYk/kkkkkkkkkkkk/............',
+  crown:'............/.k...kk...k./kwk.kwyk.kyk/kyk.kyyk.kyk/kyykkyyykyyk/kywyyyyyyyYk/kyyyyyyyyyYk/kYrYYbbYYrYk/kyyyyyyyyyYk/kYYYYYYYYYYk/kkkkkkkkkkkk/............',
   heart:'............/.kkk...kkk../krrrk.krrrk./krwrrkrrrrRk/krwrrrrrrrRk/krrrrrrrrrRk/.krrrrrrrRk./..krrrrrRk../...krrrRk.../....krRk..../.....kk...../............',
   goldheart:'............/.kkk...kkk../kyyyk.kyyyk./kywyykyyyyYk/kywyyyyyyyYk/kyyyyyyyyyYk/.kyyyyyyyYk./..kyyyyyYk../...kyyyYk.../....kyYk..../.....kk...../............',
   envelope:'............/kkkkkkkkkkkk/kSwwwwwwwwSk/kwSwwwwwwSwk/kwwSwwwwSwwk/kwwwSkkSwwwk/kwwwkSSkwwwk/kwwkwwwwkwwk/kwkwwwwwwkwk/kkSSSSSSSSkk/kkkkkkkkkkkk/............',
@@ -1116,15 +1122,22 @@ const PIXSRC={
   clock:'...kkkkkk.../..kwwwwwwk../.kwwwkwwwSk./kwwwwkwwwwSk/kwwwwkwwwwSk/kwwwwkkkwwSk/kwwwwwwwwwSk/kwwwwwwwwwSk/.kwwwwwwwSk./..kSSSSSSk../...kkkkkk.../............',
   play:'............/............/....k......./....kk....../....kkk...../....kkkk..../....kkkk..../....kkk...../....kk....../....k......./............/............',
   undo:'............/...k......../..kk......../.kkkkkkkk.../kkkkkkkkkk../.kkk.....kk./..kk......kk/...k......kk/..........kk/.........kk./.....kkkkk../.....kkkk...',
-  playl:'............/............/.......k..../......kk..../.....kkk..../....kkkk..../....kkkk..../.....kkk..../......kk..../.......k..../............/............'
+  playl:'............/............/.......k..../......kk..../.....kkk..../....kkkk..../....kkkk..../.....kkk..../......kk..../.......k..../............/............',
+  d_jobs:'.....kkkkkk...../...kkwwwwwwkk.../..kwwwwwwwwwwk../.kwwwwwkkwwwwsk./.kwwwwkkkkkwwsk./kwwwwkkwkwwwwwsk/kwwwwkkwkwwwwwsk/kwwwwwkkkkwwwwsk/kwwwwwwwkwkkwwsk/kwwwwwwwkwkkwwsk/.kwwwkkkkkkwwsk./.kwwwwwwkkwwwsk./..kwwwwwwwwwssk./...kksssssssk.../.....kkkkkk...../................',
+  d_friends:'................/....kkk........./...kwwwk...kkk../..kwwwwwk.kwwwk./..kwkwkwk.kwkwk./..kwwwwwk.kwwwk./...kwwwk...kkk../....kkk...kwwwk./..kkwwwkkkwwwwwk/.kwwwwwwwkwwwwwk/.kwwwwwwwkwwwwsk/.kwwwwwwwkwwwssk/.kwwwwwwskkssssk/.ksssssssk.kkkk./.kkkkkkkkk....../................',
+  d_chat:'................/..kkkkkkkkkkkk../.kwwwwwwwwwwwwk./kwwwwwwwwwwwwwsk/kwwwwwwwwwwwwwsk/kwwkkwwkkwwkkwsk/kwwkkwwkkwwkkwsk/kwwwwwwwwwwwwwsk/kwwwwwwwwwwwwssk/.kwwwwwwwwwwssk./..kkkwwkkkkkkk../....kwwk......../....kwk........./....kk........../................/................',
+  d_map:'................/................/.kkkkkkkkkkkkkkk/.kwwwwksssskwwwk/.kwwwwksssskkwwk/.kwwwwksssskwwwk/.kwwwwkssskkrwrk/.kwwwwksskskwrwk/.kwwwwkkssskrwrk/.kwwwkksksskwwwk/.kwwwwksssskwwwk/.kwkwwksssskwwwk/.kwwwwksssskwwwk/.kkkkkkkkkkkkkkk/................/................',
+  d_rooms:'................/.......kk......./......kwwk.kk.../.....kwwwwkwk.../....kwwwwwwwk.../...kwwwwwwwwwk../..kwwwwwwwwwwwk./.kkkkkkkkkkkkkkk/..kwwwwwwwwwwsk./..kwkkkwwkkkwsk./..kwkskwwkskwsk./..kwkkkwwkskwsk./..kwwwwwwksswsk./..kssssssksssk../..kkkkkkkkkkkk../................',
+  d_bag:'................/......kkkk....../.....kwwwwk...../....kwkkkkwk..../..kkkkkkkkkkkk../.kwwwwwwwwwwwsk./kwwwwwwwwwwwwwsk/kwwwwwwkkwwwwwsk/kkkkkkkskkkkkkkk/kwwwwwwkkwwwwwsk/kwwwwwwwwwwwwwsk/kwwwwwwwwwwwwssk/kwwwwwwwwwwwsssk/.ksssssssssssk../..kkkkkkkkkkkk../................'
 };
-const PIXURL={};
+const PIXURL={}, PIXIMG={};
 const EMO={'🪙':'coin','💰':'coin','⭐':'star','💦':'splash','💧':'drop','🛍':'bag','🎒':'backpack','🏠':'house','🍔':'burger','🎳':'bowl','💬':'chat','🔐':'lock','🔒':'lock','🎰':'slots','🎁':'gift','🏆':'trophy','🚪':'door','🛡':'shield','🤝':'handshake','🍸':'cocktail','🥤':'cup','👕':'shirt','📦':'box','🎨':'palette','🔥':'fire','✅':'check','✔':'check','✓':'check','🌾':'wheat','👑':'crown','💛':'goldheart','📨':'envelope','📧':'envelope','🌶':'pepper','✳':'sparkle','🪑':'chair','💡':'bulb','✋':'hand','👋':'hand','🎲':'dice','⚾':'ball','🎡':'wheel','⏳':'hourglass','⏰':'clock','💾':'disk','🥇':'gold1','🥈':'silver2','🥉':'bronze3','🔴':'reddot','📈':'chart','💯':'hundred','😄':'smile','📜':'scroll','📋':'scroll','💪':'muscle','🦙':'llama','💤':'zzz','🔊':'speaker','🎵':'music','🛏':'bed','🍽':'plate','📚':'books','📺':'tv','🪴':'plant','🧶':'yarn','🍎':'apple','🌽':'corn','🍪':'cookie','⚠':'warn','🔍':'search','⚙':'gear','🌍':'globe','⬆':'up','🦃':'turkey','🕹':'joystick','🥕':'carrot','🎣':'fish','📍':'pin','🛋':'sofa','🃏':'cards','✕':'x','👥':'people','🎫':'ticket','🔨':'hammer','🧹':'broom','🔑':'key','🔔':'bell','👁':'eye','➡':'arrowr','🕐':'clock','▶':'play','◀':'playl','↩':'undo','♥':'heart'};
-(function(){ const c=document.createElement('canvas'); c.width=c.height=12; const x=c.getContext('2d'); let css='';
-  for (const [n,src] of Object.entries(PIXSRC)){ x.clearRect(0,0,12,12); src.split('/').forEach((r,j)=>{ for (let i=0;i<r.length;i++){ const col=PIXPAL[r[i]]; if (col){ x.fillStyle=col; x.fillRect(i,j,1,1); } } }); PIXURL[n]=c.toDataURL(); css+=`.pi-${n}{background-image:url(${PIXURL[n]})}`; }
+(function(){ const c=document.createElement('canvas'), x=c.getContext('2d'); let css='';
+  for (const [n,src] of Object.entries(PIXSRC)){ const rows=src.split('/'); c.width=rows[0].length; c.height=rows.length; x.clearRect(0,0,c.width,c.height); src.split('/').forEach((r,j)=>{ for (let i=0;i<r.length;i++){ const col=PIXPAL[r[i]]; if (col){ x.fillStyle=col; x.fillRect(i,j,1,1); } } }); PIXURL[n]=c.toDataURL(); { const im=new Image(); im.src=PIXURL[n]; PIXIMG[n]=im; } css+=`.pi-${n}{background-image:url(${PIXURL[n]})}`; }
   /* sizes are whole multiples of the 12px art in real screen pixels, so every art pixel stays square */
   const dpr=window.devicePixelRatio||1, snap=t=>Math.max(1,Math.round(t*dpr/12))*12/dpr;
-  const st=document.createElement('style'); st.textContent=`:root{--pi1:${snap(16)}px;--pi2:${snap(24)}px;--pi3:${snap(36)}px}`+css; document.head.appendChild(st); })();
+  const snap16=t=>Math.max(1,Math.round(t*dpr/16))*16/dpr;
+  const st=document.createElement('style'); st.textContent=`:root{--pi1:${snap(16)}px;--pi2:${snap(24)}px;--pi3:${snap(36)}px;--q2:${snap16(20)}px}`+css; document.head.appendChild(st); })();
 const pix = (n, cls) => `<i class="pi pi-${n}${cls?' '+cls:''}" aria-hidden="true"></i>`;
 const EMO_KEYS=Object.keys(EMO).sort((a,b)=>b.length-a.length).map(e=>e.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
 const EMO_RE=new RegExp('('+EMO_KEYS+')\\uFE0F?','gu'), EMO_HAS=new RegExp(EMO_KEYS,'u');
@@ -4840,8 +4853,8 @@ function drawOverlay(t){
     for (const it of overlayItems){
       const name = (it.me ? (me.n||'YOU') : it.l.n).toUpperCase(); const fa = it.fa==null?1:it.fa;
       const cid = it.me ? me.c : (it.l && it.l.c); const tag = (CHARS[cid]||{}).tag || '#f8d030';
-      const st = staffOf(it.me, it.l), icon = (st==='owner' ? '👑 ' : st==='mod' ? '💛 ' : '') + (!it.me && isFriend(name) ? '⭐ ' : '');
-      c.font = `800 ${10.5*u}px Inter, system-ui, sans-serif`; const tw = c.measureText(icon+name).width;
+      const st = staffOf(it.me, it.l), icons = [st ? 'crown' : null, !it.me && isFriend(name) ? 'star' : null].filter(Boolean), icon = '';
+      c.font = `800 ${10.5*u}px Inter, system-ui, sans-serif`; const isz = 12*u, tw = c.measureText(name).width + icons.length*(isz+3*u);
       const h = 18*u, w = tw + 22*u, nx = it.x - w/2, ny = (it.balloon ? it.y - 27 : it.y) - h - 5*u;   // with an emote bubble showing, the name sits above it
       c.globalAlpha = fa;
       c.shadowColor='rgba(0,0,0,0.35)'; c.shadowBlur=6*u*S*DPR; c.shadowOffsetY=1.5*u*S*DPR;
@@ -4850,7 +4863,8 @@ function drawOverlay(t){
       // little pointer down to the head
       c.beginPath(); c.moveTo(it.x-4*u, ny+h-0.5*u); c.lineTo(it.x+4*u, ny+h-0.5*u); c.lineTo(it.x, ny+h+4*u); c.closePath(); c.fill();
       c.fillStyle = tag; c.beginPath(); c.arc(nx+9*u, ny+h/2, 3*u, 0, Math.PI*2); c.fill();
-      c.fillStyle = it.me ? '#2a1d00' : '#ffffff'; c.textBaseline='middle'; c.fillText(icon+name, nx+15*u, ny+h/2+0.5*u);
+      { let ix=nx+15*u; const sm=c.imageSmoothingEnabled; c.imageSmoothingEnabled=false; for (const k of icons){ if (PIXIMG[k] && PIXIMG[k].complete) c.drawImage(PIXIMG[k], Math.round(ix), Math.round(ny+h/2-isz/2), Math.round(isz), Math.round(isz)); ix+=isz+3*u; } c.imageSmoothingEnabled=sm;
+        c.fillStyle = it.me ? '#2a1d00' : '#ffffff'; c.textBaseline='middle'; c.fillText(name, ix, ny+h/2+0.5*u); }
       c.globalAlpha = 1;
     }
     c.textBaseline='alphabetic';
@@ -4858,9 +4872,9 @@ function drawOverlay(t){
     const now=performance.now();
     for (const b of bars){
       const age=now-b.born; if (age>b.dur && Math.floor((age-b.dur)/140)%2===1) continue;
-      const icon = b.st==='owner' ? '👑 ' : b.st==='mod' ? '💛 ' : '';
+      const crown = !!b.st, icon = '';
       // measure (and shorten if it won't fit) once per zoom level
-      if (b._S!==S){ b._S=S; c.font=`800 ${11*u}px Inter, system-ui, sans-serif`; const hw=c.measureText(icon+b.head).width; c.font=`500 ${12*u}px Inter, system-ui, sans-serif`;
+      if (b._S!==S){ b._S=S; c.font=`800 ${11*u}px Inter, system-ui, sans-serif`; const hw=c.measureText(b.head).width + (crown ? 15*u : 0); c.font=`500 ${12*u}px Inter, system-ui, sans-serif`;
         const maxW=Math.min(LW-10, 340*u) - hw - 22*u; let txt=b.body; if (c.measureText(txt).width>maxW){ while (txt.length>1 && c.measureText(txt+'…').width>maxW) txt=txt.slice(0,-1); txt=txt.trimEnd()+'…'; }
         b._txt=txt; b._hw=hw; b.w=hw+5*u+c.measureText(txt).width+20*u; b.h=22*u; }
       let bx=OX+b.x-b.w/2; bx=Math.max(3*u, Math.min(LW-b.w-3*u, bx)); const by=OY+b.y;
@@ -4869,7 +4883,7 @@ function drawOverlay(t){
       c.shadowColor='transparent'; c.shadowBlur=0; c.shadowOffsetY=0;
       const tag=(CHARS[b.cid]||{}).tag||'#f8d030'; c.fillStyle=tag; pill(bx+5*u, by+5*u, 3*u, b.h-10*u, 1.5*u); c.fill();
       c.textBaseline='middle';
-      c.font=`800 ${11*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#c03070'; c.fillText(icon+b.head, bx+12*u, by+b.h/2+0.5*u);
+      c.font=`800 ${11*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#c03070'; if (crown && PIXIMG.crown && PIXIMG.crown.complete){ const sm=c.imageSmoothingEnabled; c.imageSmoothingEnabled=false; c.drawImage(PIXIMG.crown, Math.round(bx+12*u), Math.round(by+b.h/2-6*u), Math.round(12*u), Math.round(12*u)); c.imageSmoothingEnabled=sm; } c.fillText(b.head, bx+12*u+(crown?15*u:0), by+b.h/2+0.5*u);
       c.font=`${b.yell?800:500} ${12*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#1d1530'; c.fillText(b._txt, bx+12*u+b._hw+5*u, by+b.h/2+0.5*u);
       c.textBaseline='alphabetic';
     }
@@ -5989,7 +6003,7 @@ const PM={n:null, p:null};
 function pmCard(o){ const P=PM.p&&PM.p.n===o.n.toUpperCase() ? PM.p : null;
   $id('pm_pic').innerHTML=llamaPic(o.c, o.w||{}, 92);
   const since = P&&P.since ? new Date(P.since).toLocaleDateString([], {month:'short', year:'numeric'}).toUpperCase() : '';
-  const st = P&&P.st==='owner' ? `<span class="pmst own">${pix('crown')} OWNER</span>` : P&&P.st==='mod' ? `<span class="pmst mod">${pix('goldheart')} MOD</span>` : '';
+  const st = P&&P.st==='owner' ? `<span class="pmst own">${pix('crown')} OWNER</span>` : P&&P.st==='mod' ? `<span class="pmst mod">${pix('crown')} MOD</span>` : '';
   $id('pm_meta').innerHTML = (since?`LLAMA SINCE ${since}`:'LOADING...') + (st?'<br>'+st:'') + (isFriend(o.n)?` <span class="pmst fr">${pix('star')} FRIEND</span>`:'');
   if (!P){ $id('pm_info').innerHTML=''; return; }
   const sc=(ic,v,l)=>`<div>${pix(ic)}<b>${v}</b><small>${l}</small></div>`;
@@ -6363,7 +6377,7 @@ const dashEl=document.getElementById('dashbox'), dsBody=document.getElementById(
 function dashMenu(){ const el=document.getElementById('mdash'); if (el) el.style.display = me.st ? '' : 'none'; }
 const ROOM_SHORT={lounge:'LOUNGE', barn:'ACRES', casino:'CASINO', arena:'ARENA', lanes:'LANES', store:'STORE', account:'ACCOUNT'};
 const esc = s => String(s).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-const badgeHtml = st => st==='owner' ? '<span class="badge" title="Owner">👑</span>' : st==='mod' ? '<span class="badge" title="Mod">💛</span>' : '<span class="badge"></span>';
+const badgeHtml = st => st ? `<span class="badge" title="${st==='owner'?'Owner':'Mod'}">${pix('crown')}</span>` : '<span class="badge"></span>';
 function openDash(){ if (!me.st) return; closeAll(); dsBody.innerHTML='<div class="dl">LOADING...</div>'; dashEl.style.display='block'; loadDash(); }
 function dashDo(cmd, target){
   if (cmd==='give'){ const v=prompt(`How many tokens to give ${target}? (1 to 1000)`, '10'); if (v===null) return; const n=Math.floor(+v); if (!(n>=1 && n<=1000)){ localMsg('Give between 1 and 1000 tokens.'); return; }
@@ -6412,7 +6426,7 @@ function loadDash(){
     dsTimer=setInterval(()=>{ if (dashEl.style.display!=='block' || dsTab!=='chat'){ clearInterval(dsTimer); return; } if (dsChat.open==null && !(document.activeElement && document.activeElement.id==='ds_q')) loadChatLog(); }, 6000); return; }
   NET.act('dash').then(r=>{
     if (!r.ok){ dsBody.innerHTML=`<div class="dl">${esc(r.msg||'Could not load the dashboard.')}</div>`; return; }
-    const owner = r.me==='owner'; document.getElementById('ds_title').innerHTML = `${badgeHtml(r.me)} ${owner?'OWNER':'MOD'} DASHBOARD`;
+    const owner = r.me==='owner'; document.getElementById('ds_title').textContent = `${owner?'OWNER':'MOD'} DASHBOARD`;
     const myName=(me.n||'').toUpperCase(); let h='';
     const btn=(label,cmd,name,cls)=>`<button class="gbbtn s ${cls||''}" data-cmd="${cmd}" data-name="${esc(name)}">${label}</button>`;
     const canAct = (n, st) => n!==myName && st!=='owner' && (owner || st!=='mod');
