@@ -1319,12 +1319,18 @@ const ITEMS={
   // boxing kit: c = main, shade, shine; cuff = the band at the wrist or waist
   gloves:{s:'hands',p:30,n:'BOXING GLOVES',c:['#e8303c','#a8141e','#ff8a90'],cuff:'#f8f4ea'},
   shorts:{s:'legs',p:30,n:'BOXING SHORTS',c:['#2a5ad8','#1a3a98','#78a0ff'],cuff:'#f8f4ea'},
+  // the November batch
+  crown:{s:'hat',p:50,n:'GOLDEN CROWN',c:['#f6c945','#c8951c','#fff6c0']}, chullo:{s:'hat',p:25,n:'LLAMA CHULLO',c:['#d8303c','#8e1a26','#f8d030']}, headphones:{s:'hat',p:30,n:'HEADPHONES',c:['#3a3e52','#22242e','#f85888']},
+  nerd:{s:'eyes',p:15,n:'NERD GLASSES',c:['#1a1626','#3a3456','#ffffff']}, glasses3d:{s:'eyes',p:15,n:'3D GLASSES',c:['#f4f4f0','#c8c8c4','#ffffff']},
+  chain:{s:'neck',p:40,n:'GOLD CHAIN',c:['#f6c945','#c8951c','#fff6c0']}, tie:{s:'neck',p:15,n:'NECKTIE',c:['#2a5ad8','#1a3a98','#78a0ff']},
+  hoodie_gray:{s:'shirt',p:35,n:'GRAY HOODIE',c:['#8a8a96','#5e5e6a','#b0b0ba'],hood:true}, hoodie_pink:{s:'shirt',p:35,n:'PINK HOODIE',c:['#f878b0','#c84880','#ffb0d0'],hood:true},
+  sweater:{s:'shirt',p:30,n:'HOLIDAY SWEATER',c:['#2e8a5a','#1e5e3e','#5ab884'],knit:true}, tee_heart:{s:'shirt',p:25,n:'HEART TEE',c:['#f4f4f0','#c8c8c4','#ffffff'],pr:'heart'}, tee_llama:{s:'shirt',p:25,n:'LLAMA TEE',c:['#3a7ad8','#28589e','#6aa8f0'],pr:'llama'},
   poncho_orange:{s:'shirt',p:35,n:'ORANGE PONCHO',c:['#f08a30','#b85a18','#ffb870'],pon:true, st:['#f08a30','#f08a30','#5a3418','#f8e8c8','#f08a30','#f08a30','#b85a18','#f8e8c8','#f08a30','#f08a30'], fr:'#f8e8c8'},
 };
 // shirt prints, 6 x 4 pixels, used for the worn shirt and the one on the hanger
 const TEE_PRINTS={ smile:['..aa..','.abba.','.aaaa.','..cc..'], cancelled:['.bbbb.','bbccbb','.bbbb.','dddddd'], wild:['..e...','.efe.e','efffef','ffffff'], cancel:['gggggg','......','gggggg','gggg..'], woke:['hhhhh.','......','hhhhhh','hh....'],
-  lounge:['gggggg','g.ii.g','g.ii.g','gggggg'], band:['g.gg.g','gggggg','.g..g.','g.gg.g'], acres:['...jj.','..kk..','.kk...','kk....'], arena:['.g..g.','gg.gg.','.g..g.','......'] };
-const TEE_PC={a:'#d8b07a',b:'#6fd0ff',c:'#1a1626',d:'#d8b07a',e:'#ffb030',f:'#e03048',g:'#ffffff',h:'#1a1626',i:'#f8d030',j:'#4aa04a',k:'#ff8a30'};
+  lounge:['gggggg','g.ii.g','g.ii.g','gggggg'], band:['g.gg.g','gggggg','.g..g.','g.gg.g'], acres:['...jj.','..kk..','.kk...','kk....'], arena:['.g..g.','gg.gg.','.g..g.','......'], heart:['.l..l.','llllll','.llll.','..ll..'], llama:['g.....','gg....','.gggg.','.g..g.'] };
+const TEE_PC={l:'#e8304c',a:'#d8b07a',b:'#6fd0ff',c:'#1a1626',d:'#d8b07a',e:'#ffb030',f:'#e03048',g:'#ffffff',h:'#1a1626',i:'#f8d030',j:'#4aa04a',k:'#ff8a30'};
 const cleanWear = w => { const o={}; if (w && typeof w==='object') for (const s2 of WEAR_SLOTS){ const k=w[s2]; if (typeof k==='string' && ITEMS[k] && ITEMS[k].s===s2) o[s2]=k; } return o; };
 const wearKey = w => w ? WEAR_SLOTS.map(s2=>w[s2]||'').join(',')+(w.hold?',h':'') : '';
 function buildSprite(cid, dir, frame, pose, wear, only) {
@@ -1407,7 +1413,15 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
     if (front){ for (let x=12;x<=15;x++) put(x,25+oy,fur(13.5,22+oy,3,5)(x,25+oy));   // the neck shows through the collar
       const P2=TEE_PRINTS[TEE.pr], PC=TEE_PC;
       if (P2) P2.forEach((row,j)=>{ for (let i=0;i<6;i++) if (row[i]!=='.') put(11+i,30+j+oy,PC[row[i]]); }); }
-    else { for (let x=11;x<=16;x++) put(x,25+oy,C[1]); } }
+    else { for (let x=11;x<=16;x++) put(x,25+oy,C[1]); }
+    if (TEE.hood){   // hoodie: thick hood around the neck, drawstrings and a front pocket; from behind, the hood hangs on the back
+      if (front){ for (let x=8;x<=19;x++){ put(x,22+oy,OUT); put(x,23+oy,C[1]); put(x,24+oy,(x>=11&&x<=16)?C[1]:C[0]); } put(7,23+oy,OUT); put(20,23+oy,OUT); put(7,24+oy,OUT); put(20,24+oy,OUT);
+        for (const x of [12,15]) for (let y=25;y<=28;y++) put(x,y+oy,y===28?C[2]:'#f4f4f0');
+        for (let x=10;x<=17;x++){ put(x,32+oy,OUT); for (let y=33;y<=35;y++) put(x,y+oy,(x===10||x===17)?OUT:C[1]); } }
+      else { oell(13.5,25.5+oy,4.6,2.6,(x,y)=>(y<25+oy)?C[0]:C[1]); } }
+    if (TEE.knit){   // holiday sweater: a white zigzag band with red dots across the chest, ribbed hem and cuffs
+      for (let x=5;x<=22;x++){ const zz=(x%4<2)?27:28; if (put) { put(x,zz+oy,'#ffffff'); } if (x%4===0) put(x,30+oy,'#e8304c'); }
+      for (let x=8;x<=19;x++) if (x%2) put(x,36+oy,C[1]); for (const x of [4,6,21,23]) put(x,29+oy,C[1]); } }
   // tail (back)
   if (L && !front) oell(13.5,37.5+oy,1.6,1.3,fur(13.5,37.5+oy,1.6,1.3));
   if (W.hands){ const C=ITEMS[W.hands].c, CF=ITEMS[W.hands].cuff;   // big round boxing gloves over the front hooves: padded mitt, thumb, white cuff
@@ -1461,10 +1475,10 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
   }
   // ears (upright ears tuck under hats that cover the top of the head)
   if (!L) {}
-  else if (ch.ears==='up' && ['cap','beanie','tophat','cowboy'].includes(W.hat)) {}
+  else if (ch.ears==='up' && ['cap','beanie','tophat','cowboy','chullo','headphones'].includes(W.hat)) {}
   else if (ch.ears==='mixed') {   // one ear flopped over, one standing tall
     oell(5,11.5+oy,3.4,1.5,fur(5,11.5+oy,3.4,1.5)); for(let x=3;x<=6;x++) put(x,11.5+oy,pal(x,11+oy)[1]);
-    if (!['cap','beanie','tophat','cowboy'].includes(W.hat)){ oell(18,4.4+oy,1.8,4.8,fur(18,4.4+oy,1.8,4.8)); for(let y=2;y<=6;y++) put(18,y+oy,pal(18,y+oy)[1]); put(19,0+oy,pal(19,0)[2]); } }
+    if (!['cap','beanie','tophat','cowboy','chullo','headphones'].includes(W.hat)){ oell(18,4.4+oy,1.8,4.8,fur(18,4.4+oy,1.8,4.8)); for(let y=2;y<=6;y++) put(18,y+oy,pal(18,y+oy)[1]); put(19,0+oy,pal(19,0)[2]); } }
   else if (ch.ears==='up') {
     const ear = (cx) => { oell(cx,5+oy,1.7,4.2,fur(cx,5+oy,1.7,4.2)); for(let y=3;y<=6;y++) put(cx,y+oy,pal(cx,y+oy)[1]); };
     ear(9); ear(18);
@@ -1516,6 +1530,15 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
       for (let x=8;x<=19;x++){ put(x,21+oy,OUT); for (let y=22;y<=25;y++) put(x,y+oy,((x+y)%4<2)?C[0]:C[1]); put(x,26+oy,OUT); } put(7,22+oy,OUT); put(7,23+oy,OUT); put(7,24+oy,OUT); put(7,25+oy,OUT); put(20,22+oy,OUT); put(20,23+oy,OUT); put(20,24+oy,OUT); put(20,25+oy,OUT);
       if (front){ for (let y=26;y<=33;y++){ put(15,y+oy,OUT); put(19,y+oy,OUT); for (let x=16;x<=18;x++) put(x,y+oy,(y%3===0)?C[1]:C[0]); } for (let x=16;x<=18;x++){ put(x,34+oy,C[2]); put(x,35+oy,(x%2)?C[2]:null); } put(15,34+oy,OUT); put(19,34+oy,OUT); }
       else { for (let y=26;y<=29;y++){ put(10,y+oy,OUT); put(13,y+oy,OUT); put(11,y+oy,C[0]); put(12,y+oy,C[1]); } } }
+    else if (W.neck==='chain'){   // heavy gold chain with a big shiny medallion
+      if (front){ for (let x=9;x<=18;x++){ const t2=(x-13.5)/4.5, y=Math.round(23+4*(1-t2*t2)); put(x,y+oy,(x%2)?C[0]:C[1]); put(x,y+1+oy,OUT); }
+        oell(13.5,30.5+oy,1.9,1.9,(x,y)=>(x<13.5&&y<30.5+oy)?C[2]:(x>14?C[1]:C[0])); put(13,30+oy,'#ffffff'); }
+      else { for (let x=9;x<=18;x++) put(x,23+oy,(x%2)?C[0]:C[1]); } }
+    else if (W.neck==='tie'){   // a necktie: knot at the collar, widening to a point
+      if (front){ rect(12,23+oy,4,3,OUT); put(13,24+oy,C[1]); put(14,24+oy,C[1]);
+        for (let y=26;y<=33;y++){ const w=y<29?1:2; for (let x=13-w+1;x<=14+w-1;x++) put(x,y+oy,((x+y)%3===0)?C[2]:(x>=14?C[1]:C[0])); put(13-w,y+oy,OUT); put(14+w,y+oy,OUT); }
+        put(13,34+oy,OUT); put(14,34+oy,OUT); put(12,34+oy,OUT); put(15,34+oy,OUT); }
+      else { for (let x=10;x<=17;x++) put(x,24+oy,C[1]); } }
     else if (W.neck==='lei'){ const fl=['#f85888','#f8d030','#ffffff','#ff8a30'];
       const pts=[]; for (let x=8;x<=19;x+=2){ const t2=(x-13.5)/5.5; pts.push([x, Math.round(23+(front?4.5:1)*(1-t2*t2))]); }
       pts.forEach(([x,y],k)=>{ const c=fl[k%fl.length]; put(x,y-1+oy,c); put(x-1,y+oy,c); put(x+1,y+oy,c); put(x,y+1+oy,c); put(x,y+oy,'#f8d030'); if (k%2) put(x+1,y+1+oy,'#4aa04a'); }); } }
@@ -1524,6 +1547,11 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
   if (W.eyes){ const C=ITEMS[W.eyes].c;
     if (!front){ for (let x=7;x<=20;x++) put(x,11+oy,OUT); }
     else if (W.eyes==='shades'){ rect(7,10+oy,12,1,OUT); rect(7,11+oy,5,3,OUT); rect(14,11+oy,5,3,OUT); rect(12,11+oy,2,1,OUT); rect(8,11+oy,3,2,C[1]); rect(15,11+oy,3,2,C[1]); put(8,11+oy,C[2]); put(15,11+oy,C[2]); put(9,11+oy,'#ffffff'); put(16,11+oy,'#ffffff'); put(6,11+oy,OUT); put(19,11+oy,OUT); }
+    else if (W.eyes==='nerd'){   // thick round black frames: the eyes still show through
+      for (const x0 of [6,13]){ for (let x=x0;x<=x0+5;x++){ put(x,9+oy,OUT); put(x,14+oy,OUT); } for (let y=10;y<=13;y++){ put(x0,y+oy,OUT); put(x0+5,y+oy,OUT); } put(x0+1,10+oy,C[2]); }
+      put(11,11+oy,OUT); put(12,11+oy,OUT); put(5,11+oy,OUT); put(19,11+oy,OUT); }
+    else if (W.eyes==='glasses3d'){   // white cardboard frames, one red lens and one blue
+      rect(6,9+oy,14,6,OUT); rect(7,10+oy,12,4,C[0]); rect(8,11+oy,4,2,'#e8304c'); rect(14,11+oy,4,2,'#3ac8f0'); put(8,11+oy,'#ff8a96'); put(14,11+oy,'#9ae8ff'); put(12,13+oy,C[1]); put(13,13+oy,C[1]); put(5,11+oy,OUT); put(20,11+oy,OUT); }
     else { const shape = W.eyes==='hearts' ? ['.#.#.','#####','#####','.###.','..#..'] : ['..#..','.###.','#####','.#.#.','#...#'];
       for (const x0 of [6,13]){ shape.forEach((row,j)=>{ for (let i=0;i<5;i++) if (row[i]==='#'){ for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const ii=i+dx, jj=j+dy; if (ii<0||ii>4||jj<0||jj>4||shape[jj][ii]!=='#') put(x0+ii,9+jj+oy,OUT); } } });
         shape.forEach((row,j)=>{ for (let i=0;i<5;i++) if (row[i]==='#') put(x0+i,9+j+oy,(j<=1&&i<=1)?C[2]:(i>=3?C[1]:C[0])); }); }
@@ -1540,6 +1568,18 @@ function buildSprite(cid, dir, frame, pose, wear, only) {
     else if (W.hat==='party'){ for (let y=0;y<=9;y++){ const hw=Math.round(0.6+y*0.62); const xa=Math.round(13.5-hw), xb=Math.round(13.5+hw); for (let x=xa;x<=xb;x++) put(x,y+oy,(x===xa||x===xb)?OUT:(((x+y*2)>>1)%3===0?C[1]:(((x+y*2)>>1)%3===1?C[0]:'#58c8f0'))); }
       rect(7,10+oy,14,1,OUT); oell(13.5,0+oy,1.4,1.2,'#ffffff'); }
     else if (W.hat==='tophat'){ oell(13.5,9+oy,8.6,1.4,hf(13.5,9+oy,8.6,1.4)); rect(8,-1+oy,12,10,OUT); rect(9,0+oy,10,9,C[0]); rect(16,0+oy,3,9,C[1]); rect(9,6+oy,10,2,'#e03048'); rect(16,6+oy,3,2,'#a81830'); rect(10,1+oy,1,4,C[2]); }
+    else if (W.hat==='crown'){   // gold band with three points, a ruby in the middle and sapphires either side
+      for (const [cx,top] of [[9,2],[13.5,0],[18,2]]) for (let y=top;y<=6;y++){ const hw=(y-top)*0.65; for (let x=Math.round(cx-hw);x<=Math.round(cx+hw);x++) put(x,y+oy, (x===Math.round(cx-hw)||x===Math.round(cx+hw)||y===top)?OUT:(x>=16?C[1]:C[0])); }
+      rect(7,6+oy,14,4,OUT); rect(8,7+oy,12,2,C[0]); rect(16,7+oy,4,2,C[1]); for (let x=8;x<=19;x++) put(x,6+oy,x%2?C[2]:C[0]);
+      put(13,7+oy,'#e8304c'); put(14,7+oy,'#e8304c'); put(13,8+oy,'#a8141e'); put(14,8+oy,'#a8141e'); put(10,8+oy,'#3a8ef0'); put(17,8+oy,'#3a8ef0'); put(9,1+oy,C[2]); put(13,0+oy,C[2]); }
+    else if (W.hat==='chullo'){   // Andean knit hat: stripes and a diamond band, ear flaps with braided tassels, pom-pom on top
+      oell(13.5,6.4+oy,6.8,3.8,(x,y)=>{ const r=y-oy; if (r<4) return C[0]; if (r<6) return ((x+r)%4<2)?C[2]:'#ffffff'; if (r<8) return (Math.abs(((x+1)%4)-2)+Math.abs(r-7)<2)?'#2a8a5a':C[0]; return C[1]; });
+      for (const x0 of [6,20]){ rect(x0-1,9+oy,3,7,OUT); rect(x0,9+oy,1,6,C[0]); put(x0,11+oy,C[2]); put(x0,13+oy,'#ffffff'); for (let y=15;y<=18;y++) put(x0,y+oy,(y%2)?'#f8d030':'#d8a818'); }
+      for (let x=7;x<=20;x++){ put(x,10+oy,(x%2)?C[1]:C[0]); put(x,11+oy,OUT); }
+      oell(13.5,2.0+oy,1.8,1.6,(x,y)=>((x+y)%2)?'#f8d030':'#ffe680'); }
+    else if (W.hat==='headphones'){   // padded band over the head, chunky ear cups with a coloured ring
+      for (let x=7;x<=20;x++){ const t2=(x-13.5)/6.5, y=Math.round(4-3*(1-t2*t2)); put(x,y+oy,OUT); put(x,y+1+oy,C[0]); put(x,y+2+oy,OUT); }
+      for (const cx of [6,21]){ oell(cx,11+oy,1.8,3,(x,y)=>(y<10+oy)?C[0]:C[1]); put(cx,9+oy,C[2]); put(cx,10+oy,C[2]); put(cx,11+oy,C[2]); } }
     else if (W.hat==='flowers'){ for (let x=6;x<=21;x++){ const y=Math.round(8+oy-Math.abs(x-13.5)*0.1); put(x,y,C[0]); put(x,y+1,C[1]); if (x%3===0) put(x,y-1,'#6ac06a'); }
       [[7,'#f85888'],[10,'#f8d030'],[13.5,'#ffffff'],[17,'#8ad0ff'],[20,'#f85888']].forEach(([x,c])=>{ x=Math.round(x); const y=6+oy; put(x,y-1,c); put(x-1,y,c); put(x+1,y,c); put(x,y+1,c); put(x-1,y-1,OUT); put(x+1,y-1,OUT); put(x,y,'#f8d030'); }); } }
   // poop hat

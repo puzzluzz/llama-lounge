@@ -89,6 +89,9 @@ const ITEMS = {
   tee_lounge: { s: "shirt", p: 25 }, tee_acres: { s: "shirt", p: 25 }, tee_arena: { s: "shirt", p: 25 },
   poncho: { s: "shirt", p: 35 }, poncho_orange: { s: "shirt", p: 35 },
   gloves: { s: "hands", p: 30 }, shorts: { s: "legs", p: 30 },
+  crown: { s: "hat", p: 50 }, chullo: { s: "hat", p: 25 }, headphones: { s: "hat", p: 30 }, nerd: { s: "eyes", p: 15 }, glasses3d: { s: "eyes", p: 15 },
+  chain: { s: "neck", p: 40 }, tie: { s: "neck", p: 15 }, hoodie_gray: { s: "shirt", p: 35 }, hoodie_pink: { s: "shirt", p: 35 }, sweater: { s: "shirt", p: 30 },
+  tee_heart: { s: "shirt", p: 25 }, tee_llama: { s: "shirt", p: 25 },
 };
 // ---------- player rooms ----------
 // One room per player. Only the owner can change it. Public rooms are open to everyone; private ones let in the owner,
