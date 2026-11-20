@@ -352,6 +352,8 @@
   .pwrap input{padding-right:70px!important}
   .pwrap .eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);margin-top:3px;border:0;background:transparent;font:800 11px var(--ui);letter-spacing:.05em;color:var(--sub);padding:8px;cursor:pointer}
   .aulinks{display:flex;justify-content:center;margin-top:10px}
+  #rules .rterms{font:500 13px/1.45 var(--ui);color:var(--sub);text-align:center;margin:10px 0 4px} #rules .rterms a{color:#5a48b0}
+  .aucheck{display:flex!important;gap:10px;align-items:flex-start;margin:4px 0 6px;font:600 14px/1.4 var(--ui);color:var(--ink);text-transform:none;letter-spacing:0;cursor:pointer} #auth .aucheck input{width:20px!important;height:20px!important;min-height:0!important;padding:0!important;flex:none;margin:1px 0 0!important;accent-color:#6b4bd8;box-shadow:none!important} #auth .aucheck span{flex:1;min-width:0;text-align:left} .aucheck a{color:#5a48b0}
   .aulink{border:0;background:transparent;font:700 14px var(--ui);color:#5a48b0;text-decoration:underline;cursor:pointer;padding:6px}
   #au_err.good{color:#1f8a4c}
   #acctbox{width:min(calc(100% - 24px),400px)}
@@ -927,7 +929,7 @@
   <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button class="pbtn ic" id="zout" title="Zoom out" aria-label="Zoom out">−</button><button class="pbtn ic" id="zin" title="Zoom in" aria-label="Zoom in">+</button><button class="pbtn ic" id="musicbtn" title="Music" aria-label="Music">♪</button><button class="pbtn y" id="menubtn" aria-label="Menu"><span class="hamb"><i></i><i></i><i></i></span><span class="mtx">MENU</span></button></div>
   <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
   <div id="keys">CLICK TO WALK · SPACE ACTION · ENTER TALK<br>M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
-  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">ROOMS</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="market" data-i="🏪">MARKETPLACE</div><div data-a="bug" data-i="🐞">REPORT A BUG</div><div data-a="tour" data-i="💡">TAKE THE TOUR</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
+  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">ROOMS</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="market" data-i="🏪">MARKETPLACE</div><div data-a="bug" data-i="🐞">REPORT A BUG</div><div data-a="tour" data-i="💡">TAKE THE TOUR</div><div data-a="terms" data-i="📜">TERMS &amp; PRIVACY</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
   <div id="emenu" class="gb menu sheet"><div class="slt">😄 EMOTES</div><div data-e="heart"><span class="pi pi-heart" aria-hidden="true"></span><b>HEART</b></div><div data-e="bang"><span class="pi pi-em_wow" aria-hidden="true"></span><b>WOW</b></div><div data-e="huh"><span class="pi pi-em_huh" aria-hidden="true"></span><b>HUH</b></div><div data-e="note"><span class="pi pi-music" aria-hidden="true"></span><b>SING</b></div><div data-e="lol"><span class="pi pi-em_lol" aria-hidden="true"></span><b>LOL</b></div><div data-e="zzz"><span class="pi pi-em_zzz" aria-hidden="true"></span><b>SLEEP</b></div><div data-e="wave"><span class="pi pi-hand" aria-hidden="true"></span><b>WAVE</b></div><div data-e="flex"><span class="pi pi-muscle" aria-hidden="true"></span><b>FLEX</b></div><div data-e="palm"><span class="pi pi-em_palm" aria-hidden="true"></span><b>FACEPALM</b></div></div>
   <div id="pmenu" class="gb"><div class="pmtop"><div id="pm_pic" class="pmpic"></div><div class="pmx"><div id="pm_name" class="pmn"></div><div id="pm_meta" class="pmmeta"></div></div><button class="gbbtn pmclose" id="pm_close" aria-label="Close">✕</button></div><div id="pm_info"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_trade">🤝 TRADE</button></div></div>
   <div id="tmenu" class="gb sheet"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
@@ -955,6 +957,7 @@
       <label id="au_ul"><span id="au_ut">NAME OR EMAIL</span><input id="au_u" name="username" autocomplete="username" maxlength="254" spellcheck="false" autocapitalize="off"></label>
       <label id="au_el">EMAIL<input id="au_e" name="email" type="email" autocomplete="email" maxlength="254" spellcheck="false" autocapitalize="off"></label>
       <label id="au_pl"><span id="au_pt">PASSWORD</span><span class="pwrap"><input id="au_p" name="password" type="password" autocomplete="current-password" maxlength="72"><button type="button" class="eye" data-for="au_p">SHOW</button></span></label>
+      <label id="au_tl" class="aucheck"><input type="checkbox" id="au_t"><span>I'm 13 or older and I agree to the <a href="/terms" target="_blank" rel="noopener">Terms and Privacy</a></span></label>
       <div id="au_err" role="alert"></div>
       <div class="srow"><button class="gbbtn y" id="au_go" type="submit">LOG IN</button></div>
       <div class="aulinks"><button type="button" class="aulink" id="au_forgot">Forgot password?</button><button type="button" class="aulink" id="au_back">Back to log in</button></div>
@@ -1049,6 +1052,7 @@
     </ul>
     <div class="rnote">Llamas who break the rules may be removed from the lounge.</div>
     </div>
+    <p class="rterms">These rules are part of the <a href="/terms" target="_blank" rel="noopener">Terms and Privacy</a>, which you agreed to when you made your account.</p>
     <div class="srow"><button class="gbbtn" id="ragree">I AGREE</button></div>
   </div>
   <div id="pick" class="gb sheet">
@@ -4455,6 +4459,7 @@ function menuAct(el){
   else if (a==='account'){ openAccount(); }
   else if (a==='market'){ openMarket(); }
   else if (a==='tour'){ tourStart(); }
+  else if (a==='terms'){ window.open('/terms', '_blank', 'noopener'); }
   else if (a==='bug'){ $id('bug_msg').textContent=''; $id('bugbox').style.display='block'; sheetHead($id('bugbox')); setTimeout(()=>$id('bug_text').focus(), 50); }
   else if (a==='friends'){ openFriends(); }
   else if (a==='wardrobe'){ openWardrobe(bagTab()); }
@@ -6187,7 +6192,7 @@ function authView(v, msg, good){
   for (const b of $id('au_tabs').children) b.classList.toggle('on', b.dataset.v===v);
   $id('au_sub').textContent=V.sub;
   $id('au_ul').style.display=V.u?'':'none'; if (V.u){ $id('au_ut').textContent=V.u; $id('au_u').maxLength=V.um; $id('au_u').autocomplete=V.ua; }
-  $id('au_el').style.display=V.e?'':'none';
+  $id('au_el').style.display=V.e?'':'none'; $id('au_tl').style.display = v==='signup' ? '' : 'none';
   $id('au_pl').style.display=V.p?'':'none'; if (V.p){ $id('au_pt').textContent=V.p; $id('au_p').autocomplete=V.pa; }
   $id('au_go').textContent=V.go; $id('au_forgot').style.display=V.forgot?'':'none'; $id('au_back').style.display=V.back?'':'none';
   $id('au_note').textContent=V.note; auErr.textContent=msg||''; auErr.classList.toggle('good', !!good);
@@ -6198,9 +6203,10 @@ async function doAuth(){
   const v=auView, u=$id('au_u').value.trim(), e=$id('au_e').value.trim(), p=$id('au_p').value;
   const busy={login:'LOGGING IN...', signup:'MAKING YOUR ACCOUNT...', forgot:'SENDING...', reset:'SAVING...'}[v];
   if ((v==='signup'||v==='forgot') && !/^\S+@\S+\.\S+$/.test(e)){ auErr.classList.remove('good'); auErr.textContent='Enter a real email.'; return; }
+  if (v==='signup' && !$id('au_t').checked){ auErr.classList.remove('good'); auErr.textContent='Please tick the box to confirm you\'re 13 or older and agree to the Terms.'; return; }
   auErr.classList.remove('good'); auErr.textContent=busy;
   for (const b of authEl.querySelectorAll('button')) b.disabled=true;
-  const r = v==='login' ? await apiPost('/api/login',{u,p}) : v==='signup' ? await apiPost('/api/signup',{u,e,p}) : v==='forgot' ? await apiPost('/api/forgot',{e}) : await apiPost('/api/reset',{t:resetTok,p});
+  const r = v==='login' ? await apiPost('/api/login',{u,p}) : v==='signup' ? await apiPost('/api/signup',{u,e,p,t:1}) : v==='forgot' ? await apiPost('/api/forgot',{e}) : await apiPost('/api/reset',{t:resetTok,p});
   for (const b of authEl.querySelectorAll('button')) b.disabled=false;
   if (!r.ok){ auErr.textContent = r.error||'Something went wrong.'; return; }
   if (v==='forgot'){ authView('login', r.mailOn===false ? "Password reset emails aren't switched on yet. Ask a staff member in the game for help." : 'If that email has an account, a reset link is on its way. Check your inbox and spam folder.', r.mailOn!==false); $id('au_u').value=e; return; }

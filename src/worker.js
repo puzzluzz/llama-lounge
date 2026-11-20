@@ -306,7 +306,7 @@ async function sendVerify(env, url, u, email) {
 let authSchema = null;
 function ensureAuthSchema(env) {
   if (!authSchema) authSchema = (async () => {
-    for (const col of ["email TEXT", "email_ok INTEGER NOT NULL DEFAULT 0"]) {
+    for (const col of ["email TEXT", "email_ok INTEGER NOT NULL DEFAULT 0", "terms INTEGER NOT NULL DEFAULT 0"]) {   // terms: when they ticked "13 or older and I agree to the Terms"
       try { await env.DB.prepare("ALTER TABLE users ADD COLUMN " + col).run(); } catch (e) { if (!/duplicate column/i.test(String(e && e.message || e))) throw e; }
     }
     await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users (email)").run();
@@ -366,13 +366,14 @@ async function api(req, env, url, ctx) {
     const name = String(body.u || "").trim(), pw = String(body.p || ""), email = normEmail(body.e);
     if (!/^[A-Za-z0-9_]{3,12}$/.test(name)) return json({ error: "Names are 3 to 12 letters, numbers or _." }, 400);
     if (!WF.nameOk(name)) return json({ error: "That name isn't allowed. Pick a different one." }, 400);
+    if (body.t !== 1 && body.t !== true) return json({ error: "Please confirm you're 13 or older and agree to the Terms." }, 400);
     if (!emailOk(email)) return json({ error: "Enter a real email. It's how you reset your password." }, 400);
     if (pw.length < 8 || pw.length > 72) return json({ error: "Passwords need 8 to 72 characters." }, 400);
     if (await blocked(env, "su:" + ip, SIGNUPS_PER_IP_HOUR)) return json({ error: "Too many new accounts from here. Try again later." }, 429);
     const salt = new Uint8Array(16); crypto.getRandomValues(salt);
     const hash = await pbkdf2(pw, salt, PBKDF2_ITERS);
     try {
-      const r = await env.DB.prepare("INSERT INTO users (name, salt, hash, iters, created, tk, email) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(name, b64(salt), b64(hash), PBKDF2_ITERS, Date.now(), START_TOKENS, email).run();
+      const r = await env.DB.prepare("INSERT INTO users (name, salt, hash, iters, created, tk, email, terms) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(name, b64(salt), b64(hash), PBKDF2_ITERS, Date.now(), START_TOKENS, email, Date.now()).run();
       await bump(env, "su:" + ip);
       const tok = await newSession(env, r.meta.last_row_id);
       const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(r.meta.last_row_id).first();
