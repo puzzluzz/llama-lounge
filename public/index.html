@@ -2178,9 +2178,16 @@ function buildPlayerBG(){
       const i=(py*W+px)*4; D[i]=c[0]; D[i+1]=c[1]; D[i+2]=c[2]; D[i+3]=255; }
     g.putImageData(img,x0,y0); }
   // the room's name on a plaque on the right wall
-  { const nm=(R.name||'').toUpperCase(), sc=1, tw=Math.max(20,pfW(nm,sc)), cv=document.createElement('canvas'); cv.width=tw+12; cv.height=13; const m=cv.getContext('2d');
-    m.fillStyle=INK; m.fillRect(0,0,cv.width,13); m.fillStyle='#f8e8b0'; m.fillRect(1,1,cv.width-2,11); m.fillStyle='#c8a050'; m.fillRect(1,10,cv.width-2,2); pfDraw(m,nm,6,4,'#5a3418',sc);
-    const wx=Math.round(N*10-cv.width/2); for (let x=0;x<cv.width;x++){ const X=wx+x; g.drawImage(cv, x,0,1,13, ox+X, oy+Math.floor(X/2)-74, 1, 13); } }
+  // 2x pixel letters lined up on even columns, so the wall's slant moves each letter as one piece and it stays easy to read
+  { const nm=(R.name||'').toUpperCase(), maxW=N*20-28; let sc=2, lines=[nm];
+    if (pfW(nm,2)+16>maxW){ const w=nm.split(' '); let best=null; for (let k=1;k<w.length;k++){ const a=w.slice(0,k).join(' '), b=w.slice(k).join(' '), m2=Math.max(pfW(a,2),pfW(b,2)); if (!best||m2<best[0]) best=[m2,a,b]; }
+      if (best && best[0]+16<=maxW) lines=[best[1],best[2]]; else sc=1; }
+    const tw=Math.max(24,...lines.map(l=>pfW(l,sc))), PW=tw+16+((tw+16)%2), LH2=5*sc+(sc===2?4:3), PH=lines.length*LH2+(sc===2?8:7);
+    const cv=document.createElement('canvas'); cv.width=PW; cv.height=PH; const m=cv.getContext('2d');
+    m.fillStyle=INK; m.fillRect(0,0,PW,PH); m.fillStyle='#f8e8b0'; m.fillRect(2,2,PW-4,PH-4); m.fillStyle='#fff6d0'; m.fillRect(2,2,PW-4,2); m.fillStyle='#c8a050'; m.fillRect(2,PH-4,PW-4,2);
+    lines.forEach((l,k)=>{ let x=Math.round((PW-pfW(l,sc))/2); x-=x%2; const y=(sc===2?4:4)+k*LH2; pfDraw(m,l,x+1,y+1,'#d8b870',sc); pfDraw(m,l,x,y,'#5a3418',sc); });
+    let wx=Math.round(N*10-PW/2); wx-=((wx%2)+2)%2; const top=Math.max(70, PH+40);
+    for (let x=0;x<PW;x++){ const X=wx+x; g.drawImage(cv, x,0,1,PH, ox+X, oy+Math.floor(X/2)-top, 1, PH); } }
 }
 
 // ======================= FURNITURE DRAW =======================
@@ -4981,7 +4988,7 @@ const PF = {
  E:['###','#..','##.','#..','###'], F:['###','#..','##.','#..','#..'], G:['.##','#..','#.#','#.#','.##'], H:['#.#','#.#','###','#.#','#.#'],
  I:['###','.#.','.#.','.#.','###'], J:['..#','..#','..#','#.#','.#.'], K:['#.#','#.#','##.','#.#','#.#'], L:['#..','#..','#..','#..','###'],
  M:['#...#','##.##','#.#.#','#...#','#...#'], N:['#..#','##.#','#.##','#..#','#..#'], O:['.#.','#.#','#.#','#.#','.#.'], P:['##.','#.#','##.','#..','#..'],
- Q:['.#.','#.#','#.#','##.','.##'], R:['##.','#.#','##.','#.#','#.#'], S:['.##','#..','.#.','..#','##.'], T:['###','.#.','.#.','.#.','.#.'],
+ Q:['.#.','#.#','#.#','##.','.##'], R:['##.','#.#','##.','#.#','#.#'], S:['.###','#...','.##.','...#','###.'], T:['###','.#.','.#.','.#.','.#.'],
  U:['#.#','#.#','#.#','#.#','###'], V:['#.#','#.#','#.#','#.#','.#.'], W:['#...#','#...#','#.#.#','##.##','#...#'], X:['#.#','#.#','.#.','#.#','#.#'],
  Y:['#.#','#.#','.#.','.#.','.#.'], Z:['###','..#','.#.','#..','###'],
  '0':['###','#.#','#.#','#.#','###'], '1':['.#.','##.','.#.','.#.','###'], '2':['##.','..#','.#.','#..','###'], '3':['##.','..#','.#.','..#','##.'],
