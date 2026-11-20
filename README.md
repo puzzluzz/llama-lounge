@@ -265,5 +265,6 @@ No API keys or passwords are involved.
   - The server makes the change (act `llama_change`). It checks that you're standing at the booth and not sitting, that the llama exists and is different from yours, and charges the 10 tokens before saving `users.c`. Everyone in the room sees the new llama right away.
 - **ACCOUNT room** (🔐 ACCOUNT on the room bar): a small 9 x 6 room with starry wallpaper, a marble floor, two armchairs and a rug.
   - The **changing booth** moved here from LLAMA ACRES and now costs **20 TOKENS**. The server checks you're at the booth in this room.
+  - Along the left wall: a little round table, three wooden chairs facing into the room, and another little round table.
   - The **account desk** (computer with a padlock, a service bell) opens your account settings: email and password.
 - **Sitting pose:** a llama sitting and facing the camera has two legs hanging over the front of the seat. They have a rounded knee, shins angled toward the way it faces, and hooves that swing gently (each llama at its own pace). Leg length follows the seat height: folded on cushions, dangling on bar stools. Boxing shorts show on the thighs. The legs are drawn after a couch's or armchair's front edge, so they hang in front of it.

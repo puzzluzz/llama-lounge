@@ -808,7 +808,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-23b";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-23c";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1249,7 +1249,9 @@ function buildAccountWorld(){
   FURN.push({t:'booth',gx:BOOTH[0],gy:BOOTH[1]}); block(BOOTH[0],BOOTH[1]);
   FURN.push({t:'acctdesk',gx:ACCT_DESK[0],gy:ACCT_DESK[1]}); block(ACCT_DESK[0],ACCT_DESK[1]); block(ACCT_DESK[0]+1,ACCT_DESK[1]);
   const put=(item,gx,gy,rot)=>{ const D=FURN_DEF[item]; FURN.push({...D.mk(rot), gx, gy, item, rot}); if (D.rug) return; if (D.seat) SEATS.push({gx,gy,dir:SEAT_DIRS[rot],lift:D.seat}); else block(gx,gy); };
-  put('rug_round',3,2,0); put('plant',0,0,0); put('floorlamp',8,0,0); put('armchair',0,2,1); put('armchair_mustard',0,3,1); put('cactus',8,2,0); put('flowers',6,0,0);
+  /* along the left wall: a little table, three wooden chairs facing into the room, another little table */
+  put('rug_round',3,2,0); put('roundtable',0,0,0); put('chair',0,1,0); put('chair',0,2,0); put('chair',0,3,0); put('roundtable',0,4,0);
+  put('plant',2,0,0); put('flowers',6,0,0); put('floorlamp',8,0,0); put('cactus',8,2,0);
 }
 function buildBarnWorld(){
   clearWorld();
