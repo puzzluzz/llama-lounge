@@ -808,7 +808,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-23a";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-23b";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -4038,7 +4038,26 @@ function drawBottle(o, x0, y0, oy, dir, walking, t){
     draw(BOTTLE_UP, bx, by);
   }
 }
+/* sitting, facing the camera: two legs hang over the front of the seat, bent at the knee, hooves swinging a little.
+   Drawn after the seat's front edge so they hang in front of it. Short seats (cushions, hay) get folded legs. */
+function drawSitLegs(L, t){ const ch=CHARS[L.c]||CHARS.twotone, flip=L.dir==='fl', X=L.x, Y=L.y, len=Math.max(2,Math.min(8,L.lift-1));
+  const furAt=(x,y)=>{ if (ch.check) return ((((x>>1)+(y>>1))&1) ? ch.fur.b : ch.fur.a); if (ch.split) return x<14 ? ch.fur.a : ch.fur.b; return ch.fur.a; };
+  const SHO = L.W.legs && ITEMS[L.W.legs] ? ITEMS[L.W.legs] : null;
+  const px=(x,y,col)=>{ g.fillStyle=col; g.fillRect(X+(flip?SW-1-x:x), Y+y, 1, 1); };
+  const sw=Math.sin(t*2.6+L.seed*1.7);
+  for (const [hx,ph] of [[9,1],[16,-1]]){ const kick=Math.round(sw*ph*1.2);   // the two legs swing opposite ways
+    const rows=[[40,hx,3],[41,hx,4],[42,hx+1,3]];                                   // thigh coming forward, a rounded knee
+    for (let k=0;k<len-1;k++){ const lean=Math.floor((k+1)/3), off = k>=len-3 ? kick : 0; rows.push([43+k, hx+1+lean+off, 3]); }   // shin angled toward the way it faces
+    { const pr=rows[rows.length-1]; rows.push([43+len-1, pr[1], 4]); }              // hoof, a little wider than the shin
+    for (const [y,x0,w] of rows){ px(x0-1,y,OUT); px(x0+w,y,OUT); }
+    { const [y,x0,w]=rows[rows.length-1]; for (let x=x0-1;x<=x0+w;x++) px(x,y+1,OUT); }
+    rows.forEach(([y,x0,w],i)=>{ const last=i===rows.length-1; for (let x=x0;x<x0+w;x++){ let col;
+      if (last) col = x===x0+3 ? '#4a3428' : HOOF; else if (SHO && y<=41) col = x===x0 ? SHO.cuff : SHO.c[x>=x0+2?1:0]; else { const P2=furAt(x,y); col = x===x0+w-1 ? P2[1] : (x===x0 && y<43 ? P2[2] : P2[0]); }
+      px(x,y,col); } });
+    px(hx+1,39,OUT); }   // crease where the leg meets the body
+}
 function drawLlama(o, t, isMe){
+  o._legs = null;
   let WR = isMe ? me.w : o.w;   // what they're wearing
   if (WR && WR.hands && o.p!=='bar' && (isMe ? me.h : o.h)) WR = {...WR, hold:1};   // holding food or a drink: that glove rides on the lifting hoof instead
   const [sx0,sy0] = P(o.x,o.y); const sx=Math.round(sx0), sy=Math.round(sy0);
@@ -4066,7 +4085,7 @@ function drawLlama(o, t, isMe){
       if (!o.leaving) llamaHits.push({id: isMe?null:o.id, x0:X-12, x1:X+12, y0:Y-HH, y1:Y});
       if (Math.floor(t*0.8)%3===0) pfDraw(g,'z',X+(B2.headLeft?12:-16),Y-HH-2-Math.floor(t*2)%3,'#e8ecff',1);
       return [X, Y-HH-2]; }
-    else g.drawImage(sprite(o.c, dir, fr, pose, WR), x0+jit, y0-gulp); }
+    else { g.drawImage(sprite(o.c, dir, fr, pose, WR), x0+jit, y0-gulp); o._legs = (o.p==='sit' && seat && !seat.dunk && dir[0]==='f') ? {x:x0+jit, y:y0-gulp, dir, c:o.c, W:WR||{}, lift, seed:(o.n||'').length} : null; } }
   if (jit){ g.fillStyle='#a8e0f8'; g.fillRect(x0+22,y0+6,2,3); g.fillStyle='#f8f8f8'; g.fillRect(x0+22,y0+6,1,1); }
   if (!o.leaving) llamaHits.push({id: isMe?null:o.id, x0:x0+4, x1:x0+24, y0:y0, y1:y0+46});
   const oy = pose==='sit'?6:((walking||dancing)&&(fr===1||fr===3)?1:0);
@@ -4385,9 +4404,11 @@ function render(t){
   for (const it of items){ if (!it.l || it.l.p!=='sit') continue; const tx=Math.floor(it.l.x), ty=Math.floor(it.l.y);
     const b=FURN.find(f=>f.t==='bench' && (f.ax==='x' ? (ty===f.gy && tx>=f.gx && tx<f.gx+(f.len||1)) : (tx===f.gx && ty>=f.gy && ty<f.gy+(f.len||1))));
     if (b) it.d=Math.max(it.d, b.gx+b.gy+1+(b.dz||0)+0.01); }
+  for (const it of items.slice()) if (it.l && it.l.p==='sit') items.push({d:it.d+0.008, legs:it.l});   // dangling legs go over the seat's front edge
   items.sort((a,b)=>a.d-b.d);
   overlayItems.length = 0; llamaHits.length = 0; cupHits.length = 0; itemHits.length = 0; vendHit = null; pvHits.length = 0;
   for (const it of items){
+    if (it.legs){ if (it.legs._legs){ g.globalAlpha = it.legs.leaving ? Math.max(0, Math.min(1, 1-(performance.now()-it.legs.leaving)/LEAVE_T)) : 1; drawSitLegs(it.legs._legs, t); g.globalAlpha=1; } continue; }
     if (it.f){ if (PDR.on && PDR.fid && it.f.fid===PDR.fid){ g.globalAlpha=0.25; drawFurn(it.f, t); g.globalAlpha=1; continue; } drawFurn(it.f, t); if (it.f.show) showroomTag(it.f); }
     else { const fa = (!it.me && it.l.leaving) ? Math.max(0, Math.min(1, 1-(performance.now()-it.l.leaving)/LEAVE_T)) : 1; g.globalAlpha=fa; const pos = drawLlama(it.l, t, it.me); g.globalAlpha=1; overlayItems.push({l:it.l, x:pos[0], y:pos[1], me:it.me, balloon:pos[2] || fishAbove(it.l, it.me), fa}); }
   }
