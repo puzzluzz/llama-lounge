@@ -2658,17 +2658,17 @@ function drawFurn(f,t){
         if (dp>0) dunkSplash(Math.round(px), Math.round(py)-21, t); else pfDraw(g,'DUNKY',x0+3,y0-7,'#ffd23f'); }
       break; }
     case 'dunksign': { // carnival sign on two posts: striped border, chasing bulbs, big DUNK!
-      const tw=pfW('1 COIN')+8, W=tw+12, H=23, cv=dunkSignCv; if (cv.width!==W){ cv.width=W; cv.height=H; }
+      const tw=pfW('1 COIN')+8, W=tw+10, H=20, cv=dunkSignCv;   /* slimmer board: a 2-pixel striped border instead of 3 */ if (cv.width!==W){ cv.width=W; cv.height=H; }
       const m=cv.getContext('2d'); m.clearRect(0,0,W,H);
       m.fillStyle=INK; m.fillRect(1,0,W-2,H); m.fillRect(0,1,W,H-2);
-      for (let x=1;x<W-1;x++) for (let y=1;y<H-1;y++){ if (x>3&&x<W-4&&y>3&&y<H-4) continue; m.fillStyle=(Math.floor((x+y)/3)%2)?'#e03048':'#f8f8f0'; m.fillRect(x,y,1,1); }
-      m.fillStyle=INK; m.fillRect(4,4,W-8,H-8); m.fillStyle='#fff4d8'; m.fillRect(5,5,W-10,H-10);
+      for (let x=1;x<W-1;x++) for (let y=1;y<H-1;y++){ if (x>2&&x<W-3&&y>2&&y<H-3) continue; m.fillStyle=(Math.floor((x+y)/3)%2)?'#e03048':'#f8f8f0'; m.fillRect(x,y,1,1); }
+      m.fillStyle=INK; m.fillRect(3,3,W-6,H-6); m.fillStyle='#fff4d8'; m.fillRect(4,4,W-8,H-8);
       const lit=Math.floor(t*6); let k=0; const bulb=(x,y)=>{ m.fillStyle=((k++)+lit)%3===0?'#ffffff':'#ffd23f'; m.fillRect(x,y,1,1); };
       for (let x=3;x<W-3;x+=4) bulb(x,1); for (let y=4;y<H-3;y+=4) bulb(W-2,y); for (let x=W-4;x>=3;x-=4) bulb(x,H-2); for (let y=H-4;y>=4;y-=4) bulb(1,y);
-      { const dw=pfW('DUNK!'); pfDraw(m,'DUNK!',Math.round(W/2-dw/2),6,'#8a1424'); pfDraw(m,'DUNK!',Math.round(W/2-dw/2),5,(Math.floor(t*2)%3===0)?'#ff5c8a':'#e03048'); }
+      { const dw=pfW('DUNK!'); pfDraw(m,'DUNK!',Math.round(W/2-dw/2),5,'#8a1424'); pfDraw(m,'DUNK!',Math.round(W/2-dw/2),4,(Math.floor(t*2)%3===0)?'#ff5c8a':'#e03048'); }
       // little target and "1 COIN"
-      { const tx=Math.round(W/2-tw/2)+2; for (const [r,c] of [[2,'#e03048'],[1,'#f8f8f0'],[0,'#e03048']]){ m.fillStyle=c; m.fillRect(tx-r,14-r,r*2+1,r*2+1); }
-        pfDraw(m,'1 COIN',tx+5,12,'#1c4aa8'); }
+      { const tx=Math.round(W/2-tw/2)+2; for (const [r,c] of [[2,'#e03048'],[1,'#f8f8f0'],[0,'#e03048']]){ m.fillStyle=c; m.fillRect(tx-r,13-r,r*2+1,r*2+1); }
+        pfDraw(m,'1 COIN',tx+5,11,'#1c4aa8'); }
       const [px,py]=P(f.gx+0.5,f.gy+0.55,0), X=Math.round(px)+4, Y=Math.round(py);
       ellPx(X,Y+1,11,3,'rgba(40,80,20,0.3)');
       for (const dx of [-10,9]){ g.fillStyle=INK; g.fillRect(X+dx-1,Y-18,4,19); g.fillStyle='#a86a34'; g.fillRect(X+dx,Y-18,2,18); g.fillStyle='#c88a50'; g.fillRect(X+dx,Y-18,1,18); }
