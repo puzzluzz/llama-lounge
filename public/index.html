@@ -1012,7 +1012,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24h";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24i";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -2447,17 +2447,26 @@ function drawArcade3D(f, sx, sy, t){
 // roulette table (2 x 2): wood rail, green felt with the number layout, a spinning wheel with an orbiting ball
 function drawRoulette(f, t){
   const gx=f.gx, gy=f.gy, W=2, D=2;
-  { const [cx,cy]=P(gx+1,gy+1); ellPx(cx,cy+2,30,12,'rgba(0,0,0,0.25)'); }
-  for (const [u,v] of [[0.25,0.25],[1.75,0.25],[0.25,1.75],[1.75,1.75]]) box(gx+u-0.06,gy+v-0.06,0.12,0.12,10,'#5a2c18','#4a2010','#3a1808');
-  box(gx+0.05,gy+0.05,W-0.1,D-0.1,3,'#8a4a20','#6a3418','#4a2210',0,10);
-  const Q=(u0,v0,u1,v1,c)=>polyPx([P(gx+u0,gy+v0,13),P(gx+u1,gy+v0,13),P(gx+u1,gy+v1,13),P(gx+u0,gy+v1,13)],c);
-  Q(0.15,0.15,1.85,1.85,'#1e7a3a'); Q(0.2,0.2,1.8,1.8,'#24903f');
+  { const [cx,cy]=P(gx+1,gy+1); ellPx(cx,cy+2,32,13,'rgba(0,0,0,0.3)'); }
+  // casino-cabinet build, like the slots: gold foot, burgundy pedestal, mahogany body with gold trim and chase lights, padded leather rail
+  box(gx+0.5,gy+0.5,1,1,2,'#ffd23f','#c88a10','#a06808');
+  box(gx+0.68,gy+0.68,0.64,0.64,7,'#6a1c34','#521428','#3a0e1c',0,2);
+  box(gx+0.02,gy+0.02,1.96,1.96,6,'#9a4424','#7e3418','#5e2410',0,9);
+  { const fl=Math.floor(t*3), E=(a,b,z,c)=>{ const p=P(a[0],a[1],z), q=P(b[0],b[1],z); linePx(p[0],p[1],q[0],q[1],c); };
+    const fA=[gx+0.02,gy+1.98], fB=[gx+1.98,gy+1.98], rB=[gx+1.98,gy+0.02];
+    E(fA,fB,9,'#ffd23f'); E(fB,rB,9,'#c88a10'); E(fA,fB,14,'#ffd23f'); E(fB,rB,14,'#c88a10');
+    for (let i=0;i<=8;i++){ const u=i/8; for (const [a,b,k] of [[fA,fB,0],[fB,rB,1]]){ const [x,y]=P(a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u, 11.5); g.fillStyle=INK; g.fillRect(Math.round(x)-1,Math.round(y)-1,3,3); g.fillStyle=((i+k*9+fl)%2)?'#ffffff':'#ff5c8a'; g.fillRect(Math.round(x),Math.round(y),1,1); } } }
+  box(gx+0.02,gy+0.02,1.96,1.96,2,'#c03858','#8a1c3c','#6a1430',0,15);
+  { const a=P(gx+0.1,gy+1.9,17), b=P(gx+1.9,gy+1.9,17), c2=P(gx+1.9,gy+0.1,17); linePx(a[0],a[1],b[0],b[1],'#ff8aa8'); linePx(b[0],b[1],c2[0],c2[1],'#e06080'); }
+  const Q=(u0,v0,u1,v1,c)=>polyPx([P(gx+u0,gy+v0,17),P(gx+u1,gy+v0,17),P(gx+u1,gy+v1,17),P(gx+u0,gy+v1,17)],c);
+  Q(0.14,0.14,1.86,1.86,INK); Q(0.16,0.16,1.84,1.84,'#1a6e34'); Q(0.2,0.2,1.8,1.8,'#22903e');
   // number layout on the far half: three rows of red/black boxes with a green zero
-  Q(1.0,0.3,1.12,1.7,'#28a048');
+  Q(1.0,0.3,1.12,1.7,'#30b050');
   for (let i=0;i<6;i++) for (let j=0;j<3;j++){ const u0=1.14+i*0.11, v0=0.32+j*0.46; Q(u0,v0,u0+0.1,v0+0.44,(i+j)%2?'#c02838':'#181020'); }
-  { const a=P(gx+1.14,gy+1.72,13), b=P(gx+1.8,gy+1.72,13); linePx(a[0],a[1],b[0],b[1],'#f8f0d0'); }
-  // wheel on the near half
-  const [wx,wy]=P(gx+0.55,gy+1.0,14);
+  { const a=P(gx+1.14,gy+1.72,17), b=P(gx+1.8,gy+1.72,17); linePx(a[0],a[1],b[0],b[1],'#ffd23f'); const c2=P(gx+1.14,gy+0.28,17); linePx(a[0],a[1],c2[0],c2[1],'#ffd23f'); }
+  // wheel on the near half, sunk in a polished wooden bowl with a gold rim
+  const [wx,wy]=P(gx+0.55,gy+1.0,18);
+  ellPx(wx,wy+2,15,8,INK); ellPx(wx,wy+1,14.5,7.5,'#5e2410'); ellPx(wx,wy+0.5,14,7.2,'#9a4424'); ellPx(wx,wy,13.5,7,'#ffd23f'); ellPx(wx,wy+0.3,13,6.6,'#c88a10');
   const ra = (typeof rlAnim!=='undefined' && rlAnim) ? (performance.now()-rlAnim.t0)/1000 : 99, spinning = ra < 2.4;
   const rot = t*1.6 + (spinning ? (2.4*ra - ra*ra*0.5)*6 : 0);
   ellPx(wx,wy+1,13,7,INK); ellPx(wx,wy,12.5,6.5,'#6a3418'); ellPx(wx,wy-0.5,10.5,5.3,'#c09018');
@@ -2471,21 +2480,27 @@ function drawRoulette(f, t){
     g.fillStyle=INK; g.fillRect(Math.round(px-w/2)+1,Math.round(py)-11,w-2,11); g.fillRect(Math.round(px-w/2),Math.round(py)-10,w,9); g.fillStyle='#f8f8f8'; g.fillRect(Math.round(px-w/2)+1,Math.round(py)-10,w-2,9);
     g.fillStyle=rlCol(n); g.fillRect(Math.round(px-w/2)+2,Math.round(py)-8,2,3); pfDraw(g,txt,Math.round(px-w/2)+6,Math.round(py)-9,INK); }
   // chip stacks on the layout
-  for (const [u,v,c] of [[1.3,0.55,'#f84848'],[1.52,1.05,'#3890e0'],[1.66,0.5,'#f8d030']]){ const [x,y]=P(gx+u,gy+v,13); for (let k=0;k<3;k++){ ellPx(x,y-k*1.5,2.4,1.2,INK); ellPx(x,y-k*1.5-0.5,1.8,0.8,c); } }
+  for (const [u,v,c] of [[1.3,0.55,'#f84848'],[1.52,1.05,'#3890e0'],[1.66,0.5,'#f8d030']]){ const [x,y]=P(gx+u,gy+v,17); for (let k=0;k<3;k++){ ellPx(x,y-k*1.5,2.4,1.2,INK); ellPx(x,y-k*1.5-0.5,1.8,0.8,c); g.fillStyle='#ffffff'; g.fillRect(Math.round(x)-1,Math.round(y-k*1.5)-1,1,1); } }
 }
 // blackjack table (2 x 1): curved green felt facing the players, dealer's chip tray and shoe at the back, a card at each seat
 function drawBlackjack(f, t){
   const gx=f.gx, gy=f.gy;
-  { const [cx,cy]=P(gx+1,gy+0.5); ellPx(cx,cy+2,26,9,'rgba(0,0,0,0.25)'); }
-  for (const u of [0.3,1.7]) box(gx+u-0.07,gy+0.43,0.14,0.14,10,'#5a2c18','#4a2010','#3a1808');
+  { const [cx,cy]=P(gx+1,gy+0.5); ellPx(cx,cy+2,28,10,'rgba(0,0,0,0.3)'); }
+  // same build as the roulette table and the slots: gold feet, burgundy pedestals, mahogany apron with gold trim and chase lights, padded rail
+  for (const u of [0.5,1.5]){ box(gx+u-0.2,gy+0.32,0.4,0.36,2,'#ffd23f','#c88a10','#a06808'); box(gx+u-0.12,gy+0.4,0.24,0.2,7,'#6a1c34','#521428','#3a0e1c',0,2); }
   // half-moon felt: straight dealer edge at the back, curved player edge at the front, padded rail and wooden apron
   const depth=u=>0.5+0.38*Math.sqrt(Math.max(0,1-((u-1)/0.96)**2));
   const curve=[]; for (let u=0.04;u<=1.961;u+=0.06) curve.push([u,0.08+depth(u)]);
-  for (let i=0;i<curve.length-1;i++){ const [u0,v0]=curve[i], [u1,v1]=curve[i+1]; polyPx([P(gx+u0,gy+v0,13),P(gx+u1,gy+v1,13),P(gx+u1,gy+v1,9),P(gx+u0,gy+v0,9)],'#6a3418'); }
+  // curved apron, built from solid bands so there are no gaps: gold foot trim, mahogany, gold piping, padded burgundy rail
+  const band=(z0,z1,c0,c1)=>{ for (let i=0;i<curve.length-1;i++){ const [u0,v0]=curve[i], [u1,v1]=curve[i+1]; polyPx([P(gx+u0,gy+v0,z1),P(gx+u1,gy+v1,z1),P(gx+u1,gy+v1,z0),P(gx+u0,gy+v0,z0)], c1 && u0>=1 ? c1 : c0); } };
+  band(7,8,INK); band(8,9,'#ffd23f','#c88a10'); band(9,12.5,'#9a4424','#7e3418'); band(12.5,13.5,'#ffd23f','#c88a10');
+  { const fl=Math.floor(t*3); for (let i=1;i<curve.length-1;i+=2){ const [x,y]=P(gx+curve[i][0],gy+curve[i][1],10.5); g.fillStyle=INK; g.fillRect(Math.round(x)-1,Math.round(y)-1,3,3); g.fillStyle=((i>>1)+fl)%2?'#ffffff':'#ff5c8a'; g.fillRect(Math.round(x),Math.round(y),1,1); } }
   const felt=[P(gx+0.04,gy+0.08,13),P(gx+1.96,gy+0.08,13),...curve.slice().reverse().map(([u,v])=>P(gx+u,gy+v,13))];
   polyPx(felt,INK); polyPx(felt.map(([x,y],i)=>[x+(i===0?1:i===1?-1:0), y+(i<2?1:-1)]),'#1e8a3c');
-  for (let i=0;i<curve.length-1;i++){ const a=P(gx+curve[i][0],gy+curve[i][1],13), b=P(gx+curve[i+1][0],gy+curve[i+1][1],13); linePx(a[0],a[1],b[0],b[1],'#a86a34'); linePx(a[0],a[1]+1,b[0],b[1]+1,INK); }
-  { const a=P(gx+0.04,gy+0.08,13), b=P(gx+1.96,gy+0.08,13); linePx(a[0],a[1],b[0],b[1],'#8a4a20'); }
+  band(13,15.5,'#c03858','#8a1c3c'); band(15.5,16.5,INK);
+  for (let i=0;i<curve.length-1;i++){ const a=P(gx+curve[i][0],gy+curve[i][1],15.5), b=P(gx+curve[i+1][0],gy+curve[i+1][1],15.5); linePx(a[0],a[1],b[0],b[1],'#ff8aa8'); }
+
+  { const a=P(gx+0.04,gy+0.08,13), b=P(gx+1.96,gy+0.08,13); linePx(a[0],a[1],b[0],b[1],'#ffd23f'); linePx(a[0],a[1]-1,b[0],b[1]-1,INK); }
   { const a=P(gx+0.3,gy+0.38,13), b=P(gx+1.7,gy+0.38,13); for (let i=0;i<=20;i++){ const u=i/20, x=a[0]+(b[0]-a[0])*u, y=a[1]+(b[1]-a[1])*u+Math.sin(u*Math.PI)*4; g.fillStyle='#f8d030'; g.fillRect(Math.round(x),Math.round(y),1,1); } }
   // each seated player's cards, face up on the felt in front of their stool
   { const players=[]; if (me.bj && me.p==='sit') players.push([me.gx,me.gy,me.bj]); for (const o of others.values()) if (sameRoom(o) && o.bj && o.p==='sit') players.push([Math.floor(o.x),Math.floor(o.y),o.bj]);
