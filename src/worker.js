@@ -707,6 +707,7 @@ export class Lounge extends DurableObject {
       // chat log for staff: every new line, muted ones too (marked); action lines like "sat down" are marked as actions
       const rs = m.p && m.p.s;
       if (rs && typeof rs === "object" && rs.t && +rs.k !== a.ck) { const was = a.ck; a.ck = +rs.k; const bad = !rs.f && WF.slur(String(rs.t)); if (bad) this.send(ws, { t: "filtered" });
+        if (!first && was !== undefined && !rs.f && (bad || WF.mask(String(rs.t)) !== String(rs.t))) await this.wfHit(ws, a, bad ? "blocked" : "masked");
         if (!first && was !== undefined) { await this.chatLog(a, m.p.rm, (bad ? "BLOCKED: " : rs.f ? "* " : "") + String(rs.t).slice(0, 120), !!a.uc.muted); if (!rs.f && !a.uc.muted && !bad) { try { await this.questTick(ws, a.uid, "chat"); } catch (e) {} } } }
       else if (first && rs && typeof rs === "object") a.ck = +rs.k;
       if (first && a.ck === undefined) a.ck = 0;
@@ -1301,7 +1302,8 @@ export class Lounge extends DurableObject {
     const now = Date.now(); if (!a.dmr || now - a.dmr[0] > 10000) a.dmr = [now, 0]; if (++a.dmr[1] > DM.burst) { ws.serializeAttachment(a); return { ok: false, msg: "Slow down a little." }; } ws.serializeAttachment(a);
     const text = WF.mask(String(m.text || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, DM.len));
     if (!text) return { ok: false, msg: "Type a message first." };
-    if (WF.slur(text)) return { ok: false, msg: "That message has a word that isn't allowed here." };
+    if (WF.slur(text)) { await this.wfHit(ws, a, "blocked DM"); return { ok: false, msg: "That message has a word that isn't allowed here." }; }
+    if (/\*{3,}/.test(text) && WF.mask(String(m.text || "")) !== String(m.text || "")) await this.wfHit(ws, a, "masked DM");
     const me = await this.user(a.uid); if (!me || me.banned) return { ok: false, msg: "You can't send messages." };
     if (me.muted) return { ok: false, msg: "You're muted, so you can't send messages right now." };
     const T = await this.frTarget(a, m); if (T.err) return { ok: false, msg: T.err };
@@ -1586,6 +1588,7 @@ export class Lounge extends DurableObject {
       case "admin": return this.admin(a, m);
       case "dash": return this.dashboard(a);
       case "bug_report": return this.bugReport(a, m);
+      case "wf_hit": { const now2 = Date.now(); if (a.wfT && now2 - a.wfT < 1500) return { ok: true }; a.wfT = now2; ws.serializeAttachment(a); await this.wfHit(ws, a, "blocked"); return { ok: true }; }
       case "kit_buy": return this.kitBuy(a, m);
       case "mkt_list": return this.mktList(a);
       case "mkt_sell": return this.mktSell(a, m);
@@ -1987,6 +1990,12 @@ export class Lounge extends DurableObject {
     for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.uid === u.id) { if (x.uc) { x.uc.tk = tk; w.serializeAttachment(x); } this.send(w, { t: "tk", tk, msg: `🎁 ${a.name} gave you ${n} TOKENS!` }); } }
     await this.logStaff(a.name, "give", `${u.name.toUpperCase()} ${n}`);
     return { ok: true, msg: `Gave ${u.name.toUpperCase()} ${n} TOKENS.` };
+  }
+  // the word filter caught this llama (a blocked slur or a masked swear): every 5th time they get a warning pop-up, and staff see it in the log
+  async wfHit(ws, a, how) {
+    if (!this.wfReady){ try { await this.env.DB.prepare("ALTER TABLE users ADD COLUMN wfn INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {} this.wfReady = true; }
+    const r = await this.env.DB.prepare("UPDATE users SET wfn = wfn + 1 WHERE id = ? RETURNING wfn").bind(a.uid).first(); const n = r ? r.wfn : 0;
+    if (n && n % 5 === 0){ if (ws) this.send(ws, { t: "wfwarn", n }); await this.logStaff("WORD FILTER", "wfwarn", `${a.name} (${n} times, last: ${how})`); }
   }
   async bugTable() { if (this.bugReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS bugs (id INTEGER PRIMARY KEY AUTOINCREMENT, uid INTEGER NOT NULL, name TEXT NOT NULL, t INTEGER NOT NULL, room TEXT, text TEXT NOT NULL, ver TEXT, ua TEXT, scr TEXT, done INTEGER NOT NULL DEFAULT 0)").run(); this.bugReady = true; }
   async bugReport(a, m) {
