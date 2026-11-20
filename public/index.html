@@ -832,11 +832,10 @@
   @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:600;font-display:swap;src:url(/fonts/pixelify-600.woff2) format('woff2')}
   @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/pixelify-700.woff2) format('woff2')}
   /* ===== modern + pixel look for pop-ups ===== */
-  /* digits come from Press Start 2P (SIL OFL, /fonts/PressStart2P-OFL.txt): its 2 and 5 can't be mistaken for Z and S. Letters stay Pixelify Sans. */
-  @font-face{font-family:'PixDigits';font-style:normal;font-weight:400 800;font-display:swap;src:url(/fonts/pressstart-400.woff2) format('woff2');unicode-range:U+0030-0039;size-adjust:72%}
-  /* Pixelify's C nearly closes (reads as O) and its Z looks like a 2, so those two letters come from Press Start 2P too, sized to match */
-  @font-face{font-family:'PixCZ';font-style:normal;font-weight:400 800;font-display:swap;src:url(/fonts/pressstart-400.woff2) format('woff2');unicode-range:U+0043,U+005A;size-adjust:58%}
-  :root{--pxf:'PixDigits','PixCZ','Pixelify Sans','Press Start 2P',monospace;--cardln:#ddd5ec}
+  /* digits, C and Z come from Tiny5 (SIL OFL, /fonts/Tiny5-OFL.txt): Pixelify's 2 and 5 look like Z and S, its C like an O and its Z like a 2.
+     Tiny5 matches Pixelify's height, weight and baseline, so they sit in line with the letters. Everything else stays Pixelify Sans. */
+  @font-face{font-family:'PixFix';font-style:normal;font-weight:400 800;font-display:swap;src:url(/fonts/tiny5-400.woff2) format('woff2');unicode-range:U+0030-0039,U+0043,U+005A;size-adjust:108%}
+  :root{--pxf:'PixFix','Pixelify Sans','Press Start 2P',monospace;--cardln:#ddd5ec}
   .gb.sheet.hasband{padding-top:0!important}
   .shead.band{margin-top:0!important;box-shadow:none!important}
   .gb.sheet,#pmenu,#evpop{border-radius:10px!important;box-shadow:8px 8px 0 rgba(12,6,28,.55)!important}
@@ -4816,7 +4815,7 @@ function drawLlama(o, t, isMe){
   const em = isMe ? me.emote : o.emote, playing = isMe ? (arcade.on || (typeof AR!=='undefined' && AR.on) || (typeof BW!=='undefined' && BW.on)) : (o.a==='arcade' || o.a==='arena' || o.a==='bowl');
   if (em || playing){ const bx=sx-3, by=y0+oy-29; g.fillStyle=INK; g.fillRect(bx+1,by,18,20); g.fillRect(bx,by+1,20,18); g.fillRect(bx+1,by+19,4,3); g.fillRect(bx,by+22,2,1);   // rounded speech bubble beside the head, tail pointing back at the llama
     g.fillStyle='#ffffff'; g.fillRect(bx+1,by+1,18,18); g.fillRect(bx+2,by+19,2,2); g.fillStyle='#e6e0f2'; g.fillRect(bx+1,by+18,18,1);
-    if (em && EMO_ICON[em.t]){ const bounce=Math.floor(t*4)%2, sway = em.t==='wave' ? (Math.floor(t*5)%2 ? -1 : 1) : 0; g.drawImage(pixCanvas(EMO_ICON[em.t]), bx+2+sway, by+2-bounce); }   // the same pixel icons as the EMOTES menu
+    if (em && EMO_ICON[em.t]){ const bounce=Math.floor(t*4)%2, sway = em.t==='wave' ? (Math.floor(t*5)%2 ? -1 : 1) : 0; const ic=pixCanvas(EMO_ICON[em.t]); g.drawImage(ic, bx+1+Math.floor((18-ic.width)/2)+sway, by+1+Math.floor((18-ic.height)/2)-bounce); }   /* centred whatever the icon's size */   // the same pixel icons as the EMOTES menu
     else if (em){ const E=EMO_BMP[em.t]; bmp(E.r, bx+5, by+4, E.c); }
     else if (playing){ g.fillStyle=INK; g.fillRect(bx+4,by+5,10,5); g.fillStyle='#f84848'; g.fillRect(bx+11,by+6,1,1); g.fillStyle='#f8f8f8'; g.fillRect(bx+5,by+6,1,2); }
   }
