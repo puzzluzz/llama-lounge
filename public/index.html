@@ -1080,7 +1080,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24s";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-25a";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1172,7 +1172,7 @@ const PIXSRC={
   hundred:'............/............/rr..rr...rr./.r.r..r.r..r/.r.r..r.r..r/.r.r..r.r..r/.r.r..r.r..r/rrr.rr...rr./............/RRRRRRRRRRRR/.RRRRRRRRRR./............',
   smile:'....kkkkkkkk..../...kyyyyyyyYk.../..kyyyyyyyyyYk../.kyywyyyyyyyyYk./kyywyyyyyyyyyyYk/kyyyywkyywkyyyYk/kyyyykkyykkyyyYk/kyyyykkyykkyyyYk/kyyyyyyyyyyyyyYk/kyypyyyyyyyypyYk/kyyykyyyyyykyyYk/kYyyykyyyykyyyYk/.kYyyykkkkyyyYk./..kYyyyyyyyyYk../...kYYYYYYYYk.../....kkkkkkkk....',
   scroll:'.kkkkkkkkk../kttttttttNk./ktkkkkkkkk../.ktttttttk../.ktSSSSStk../.ktttttttk../.ktSSSSStk../.ktttttttk../.ktSSSStttk./.kkkkkkkkttk/..kttttttttk/..kkkkkkkkk.',
-  muscle:'.kffftk........./kfffftk........./kftfttt........./kfffftk........./ktffftk...kk..../.kffftk.kkftkk../.kffftkkfwwfftk./.kffftkffwfffftk/.kffftkffffffftk/.kffftktfffffftk/.kffftkkffffftkk/.kfffffttttttttf/.kffffffffffffff/.ktttttttttttttt/..kkkkkkkkkkkkkk/................',
+  muscle:'..kkkkk........./.kfffffk......../.kftftfk......../.kfffffk......../..kfffk........./..kfffk...kkk.../..kfffk..kfwfk../..kfffk.kfwffftk/..kfffkkfffffftk/..kffffffffffkrk/..kfffffffffkrrk/..kffffffffffkrk/..ktffffffffftkk/...kttttttttttk./....kkkkkkkkkk../................',
   llama:'.kk..kk...../.kwk.kwk..../.kwkkkwk..../.kwwwwwwk.../kwwwwkwwwk../kwwwwwwwwwk./kwwwwwwwwwwk/.kwwwwwwwSwk/..kkwwwwkkk./...kwwwwk.../...kwwwwk.../...kkkkkk...',
   zzz:'............/......kkkkk./......kbbbk./.......kbk../......kbbbk./..kkkkkkkkk./..kbbbbk..../....kbk...../...kbk....../..kbbbbk..../..kkkkkk..../............',
   speaker:'.......k..../......kk..k./....kkSk...k/.kkkkwSk.k.k/.kSSkwSk..kk/.kSSkwSk..kk/.kSSkwSk.k.k/.kkkkwSk...k/....kkSk..k./......kk..../.......k..../............',
@@ -7059,7 +7059,7 @@ document.getElementById('ds_refresh').addEventListener('click', loadDash);
 document.getElementById('ds_close').addEventListener('click', ()=>{ dashEl.style.display='none'; });
 NET.handlers.tg = m => tgServer(m);
 NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; renderBoard(); };
-NET.handlers.hello = m => { setTimeout(()=>dailyLoad(true), 2500); if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true);
+NET.handlers.hello = m => { setTimeout(()=>dailyLoad(true), 2500); setTimeout(()=>{ if ($id('roomsbox').style.display==='block' && (!PRUI.list || PRUI.view==='list')) prRefresh(); }, 50);   /* the ROOMS pop-up may have opened before the connection was ready */ if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true);
   // load friends, unread messages and the outfit every time we (re)connect
   setTimeout(()=>{ frLoad(); wdLoad(); dmLoad(); }, 150); };
 NET.handlers.kick = m => showKicked(m.msg);
