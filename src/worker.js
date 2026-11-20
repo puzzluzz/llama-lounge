@@ -900,7 +900,23 @@ export class Lounge extends DurableObject {
     if (!r && !(m && (m.rid || m.room))) r = await this.env.DB.prepare("SELECT r.*, u.name AS oname FROM prooms r JOIN users u ON u.id = r.owner WHERE r.owner = ? ORDER BY r.id").bind(a.uid).first(); if (r) this.prPriv.set(r.id, !!r.priv); return r; }
   async prInfo(a, m) { const r = await this.prMine(a, m); if (!r) return { ok: false, msg: "You don't have a room yet." };
     const inv = ((await this.env.DB.prepare("SELECT u.name FROM pinv i JOIN users u ON u.id = i.uid WHERE i.room = ? ORDER BY u.name").bind(r.id).all()).results || []).map((x) => x.name.toUpperCase());
-    return { ok: true, room: this.prOut(r), invites: inv }; }
+    const cnt = await this.env.DB.prepare("SELECT (SELECT COUNT(*) FROM pfurn WHERE room = ?) AS f, (SELECT COUNT(*) FROM pplot WHERE room = ?) AS c").bind(r.id, r.id).first();
+    return { ok: true, room: this.prOut(r), invites: inv, furnN: cnt ? cnt.f : 0, crops: cnt ? cnt.c : 0 }; }
+  // DELETE a room or farm: owner only, and only with the typed-out confirm the game sends. Placed furniture simply stops being "placed",
+  // so it's back in the owner's bag; a paid wallpaper or floor that was up goes back in the bag too. Crops growing on a farm are lost.
+  async prDelete(a, m) {
+    await this.prTables(); const want = Math.floor(+m.rid || 0); if (!want || m.confirm !== "DELETE") return { ok: false, msg: "Confirm first." };
+    const r = await this.prMine(a, { rid: want }); if (!r || r.id !== want) return { ok: false, msg: "That's not your room." };
+    const n = ((await this.env.DB.prepare("SELECT COUNT(*) AS n FROM pfurn WHERE room = ?").bind(r.id).first()) || {}).n || 0;
+    const db = this.env.DB, st = [];
+    for (const [kind, key, T] of [["w", r.wall, DECO_WALL], ["f", r.floor, DECO_FLOOR]]) if (T[key]) st.push(db.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, decoItem(kind, key)));
+    st.push(db.prepare("DELETE FROM pplot WHERE room = ?").bind(r.id), db.prepare("DELETE FROM pfurn WHERE room = ?").bind(r.id), db.prepare("DELETE FROM pinv WHERE room = ?").bind(r.id),
+      db.prepare("DELETE FROM plike WHERE room = ?").bind(r.id), db.prepare("DELETE FROM prooms WHERE id = ? AND owner = ?").bind(r.id, a.uid));
+    await db.batch(st);
+    this.letIn.delete(r.id); if (this.prPriv) this.prPriv.delete(r.id);
+    for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (!x || !x.pres || x.pres.rm !== "p:" + r.id) continue; x.proom = 0; w.serializeAttachment(x); this.send(w, { t: "prkick", msg: `${r.name} was deleted, so you headed back to the lounge.` }); }
+    return { ...(await this.prList(a)), deleted: r.id, msg: `${r.name} is deleted.${n ? ` ${n} ${n === 1 ? "piece" : "pieces"} went back to your bag.` : ""}` };
+  }
   async prSet(a, m) {
     const r = await this.prMine(a, m); if (!r) return { ok: false, msg: "You don't have a room yet." };
     if (m.name !== undefined && r.kind === "farm") return { ok: false, msg: "Farms are always named after you." };
@@ -1785,6 +1801,7 @@ export class Lounge extends DurableObject {
       case "pr_invite": return this.prInvite(a, m);
       case "pr_kick": return this.prKick(a, m);
       case "pr_pw": return this.prPassword(a, m);
+      case "pr_delete": return this.prDelete(a, m);
       case "farm_plant": return this.farmAct(ws, a, m, "plant");
       case "farm_water": return this.farmAct(ws, a, m, "water");
       case "farm_harvest": return this.farmAct(ws, a, m, "harvest");

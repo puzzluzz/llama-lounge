@@ -440,6 +440,7 @@
   #plotbox .plst{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--cardln);border-radius:7px;padding:8px} #plotbox .plst b{font:800 15px var(--pxf);display:block} #plotbox .plst small{font:700 12px var(--ui);color:var(--sub)}
   #plotbox .plbar{height:10px;border:2px solid var(--ink);border-radius:4px;background:#3a3050;margin:10px 0 6px;overflow:hidden} #plotbox .plbar i{display:block;height:100%;background:#7ce07c}
   .prfarm{display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 6px;border-radius:999px;background:#e2f5d4;color:#2e7a2a;font:800 10px var(--ui);vertical-align:middle}
+  .prdel{background:#fff0f2;border:2px solid #f0a0ae;border-radius:8px;padding:10px;margin:10px 0;text-align:center} .prdel .bnq{font:800 17px/1.35 var(--ui);color:var(--ink);margin-bottom:4px} .prdel .bnq b{color:#d02848} .prdel .gbbtn.bad,#pr_delete{background:#ff5c7a!important;color:#fff!important}
   .prpw{display:flex;gap:6px;margin:-2px 0 8px} .prpw input{flex:1;min-width:0} .prfarmnew{background:#fff;border:2px dashed #7cc060;border-radius:8px;padding:10px;margin:8px 0}
   #repbox{width:min(calc(100% - 24px),440px)} #repbox .rpr{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
   #repbox .rpr button{font:700 13px/1.25 var(--ui);text-align:left;padding:9px 10px;border:2px solid var(--cardln);border-radius:7px;background:#fff;color:var(--ink);cursor:pointer;min-height:44px}
@@ -7035,12 +7036,17 @@ $id('pr_body').addEventListener('click', e=>{ const b=e.target.closest('button')
   if (b.dataset.go){ prGo(+b.dataset.go); return; }
   if (b.dataset.knock){ prMsg('KNOCKING...'); NET.act('pr_knock',{rid:+b.dataset.knock}).then(r=>{ if (r.open){ prGo(+b.dataset.knock); return; } prMsg(r.msg||'', r.ok); }); return; }
   if (b.dataset.reset){ if (!confirm('Reset this room\'s name?')) return; NET.act('pr_staff',{rid:+b.dataset.reset}).then(r=>{ prMsg(r.msg||'', r.ok); prRefresh(); }); return; }
-  if (b.dataset.set){ PRUI.rid=+b.dataset.set||0; PRUI.view='settings'; PRUI.info=null; prDraw(); prRefresh(); return; }
+  if (b.dataset.set){ PRUI.rid=+b.dataset.set||0; PRUI.view='settings'; PRUI.info=null; PRUI.delAsk=false; prDraw(); prRefresh(); return; }
   if (b.dataset.pwask){ PRUI.pwFor = PRUI.pwFor===+b.dataset.pwask ? null : +b.dataset.pwask; prDraw(); setTimeout(()=>{ const i=$id('pr_pwin'); if (i) i.focus(); }, 30); return; }
   if (b.dataset.pwgo){ const pw=($id('pr_pwin')||{}).value||''; if (!pw) return prMsg('Type the password first.'); prMsg('CHECKING...'); prGo(+b.dataset.pwgo, pw); return; }
   if (b.id==='pr_createfarm'){ prMsg('PLOWING...'); NET.act('pr_create',{kind:'farm'}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.list=r; prDraw(); if (r.created) prGo(r.created); }); return; }
   if (b.id==='pr_setpw'){ const pw=($id('pr_pwnew').value||''); if (pw.length<4) return prMsg('Passwords are 4 to 24 characters.'); NET.act('pr_pw',{rid:PRUI.rid||0, pw}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.info.room=r.room; prApplyRoom(r.room); prDraw(); prMsg(r.msg,true); }); return; }
   if (b.id==='pr_clearpw'){ NET.act('pr_pw',{rid:PRUI.rid||0, pw:''}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.info.room=r.room; prApplyRoom(r.room); prDraw(); prMsg(r.msg,true); }); return; }
+  if (b.id==='pr_delete'){ PRUI.delAsk=true; prDraw(); setTimeout(()=>{ const d=$id('pr_body').querySelector('.prdel'); if (d) d.scrollIntoView({block:'nearest'}); }, 30); return; }
+  if (b.id==='pr_delno'){ PRUI.delAsk=false; prDraw(); return; }
+  if (b.id==='pr_delyes'){ const rid=PRUI.rid || (PRUI.info&&PRUI.info.room&&PRUI.info.room.id); if (!rid) return; b.disabled=true;
+    NET.act('pr_delete',{rid, confirm:'DELETE'}).then(r=>{ PRUI.delAsk=false; if (!r.ok){ b.disabled=false; return prMsg(r.msg||'That did not work.'); }
+      delete PRD['p:'+rid]; PRUI.list=r; PRUI.view='list'; PRUI.rid=0; PRUI.info=null; prDraw(); prMsg(r.msg||'Deleted.', true); }); return; }
   if (b.id==='pr_create'){ const n=($id('pr_newname').value||'').trim(); prMsg('BUILDING...'); NET.act('pr_create',{name:n}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.list=r; prDraw(); if (r.created) prGo(r.created); }); return; }
   if (b.id==='pr_back'){ PRUI.view='list'; prDraw(); prRefresh(); return; }
   if (b.classList.contains('lock')){ prMsg('Buy that one in the SHOP first (🎨 WALLPAPER and FLOORS, at the bottom).'); return; }
@@ -7070,6 +7076,10 @@ function prDrawSettings(){ if (!prDrawSettings.loaded){ prDrawSettings.loaded=1;
   h+=`<input id="pr_invname" maxlength="12" placeholder="Invite by llama name" autocapitalize="off" spellcheck="false"><div class="srow"><button class="gbbtn" id="pr_inv">INVITE</button></div>`;
   if (inside.length){ h+='<div class="prsec">IN YOUR ROOM NOW</div>'+inside.map(n=>`<div class="prr"><div class="prn"><b>${esc(n)}</b></div><button class="gbbtn" data-kickp="${esc(n)}">ASK TO LEAVE</button></div>`).join(''); }
   h+=`<div class="srow"><button class="gbbtn y" id="pr_edit">🎒 PLACE FURNITURE</button><button class="gbbtn" id="pr_back">◀ ROOMS</button></div><div class="prmsg"></div>`;
+  // delete this room: asks first, says what happens to the furniture (and any crops)
+  { const kind=R.farm?'farm':'room', n=I.furnN||0, c=I.crops||0;
+    if (!PRUI.delAsk) h+=`<div class="prsec">DELETE ${R.farm?'FARM':'ROOM'}</div><div class="srow"><button class="gbbtn bad" id="pr_delete">DELETE THIS ${R.farm?'FARM':'ROOM'}</button></div>`;
+    else h+=`<div class="prdel"><div class="bnq">Delete <b>${esc(R.name)}</b>?</div><div class="fre">${n ? `${n} ${n===1?'piece':'pieces'} of furniture will go back to your bag.` : 'There\'s no furniture in it.'}${c ? ` The ${c} ${c===1?'crop':'crops'} growing here will be lost.` : ''} Anyone inside goes back to the lounge. This can't be undone.</div><div class="srow"><button class="gbbtn bad" id="pr_delyes">YES, DELETE</button><button class="gbbtn" id="pr_delno">GO BACK</button></div></div>`; }
   B.innerHTML=h; for (const b of B.querySelectorAll('[data-sw]')){ const k=b.dataset.sw; if (!DSW_URL[k]){ const [kind,id]=k.split(':'); DSW_URL[k]=decoSwatch(kind,id).toDataURL(); } b.style.backgroundImage=`url(${DSW_URL[k]})`; }
 }
 function prApplyRoom(room){ const key='p:'+room.id; PRN[key]=room.name; ROOM_NAMES[key]=room.name; if (PRD[key]){ const { likes, liked, ...rest } = room; Object.assign(PRD[key], rest);   /* like counts come from their own updates */ if (curRoom===key){ rebuildBG(); document.getElementById('stitle').textContent=room.name; } } }
