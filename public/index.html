@@ -837,6 +837,15 @@
   .badge .pi{display:block}
   /* dock buttons: pixel art icons */
   #signs .mchip .pi.dk{width:var(--q2);height:var(--q2);display:block}
+
+  /* header decoration: tiled pixel motif that drifts slowly, a pixel highlight on top and dithered shading at the bottom */
+  .shead.band{background-color:var(--hc,#6b4bd8)!important;background-image:var(--hpat,none)!important;background-size:var(--hpw) var(--hph)!important;background-repeat:repeat!important;
+    image-rendering:pixelated;box-shadow:inset 0 4px 0 rgba(255,255,255,.22)!important;animation:hdrift 24s steps(36) infinite}
+  .shead.band::after{content:'';position:absolute;left:0;right:0;bottom:0;height:var(--hdh);background:var(--hdith) repeat-x;background-size:var(--hdw) var(--hdh);pointer-events:none}
+  .shead.band .sico,.shead.band .sheetx,.shead.band .stx{position:relative;z-index:1}
+  @keyframes hdrift{from{background-position:0 0}to{background-position:calc(var(--hpw) * -1) 0}}
+  @media (prefers-reduced-motion:reduce){ .shead.band{animation:none} }
+  .shead.band .stx .slt,.shead.band .stx .lbt,.shead.band .stx .dpt,.shead.band .stx .rpt,.shead.band .stx #tm_title{text-shadow:0 2px 0 rgba(20,10,40,.28)}
 </style>
 </head>
 <body>
@@ -992,7 +1001,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24e";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24f";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -7338,8 +7347,25 @@ const SHEET_SUB={
   itembox:()=>ITD.k&&FURN_DEF[ITD.k] ? (FURN_CATS.find(c=>c[0]===FURN_DEF[ITD.k].cat)||[0,''])[1].replace(/^\S+\s/,'') : '' };
 const lightCol=c=>{ const n=parseInt(c.slice(1),16); return ((n>>16)*299+(n>>8&255)*587+(n&255)*114)/1000 > 165; };
 function sheetHead(el){ if (!el || !el._head) return; let col=SHEET_COL[el.id]||'#6b4bd8'; if (el.id==='wardbox') col = WD.tab==='shop' ? '#ff5c8a' : '#8a5cf0';
-  el.style.setProperty('--hc', col); el.style.setProperty('--ht', lightCol(col)?'#1d1530':'#fff');
+  el.style.setProperty('--hc', col); el.style.setProperty('--ht', lightCol(col)?'#1d1530':'#fff'); headDecor(el);
   const f=SHEET_SUB[el.id]; let t=''; try{ t=f?f():''; }catch(_){} const sb=el._head.sub; if (sb.textContent!==t) sb.textContent=t; sb.style.display=t?'':'none'; }
+
+// header patterns: each pop-up's header gets a tiled pixel pattern of its own little motif, drawn at whole-pixel sizes
+const HEAD_MOTIF={menu:'llama', frbox:'star', roomsbox:'house', dmbox:'chat', acctbox:'key', jobsbox:'coin', lboard:'trophy', catbox:'shirt', logbox:'chat', sndbox:'music',
+  slotbox:'slots', tblbox:'cards', dkbox:'splash', dailypop:'gift', tradeask:'handshake', tradebox:'handshake', dashbox:'crown', roompick:'pin', tmenu:'dice', itembox:'sofa'};
+const HPAT={}, HDPR=window.devicePixelRatio||1, HK=Math.max(1,Math.round(2*HDPR));   // one art pixel = HK real pixels (about 2 CSS px)
+function headPattern(motif){ if (HPAT[motif]) return HPAT[motif]; const W=36, H=26, c=document.createElement('canvas'); c.width=W*HK; c.height=H*HK; const x=c.getContext('2d');
+  const px=(i,j,a)=>{ x.fillStyle=`rgba(255,255,255,${a})`; x.fillRect(i*HK,j*HK,HK,HK); };
+  const rows=(PIXSRC[motif]||PIXSRC.star).split('/');
+  const stamp=(ox,oy)=>rows.forEach((r,j)=>{ for (let i=0;i<r.length;i++){ const ch=r[i]; if (ch==='.') continue; px(ox+i,oy+j, ch==='k' ? .22 : .12); } });
+  stamp(2,1); stamp(20,14);
+  for (const [i,j] of [[16,4],[33,9],[9,20],[27,2]]){ px(i,j,.35); px(i-1,j,.16); px(i+1,j,.16); px(i,j-1,.16); px(i,j+1,.16); }   /* little twinkles */
+  return (HPAT[motif]={url:c.toDataURL(), w:W*HK/HDPR, h:H*HK/HDPR}); }
+{ const c=document.createElement('canvas'); c.width=4*HK; c.height=3*HK; const x=c.getContext('2d'); x.fillStyle='rgba(20,10,40,.22)';
+  for (const [i,j] of [[0,0],[2,0],[1,1],[3,1],[0,2],[1,2],[2,2],[3,2]]) x.fillRect(i*HK,j*HK,HK,HK);   /* dithered shading along the bottom edge */
+  document.documentElement.style.setProperty('--hdith', `url(${c.toDataURL()})`); document.documentElement.style.setProperty('--hdw', `${4*HK/HDPR}px`); document.documentElement.style.setProperty('--hdh', `${3*HK/HDPR}px`); }
+function headDecor(el){ const m = el.id==='wardbox' ? (WD.tab==='shop' ? (WD.kind==='furn'?'sofa':'shirt') : 'backpack') : HEAD_MOTIF[el.id]; const P=headPattern(m||'star');
+  el.style.setProperty('--hpat', `url(${P.url})`); el.style.setProperty('--hpw', P.w+'px'); el.style.setProperty('--hph', P.h+'px'); }
 function popSnd(){ sfxTone(660,0.05,'square',0.05); sfxTone(990,0.06,'square',0.04,0.045); }
 for (const el of document.querySelectorAll('.gb.sheet')){
   const h=document.createElement('div'); h.className='shead';
