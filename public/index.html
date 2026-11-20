@@ -2339,9 +2339,6 @@ function decoSwatch(kind, id, W=44, H=34){ const cv=document.createElement('canv
 function buildFarmBG(){
   g = bg.getContext('2d'); g.clearRect(0,0,bg.width,bg.height);
   const ox=BGX, oy=BGY, Q=(gx,gy,h=0)=>{ const [x,y]=proj(gx,gy); return [ox+x, oy+y-h]; }, R=PRD[curRoom]||{}, per=(typeof period==='string')?period:'day', sky=barnSky();
-  { const r=rnd(9); if (per==='night'){ for (let i=0;i<70;i++){ g.fillStyle=i%5?'#c8d0f8':'#f8f8f8'; g.fillRect(Math.floor(r()*bg.width), Math.floor(r()*170), 1, 1); } g.fillStyle='#f8f0c0'; g.fillRect(ox+120,oy-120,8,8); g.fillStyle=sky[0]; g.fillRect(ox+123,oy-121,6,6); }
-    else if (per==='day'){ g.fillStyle='#f8e040'; g.fillRect(ox+130,oy-128,10,10); g.fillStyle='#f8f8f8'; for (const [cx,cy,w] of [[-190,-110,26],[-70,-124,20],[60,-104,30],[190,-84,22]]){ g.fillRect(ox+cx,oy+cy,w,4); g.fillRect(ox+cx+4,oy+cy-3,w-10,3); } }
-    else { g.fillStyle='#f8d070'; g.fillRect(ox+130,oy-70,12,8); } }
   // (the sky and the rolling hills are painted across the whole screen each frame, behind this layer: see drawFarmSky)
   // earth slab under the field: front-left and front-right faces, with a grassy lip
   const D=14, dirt=['#8a5a32','#7a4c28','#6a4020'];
@@ -2383,23 +2380,89 @@ function buildFarmBG(){
     linePx(a[0],a[1]-H,b[0],b[1]-H,INK); linePx(a[0],a[1]-H+1,b[0],b[1]-H+1,'#9a6a3a'); linePx(a[0],a[1]-H+2,b[0],b[1]-H+2,'#9a6a3a'); linePx(a[0],a[1]-H+3,b[0],b[1]-H+3,INK);
     const m=Q(0,NY-1), MX=Math.round(m[0]), MY=Math.round(m[1])-H+4; g.fillStyle=INK; g.fillRect(MX-1,MY,1,4); g.fillRect(MX+3,MY,1,4); g.fillRect(MX-5,MY+4,13,8); g.fillStyle='#e8c070'; g.fillRect(MX-4,MY+5,11,6); g.fillStyle='#5a3418'; g.fillRect(MX-2,MY+7,7,1); g.fillRect(MX-2,MY+9,5,1); }
 }
-// sky bands like LLAMA ACRES, then two layers of rolling hills, edge to edge across the screen
-function drawFarmSky(ctx){ const sk=barnSky(), per=(typeof period==='string')?period:'day', top=OY-BGY;
-  ctx.fillStyle=sk[2]; ctx.fillRect(0,0,LW,LH); ctx.fillStyle=sk[1]; ctx.fillRect(0,0,LW,top+140); ctx.fillStyle=sk[0]; ctx.fillRect(0,0,LW,top+70);
-  const hz = per==='night' ? ['#1e3a3a','#244a40','#183028'] : per==='dusk' ? ['#7a8a58','#5a8a48','#4a7a3c'] : ['#8ccf7a','#6ab858','#5aa84a'];
-  for (let x=0;x<LW;x++){ const wx=x-OX, h1=Math.round(46+Math.sin(wx/37)*9+Math.sin(wx/13)*3), h2=Math.round(26+Math.sin((wx+50)/23)*7+Math.sin(wx/9)*2);
-    ctx.fillStyle=hz[0]; ctx.fillRect(x, OY-h1+30, 1, LH); ctx.fillStyle=hz[1]; ctx.fillRect(x, OY-h2+44, 1, LH); }
-  ctx.fillStyle=hz[2]; ctx.fillRect(0, OY+70, LW, LH);
-  // far away on the hills: a red barn with a silo, and clumps of round trees (they sit at fixed spots in the world, so they pan with the camera)
-  const hillY = wx => OY-Math.round(46+Math.sin(wx/37)*9+Math.sin(wx/13)*3)+30, dim = per==='night' ? 0.45 : per==='dusk' ? 0.75 : 1;
-  const C=(hex)=>{ if (dim===1) return hex; const n=parseInt(hex.slice(1),16); return `rgb(${(n>>16)*dim|0},${((n>>8)&255)*dim|0},${(n&255)*dim|0})`; };
-  { const wx=-150, bx=OX+wx, by=hillY(wx)+4; if (bx>-60 && bx<LW+60){ ctx.fillStyle=C('#5a2018'); ctx.fillRect(bx-1,by-15,26,15); ctx.fillStyle=C('#b0443a'); ctx.fillRect(bx,by-14,24,14);
-      for (let i=0;i<8;i++){ ctx.fillStyle=C('#5a2018'); ctx.fillRect(bx-1+i,by-15-i,26-2*i,1); ctx.fillStyle=C('#8a3028'); ctx.fillRect(bx+i,by-14-i,24-2*i,1); }
-      ctx.fillStyle=C('#f4efe4'); ctx.fillRect(bx+8,by-9,8,9); ctx.fillStyle=C('#b0443a'); ctx.fillRect(bx+9,by-8,6,8); ctx.fillStyle=C('#f4efe4'); ctx.fillRect(bx+9,by-8,6,1); ctx.fillRect(bx+11,by-8,1,8); ctx.fillRect(bx+9,by-5,6,1);
-      ctx.fillStyle=C('#5a5a68'); ctx.fillRect(bx+26,by-28,10,28); ctx.fillStyle=C('#a8a8b8'); ctx.fillRect(bx+27,by-27,8,27); ctx.fillStyle=C('#c8c8d8'); ctx.fillRect(bx+28,by-27,2,27); ctx.fillStyle=C('#5a5a68'); ctx.fillRect(bx+27,by-31,8,4); ctx.fillStyle=C('#8a8a9a'); ctx.fillRect(bx+28,by-30,6,2); for (let k=0;k<4;k++){ ctx.fillStyle=C('#8a8a9a'); ctx.fillRect(bx+27,by-22+k*6,8,1); } } }
-  for (const [wx,sz] of [[-330,7],[-300,5],[-60,6],[-40,8],[-20,5],[170,7],[190,9],[215,6],[360,8],[385,6]]){ const x0=OX+wx; if (x0<-20 || x0>LW+20) continue; const y0=hillY(wx)+6;
-    ctx.fillStyle=C('#4a3018'); ctx.fillRect(x0-1,y0-sz-1,2,sz+1); ctx.fillStyle=C(per==='day'?'#3e8a3a':'#2e6a2e'); ctx.beginPath(); ctx.ellipse(x0,y0-sz-sz*0.6,sz*0.8,sz*0.7,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle=C(per==='day'?'#58a84a':'#3e7a3a'); ctx.beginPath(); ctx.ellipse(x0-sz*0.25,y0-sz-sz*0.85,sz*0.4,sz*0.3,0,0,Math.PI*2); ctx.fill(); } }
+// FARM BACKDROP, pixel-exact: every shape is filled row by row with whole pixels (no smoothed canvas circles), one shared palette,
+// far layers paler and bluer. Sky + sun, then drifting clouds, then the land (mountains, hills with trees and a barn, field rows).
+// Sky and land are drawn once per time of day into cached layers in world space, so they pan with the camera; only the clouds move.
+const FSKY={key:'', sky:null, land:null, clouds:[], W:1800, H:330, X0:900, Y0:250};
+function fHex(h){ const n=parseInt(h.slice(1),16); return [n>>16,(n>>8)&255,n&255]; }
+function fMix(a,b,t){ const A=fHex(a), B=fHex(b); return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join(''); }
+function fTone(h,per){ return per==='night' ? fMix(fMix(h,'#141a44',0.62),'#000000',0.1) : per==='dusk' ? fMix(fMix(h,'#ff9466',0.22),'#3a2050',0.12) : h; }
+// whole-pixel disc and ellipse
+function pDisc(c,x,y,r,col){ c.fillStyle=col; for (let j=-r;j<=r;j++){ const w=Math.floor(Math.sqrt(r*r-j*j+r*0.8)); c.fillRect(x-w,y+j,w*2+1,1); } }
+function pEll(c,x,y,rx,ry,col){ c.fillStyle=col; for (let j=-ry;j<=ry;j++){ const w=Math.floor(rx*Math.sqrt(Math.max(0,1-(j*j)/(ry*ry+ry*0.8)))); c.fillRect(x-w,y+j,w*2+1,1); } }
+function farmCloud(per, big){ const W=big?64:44, H=big?26:18, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'), k=big?1:0.7;
+  const lobes=[[0.22,0.66,0.2],[0.42,0.48,0.28],[0.63,0.56,0.24],[0.82,0.7,0.16]].map(([u,v,r])=>[Math.round(u*W),Math.round(v*H),Math.round(r*W*0.55)]);
+  const C0=fTone('#ffffff',per), C1=fTone('#e4effa',per), C2=fTone('#c9dcee',per);
+  for (const [u,v,r] of lobes) pDisc(x,u,v+1,r,C2); x.fillStyle=C2; x.fillRect(lobes[0][0],H-6,lobes[3][0]-lobes[0][0],5);
+  for (const [u,v,r] of lobes) pDisc(x,u,v,r,C1); x.fillStyle=C1; x.fillRect(lobes[0][0],H-7,lobes[3][0]-lobes[0][0],4);
+  for (const [u,v,r] of lobes) pDisc(x,u-1,v-1,Math.max(1,r-2),C0);
+  x.clearRect(0,H-2,W,2); return c; }
+function farmTree(per, sz){ const W=sz*2+6, H=sz*3+4, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'), cx=Math.floor(W/2);
+  const D=fTone('#2f6e3a',per), M=fTone('#3f8a46',per), L=fTone('#5ba85a',per), HL=fTone('#7cc46e',per), T=fTone('#5a3c22',per);
+  x.fillStyle=T; x.fillRect(cx-1,H-sz-1,2,sz+1); x.fillStyle=fTone('#3e2814',per); x.fillRect(cx,H-sz-1,1,sz+1);
+  const cy=H-sz-Math.round(sz*0.7); pDisc(x,cx,cy+1,sz,D); pDisc(x,cx-Math.round(sz*0.45),cy+2,Math.round(sz*0.6),D); pDisc(x,cx+Math.round(sz*0.45),cy+2,Math.round(sz*0.6),D);
+  pDisc(x,cx,cy,sz-1,M); pDisc(x,cx-Math.round(sz*0.4),cy+1,Math.round(sz*0.5),M); pDisc(x,cx+Math.round(sz*0.4),cy+1,Math.round(sz*0.5),M);
+  pDisc(x,cx-Math.round(sz*0.25),cy-Math.round(sz*0.3),Math.round(sz*0.45),L); if (sz>=4) pDisc(x,cx-Math.round(sz*0.35),cy-Math.round(sz*0.45),Math.max(1,Math.round(sz*0.2)),HL);
+  return c; }
+function buildFarmSky(per){ const W=FSKY.W, H=FSKY.H, X0=FSKY.X0, Y0=FSKY.Y0;
+  // ---- sky: 8 bands with a two-row checker blend between each ----
+  const SKY = per==='night' ? ['#0b1030','#0e1438','#121a42','#16204c','#1b2756','#212e60','#28376a','#304074']
+    : per==='dusk' ? ['#3c3a7a','#56448a','#784e92','#9c5a8e','#c46a82','#e2826e','#f2a066','#f8c07a']
+    : ['#3f8fe0','#4f9be6','#61a8ec','#74b5f0','#89c2f3','#9fcef6','#b6daf8','#cce6fa'];
+  const sky=document.createElement('canvas'); sky.width=W; sky.height=H; const a=sky.getContext('2d'), bh=Math.floor((Y0+20)/8);
+  for (let k=0;k<8;k++){ a.fillStyle=SKY[k]; a.fillRect(0,k*bh,W,k===7?H:bh); }
+  for (let k=1;k<8;k++){ const y=k*bh; a.fillStyle=SKY[k]; for (let x=0;x<W;x+=4) a.fillRect(x,y-3,1,1); for (let x=0;x<W;x+=2) a.fillRect(x+(k%2),y-2,1,1); for (let x=0;x<W;x++) if (x%4!==2) a.fillRect(x,y-1,1,1); }   /* ordered dither ramp: 25%, 50%, 75% of the next band */
+  if (per==='night'){ const r=rnd(21); for (let i=0;i<150;i++){ const x=Math.floor(r()*W), y=Math.floor(r()*bh*6), big=i%17===0; a.fillStyle=i%5?'#c8d0f8':'#ffffff'; a.fillRect(x,y,1,1); if (big){ a.fillStyle='#8a94c8'; a.fillRect(x-1,y,1,1); a.fillRect(x+1,y,1,1); a.fillRect(x,y-1,1,1); a.fillRect(x,y+1,1,1); } } }
+  { const sx2=X0+160, sy2=per==='dusk'?Y0-46:Y0-150;
+    if (per==='night'){ pDisc(a,sx2,sy2,9,'#2a3470'); pDisc(a,sx2,sy2,7,'#f4eec8'); pDisc(a,sx2+3,sy2-2,6,SKY[1]); a.fillStyle='#d8d2a8'; a.fillRect(sx2-5,sy2+1,2,1); a.fillRect(sx2-3,sy2+4,1,1); }
+    else { const s0=per==='dusk'?'#ffd08a':'#ffffff'; pDisc(a,sx2,sy2,15,fMix(SKY[2],s0,0.18)); pDisc(a,sx2,sy2,12,fMix(SKY[2],s0,0.35)); pDisc(a,sx2,sy2,9,per==='dusk'?'#ffb050':'#ffe066'); pDisc(a,sx2,sy2,7,per==='dusk'?'#ffc870':'#fff09a'); pDisc(a,sx2-2,sy2-2,3,'#fffbe0'); } }
+  // ---- land ----
+  const land=document.createElement('canvas'); land.width=W; land.height=H; const b=land.getContext('2d'), T=h=>fTone(h,per);
+  const ridge=(wx,base,amp,f1,f2,ph)=>Math.round(base+amp*Math.sin(wx*f1+ph)+amp*0.35*Math.sin(wx*f2+ph*1.7));
+  // far mountains: soft rounded peaks, a lit rim on top, paler snow on the tallest
+  const MT=[T('#a9c4e4'),T('#c4d8ef'),T('#94b0d6'),per==='night'?'#6a78a8':T('#eef4fc')], mtTop=[];
+  // a row of peaks: each is a rounded cone; the range is the tallest one at each column, with a shaded side, a lit rim and snow on top
+  const PK=[]; { const r=rnd(77); for (let wx=-X0-60; wx<W-X0+60; wx+=70+Math.floor(r()*70)) PK.push([wx, 92+Math.floor(r()*44), 0.62+r()*0.35]); }
+  const mh=wx=>{ let best=70; for (const [px,ph,sl] of PK){ const d=Math.abs(wx-px), h=ph - d*sl - (d*d)/900; if (h>best) best=h; } return Math.round(best); };
+  for (let x=0;x<W;x++){ const wx=x-X0, h=mh(wx), y=Y0-h; mtTop.push(y); b.fillStyle=MT[0]; b.fillRect(x,y,1,H-y);
+    const rising=mh(wx+4)>=mh(wx-4);   /* look a few columns either side so the shade doesn't flicker on gentle slopes */ if (!rising){ b.fillStyle=MT[2]; b.fillRect(x,y+1,1,H-y); } b.fillStyle=MT[1]; b.fillRect(x,y,1,1);
+    if (h>112){ const sn=Math.min(7,Math.round((h-112)/3)+1); b.fillStyle=MT[3]; b.fillRect(x,y,1,sn); if (!rising){ b.fillStyle=T('#cfdcf0'); b.fillRect(x,y+1,1,Math.max(0,sn-1)); } } }
+  // a soft haze line where the mountains meet the hills
+  b.fillStyle=T('#bcd2ec'); for (let x=0;x<W;x+=2){ const wx=x-X0; b.fillRect(x, Y0-ridge(wx,60,12,1/74,1/31,2.1)-3, 1, 1); }
+  // mid hills
+  const HL=[T('#8fc97c'),T('#a9db8f'),T('#7ab469')], mid=[];
+  for (let x=0;x<W;x++){ const wx=x-X0, h=ridge(wx,60,12,1/74,1/31,2.1), y=Y0-h; mid.push(y); b.fillStyle=HL[0]; b.fillRect(x,y,1,H-y); const sl=ridge(wx+2,60,12,1/74,1/31,2.1)-h; if (sl<0){ b.fillStyle=HL[2]; b.fillRect(x,y+1,1,Math.min(5,1-sl*3)); } b.fillStyle=HL[1]; b.fillRect(x,y,1,1); }
+  // tree line along the mid hills (sprites, varied sizes), leaving room for the farm buildings
+  { const trees=[farmTree(per,3),farmTree(per,4),farmTree(per,5),farmTree(per,6)], r=rnd(33); let x=10;
+    while (x<W-10){ const wx=x-X0; if (wx>-290 && wx<-170){ x+=8; continue; } if (r()<0.7){ const tr=trees[Math.floor(r()*4)]; b.drawImage(tr, x-Math.floor(tr.width/2), mid[x]+3-tr.height); } x+=7+Math.floor(r()*14); } }
+  // red barn with a gambrel roof, white trim and a hayloft, and a silo with a dome
+  { const bx=X0-262, by=mid[X0-240]+4, R2=(x,y,w,h,c)=>{ b.fillStyle=c; b.fillRect(bx+x,by+y,w,h); };
+    const RED=T('#c0463a'), RD=T('#8e2e26'), RL=T('#d8604e'), RF=T('#5a3a3a'), RFL=T('#7a5050'), WH=T('#f4efe4'), OUT=T('#3a1612');
+    R2(-1,-20,34,20,OUT); R2(0,-19,32,19,RED); for (let k=3;k<32;k+=4) R2(k,-19,1,19,RD); R2(0,-19,32,1,RL);
+    for (let i=0;i<6;i++){ R2(-3+i,-21-i,38-2*i,1,OUT); R2(-2+i,-21-i,36-2*i,1,i%2?RF:RFL); } for (let i=0;i<5;i++){ R2(3+i*2,-27-i,26-4*i,1,OUT); R2(4+i*2,-27-i,24-4*i,1,i%2?RFL:RF); } R2(10,-32,12,1,OUT);
+    R2(11,-13,10,13,OUT); R2(12,-12,8,12,WH); R2(13,-11,6,11,RED); R2(13,-11,6,1,WH); R2(15,-11,2,11,WH); for (let k=0;k<6;k++){ R2(13+k,-11+Math.round(k*11/6),1,1,WH); R2(18-k,-11+Math.round(k*11/6),1,1,WH); }
+    R2(12,-25,8,6,OUT); R2(13,-24,6,4,WH); R2(14,-23,4,3,per==='night'?'#ffe9a0':T('#3a2a2a'));
+    R2(37,-38,14,38,OUT); R2(38,-37,12,37,T('#b8bccb')); R2(39,-37,3,37,T('#dadce6')); R2(47,-37,3,37,T('#9a9eb0')); for (let k=0;k<6;k++) R2(38,-31+k*6,12,1,T('#8a8ea0'));
+    for (let i=0;i<5;i++){ const w=12-Math.round(i*i*0.55); R2(44-Math.floor(w/2),-38-i,w,1,i===4?OUT:T(i<2?'#9a9eb0':'#b8bccb')); } R2(43,-44,2,2,OUT); }
+  // near hills: fields in curved bands that follow the hill, with hedgerows between
+  { const top=[]; for (let x=0;x<W;x++){ const wx=x-X0; top.push(Y0-ridge(wx,28,7,1/58,1/24,4.0)); }
+    const G=T('#6fb85a'), GR=T('#8cd070'), WHT=T('#e8c66a'), WHR=T('#d0a84e'), CR=T('#5aa84a'), CRR=T('#4a9640'), HED=T('#3d7a3a'), HEDL=T('#4f9046');
+    const r=rnd(57); let x=0; const bands=[]; while (x<W){ const w=70+Math.floor(r()*110); bands.push([x, Math.min(W,x+w), Math.floor(r()*3)]); x+=w; }
+    for (const [x0,x1,kind] of bands) for (let xx=x0; xx<x1; xx++){ const y=top[xx];
+      b.fillStyle=G; b.fillRect(xx,y,1,H-y); b.fillStyle=GR; b.fillRect(xx,y,1,1);
+      for (let k=0;k<5;k++){ const y0b=y+4+k*10, kk=(kind+k)%3, base = kk===0?WHT:kk===1?CR:G, row = kk===0?WHR:kk===1?CRR:null;
+        b.fillStyle=base; b.fillRect(xx,y0b,1,9); if (row){ b.fillStyle=row; for (let yy=y0b+1; yy<y0b+9; yy+=3) b.fillRect(xx,yy,1,1); }
+        b.fillStyle=HED; b.fillRect(xx,y0b+9,1,1); if (xx%3===0){ b.fillStyle=HEDL; b.fillRect(xx,y0b+8,1,1); } }
+    } }
+  FSKY.topCol=SKY[0]; { const d=land.getContext('2d').getImageData(W>>1,H-1,1,1).data; FSKY.botCol=`rgb(${d[0]},${d[1]},${d[2]})`; }
+  FSKY.sky=sky; FSKY.land=land; FSKY.clouds=[farmCloud(per,true),farmCloud(per,false),farmCloud(per,true),farmCloud(per,false)]; FSKY.key=per; }
+function drawFarmSky(ctx){ const per=(typeof period==='string')?period:'day'; if (FSKY.key!==per) buildFarmSky(per);
+  const dx=OX-FSKY.X0, dy=OY-FSKY.Y0+48;
+  if (dy>0){ ctx.fillStyle=FSKY.topCol; ctx.fillRect(0,0,LW,dy+1); } ctx.drawImage(FSKY.sky, dx, dy);
+  const now=performance.now()/1000;
+  FSKY.clouds.forEach((cl,i)=>{ const sp=[3,4.5,2.2,3.6][i], y=[92,112,78,120][i], span=FSKY.W+cl.width, cx=dx+((i*470+now*sp)%span)-cl.width; const X=Math.round(cx), Y=Math.round(dy+y); if (X>-cl.width && X<LW) ctx.drawImage(cl, X, Y); });
+  ctx.drawImage(FSKY.land, dx, dy);
+  ctx.fillStyle=FSKY.botCol; ctx.fillRect(0, dy+FSKY.H-1, LW, LH); }
 function buildPlayerBG(){
   if ((PRD[curRoom]||{}).farm) return buildFarmBG();
   g = bg.getContext('2d'); g.clearRect(0,0,bg.width,bg.height);
@@ -2912,6 +2975,11 @@ function drawCrop(k, stage, X, Y, t){
   if (k==='pumpkin'){ if (stage===2){ R(-4,-1,9,1,'#3e8a34'); ellPx(X-2,Y-2,2,1.5,'#58b048'); ellPx(X+3,Y-2,2,1.5,'#4aa040'); R(0,-3,1,2,'#3e8a34'); return; }
     R(-5,0,11,1,'#3e8a34'); ellPx(X,Y-3,5,3.5,INK); ellPx(X,Y-3,4,2.5,'#f08a24'); R(-1,-5,1,4,'#d06a14'); R(2,-5,1,4,'#d06a14'); R(-3,-4,1,1,'#ffb060'); R(0,-8,1,2,'#5a8a2a'); R(1,-8,2,1,'#5a8a2a'); return; }
 }
+// sunflower sprites (outlined by sprO), shared palette
+const SF_PAL={y:'#ffd23f', o:'#f0a020', h:'#fff3a0', B:'#6a3410', b:'#8a4a18', d:'#3a1a06', g:'#5ab04a', G:'#3e8a34', l:'#88d468', k:INK};
+const SF_HEAD=['....yhy....','..y.yyy.y..','.yhyBBByyo.','..yBbbbBo..','hyBbdbdbByo','yyBbbdbbBoo','hyBbdbdbBoo','..yBbbbBo..','.yyoBBBooo.','..o.ooo.o..','....ooo....'];
+const SF_LEAF_L=['.lgg','ggGk','.GG.'], SF_LEAF_R=['ggl.','kGgg','.GG.'];
+function sprO(rows,x,y,pal){ g.fillStyle=INK; for (let j=0;j<rows.length;j++) for (let i=0;i<rows[j].length;i++){ if (rows[j][i]==='.') continue; for (const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){ const r2=rows[j+b], c=r2&&r2[i+a]; if (!c || c==='.') g.fillRect(x+i+a,y+j+b,1,1); } } spr(rows,x,y,pal); }
 function drawFurn(f,t){
   const cx=f.gx+0.5, cy=f.gy+0.5; const [sx,sy]=P(cx,cy);
   switch(f.t){
@@ -3281,15 +3349,14 @@ function drawFurn(f,t){
       for (const [a,b] of [[-11,-35],[7,-33],[-4,-44],[11,-45],[-8,-52],[4,-51],[0,-31],[14,-38],[-14,-42]]){ g.fillStyle=INK; g.fillRect(X+a-1,Y+b-1,5,5); g.fillStyle='#e83850'; g.fillRect(X+a,Y+b,3,3); g.fillStyle='#ff9aa8'; g.fillRect(X+a,Y+b,1,1); g.fillStyle='#a82838'; g.fillRect(X+a+2,Y+b+2,1,1); g.fillStyle='#5a3418'; g.fillRect(X+a+1,Y+b-2,1,1); }
       { const [ax,ay]=P(x+0.82,y+0.78,0); const A=Math.round(ax), B=Math.round(ay); g.fillStyle=INK; g.fillRect(A-1,B-3,5,4); g.fillStyle='#e83850'; g.fillRect(A,B-2,3,2); g.fillStyle='#ff9aa8'; g.fillRect(A,B-2,1,1); }
       break; }
-    case 'sunflowers': { // a patch of three sunflowers: tilled soil, leafy stems and big heads with a ring of petals and a seeded centre
-      const X=Math.round(sx), Y=Math.round(sy); ellPx(X,Y,10,3,INK); ellPx(X,Y,9,2.2,'#5a3820'); ellPx(X-2,Y-0.5,5,1.2,'#6a4428'); g.fillStyle='#3e2414'; g.fillRect(X+3,Y,2,1); g.fillRect(X-6,Y+1,1,1);
-      for (const [dx,h,r] of [[-6,22,4],[1,31,5],[7,18,4]]){ const sw=Math.round(Math.sin(t*1.4+dx)*0.8), hx=X+dx+sw, hy=Y-h-r;
-        g.fillStyle=INK; g.fillRect(X+dx-1,Y-h,3,h); g.fillStyle='#3a8a34'; g.fillRect(X+dx,Y-h,1,h); g.fillStyle='#58b048'; g.fillRect(X+dx,Y-h,1,Math.round(h*0.4));
-        for (const [ly,side] of [[h-6,-1],[h-12,1],[h-17,-1]]) if (ly>3){ const lx=X+dx+(side<0?-5:2), lyy=Y-ly; g.fillStyle=INK; g.fillRect(lx-1,lyy-1,6,4); g.fillStyle='#4aa040'; g.fillRect(lx,lyy,4,2); g.fillStyle='#6ac858'; g.fillRect(lx+(side<0?0:2),lyy,2,1); }
-        for (let k=0;k<12;k++){ const an=k/12*Math.PI*2, px2=Math.round(hx+Math.cos(an)*(r+1.5)), py2=Math.round(hy+Math.sin(an)*(r+1.2)); g.fillStyle=INK; g.fillRect(px2-1,py2-1,3,3); }
-        for (let k=0;k<12;k++){ const an=k/12*Math.PI*2, px2=Math.round(hx+Math.cos(an)*(r+1.5)), py2=Math.round(hy+Math.sin(an)*(r+1.2)); g.fillStyle=k%2?'#f8c820':'#ffd848'; g.fillRect(px2,py2,1,1); g.fillRect(px2-(Math.cos(an)>0?1:0),py2,1,1); }
-        ellPx(hx,hy,r,r-0.5,'#f8c820'); ellPx(hx,hy,r-1.2,r-1.6,'#7a3a12'); ellPx(hx-0.8,hy-0.8,r-2.5,r-2.8,'#9a5420');
-        g.fillStyle='#4a2008'; for (const [a,b] of [[0,0],[-1,1],[1,-1],[1,1]]) g.fillRect(Math.round(hx)+a,Math.round(hy)+b,1,1); g.fillStyle='#fff0a0'; g.fillRect(Math.round(hx-r),Math.round(hy-1),1,2); }
+    case 'sunflowers': { // three sunflowers in a little tilled bed: hand-drawn heads (layered petals, seeded centres), leafy stems that sway
+      const X=Math.round(sx), Y=Math.round(sy);
+      ellPx(X,Y+1,11,3.2,INK); ellPx(X,Y+0.6,10,2.4,'#5a3820'); ellPx(X-3,Y,5,1.2,'#7a5232'); g.fillStyle='#3e2414'; for (const [a,b] of [[4,1],[-7,1],[1,2],[7,0]]) g.fillRect(X+a,Y+b,1,1);
+      g.fillStyle='#4a9a3a'; for (const [a,h] of [[-9,3],[-8,2],[9,3],[8,2],[-2,2],[3,3]]) g.fillRect(X+a,Y-h+1,1,h);
+      for (const [dx,h,flip] of [[-6,20,1],[1,30,0],[7,16,1]]){ const sw=Math.round(Math.sin(t*1.3+dx*0.7)*0.8), top=Y-h, hx=X+dx+sw;
+        g.fillStyle=INK; g.fillRect(X+dx-1,top,4,h); g.fillStyle='#3e8a34'; g.fillRect(X+dx,top,1,h); g.fillStyle='#5ab04a'; g.fillRect(X+dx+1,top,1,h);
+        for (const [ly,side] of [[Math.round(h*0.35),flip?1:-1],[Math.round(h*0.62),flip?-1:1]]) spr(side<0?SF_LEAF_L:SF_LEAF_R, side<0?X+dx-5:X+dx+2, Y-ly-1, SF_PAL);
+        sprO(SF_HEAD, hx-5, top-10, SF_PAL); }
       break; }
     case 'gfence': { // white picket fence along one edge of the tile (turns with the piece): two rails behind, pointed pickets in front, soft shading on the shady side
       const x=f.gx, y=f.gy, along=(f.rot||0)%2===0, pt=u=> along ? [x+u, y+0.5] : [x+0.5, y+u];
@@ -4986,7 +5053,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__ward=(t,k)=>openWardrobe(t,null,k); window.__arc=()=>startArcade(); window.__scr=(gx,gy,h)=>{ const [x,y]=P(gx,gy,h||0); return [x*S,y*S]; }; window.__pred=()=>({on:PRED.on, piece:PRED.piece&&PRED.piece.item, box:document.getElementById('plotbox').style.display}); window.__fi=(k,cs)=>furnIcon(k,cs); window.__go=r=>goRoom(r); window.__arena=()=>openArena(); window.__bowl=()=>openBowl(); window.__close=()=>closeAll(); window.__dash=()=>openDash(); window.__mkt=()=>openMarket(); window.__tour=()=>tourStart(); window.__period=v=>{ period=v; rebuildBG(); }; window.__juke=v=>{ juke.s=v; }; window.__tnext=()=>$id('tour_next').click(); window.__msg=t=>localMsg(t); window.__give=k=>{ me.h=k; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; }; window.__prgo=id=>prGo(id); window.__plk=()=>plkGo(); window.__doorPt=()=>{ const d=DOORWAY[curRoom]; if (curRoom==='barn'){ const [x,y]=P(14.5,0); return [x*S,(y-24)*S]; } if (d[0]===0){ const [x,y]=P(0,d[1]+0.5); return [x*S,(y-22)*S]; } if (d[1]===0){ const [x,y]=P(d[0]+0.5,0); return [x*S,(y-22)*S]; } const [x,y]=P(d[0]+0.5,d[1]+0.5); return [x*S,y*S]; }; window.__room=()=>curRoom; window.__walk=(x,y)=>walkTo(x,y); window.__path=()=>me.path.map(p=>p.join(',')).join(' '); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__ward=(t,k)=>openWardrobe(t,null,k); window.__arc=()=>startArcade(); window.__fsky=()=>({key:FSKY.key, n:FSKY.clouds.length, w:FSKY.clouds.map(c=>c.width), OX, OY, LW, LH, X0:FSKY.X0}); window.__scr=(gx,gy,h)=>{ const [x,y]=P(gx,gy,h||0); return [x*S,y*S]; }; window.__pred=()=>({on:PRED.on, piece:PRED.piece&&PRED.piece.item, box:document.getElementById('plotbox').style.display}); window.__fi=(k,cs)=>furnIcon(k,cs); window.__go=r=>goRoom(r); window.__arena=()=>openArena(); window.__bowl=()=>openBowl(); window.__close=()=>closeAll(); window.__dash=()=>openDash(); window.__mkt=()=>openMarket(); window.__tour=()=>tourStart(); window.__period=v=>{ period=v; rebuildBG(); }; window.__juke=v=>{ juke.s=v; }; window.__tnext=()=>$id('tour_next').click(); window.__msg=t=>localMsg(t); window.__give=k=>{ me.h=k; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; }; window.__prgo=id=>prGo(id); window.__plk=()=>plkGo(); window.__doorPt=()=>{ const d=DOORWAY[curRoom]; if (curRoom==='barn'){ const [x,y]=P(14.5,0); return [x*S,(y-24)*S]; } if (d[0]===0){ const [x,y]=P(0,d[1]+0.5); return [x*S,(y-22)*S]; } if (d[1]===0){ const [x,y]=P(d[0]+0.5,0); return [x*S,(y-22)*S]; } const [x,y]=P(d[0]+0.5,d[1]+0.5); return [x*S,y*S]; }; window.__room=()=>curRoom; window.__walk=(x,y)=>walkTo(x,y); window.__path=()=>me.path.map(p=>p.join(',')).join(' '); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__wear=(sl,id)=>wdWear(sl,id); window.__face=d=>{ me.d=d; }; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
@@ -7254,12 +7321,14 @@ function playerPointer(e){
   { const dy=NY-1, cx=OX-(dy+0.5)*20, cy=OY+(dy+0.5)*10; if (!PRED.on && lx>=cx-12 && lx<=cx+12 && ly>=cy-55 && ly<=cy+6){ prLeave(); return; } }
   if (!PRED.on) for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
   // plots and vending machines: a quick tap uses them; in a room you can edit, holding one picks it up to move like any other piece
+  const [tgx,tgy]=toGrid(e.clientX, e.clientY);
   if (!PRED.on) for (let i=pvHits.length-1;i>=0;i--){ const h=pvHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){
+    if (!(tgx===h.f.gx && tgy===h.f.gy) && tgx>=0 && tgy>=0 && tgx<N && tgy<NY && walkable(tgx,tgy)) continue;   /* the floor right next to it wins: you meant to walk there */
     if (prCanMove()){ const f=h.f; prDragStart(e, {fid:f.fid, item:f.item, rot:f.rot||0, gx0:f.gx, gy0:f.gy, ox:0, oy:0, auto:true, staff:!prInMine()}); PDR.tapGx=f.gx; PDR.tapGy=f.gy; PDR.tapHit={f, tx:f.gx, ty:f.gy}; holdRing(true, e.clientX, e.clientY); return; }
     pvGo(h.f); return; } }
   const [gx,gy]=toGrid(e.clientX, e.clientY);
   // tapping a piece of furniture counts wherever you tap its picture (its back, its top), not just the floor under it
-  const hit = (PRED.on && PRED.item) ? null : prHit(lx, ly);
+  const hit = (PRED.on && PRED.item) ? null : prHit(lx, ly); if (hit){ hit.fx=gx; hit.fy=gy; }   /* the floor tile under the tap, for decorations */
   if (!hit && (gx<0||gy<0||gx>=N||gy>=NY)) return;
   if (PRED.on){ const f=hit ? hit.f : prFurnAt(gx,gy), tx=hit?hit.tx:gx, ty=hit?hit.ty:gy;
     if (f){ prDragStart(e, {fid:f.fid, item:f.item, rot:f.rot||0, gx0:f.gx, gy0:f.gy, ox:tx-f.gx, oy:ty-f.gy}); PDR.tapGx=tx; PDR.tapGy=ty; return; }
@@ -7288,6 +7357,7 @@ function prTapPiece(hit){ if (hit.f.item==='plot' || PV_ITEMS[hit.f.item]){ pvGo
   if (FURN_SWITCH.has(hit.f.item)){ const f=hit.f; f.off=!f.off; try{ ensureAudio(); if (actx){ const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.value=f.off?320:640; gn.gain.value=0.05*(svol/100); o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime+0.05); } }catch(_){}
     NET.act('pr_toggle',{fid:f.fid}).then(r=>{ if (!r.ok){ f.off=!f.off; localMsg(r.msg||'That switch is stuck.'); } }); return; } const f=hit.f, tl=furnTiles(f.item,f.gx,f.gy,f.rot);
   const seats=SEATS.filter(q=>tl.some(([x,y])=>x===q.gx&&y===q.gy)); if (seats.length){ const free=seats.filter(q=>!seatTaken(q.gx,q.gy)); if (!free.length){ localMsg("Someone's already sitting there."); return; } const q=free.find(q=>q.gx===hit.tx&&q.gy===hit.ty) || free.slice().sort((a,b)=>Math.hypot(a.gx-hit.tx,a.gy-hit.ty)-Math.hypot(b.gx-hit.tx,b.gy-hit.ty))[0]; walkToSeatIn(q, tl); return; }
+  if (hit.fx!=null && hit.fx>=0 && hit.fy>=0 && hit.fx<N && hit.fy<NY && walkable(hit.fx,hit.fy) && !seatAt(hit.fx,hit.fy) && !tl.some(([x,y])=>x===hit.fx&&y===hit.fy)){ walkTo(hit.fx,hit.fy); return; }   /* a decoration's picture overlaps the floor behind it: walk where you tapped */
   const near=[]; for (const [x,y] of tl) for (const [dx,dy] of [[0,1],[1,0],[-1,0],[0,-1]]){ const a=x+dx, b=y+dy; if (a>=0&&b>=0&&a<N&&b<NY&&walkable(a,b)&&!seatAt(a,b)) near.push([a,b]); }
   near.sort((p,q)=>Math.hypot(p[0]-me.gx,p[1]-me.gy)-Math.hypot(q[0]-me.gx,q[1]-me.gy)); if (near.length) walkTo(near[0][0],near[0][1]); }
 /* walk to a seat; if it's boxed in (a bed's pillow end against a wall, a lamp and a plant), climb in over the piece itself */
