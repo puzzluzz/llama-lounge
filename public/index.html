@@ -8504,14 +8504,20 @@ function drawChatLog(meSt){
 }
 // REPORTS tab: player reports with the reported llama's recent chat (attached by the server). Mods never get reports about staff.
 const REP_WHY={rude:'Rude or bullying', hate:'Hate speech or slurs', spam:'Spam', scam:'Scam or trade trouble', name:'Bad name, room or outfit', other:'Something else'};
-function repBadge(list){ const n=(list||[]).filter(r=>!r.done).length, b=$id('ds_repn'); if (b){ b.textContent=n?String(n):''; b.style.display=n?'':'none'; } }
+function repBadge(list,bugs){ const n=(list||[]).filter(r=>!r.done).length+(bugs||[]).filter(b=>!b.done).length, b=$id('ds_repn'); if (b){ b.textContent=n?String(n):''; b.style.display=n?'':'none'; } }
 function loadReports(){
-  NET.act('report_list').then(r=>{ if (dsTab!=='reports' || dashEl.style.display!=='block') { if (r&&r.ok) repBadge(r.reports); return; }
+  NET.act('report_list').then(r=>(r && r.ok && r.me==='owner') ? NET.act('bug_list').then(bl=>{ r.bugs=(bl && bl.ok && bl.bugs) || []; return r; }) : r).then(r=>{ if (dsTab!=='reports' || dashEl.style.display!=='block') { if (r&&r.ok) repBadge(r.reports, r.bugs); return; }
     if (!r.ok){ dsBody.innerHTML=`<div class="dl">${esc(r.msg||'Could not load reports.')}</div>`; return; }
-    repBadge(r.reports); const owner=r.me==='owner', myName=(me.n||'').toUpperCase();
+    repBadge(r.reports, r.bugs); const owner=r.me==='owner', myName=(me.n||'').toUpperCase();
     const btn=(label,cmd,name,cls)=>`<button class="gbbtn s ${cls||''}" data-cmd="${cmd}" data-name="${esc(name)}">${label}</button>`;
     const open=r.reports.filter(x=>!x.done).length;
-    let h=`<div class="dl">${open} OPEN. Newest first. Mute, kick or ban right from a report, then mark it handled.${owner?'':' Reports about staff go to the owner.'}</div>`;
+    let h='';
+    if (owner && Array.isArray(r.bugs)){   // OWNER ONLY: bug reports from players, at the top
+      const bo=r.bugs.filter(b=>!b.done).length; h+=`<h4>🐞 BUG REPORTS (${bo} OPEN)</h4>`;
+      for (const b of r.bugs){ const d=new Date(b.t); h+=`<div class="dl bugr${b.done?' done':''}"><b>${esc(b.name)}</b> <small>${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(roomName(b.room)||b.room||'')} · v${esc(b.ver||'?')} · ${esc(b.scr||'')}</small><br>${esc(b.text)}<br><small>${esc(b.ua||'')}</small><br><button class="gbbtn s ${b.done?'':'gd'}" data-bugdone="${b.id}" data-on="${b.done?0:1}">${b.done?'REOPEN':'✓ FIXED'}</button><button class="gbbtn s bad" data-bugdel="${b.id}">DELETE</button></div>`; }
+      if (!r.bugs.length) h+='<div class="dl">NO BUG REPORTS.</div>';
+      h+='<h4>PLAYER REPORTS</h4>'; }
+    h+=`<div class="dl">${open} OPEN. Newest first. Mute, kick or ban right from a report, then mark it handled.${owner?'':' Reports about staff go to the owner.'}</div>`;
     for (const x of r.reports){ const d=new Date(x.t), can = x.n!==myName && x.st!=='owner' && (owner || x.st!=='mod');
       h+=`<div class="rep${x.done?' done':''}"><div class="rh">${badgeHtml(x.st)}<b>${esc(x.n)}</b>${x.muted?' <small>· MUTED</small>':''}${x.banned?' <small>· BANNED</small>':''}<br><small>reported by ${esc(x.by)} · ${chatWhen(x.t)}${x.room?' · '+esc(roomName(x.room)||ROOM_SHORT[x.room]||x.room):''}</small></div>
         <span class="rwhy">${esc(REP_WHY[x.reason]||x.reason)}</span>${x.note?`<div class="rnote">"${esc(x.note)}"</div>`:''}
@@ -8521,6 +8527,8 @@ function loadReports(){
     if (!r.reports.length) h+='<div class="dl">NO REPORTS. NICE!</div>';
     const sc=dashEl.scrollTop; dsBody.innerHTML=h; dashEl.scrollTop=sc;
     for (const b of dsBody.querySelectorAll('[data-cmd]')) b.addEventListener('click', ()=>dashDo(b.dataset.cmd, b.dataset.name));
+    for (const b of dsBody.querySelectorAll('[data-bugdone],[data-bugdel]')) b.addEventListener('click', ()=>{ if (b.dataset.bugdel && !confirm('Delete this bug report?')) return; b.disabled=true;
+      NET.act(b.dataset.bugdel?'bug_del':'bug_done',{bid:+(b.dataset.bugdel||b.dataset.bugdone), done:b.dataset.on==='1'}).then(r2=>{ if (!r2.ok) localMsg(r2.msg||'That did not work.'); loadReports(); }); });
     for (const b of dsBody.querySelectorAll('[data-rep]')) b.addEventListener('click', ()=>{ b.disabled=true; NET.act('report_done',{rpid:+b.dataset.rep, done:b.dataset.on==='1'}).then(r2=>{ if (!r2.ok) localMsg(r2.msg||'That did not work.'); loadReports(); }); });
   }); }
 // ERRORS tab: crashes from players' browsers, the same error grouped with a count and who saw it
@@ -8542,7 +8550,7 @@ function loadDash(){
   clearInterval(dsTimer); dsTimer=null;
   if (dsTab==='errors'){ dsBody.innerHTML='<div class="dl">LOADING...</div>'; loadErrors(); return; }
   if (dsTab==='reports'){ dsBody.innerHTML='<div class="dl">LOADING...</div>'; loadReports(); return; }
-  NET.act('report_list').then(r=>{ if (r && r.ok) repBadge(r.reports); });   // keep the REPORTS count fresh on the other tabs
+  NET.act('report_list').then(r=>{ if (!r || !r.ok) return; if (r.me==='owner') NET.act('bug_list').then(bl=>repBadge(r.reports, bl && bl.ok ? bl.bugs : [])); else repBadge(r.reports); });   // keep the REPORTS count fresh on the other tabs
   NET.act('err_list').then(r=>{ if (r && r.ok) errBadge(r.errs); });
   if (dsTab==='chat'){ if (!dsChat.lines.length) dsBody.innerHTML='<div class="dl">LOADING...</div>'; loadChatLog();
     dsTimer=setInterval(()=>{ if (dashEl.style.display!=='block' || dsTab!=='chat'){ clearInterval(dsTimer); return; } if (dsChat.open==null && !(document.activeElement && document.activeElement.id==='ds_q')) loadChatLog(); }, 6000); return; }
@@ -8579,16 +8587,10 @@ function loadDash(){
     const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:',pkreset:'cleared the passkeys of',give:'gave tokens to',undogift:'took back a gift from',roomreset:'reset the room name of', movefurn:'moved', turnfurn:'turned', wfwarn:'warned'};
     if (r.log.length) h+=dgrid('auto auto auto 1fr', ['DATE','TIME','STAFF','ACTION'], r.log.slice(0,20).map(e=>`<span>${dgD(e.t)}</span><span>${dgT(e.t)}</span><b class="dgn"><span>${esc(e.by)}</span></b><span class="dgw">${WORD[e.cmd]||esc(e.cmd)} <b>${esc(e.target)}</b></span>`));
     if (!r.log.length) h+='<div class="dl">NO STAFF ACTIONS YET.</div>';
-    if (owner && Array.isArray(r.bugs)){   // OWNER ONLY: bug reports from players
-      const open=r.bugs.filter(b=>!b.done).length; h+=`<h4>🐞 BUG REPORTS (${open} OPEN)</h4>`;
-      for (const b of r.bugs){ const d=new Date(b.t); h+=`<div class="dl bugr${b.done?' done':''}"><b>${esc(b.name)}</b> <small>${d.toLocaleDateString([], {month:'short',day:'numeric'})} ${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})} · ${esc(roomName(b.room)||b.room||'')} · v${esc(b.ver||'?')} · ${esc(b.scr||'')}</small><br>${esc(b.text)}<br><small>${esc(b.ua||'')}</small><br><button class="gbbtn s ${b.done?'':'gd'}" data-bugdone="${b.id}" data-on="${b.done?0:1}">${b.done?'REOPEN':'✓ FIXED'}</button><button class="gbbtn s bad" data-bugdel="${b.id}">DELETE</button></div>`; }
-      if (!r.bugs.length) h+='<div class="dl">NO BUG REPORTS.</div>'; }
     if (owner) h+='<h4>💾 BACKUPS</h4><div id="ds_bk" class="dl">LOADING...</div>';
     dsBody.innerHTML=h;
     if (owner) loadBackups();
     for (const b of dsBody.querySelectorAll('[data-cmd]')) b.addEventListener('click', ()=>dashDo(b.dataset.cmd, b.dataset.name));
-    for (const b of dsBody.querySelectorAll('[data-bugdone],[data-bugdel]')) b.addEventListener('click', ()=>{ if (b.dataset.bugdel && !confirm('Delete this bug report?')) return; b.disabled=true;
-      NET.act(b.dataset.bugdel?'bug_del':'bug_done',{bid:+(b.dataset.bugdel||b.dataset.bugdone), done:b.dataset.on==='1'}).then(r2=>{ if (!r2.ok) localMsg(r2.msg||'That did not work.'); loadDash(); }); });
     for (const b of dsBody.querySelectorAll('[data-undo]')) b.addEventListener('click', ()=>{ if (!confirm(`Take back ${b.dataset.n} TOKENS from ${b.dataset.to}?`)) return; b.disabled=true;
       NET.act('gift_undo',{gid:+b.dataset.undo}).then(r2=>{ localMsg(r2.msg||(r2.ok?'Gift undone.':'Could not undo that.')); loadDash(); }); });
     const add=document.getElementById('ds_addmod'); if (add) add.addEventListener('click', ()=>{ const n=document.getElementById('ds_new').value.trim(); if (n) dashDo('mod', n); });

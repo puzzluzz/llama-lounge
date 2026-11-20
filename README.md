@@ -440,3 +440,6 @@ The JOBS, FRIENDS, CHAT, SHOP, ROOMS, BAG and MAP buttons keep their coloured ti
 
 ### Pixel chat bar
 The chat box is a pixel panel: hard ink border with stepped corners, a shaded bottom lip and a pixel-font placeholder. The send button is a yellow pixel key with a hand-drawn paper plane, and the emote button has a redrawn smiley with blush and an open grin.
+
+### Bug reports live in REPORTS
+Players' bug reports now show at the top of the dashboard's REPORTS tab (owner only, checked on the server through `bug_list`), above player reports. The REPORTS count includes open bugs.

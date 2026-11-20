@@ -1940,6 +1940,7 @@ export class Lounge extends DurableObject {
       case "mkt_sell": return this.mktSell(a, m);
       case "mkt_back": return this.mktBack(a, m);
       case "mkt_buy": return this.mktBuy(ws, a, m);
+      case "bug_list": return this.bugList(a);
       case "bug_done": return this.bugEdit(a, m, false);
       case "bug_del": return this.bugEdit(a, m, true);
       case "box_info": return this.boxInfo(a, now);
@@ -2500,6 +2501,11 @@ export class Lounge extends DurableObject {
     const s = (v, k) => String(v || "").replace(/[^\x20-\x7e]/g, "").slice(0, k);
     await this.env.DB.prepare("INSERT INTO bugs (uid, name, t, room, text, ver, ua, scr) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(a.uid, a.name, Date.now(), s(m.room, 24), text, s(m.ver, 20), s(m.ua, 160), s(m.scr, 12)).run();
     return { ok: true };
+  }
+  async bugList(a) {   // OWNER ONLY: players' bug reports, open ones first
+    if ((await this.staffNow(a)) !== "owner") return { ok: false, msg: "Only the owner can see bug reports." };
+    await this.bugTable();
+    return { ok: true, bugs: (await this.env.DB.prepare("SELECT id, name, t, room, text, ver, ua, scr, done FROM bugs ORDER BY done, id DESC LIMIT 60").all()).results || [] };
   }
   async bugEdit(a, m, del) {
     if ((await this.staffNow(a)) !== "owner") return { ok: false, msg: "Only the owner can do that." };
