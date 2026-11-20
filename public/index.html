@@ -6413,7 +6413,7 @@ function wdDraw(){
 }
 $id('wd_body').addEventListener('click', e=>{
   const pu=e.target.closest('[data-putup]'); if (pu){ const d=decoOf(pu.dataset.putup); if (!d) return; pu.disabled=true; wdMsg('PUTTING IT UP...');
-    NET.act('pr_set', d.kind==='w'?{wall:d.id}:{floor:d.id}).then(r=>{ if (!r.ok){ pu.disabled=false; return wdMsg(r.msg||'That did not work.'); } DECO_OWN=r.deco||DECO_OWN; prApplyRoom(r.room); if (PRUI.info) PRUI.info.room=r.room;
+    NET.act('pr_set', {...(d.kind==='w'?{wall:d.id}:{floor:d.id}), rid:(isP(curRoom)&&PRD[curRoom]&&PRD[curRoom].mine)?+curRoom.slice(2):0}).then(r=>{ if (!r.ok){ pu.disabled=false; return wdMsg(r.msg||'That did not work.'); } DECO_OWN=r.deco||DECO_OWN; prApplyRoom(r.room); if (PRUI.info) PRUI.info.room=r.room;
       wdMsg(`${itemName(pu.dataset.putup)} is up in your room! The old one went back in your bag.`, true); wdFurnLoad(); }); return; }
   const bk=e.target.closest('[data-buykit]'); if (bk){ const k=bk.dataset.buykit; if (!confirm(`Buy the ${KITS[k].n} kit for ${kitPrice(k)} TOKENS?`)) return; bk.disabled=true; wdMsg('BUYING...');
     NET.act('kit_buy',{kit:k}).then(r=>{ bk.disabled=false; if (Number.isFinite(r.tk)) tkSet(r.tk); if (!r.ok) return wdMsg(r.msg||'That did not work.'); WD.furn=r.furn||WD.furn; localMsg(`🎁 ${r.msg} It's all in your 🎒 ITEMS.`); wdMsg(`${r.msg} It's all in your 🎒 ITEMS.`, true); wdDraw(); }); return; }
@@ -6634,8 +6634,8 @@ function furnIcon(item, CS=88, rot){ if (decoOf(item)){ const k2='deco@'+item+'@
 function prMsg(t,good){ const el=document.querySelector('#pr_body .prmsg'); if (el){ el.textContent=t||''; el.classList.toggle('good',!!good); } }
 // ROOMS has two tabs, MAP (the main places) and PLAYER ROOMS; with no tab asked for it opens on whichever one you had last
 function openRooms(view){ closeAll(); PRUI.view=view||(store.prView==='map'?'map':'list'); if (!PRUI.list && store.prCache && store.prCache.rooms) PRUI.list=store.prCache;   /* last list from this device shows instantly; a fresh one replaces it */ $id('roomsbox').style.display='block'; prDraw(); prRefresh(); }
-function prRefresh(){ NET.act('pr_list').then(r=>{ if (r.ok){ PRUI.list=r; try{ store.prCache=r; saveStore(); }catch(_){} if (r.mine) PRN['p:'+r.mine.id]=r.mine.name; for (const x of r.rooms) PRN['p:'+x.id]=x.name; if ($id('roomsbox').style.display==='block' && PRUI.view==='list') prDraw(); } });
-  if (PRUI.view==='settings') NET.act('pr_info').then(r=>{ if (r.ok){ PRUI.info=r; if (PRUI.view==='settings') prDraw(); } }); }
+function prRefresh(){ NET.act('pr_list').then(r=>{ if (r.ok){ PRUI.list=r; try{ store.prCache=r; saveStore(); }catch(_){} for (const x of (r.mines||(r.mine?[r.mine]:[]))) PRN['p:'+x.id]=x.name; for (const x of r.rooms) PRN['p:'+x.id]=x.name; if ($id('roomsbox').style.display==='block' && PRUI.view==='list') prDraw(); } });
+  if (PRUI.view==='settings') NET.act('pr_info',{rid:PRUI.rid||0}).then(r=>{ if (r.ok){ PRUI.info=r; if (PRUI.view==='settings') prDraw(); } }); }
 const lock = p => p ? ' 🔒' : '';
 function prRow(x, btns){ return `<div class="prr"><div class="prn"><b>${esc(x.name)}${lock(x.priv)}${x.feat?'<span class="prfeat">🏆 FEATURED</span>':''}</b><small>by ${esc(x.owner)}${x.friend?' · ⭐ friend':''}${x.invited?' · invited':''}</small></div>${x.likes?`<span class="prlk">♥ ${x.likes}</span>`:''}${x.n?`<span class="prcnt">● ${x.n}</span>`:''}${btns}</div>`; }
 function prDraw(){
@@ -6657,9 +6657,10 @@ function prDraw(){
     else if (!PRUI.found.length) h+=`<div class="fre">No rooms match "${esc(PRUI.q.trim())}".</div>`;
     else for (const x of PRUI.found) h+=prRow(x, btn2(x));
     h+='<div class="prmsg"></div>'; B.innerHTML=h; prSearchWire(keepFocus); return; }
-  h+='<div class="prsec">YOUR ROOM</div>';
-  if (L.mine){ const here=curRoom==='p:'+L.mine.id; h+=prRow(L.mine, (here?'':`<button class="gbbtn y" data-go="${L.mine.id}">GO ▶</button>`)+`<button class="gbbtn" data-set="1">SETTINGS</button>`); }
-  else h+=`<div class="fre">Make a room of your own! Fill it with furniture from the SHOP and invite your friends.</div><input id="pr_newname" maxlength="24" placeholder="${esc((me.n||'').toUpperCase())}'S ROOM"><div class="srow"><button class="gbbtn y" id="pr_create">CREATE MY ROOM</button></div>`;
+  { const mines=L.mines||(L.mine?[L.mine]:[]), max=L.maxRooms||1;   // up to maxRooms rooms each, each with its own settings
+    h+=`<div class="prsec">YOUR ROOMS (${mines.length}/${max})</div>`;
+    for (const x of mines){ const here=curRoom==='p:'+x.id; h+=prRow(x, (here?'':`<button class="gbbtn y" data-go="${x.id}">GO ▶</button>`)+`<button class="gbbtn" data-set="${x.id}">SETTINGS</button>`); }
+    if (mines.length<max) h+=`<div class="fre">${mines.length?'Make another room!':'Make a room of your own! Fill it with furniture from the SHOP and invite your friends.'}</div><input id="pr_newname" maxlength="24" placeholder="${esc((me.n||'').toUpperCase())}'S ${mines.length?['','SECOND','THIRD','FOURTH'][mines.length]+' ROOM':'ROOM'}"><div class="srow"><button class="gbbtn y" id="pr_create">CREATE ${mines.length?'ANOTHER':'MY'} ROOM</button></div>`; }
   const btn=x=> curRoom==='p:'+x.id ? '<span class="prcnt">YOU\'RE HERE</span>' : x.can ? `<button class="gbbtn y" data-go="${x.id}">GO ▶</button>` : `<button class="gbbtn" data-knock="${x.id}">🚪 KNOCK</button>`;
   const staffBtn=x=> L.staff ? `<button class="gbbtn" data-reset="${x.id}" title="Staff: reset this room's name">↺</button>` : '';
   // room browser: what's busy right now, the most-liked rooms, the owner's picks, and friends' rooms
@@ -6687,17 +6688,17 @@ $id('pr_body').addEventListener('click', e=>{ const b=e.target.closest('button')
   if (b.dataset.go){ prGo(+b.dataset.go); return; }
   if (b.dataset.knock){ prMsg('KNOCKING...'); NET.act('pr_knock',{rid:+b.dataset.knock}).then(r=>{ if (r.open){ prGo(+b.dataset.knock); return; } prMsg(r.msg||'', r.ok); }); return; }
   if (b.dataset.reset){ if (!confirm('Reset this room\'s name?')) return; NET.act('pr_staff',{rid:+b.dataset.reset}).then(r=>{ prMsg(r.msg||'', r.ok); prRefresh(); }); return; }
-  if (b.dataset.set){ PRUI.view='settings'; PRUI.info=null; prDraw(); prRefresh(); return; }
-  if (b.id==='pr_create'){ const n=($id('pr_newname').value||'').trim(); prMsg('BUILDING...'); NET.act('pr_create',{name:n}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.list=r; prDraw(); if (r.mine) prGo(r.mine.id); }); return; }
+  if (b.dataset.set){ PRUI.rid=+b.dataset.set||0; PRUI.view='settings'; PRUI.info=null; prDraw(); prRefresh(); return; }
+  if (b.id==='pr_create'){ const n=($id('pr_newname').value||'').trim(); prMsg('BUILDING...'); NET.act('pr_create',{name:n}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.list=r; prDraw(); if (r.created) prGo(r.created); }); return; }
   if (b.id==='pr_back'){ PRUI.view='list'; prDraw(); prRefresh(); return; }
   if (b.classList.contains('lock')){ prMsg('Buy that one in the SHOP first (🎨 WALLPAPER and FLOORS, at the bottom).'); return; }
   if (b.dataset.wall||b.dataset.floor||b.dataset.priv!==undefined){ const upd = b.dataset.wall?{wall:b.dataset.wall}:b.dataset.floor?{floor:b.dataset.floor}:{priv:b.dataset.priv==='1'};
-    NET.act('pr_set',upd).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); if (r.deco) DECO_OWN=r.deco; PRUI.info.room=r.room; prApplyRoom(r.room); prDraw(); }); return; }
-  if (b.id==='pr_savename'){ const n=$id('pr_name').value.trim(); NET.act('pr_set',{name:n}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.info.room=r.room; prApplyRoom(r.room); prDraw(); prMsg('Saved!',true); }); return; }
-  if (b.id==='pr_inv'){ const n=$id('pr_invname').value.trim(); if (!n) return; NET.act('pr_invite',{n, add:true}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.info=r; prDraw(); prMsg('Invited!',true); }); return; }
-  if (b.dataset.uninv){ NET.act('pr_invite',{n:b.dataset.uninv, add:false}).then(r=>{ if (r.ok){ PRUI.info=r; prDraw(); } }); return; }
-  if (b.dataset.kickp){ NET.act('pr_kick',{n:b.dataset.kickp}).then(r=>prMsg(r.msg||'', r.ok)); return; }
-  if (b.id==='pr_edit'){ const L=PRUI.list; if (!L||!L.mine) return; if (curRoom!=='p:'+L.mine.id){ PRED.pending=true; prGo(L.mine.id); } else openWardrobe('storage'); return; }
+    upd.rid=PRUI.rid||0; NET.act('pr_set',upd).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); if (r.deco) DECO_OWN=r.deco; PRUI.info.room=r.room; prApplyRoom(r.room); prDraw(); }); return; }
+  if (b.id==='pr_savename'){ const n=$id('pr_name').value.trim(); NET.act('pr_set',{name:n, rid:PRUI.rid||0}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.info.room=r.room; prApplyRoom(r.room); prDraw(); prMsg('Saved!',true); }); return; }
+  if (b.id==='pr_inv'){ const n=$id('pr_invname').value.trim(); if (!n) return; NET.act('pr_invite',{n, add:true, rid:PRUI.rid||0}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.info=r; prDraw(); prMsg('Invited!',true); }); return; }
+  if (b.dataset.uninv){ NET.act('pr_invite',{n:b.dataset.uninv, add:false, rid:PRUI.rid||0}).then(r=>{ if (r.ok){ PRUI.info=r; prDraw(); } }); return; }
+  if (b.dataset.kickp){ NET.act('pr_kick',{n:b.dataset.kickp, rid:PRUI.rid||0}).then(r=>prMsg(r.msg||'', r.ok)); return; }
+  if (b.id==='pr_edit'){ const id=PRUI.rid || (PRUI.info&&PRUI.info.room&&PRUI.info.room.id) || (PRUI.list&&PRUI.list.mine&&PRUI.list.mine.id); if (!id) return; if (curRoom!=='p:'+id){ PRED.pending=true; prGo(id); } else openWardrobe('storage'); return; }
 });
 $id('pr_body').addEventListener('keydown', e=>e.stopPropagation());
 const DSW_URL={};
@@ -6889,7 +6890,7 @@ NET.handlers.prinvited = m => localMsg(`🏠 ${String(m.by).toUpperCase()} invit
 const KNQ=[];   // knocks waiting for the owner to answer
 NET.handlers.knock = m => { KNQ.push(m); knShow(); try{ ensureAudio(); if (actx){ const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.value=520; gn.gain.value=0.06*(svol/100); o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime+0.12); } }catch(_){} };
 function knShow(){ const el=$id('knockbox'); if (!KNQ.length){ el.style.display='none'; return; } $id('kn_t').textContent=`${String(KNQ[0].n).toUpperCase()} is knocking on your room!`; el.style.display='flex'; }
-function knAnswer(yes){ const k=KNQ.shift(); if (k) NET.act('pr_answer',{uid:k.uid, yes}); knShow(); }
+function knAnswer(yes){ const k=KNQ.shift(); if (k) NET.act('pr_answer',{uid:k.uid, yes, rid:k.room}); knShow(); }
 $id('kn_yes').addEventListener('click', e=>{ e.stopPropagation(); knAnswer(true); });
 $id('kn_no').addEventListener('click', e=>{ e.stopPropagation(); knAnswer(false); });
 

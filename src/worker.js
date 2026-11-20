@@ -96,7 +96,8 @@ const ITEMS = {
 // ---------- player rooms ----------
 // One room per player. Only the owner can change it. Public rooms are open to everyone; private ones let in the owner,
 // people on the owner's invite list, people the owner let in after they knocked (for a few hours), and staff.
-const PR = { w: 11, h: 7, maxFurn: 40,   // player rooms: 11 wide, 7 deep (the long wall is the right one; the door is at the front of the left wall)
+const PR = { w: 11, h: 7, maxFurn: 40, maxRooms: 3,   // maxRooms: how many rooms one llama can own (3 for now)
+    // player rooms: 11 wide, 7 deep (the long wall is the right one; the door is at the front of the left wall)
   clear: ["0,6", "1,6", "2,6", "3,6"], knockGap: 20000, letInMs: 3 * 3600e3, nameMax: 24 };
 // wallpaper and flooring for player rooms: price in TOKENS (0 = free for everyone); you buy one once and can use it any time
 const DECO_WALL = { lavender: 0, cream: 15, mint: 15, pink: 15, night: 15, wood: 25, stripes: 30, damask: 35, brick: 35, stars: 40, floral: 30 };
@@ -745,7 +746,7 @@ export class Lounge extends DurableObject {
 
   // ---------- player rooms ----------
   async prTables() { if (this.prReady) return;
-    for (const q of ["CREATE TABLE IF NOT EXISTS prooms (id INTEGER PRIMARY KEY AUTOINCREMENT, owner INTEGER NOT NULL UNIQUE, name TEXT NOT NULL, priv INTEGER NOT NULL DEFAULT 0, wall TEXT NOT NULL DEFAULT 'lavender', floor TEXT NOT NULL DEFAULT 'wood', t INTEGER NOT NULL)",
+    for (const q of ["CREATE TABLE IF NOT EXISTS prooms (id INTEGER PRIMARY KEY AUTOINCREMENT, owner INTEGER NOT NULL, name TEXT NOT NULL, priv INTEGER NOT NULL DEFAULT 0, wall TEXT NOT NULL DEFAULT 'lavender', floor TEXT NOT NULL DEFAULT 'wood', t INTEGER NOT NULL)",
       "CREATE TABLE IF NOT EXISTS pinv (room INTEGER NOT NULL, uid INTEGER NOT NULL, PRIMARY KEY (room, uid))",
       "CREATE TABLE IF NOT EXISTS pfurn (id INTEGER PRIMARY KEY AUTOINCREMENT, room INTEGER NOT NULL, item TEXT NOT NULL, gx INTEGER NOT NULL, gy INTEGER NOT NULL, rot INTEGER NOT NULL DEFAULT 0)",
       "CREATE INDEX IF NOT EXISTS pfurn_room ON pfurn (room)",
@@ -754,6 +755,14 @@ export class Lounge extends DurableObject {
       "CREATE TABLE IF NOT EXISTS plike (room INTEGER NOT NULL, uid INTEGER NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (room, uid))"]) await this.env.DB.prepare(q).run();
     try { await this.env.DB.prepare("ALTER TABLE prooms ADD COLUMN feat INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {}   // rooms the owner features in the room browser
     try { await this.env.DB.prepare("ALTER TABLE pfurn ADD COLUMN off INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {}   // TVs and lamps can be switched off (already there after the first time)
+    // one llama can own several rooms now: rebuild prooms once without the UNIQUE on owner (ids stay the same, so furniture, likes and invites stay put)
+    { const t = await this.env.DB.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'prooms'").first();
+      if (t && /owner INTEGER NOT NULL UNIQUE/i.test(t.sql)) await this.env.DB.batch([
+        this.env.DB.prepare("CREATE TABLE prooms_new (id INTEGER PRIMARY KEY AUTOINCREMENT, owner INTEGER NOT NULL, name TEXT NOT NULL, priv INTEGER NOT NULL DEFAULT 0, wall TEXT NOT NULL DEFAULT 'lavender', floor TEXT NOT NULL DEFAULT 'wood', t INTEGER NOT NULL, feat INTEGER NOT NULL DEFAULT 0)"),
+        this.env.DB.prepare("INSERT INTO prooms_new (id, owner, name, priv, wall, floor, t, feat) SELECT id, owner, name, priv, wall, floor, t, feat FROM prooms"),
+        this.env.DB.prepare("DROP TABLE prooms"),
+        this.env.DB.prepare("ALTER TABLE prooms_new RENAME TO prooms"),
+        this.env.DB.prepare("CREATE INDEX IF NOT EXISTS prooms_owner ON prooms (owner)")]); }
     // old wallpaper/floor unlocks become bag items (the one already up in the room stays on the wall); runs until the old table is empty
     await this.env.DB.batch([
       this.env.DB.prepare("INSERT INTO finv (uid, item, n) SELECT d.uid, CASE WHEN substr(d.k, 1, 2) = 'w:' THEN 'wp_' || substr(d.k, 3) ELSE 'fl_' || substr(d.k, 3) END, 1 FROM deco d WHERE NOT EXISTS (SELECT 1 FROM prooms r WHERE r.owner = d.uid AND (d.k = 'w:' || r.wall OR d.k = 'f:' || r.floor)) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1"),
@@ -792,7 +801,6 @@ export class Lounge extends DurableObject {
   async prFurn(id) { return ((await this.env.DB.prepare("SELECT id, item, gx, gy, rot, off FROM pfurn WHERE room = ? ORDER BY id").bind(id).all()).results || []).filter((f) => FURN_ITEMS[f.item]); }
   async prList(a) {
     await this.prTables(); await this.frTable();
-    const mine = await this.env.DB.prepare("SELECT r.*, u.name AS oname, (SELECT COUNT(*) FROM plike l WHERE l.room = r.id) AS likes FROM prooms r JOIN users u ON u.id = r.owner WHERE r.owner = ?").bind(a.uid).first();
     const rows = (await this.env.DB.prepare(`SELECT r.*, u.name AS oname,
         EXISTS(SELECT 1 FROM friends f WHERE f.st = 'ok' AND ((f.a = ? AND f.b = r.owner) OR (f.b = ? AND f.a = r.owner))) AS fr,
         EXISTS(SELECT 1 FROM pinv i WHERE i.room = r.id AND i.uid = ?) AS inv,
@@ -803,7 +811,8 @@ export class Lounge extends DurableObject {
       const li = this.letIn.get(r.id); const can = !r.priv || !!r.inv || (li && (li.get(a.uid) || 0) > Date.now()) || a.staff === "owner" || a.staff === "mod";
       out.push({ ...this.prOut(r), n, friend: !!r.fr, invited: !!r.inv, can: !!can }); }
     out.sort((x, y) => (y.friend - x.friend) || (y.n - x.n));
-    return { ok: true, mine: mine ? { ...this.prOut(mine), n: this.prCount(mine.id) } : null, rooms: out.slice(0, 60), staff: a.staff === "owner" || a.staff === "mod", owner: a.staff === "owner" };
+    const mines = ((await this.env.DB.prepare("SELECT r.*, u.name AS oname, (SELECT COUNT(*) FROM plike l WHERE l.room = r.id) AS likes FROM prooms r JOIN users u ON u.id = r.owner WHERE r.owner = ? ORDER BY r.id").bind(a.uid).all()).results || []).map((x) => ({ ...this.prOut(x), n: this.prCount(x.id) }));
+    return { ok: true, mine: mines[0] || null, mines, maxRooms: PR.maxRooms, rooms: out.slice(0, 60), staff: a.staff === "owner" || a.staff === "mod", owner: a.staff === "owner" };
   }
   // search rooms by room name or owner name (private rooms show up too, with a lock, so people can knock)
   async prSearch(a, m) {
@@ -822,19 +831,20 @@ export class Lounge extends DurableObject {
   }
   async prCreate(a, m) {
     await this.prTables();
-    const have = await this.env.DB.prepare("SELECT id FROM prooms WHERE owner = ?").bind(a.uid).first(); if (have) return { ok: false, msg: "You already have a room. One per llama for now." };
+    const have = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM prooms WHERE owner = ?").bind(a.uid).first(); if (have && have.n >= PR.maxRooms) return { ok: false, msg: `You can have up to ${PR.maxRooms} rooms for now.` };
     const name = cleanRoomName(m.name) || (a.name + "'S ROOM").slice(0, PR.nameMax);
     if (!WF.nameOk(name)) return { ok: false, msg: "That room name isn't allowed. Try another." };
-    try { await this.env.DB.prepare("INSERT INTO prooms (owner, name, priv, wall, floor, t) VALUES (?, ?, 0, 'lavender', 'wood', ?)").bind(a.uid, name, Date.now()).run(); }
-    catch (e) { if (String(e).includes("UNIQUE")) return { ok: false, msg: "You already have a room." }; throw e; }
-    return this.prList(a);
+    const ins = await this.env.DB.prepare("INSERT INTO prooms (owner, name, priv, wall, floor, t) VALUES (?, ?, 0, 'lavender', 'wood', ?)").bind(a.uid, name, Date.now()).run();
+    return { ...(await this.prList(a)), created: ins.meta.last_row_id };
   }
-  async prMine(a) { await this.prTables(); const r = await this.env.DB.prepare("SELECT r.*, u.name AS oname FROM prooms r JOIN users u ON u.id = r.owner WHERE r.owner = ?").bind(a.uid).first(); if (r) this.prPriv.set(r.id, !!r.priv); return r; }
-  async prInfo(a) { const r = await this.prMine(a); if (!r) return { ok: false, msg: "You don't have a room yet." };
+  async prMine(a, m) { await this.prTables(); const want = Math.floor(+((m && (m.rid || m.room)) || 0)) || prId(a.pres && a.pres.rm) || 0;
+    let r = want ? await this.env.DB.prepare("SELECT r.*, u.name AS oname FROM prooms r JOIN users u ON u.id = r.owner WHERE r.owner = ? AND r.id = ?").bind(a.uid, want).first() : null;
+    if (!r && !(m && (m.rid || m.room))) r = await this.env.DB.prepare("SELECT r.*, u.name AS oname FROM prooms r JOIN users u ON u.id = r.owner WHERE r.owner = ? ORDER BY r.id").bind(a.uid).first(); if (r) this.prPriv.set(r.id, !!r.priv); return r; }
+  async prInfo(a, m) { const r = await this.prMine(a, m); if (!r) return { ok: false, msg: "You don't have a room yet." };
     const inv = ((await this.env.DB.prepare("SELECT u.name FROM pinv i JOIN users u ON u.id = i.uid WHERE i.room = ? ORDER BY u.name").bind(r.id).all()).results || []).map((x) => x.name.toUpperCase());
     return { ok: true, room: this.prOut(r), invites: inv }; }
   async prSet(a, m) {
-    const r = await this.prMine(a); if (!r) return { ok: false, msg: "You don't have a room yet." };
+    const r = await this.prMine(a, m); if (!r) return { ok: false, msg: "You don't have a room yet." };
     const name = m.name !== undefined ? cleanRoomName(m.name) : r.name; if (!name) return { ok: false, msg: "Give your room a name." };
     if (m.name !== undefined && !WF.nameOk(name)) return { ok: false, msg: "That room name isn't allowed. Try another." };
     const priv = m.priv !== undefined ? (m.priv ? 1 : 0) : r.priv, wall = PR_WALLS.includes(m.wall) ? m.wall : r.wall, floor = PR_FLOORS.includes(m.floor) ? m.floor : r.floor;
@@ -873,7 +883,7 @@ export class Lounge extends DurableObject {
     this.knocks.set(k, now); return { ok: true, msg: `You knocked on ${r.name}. Waiting for ${r.oname.toUpperCase()} to answer...` };
   }
   async prAnswer(a, m, now) {
-    const r = await this.prMine(a); if (!r) return { ok: false };
+    const r = await this.prMine(a, m); if (!r) return { ok: false };
     const uid = Math.floor(+m.uid || 0); if (!this.knocks.has(r.id + ":" + uid)) return { ok: false, msg: "That knock expired." };
     this.knocks.delete(r.id + ":" + uid);
     if (m.yes) { let li = this.letIn.get(r.id); if (!li) { li = new Map(); this.letIn.set(r.id, li); } li.set(uid, now + PR.letInMs); }
@@ -881,17 +891,17 @@ export class Lounge extends DurableObject {
     return { ok: true };
   }
   async prInvite(a, m) {
-    const r = await this.prMine(a); if (!r) return { ok: false, msg: "You don't have a room yet." };
+    const r = await this.prMine(a, m); if (!r) return { ok: false, msg: "You don't have a room yet." };
     const n = String(m.n || "").trim(); if (!/^[A-Za-z0-9_]{3,12}$/.test(n)) return { ok: false, msg: "No llama has that name." };
     const u = await this.env.DB.prepare("SELECT id, name FROM users WHERE name = ? AND banned = 0").bind(n).first(); if (!u) return { ok: false, msg: "No llama has that name." };
     if (u.id === a.uid) return { ok: false, msg: "It's your room, you're always invited!" };
     if (m.add) { const c = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM pinv WHERE room = ?").bind(r.id).first(); if (c.n >= 100) return { ok: false, msg: "Your invite list is full." };
       await this.env.DB.prepare("INSERT OR IGNORE INTO pinv (room, uid) VALUES (?, ?)").bind(r.id, u.id).run(); this.toUid(u.id, { t: "prinvited", room: r.id, name: r.name, by: a.name }); }
     else { await this.env.DB.prepare("DELETE FROM pinv WHERE room = ? AND uid = ?").bind(r.id, u.id).run(); const li = this.letIn.get(r.id); if (li) li.delete(u.id); if (r.priv) await this.prKickUnwelcome(r); }
-    return this.prInfo(a);
+    return this.prInfo(a, { rid: r.id });
   }
   async prKick(a, m) {
-    const r = await this.prMine(a); if (!r) return { ok: false };
+    const r = await this.prMine(a, m); if (!r) return { ok: false };
     const n = String(m.n || "").toUpperCase(); let done = false;
     for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (!x || !x.pres || x.pres.rm !== "p:" + r.id || x.uid === a.uid || x.name !== n) continue;
       x.proom = 0; w.serializeAttachment(x); this.send(w, { t: "prkick", msg: `${a.name} asked you to leave ${r.name}.` }); done = true;
@@ -901,8 +911,7 @@ export class Lounge extends DurableObject {
   async furnStorage(uid) {
     await this.prTables();
     const own = (await this.env.DB.prepare("SELECT item, n FROM finv WHERE uid = ?").bind(uid).all()).results || [];
-    const mine = await this.env.DB.prepare("SELECT id FROM prooms WHERE owner = ?").bind(uid).first();
-    const placed = new Map(); if (mine) for (const f of await this.prFurn(mine.id)) placed.set(f.item, (placed.get(f.item) || 0) + 1);
+    const placed = new Map(((await this.env.DB.prepare("SELECT p.item, COUNT(*) AS n FROM pfurn p JOIN prooms r ON r.id = p.room WHERE r.owner = ? GROUP BY p.item").bind(uid).all()).results || []).map((x) => [x.item, x.n]));   // across all their rooms
     return own.filter((r) => FURN_ITEMS[r.item] || DECO_ITEMS[r.item]).map((r) => ({ item: r.item, n: r.n, placed: placed.get(r.item) || 0 }));
   }
   // "w:<id>" / "f:<id>" for every wallpaper and floor in the bag (the settings swatches unlock from this)
@@ -991,7 +1000,7 @@ export class Lounge extends DurableObject {
     return { ok: true, tk, furn: await this.furnStorage(a.uid) };
   }
   async prOwnRoomHere(a) {   // editing: only the owner, standing in their own room
-    const r = await this.prMine(a); if (!r) return null; if (!a.pres || a.pres.rm !== "p:" + r.id) return null; return r; }
+    const id = prId(a.pres && a.pres.rm); if (!id) return null; const r = await this.prMine(a, { rid: id }); return r && r.id === id ? r : null; }
   // tiles a piece covers: the bed is two long (along x for rot 0/2, along y for rot 1/3); everything else is one tile
   furnTiles(item, gx, gy, rot) { if (FURN_DIM[item]) { let [W, D] = FURN_DIM[item]; if (rot % 2) [W, D] = [D, W]; const out = []; for (let i = 0; i < W; i++) for (let j = 0; j < D; j++) out.push([gx + i, gy + j]); return out; }
     const bi = furnBase(item), n = FURN_SIZE[bi] || 1, alongY = FURN_SIDEWAYS.has(bi) ? (rot === 0 || rot === 3) : rot % 2 === 1, out = []; for (let k = 0; k < n; k++) out.push(alongY ? [gx, gy + k] : [gx + k, gy]); return out; }
@@ -1621,7 +1630,7 @@ export class Lounge extends DurableObject {
       case "pr_list": return this.prList(a);
       case "pr_create": return this.prCreate(a, m);
       case "pr_search": return this.prSearch(a, m);
-      case "pr_info": return this.prInfo(a);
+      case "pr_info": return this.prInfo(a, m);
       case "pr_set": return this.prSet(a, m);
       case "pr_enter": return this.prEnter(ws, a, m);
       case "pr_knock": return this.prKnock(a, m, now);
