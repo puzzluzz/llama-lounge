@@ -226,7 +226,7 @@ No API keys or passwords are involved.
 
 ## Walking, doors, seats and beds
 
-- **Moving furniture:** hold a piece for 5 seconds (a ring fills up) to pick it up, then drag it. A quick drag does nothing, so pieces don't get bumped by accident. ARRANGE MY ROOM (edit mode) still drags right away.
+- **Moving furniture:** hold a piece for 2.5 seconds (a ring fills up) to pick it up, then drag it. A quick drag does nothing, so pieces don't get bumped by accident. ARRANGE MY ROOM (edit mode) still drags right away.
 - **Staff moves:** the owner and mods can hold and move (or turn) pieces in anyone's player room. The server re-checks the role from the database every time and writes each move to the staff log on the dashboard ("moved SOFA in CHARLIE'S ROOM (3,1 to 5,1)"). Staff can't put pieces away or place their own items in someone else's room.
 - **Casino dealers:** Rico runs the roulette wheel, and Lucky, Dot and Ace deal blackjack (Ace's table runs along the left wall, between PLINKO and the ropes; its seats are in `BJ_SEATS` on both sides). They're NPC llamas (`CHARS.rico/lucky/dot`, `npc:true`, outfit `dealer`, green `visorCol`) drawn like Penny in the store. They get busy while someone is playing at their table. The tiles they stand on are blocked.
 - **Casino tables** are drawn in the slot machine style: gold feet, burgundy pedestals, mahogany sides with gold trim and chase lights, and a padded burgundy rail.

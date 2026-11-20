@@ -858,13 +858,13 @@
   #plkbox .slbet .gbbtn{min-width:52px}
   #needs .nd .pi{width:var(--pi1);height:var(--pi1);display:block}
 
-  /* press-and-hold ring: fills over 5 seconds, then the piece lifts */
+  /* press-and-hold ring: fills over 2.5 seconds, then the piece lifts */
   #holdring{position:fixed;width:56px;height:56px;margin:-28px 0 0 -28px;pointer-events:none;z-index:20;opacity:0}
   #holdring.on{opacity:1;transition:opacity .15s .35s}
   #holdring svg{width:100%;height:100%;transform:rotate(-90deg)}
   #holdring .hr0{fill:rgba(29,21,48,.55);stroke:#fff;stroke-width:6}
   #holdring .hr1{fill:none;stroke:var(--yel);stroke-width:6;stroke-dasharray:113.1;stroke-dashoffset:113.1}
-  #holdring.on .hr1{animation:holdfill 5s linear forwards}
+  #holdring.on .hr1{animation:holdfill 2.5s linear forwards}
   @keyframes holdfill{to{stroke-dashoffset:0}}
   canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
   .m-shop .mchip{background:linear-gradient(160deg,#5ee0d0,#1fa58a);color:#fff}
@@ -1035,7 +1035,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24r";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24s";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -4415,7 +4415,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__ward=(t,k)=>openWardrobe(t,null,k); window.__close=()=>closeAll(); window.__msg=t=>localMsg(t); window.__prgo=id=>prGo(id); window.__plk=()=>plkGo(); window.__doorPt=()=>{ const d=DOORWAY[curRoom]; if (curRoom==='barn'){ const [x,y]=P(14.5,0); return [x*S,(y-24)*S]; } if (d[0]===0){ const [x,y]=P(0,d[1]+0.5); return [x*S,(y-22)*S]; } if (d[1]===0){ const [x,y]=P(d[0]+0.5,0); return [x*S,(y-22)*S]; } const [x,y]=P(d[0]+0.5,d[1]+0.5); return [x*S,y*S]; }; window.__room=()=>curRoom; window.__walk=(x,y)=>walkTo(x,y); window.__path=()=>me.path.map(p=>p.join(',')).join(' '); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__ward=(t,k)=>openWardrobe(t,null,k); window.__close=()=>closeAll(); window.__msg=t=>localMsg(t); window.__give=k=>{ me.h=k; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; }; window.__prgo=id=>prGo(id); window.__plk=()=>plkGo(); window.__doorPt=()=>{ const d=DOORWAY[curRoom]; if (curRoom==='barn'){ const [x,y]=P(14.5,0); return [x*S,(y-24)*S]; } if (d[0]===0){ const [x,y]=P(0,d[1]+0.5); return [x*S,(y-22)*S]; } if (d[1]===0){ const [x,y]=P(d[0]+0.5,0); return [x*S,(y-22)*S]; } const [x,y]=P(d[0]+0.5,d[1]+0.5); return [x*S,y*S]; }; window.__room=()=>curRoom; window.__walk=(x,y)=>walkTo(x,y); window.__path=()=>me.path.map(p=>p.join(',')).join(' '); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__wear=(sl,id)=>wdWear(sl,id); window.__face=d=>{ me.d=d; }; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
@@ -4624,16 +4624,19 @@ function drawLlama(o, t, isMe){
     const sipping = u>=0 && u<1;
     const hand = [flip?1:22, 31+oy];
     const mouth = front ? [flip?5:19, 15+oy] : [flip?3:21, 11+oy];
-    // two moves: up to the mouth, then back down (no slide in between)
-    const p = (sipping && u>=0.12 && u<0.82) ? 1 : 0;
+    // ease up to the mouth, hold for the sip, ease back down
+    const ease=v=>v<=0?0:v>=1?1:v*v*(3-2*v);
+    const p = !sipping ? 0 : u<0.06 ? 0 : u<0.3 ? ease((u-0.06)/0.24) : u<0.66 ? 1 : u<0.9 ? 1-ease((u-0.66)/0.24) : 0;
     const hx = Math.round(hand[0]+(mouth[0]-hand[0])*p), hy = Math.round(hand[1]+(mouth[1]-hand[1])*p);
-    const tilt = p ? ((front&&!flip)||(!front&&!flip) ? -1 : 1) : 0;
+    const tilt = p>0.75 ? ((front&&!flip)||(!front&&!flip) ? -1 : 1) : 0;
     const X=x0+hx, Y=y0+hy, col=DRINKS[h].c; const lvl = Math.max(1, Math.ceil((isMe ? (me.hl||SIPS) : (o.hl||SIPS))*5/SIPS));   /* the cup or snack art has 5 levels; spread the sips across them */
     // the front leg holding it: from the shoulder to the hoof, so it lifts with the food or drink
     { const C2=CHARS[o.c]||CHARS[isMe?me.c:o.c]||{}, fur=(C2.fur&&C2.fur.a)||['#efe1c8','#c6b08d'], sh = [hand[0]<12 ? 6 : 17, (front?25:24)+oy];   // shoulder on the same side as the hoof
       const ax=x0+sh[0], ay=y0+sh[1], bx=X+(FOOD_PX[h] ? (flip?1:2) : (flip?3:0)), by=Y+(FOOD_PX[h]?2:3);
-      for (const [dx,dy] of [[-1,0],[2,0],[0,-1],[1,-1],[0,1],[1,1]]) linePx(ax+dx,ay+dy,bx+dx,by+dy,INK);
-      linePx(ax,ay,bx,by,fur[0]); linePx(ax+1,ay,bx+1,by,fur[1]||fur[0]); g.fillStyle='#3a2a1a'; g.fillRect(bx,by+1,2,1);
+      // a rounded leg (outline, fur, a darker underside), drawn like PENNY's arm in the store, so it moves smoothly instead of in jagged steps
+      { const n=Math.max(6, Math.ceil(Math.hypot(bx-ax,by-ay))*2), seg=(r,col,ox=0,oy2=0)=>{ for (let k=0;k<=n;k++){ ellPx(ax+0.5+ox+(bx-ax)*k/n, ay+0.5+oy2+(by-ay)*k/n, r, r, col); } };
+        seg(2.5,INK); seg(1.55,fur[1]||fur[0],0,0.5); seg(1.1,fur[0],-0.3,-0.2); }
+      g.fillStyle=INK; g.fillRect(bx-1,by,4,3); g.fillStyle='#3a2a1a'; g.fillRect(bx,by+1,2,1);
       { const GW=(isMe?me.w:o.w)||{}, GI=GW.hands&&ITEMS[GW.hands]; if (GI){ g.fillStyle=INK; g.fillRect(bx-2,by-1,6,5); g.fillStyle=GI.c[0]; g.fillRect(bx-1,by,4,3); g.fillStyle=GI.c[2]; g.fillRect(bx-1,by,1,1); g.fillStyle=GI.cuff; g.fillRect(bx-1,by-1,4,1); } } }
     if (FOOD_PX[h]){ const rows=FOOD_PX[h], H=rows.length, keep=Math.max(2,Math.round(H*lvl/5)), bx=X+(flip?-2:0), by=Y+6-H;
       rows.forEach((row,j)=>{ if (j<H-keep) return; for (let i=0;i<row.length;i++){ const ch=row[i]; if (ch==='.') continue; g.fillStyle=FOOD_PAL[ch]; g.fillRect(bx+i,by+j,1,1); } });
@@ -5496,6 +5499,9 @@ function openFw(k){ k = k || standNear(); const S=STANDS[k]; if (!S || standRoom
   for (const [id,label,cost] of S.items){ const b=document.createElement('button'); b.className='gbbtn y'; const F=FOOD_FILL[id]||{}; b.innerHTML=`${label}<br><small>${cost} TOKEN${cost>1?'S':''} · ${F.hu?'🍔+'+F.hu:''}${F.hu&&F.th>0?' ':''}${F.th>0?'💧+'+F.th:''}</small>`; b.addEventListener('click', ()=>buyAt(k,id)); row.appendChild(b); }
   document.getElementById('fw_msg').textContent = me.h ? `YOU'RE HOLDING ${DRINKS[me.h].label}. A NEW ONE REPLACES IT.` : `YOU HAVE ${wallet.get()} TOKENS`; fwEl.style.display='block'; }
 document.getElementById('fw_close').addEventListener('click', ()=>{ fwEl.style.display='none'; });
+// the room ♥ button always sits just under the status card, however tall that card is
+{ const st=document.getElementById('status'), lb=document.getElementById('likebtn'); const place=()=>{ const r=st.getBoundingClientRect(); if (r.height) lb.style.top=Math.round(r.bottom+8)+'px'; };
+  try{ new ResizeObserver(place).observe(st); }catch(_){} addEventListener('resize', place); place(); }
 const FOOD_FILL = { chips:{hu:33,th:-3}, candy:{hu:33}, cookie:{hu:50}, soda:{th:33}, juice:{th:33,hu:5}, shake:{th:50,hu:20}, cider:{th:50}, caramel:{th:100,hu:8}, capple:{hu:50}, corn:{hu:50}, pie:{hu:100}, nachos:{hu:50,th:-5}, fries:{hu:50,th:-5}, burger:{hu:100} };   // 1 token = a third, 2 = half, 3 = full   // same as the server
 function buyAt(k,id){ ensureAudio(); document.getElementById('fw_msg').textContent = DRINKS[id] && !DRINKS[id].food ? 'POURING...' : 'WRAPPING IT UP...';
   NET.act('buy',{s:k, k:id, fid:(STANDS[k]&&STANDS[k].fid)||0}).then(r=>{ if (!r.ok){ document.getElementById('fw_msg').textContent=(r.msg||'TRY AGAIN.').toUpperCase(); return; }
@@ -5796,7 +5802,7 @@ function drawFishing(t){
 
 // ======================= CONTEXT TIPS =======================
 const TIPS = {
-  myroom:'<b>YOUR ROOM</b> Hold any piece for 5 seconds to pick it up, then drag it. Add more from 🎒 INVENTORY > ITEMS. Open 🏠 ROOMS > SETTINGS to name it, change the walls and floor, make it private or invite friends.',
+  myroom:'<b>YOUR ROOM</b> Hold any piece for 2.5 seconds to pick it up, then drag it. Add more from 🎒 INVENTORY > ITEMS. Open 🏠 ROOMS > SETTINGS to name it, change the walls and floor, make it private or invite friends.',
   counter:'<b>CHECKOUT</b> Press SHOP or tap the counter to see the real La Llama P.I.C. shirts.',
   racks:'<b>CLOTHES</b> Tap anything on the racks or in the glass case to try it on and buy it with tokens. Change outfits any time in MENU > WARDROBE.',
   arcade:'<b>ARCADE</b> Tap the cabinet to play HAY CATCH or LLAMA DASH.',
@@ -6150,7 +6156,7 @@ for (const b of $id('wd_tabs').children) b.addEventListener('click', ()=>{ WD.ta
 $id('wd_prev').addEventListener('click', ()=>{ WD.dir=(WD.dir+1)%4; wdPreview(); });
 // inventory ITEMS: PLACE picks the piece in edit mode; pressing a card and pulling it out of the sheet starts a drag into the room
 function prCanMove(){ return prInMine() || (isP(curRoom) && !!me.st); }   // staff can move pieces in any player room (the server re-checks and logs it)
-const HOLD_MS=5000;   // hold a piece this long to pick it up and move it
+const HOLD_MS=2500;   // hold a piece this long to pick it up and move it
 function holdRing(on, x, y){ const el=$id('holdring'); if (!on){ el.classList.remove('on'); return; } el.style.left=x+'px'; el.style.top=y+'px'; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); }
 function prInMine(){ return isP(curRoom) && PRD[curRoom] && PRD[curRoom].mine; }
 function prTakeOut(item){ if (!prInMine()) return; closeAll(); if (!PRED.on) prEditStart(); PRED.item=item; PRED.piece=null; prEditBar(); localMsg(`Tap or drag on the floor to place your ${FURN_DEF[item].n}. Press DONE when you're finished.`); }
