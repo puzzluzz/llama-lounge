@@ -224,6 +224,15 @@ No API keys or passwords are involved.
 - **MAP.** The main rooms (LOUNGE, ACRES, CASINO, ARENA, LANES, STORE, ACCOUNT) are no longer a bar next to the chat box. The MAP button in the dock (and MAP in the menu) opens the LLAMA MAP, which shows who's in each room and marks the one you're in. ROOMS is still the button for player rooms. The chat box now gets the full width.
 - **Event cards.** The old message box along the bottom is gone. Each kind of event (buying something, a friend coming online, running low on food and so on) shows a small NEW! card near the top the first time a player runs into it, then never again on that device. Names and item names are ignored when deciding what counts as the same kind of event, so "You bought a CACTUS" and "You bought a SOFA" are one event. Seen events are kept in localStorage `ll_seenMsg`. Every message still goes into the CHAT LOG.
 
+## Walking, doors, seats and beds
+
+- Walking is tap or click only (no WASD or arrow keys). Arrows still work in menus and arcade games.
+- Tapping a door in any room (or the farm gate in LLAMA ACRES) opens the LLAMA MAP.
+- Llamas never step straight from one seat to another: to switch seats on a sofa they get up, step off and walk around.
+- A double bed has two spots. Tap the side you want; two llamas can lie in it, one per side.
+- The velvet ropes by the casino door block walking all the way to the wall.
+- Chat bubbles are 15% bigger, and the crown stays lined up with the name while the bubble rises.
+
 ## Staff token gifts
 
 - Mods and the owner can give tokens with 🪙 GIVE in the dashboard (online players, or a line in the CHAT LOG). Each gift is 1 to 1000 tokens.

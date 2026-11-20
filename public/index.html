@@ -856,7 +856,7 @@
   <div id="status" class="hb"><div class="st1"><b id="stitle">LLAMA LOUNGE</b><span class="st2"><span id="dot"></span><span id="stxt">CONNECTING</span></span></div><div id="needs"><span class="nd" id="nd_hu" title="Hunger: eat food at the bar or in LLAMA ACRES">🍔<i><b></b></i></span><span class="nd" id="nd_th" title="Thirst: drinks at the bar or cider in LLAMA ACRES">💧<i><b></b></i></span></div><div id="tokrow" title="Your tokens"><span class="coin"></span><span id="tokn">0</span><span class="tkl">TOKENS</span></div></div>
   <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button class="pbtn ic" id="zout" title="Zoom out" aria-label="Zoom out">−</button><button class="pbtn ic" id="zin" title="Zoom in" aria-label="Zoom in">+</button><button class="pbtn ic" id="musicbtn" title="Music" aria-label="Music">♪</button><button class="pbtn y" id="menubtn" aria-label="Menu"><span class="hamb"><i></i><i></i><i></i></span><span class="mtx">MENU</span></button></div>
   <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
-  <div id="keys">ARROWS/WASD WALK · SPACE ACTION<br>ENTER TALK · M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
+  <div id="keys">CLICK TO WALK · SPACE ACTION · ENTER TALK<br>M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
   <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">MAP</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
   <div id="emenu" class="gb menu sheet"><div data-e="heart">♥ HEART</div><div data-e="bang">! WOW</div><div data-e="huh">? HUH</div><div data-e="note">♪ SING</div><div data-e="lol">^^ LOL</div><div data-e="zzz">Z SLEEP</div><div data-e="wave">✋ WAVE</div><div data-e="flex">💪 FLEX</div><div data-e="palm">-_- FACEPALM</div></div>
   <div id="pmenu" class="gb"><div class="pmtop"><div id="pm_pic" class="pmpic"></div><div class="pmx"><div id="pm_name" class="pmn"></div><div id="pm_meta" class="pmmeta"></div></div><button class="gbbtn pmclose" id="pm_close" aria-label="Close">✕</button></div><div id="pm_info"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_trade">🤝 TRADE</button></div></div>
@@ -1001,7 +1001,7 @@
 // ======================= NETWORK: talks to the Llama Lounge server =======================
 // Presents the same room API the game was written against (presence + peer updates),
 // plus NET.act() for anything that changes tokens. The server decides every payout.
-const GAME_VERSION = "2026-11-24f";   // must match VERSION in src/worker.js
+const GAME_VERSION = "2026-11-24g";   // must match VERSION in src/worker.js
 const NET = {
   ws:null, peer:null, rid:0, wait:new Map(), peersCb:null, peersQ:[], known:new Set(), handlers:{}, ready:false, closedForGood:false,
   peersOut(ch){ if (this.peersCb) this.peersCb(ch); else this.peersQ.push(ch); },
@@ -1615,7 +1615,7 @@ function buildCasinoWorld(){
   for (const ty of [4,8]){ FURN.push({t:'blackjack',gx:10,gy:ty,dz:0.5}); block(10,ty); block(11,ty);
     for (const x of [10,11]){ SEATS.push({gx:x,gy:ty+1,dir:'br',lift:9}); FURN.push({t:'stool',gx:x,gy:ty+1,c:'casino'}); } }
   // velvet ropes marking the way in from the door
-  for (const [x,y] of [[2,9],[2,11]]){ FURN.push({t:'stanchion',gx:x,gy:y}); block(x,y); }
+  for (const [x,y] of [[2,9],[2,11]]){ FURN.push({t:'stanchion',gx:x,gy:y}); block(x,y); block(0,y); block(1,y); }   /* the rope runs to the wall: nobody walks through it */
 }
 // SPIT ARENA room: a painted ring in the middle (tap it or press PLAY), spectator stools along the back wall
 const ARENA_RING = { cx:6.5, cy:6, r:2.9 };
@@ -1678,11 +1678,11 @@ function findPath(sx,sy,tx,ty){ const occ=llamaTiles(); if (occ.has(ty*N+tx)) re
 function findPath2(sx,sy,tx,ty,avoidSeats,occ){
   if (!walkable(tx,ty)) return null;
   const prev = new Int16Array(N*NY).fill(-1); const s=sy*N+sx, t=ty*N+tx;
-  const seat = new Uint8Array(N*NY); if (avoidSeats) for (const st of SEATS) if (st.gx>=0&&st.gy>=0&&st.gx<N&&st.gy<NY) seat[st.gy*N+st.gx]=1;
+  const seat = new Uint8Array(N*NY); if (avoidSeats) for (const st of SEATS) if (st.gx>=0&&st.gy>=0&&st.gx<N&&st.gy<NY) seat[st.gy*N+st.gx]=1;   /* seats only count as start or end points, and you can't hop seat to seat */
   const pass = (x,y) => walkable(x,y) && (!seat[y*N+x] || y*N+x===t) && !(occ && occ.has(y*N+x) && y*N+x!==s);
   const q=[s]; prev[s]=s; let qi=0;
   while (qi<q.length){ const c=q[qi++]; if(c===t) break; const cx=c%N, cy=(c/N)|0;
-    for (const [dx,dy] of DIRS8){ const nx=cx+dx, ny=cy+dy; if(!pass(nx,ny)) continue; if(dx&&dy&&(!pass(cx+dx,cy)||!pass(cx,cy+dy))) continue; const n=ny*N+nx; if(prev[n]!==-1) continue; prev[n]=c; q.push(n); } }
+    for (const [dx,dy] of DIRS8){ const nx=cx+dx, ny=cy+dy; if(!pass(nx,ny)) continue; if(dx&&dy&&(!pass(cx+dx,cy)||!pass(cx,cy+dy))) continue; const n=ny*N+nx; if(prev[n]!==-1) continue; if (avoidSeats && seat[c] && seat[n]) continue; prev[n]=c; q.push(n); } }
   if (prev[t]===-1) return null;
   const path=[]; let c=t; while(c!==s){ path.push([c%N,(c/N)|0]); c=prev[c]; } return path.reverse();
 }
@@ -4269,7 +4269,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__ward=(t,k)=>openWardrobe(t,null,k); window.__close=()=>closeAll(); window.__msg=t=>localMsg(t); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__ward=(t,k)=>openWardrobe(t,null,k); window.__close=()=>closeAll(); window.__msg=t=>localMsg(t); window.__prgo=id=>prGo(id); window.__doorPt=()=>{ const d=DOORWAY[curRoom]; if (curRoom==='barn'){ const [x,y]=P(14.5,0); return [x*S,(y-24)*S]; } if (d[0]===0){ const [x,y]=P(0,d[1]+0.5); return [x*S,(y-22)*S]; } if (d[1]===0){ const [x,y]=P(d[0]+0.5,0); return [x*S,(y-22)*S]; } const [x,y]=P(d[0]+0.5,d[1]+0.5); return [x*S,y*S]; }; window.__room=()=>curRoom; window.__walk=(x,y)=>walkTo(x,y); window.__path=()=>me.path.map(p=>p.join(',')).join(' '); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__wear=(sl,id)=>wdWear(sl,id); window.__face=d=>{ me.d=d; }; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
@@ -4282,6 +4282,7 @@ cv.addEventListener('pointerdown', e => {
   if (arcade.on){ arcadePointer(e.clientX/S, e.clientY/S); try{cv.setPointerCapture(e.pointerId);}catch(_){} return; }
   if (uiOpen()){ closeAll(); return; }
   chatin.blur(); ensureAudio();
+  if (!PRED.on && doorHit(e)){ showRoomPick(false); return; }   /* tap the door in any room: the LLAMA MAP */
   if (curRoom==='barn'){ barnPointer(e); return; }
   if (curRoom==='casino'){ casinoPointer(e); return; }
   if (curRoom==='arena'){ arenaPointer(e); return; }
@@ -4335,7 +4336,7 @@ addEventListener('keydown', e => {
   if (ae===chatin){ if(e.key==='Escape') chatin.blur(); return; }
   if (ae===pname) return;
   const k=KEYMAP[e.code];
-  if (k){ e.preventDefault(); if (arcade.on){ if(arcadeNav(k)) return; if(k==='up' && !e.repeat) dashJump(); keys.add(k); return; } if(navKey(k)) return; keys.add(k); return; }
+  if (k){ e.preventDefault(); if (arcade.on){ if(arcadeNav(k)) return; if(k==='up' && !e.repeat) dashJump(); keys.add(k); return; } if(navKey(k)) return; return; }   /* walking is tap/click only; arrows still move through menus and arcade games */
   if (e.key==='Enter'){ e.preventDefault(); if(pick.style.display==='flex'||uiOpen()||arcade.on) pressA(); else chatin.focus(); return; }
   if (e.code==='Space'||e.code==='KeyZ'){ e.preventDefault(); if(!e.repeat) pressA(); return; }
   if (e.code==='KeyX'||e.key==='Escape'){ e.preventDefault(); if(arcade.on) arcadeBack(); else if(uiOpen()&&pick.style.display!=='flex') closeAll(); return; }
@@ -4872,27 +4873,27 @@ function drawOverlay(t){
       // little pointer down to the head
       c.beginPath(); c.moveTo(it.x-4*u, ny+h-0.5*u); c.lineTo(it.x+4*u, ny+h-0.5*u); c.lineTo(it.x, ny+h+4*u); c.closePath(); c.fill();
       c.fillStyle = tag; c.beginPath(); c.arc(nx+9*u, ny+h/2, 3*u, 0, Math.PI*2); c.fill();
-      { let ix=nx+15*u; const sm=c.imageSmoothingEnabled; c.imageSmoothingEnabled=false; for (const k of icons){ if (PIXIMG[k] && PIXIMG[k].complete) c.drawImage(PIXIMG[k], Math.round(ix), Math.round(ny+h/2-isz/2), Math.round(isz), Math.round(isz)); ix+=isz+3*u; } c.imageSmoothingEnabled=sm;
+      { let ix=nx+15*u; const sm=c.imageSmoothingEnabled; c.imageSmoothingEnabled=false; for (const k of icons){ if (PIXIMG[k] && PIXIMG[k].complete) c.drawImage(PIXIMG[k], Math.round(ix*S*DPR)/(S*DPR), Math.round((ny+h/2-isz/2)*S*DPR)/(S*DPR), Math.round(isz*S*DPR)/(S*DPR), Math.round(isz*S*DPR)/(S*DPR)); ix+=isz+3*u; } c.imageSmoothingEnabled=sm;
         c.fillStyle = it.me ? '#2a1d00' : '#ffffff'; c.textBaseline='middle'; c.fillText(name, ix, ny+h/2+0.5*u); }
       c.globalAlpha = 1;
     }
     c.textBaseline='alphabetic';
     drawTableGames(c, t);
-    const now=performance.now();
-    for (const b of bars){
+    const now=performance.now(), u15=u*1.15, DPX=S*DPR, snapD=v=>Math.round(v*DPX)/DPX;   /* chat bubbles are 15% bigger; snapped to real pixels so the crown and text move together */
+    for (const b of bars){ const u=u15;
       const age=now-b.born; if (age>b.dur && Math.floor((age-b.dur)/140)%2===1) continue;
       const crown = !!b.st, icon = '';
       // measure (and shorten if it won't fit) once per zoom level
       if (b._S!==S){ b._S=S; c.font=`800 ${11*u}px Inter, system-ui, sans-serif`; const hw=c.measureText(b.head).width + (crown ? 15*u : 0); c.font=`500 ${12*u}px Inter, system-ui, sans-serif`;
         const maxW=Math.min(LW-10, 340*u) - hw - 22*u; let txt=b.body; if (c.measureText(txt).width>maxW){ while (txt.length>1 && c.measureText(txt+'…').width>maxW) txt=txt.slice(0,-1); txt=txt.trimEnd()+'…'; }
         b._txt=txt; b._hw=hw; b.w=hw+5*u+c.measureText(txt).width+20*u; b.h=22*u; }
-      let bx=OX+b.x-b.w/2; bx=Math.max(3*u, Math.min(LW-b.w-3*u, bx)); const by=OY+b.y;
+      let bx=OX+b.x-b.w/2; bx=snapD(Math.max(3*u, Math.min(LW-b.w-3*u, bx))); const by=snapD(OY+b.y);
       c.shadowColor='rgba(0,0,0,0.3)'; c.shadowBlur=8*S*DPR*u; c.shadowOffsetY=2*S*DPR*u;
       c.fillStyle = b.yell ? '#ff5c8a' : b.mine ? '#fff4c8' : '#ffffff'; pill(bx, by, b.w, b.h, 8*u); c.fill();
       c.shadowColor='transparent'; c.shadowBlur=0; c.shadowOffsetY=0;
       const tag=(CHARS[b.cid]||{}).tag||'#f8d030'; c.fillStyle=tag; pill(bx+5*u, by+5*u, 3*u, b.h-10*u, 1.5*u); c.fill();
       c.textBaseline='middle';
-      c.font=`800 ${11*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#c03070'; if (crown && PIXIMG.crown && PIXIMG.crown.complete){ const sm=c.imageSmoothingEnabled; c.imageSmoothingEnabled=false; c.drawImage(PIXIMG.crown, Math.round(bx+12*u), Math.round(by+b.h/2-6*u), Math.round(12*u), Math.round(12*u)); c.imageSmoothingEnabled=sm; } c.fillText(b.head, bx+12*u+(crown?15*u:0), by+b.h/2+0.5*u);
+      c.font=`800 ${11*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#c03070'; if (crown && PIXIMG.crown && PIXIMG.crown.complete){ const sm=c.imageSmoothingEnabled; c.imageSmoothingEnabled=false; c.drawImage(PIXIMG.crown, snapD(bx+12*u), snapD(by+b.h/2-6*u), snapD(12*u), snapD(12*u)); c.imageSmoothingEnabled=sm; } c.fillText(b.head, bx+12*u+(crown?15*u:0), by+b.h/2+0.5*u);
       c.font=`${b.yell?800:500} ${12*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#1d1530'; c.fillText(b._txt, bx+12*u+b._hw+5*u, by+b.h/2+0.5*u);
       c.textBaseline='alphabetic';
     }
@@ -5118,6 +5119,10 @@ const swapEl=document.getElementById('swapbox'), roombarEl=document.getElementBy
 const DOORWAY = { lounge:[0,10], barn:[14,1], casino:[0,10], arena:[0,10], lanes:[0,10], store:[0,10], account:[0,5] };   // each room has one door; you walk to it whichever room you're going to
 function showSwap(r){ if (!joined || r===curRoom || !validRoom(r)) return; if (isP(r) && !PRD[r]){ prGo(+r.slice(2)); return; } closeAll(); swapTo=r; document.getElementById('sw_text').textContent=`GO TO ${roomName(r)}?`; swapEl.style.display='block'; }
 document.getElementById('sw_go').addEventListener('click', ()=>{ swapEl.style.display='none'; const r=swapTo; swapTo=null; if (!r) return; if (isP(r)){ prGo(+r.slice(2)); return; } if (arcade.on) exitArcade(); localMsg(`Heading to ${roomName(r)}...`); goThroughDoor(r); });
+// the door art sits on a wall next to the doorway tile: tapping it (or the doorway tile) opens the map
+function doorHit(e){ const d=DOORWAY[curRoom]; if (!d) return false; const [gx,gy]=toGrid(e.clientX,e.clientY); if (gx===d[0] && gy===d[1]) return true;
+  const lx=e.clientX/S, ly=e.clientY/S; let px, py, w=12; if (curRoom==='barn'){ [px,py]=P(14.5,0); w=20; } else if (d[0]===0) [px,py]=P(0, d[1]+0.5); else if (d[1]===0) [px,py]=P(d[0]+0.5, 0); else return false;   /* LLAMA ACRES: the farm gate in the fence */
+  return Math.abs(lx-px)<=w && ly>=py-52 && ly<=py+4; }
 function goThroughDoor(r){ const [dx,dy]=DOORWAY[curRoom]||[0,10]; if (me.gx===dx && me.gy===dy && !me.moving && !me.bar){ switchRoom(r); return; } me.travelTo=r; if (!walkTo(dx,dy,'travel')){ me.travelTo=null; switchRoom(r); } }
 document.getElementById('sw_stay').addEventListener('click', ()=>{ swapEl.style.display='none'; swapTo=null; });
 function updateRoomsSign(){ const el=$id('rooms_on'), btn=$id('roomsbtn'); if (!el) return; const n=[...others.values()].filter(o=>!o.leaving && isP(o.rm)).length + (isP(curRoom)?1:0); el.textContent=n||''; el.classList.toggle('on', n>0); btn.classList.toggle('here', isP(curRoom)); }
@@ -6235,7 +6240,7 @@ const FURN_SWITCH=new Set(['tv','bigtv','lamp','floorlamp','lavalamp','boombox']
 function prTapPiece(hit){ if ((FURN_DEF[hit.f.item]||{}).wall) return; if ((FURN_DEF[hit.f.item]||{}).rug){ prTapWalk(hit.tx, hit.ty); return; }
   if (FURN_SWITCH.has(hit.f.item)){ const f=hit.f; f.off=!f.off; try{ ensureAudio(); if (actx){ const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.value=f.off?320:640; gn.gain.value=0.05*(svol/100); o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime+0.05); } }catch(_){}
     NET.act('pr_toggle',{fid:f.fid}).then(r=>{ if (!r.ok){ f.off=!f.off; localMsg(r.msg||'That switch is stuck.'); } }); return; } const f=hit.f, tl=furnTiles(f.item,f.gx,f.gy,f.rot);
-  const seats=SEATS.filter(q=>tl.some(([x,y])=>x===q.gx&&y===q.gy)); if (seats.length){ const free=seats.filter(q=>!seatTaken(q.gx,q.gy)); if (!free.length){ localMsg("Someone's already sitting there."); return; } const q=free.find(q=>q.gx===hit.tx&&q.gy===hit.ty) || free[0]; walkToSeatIn(q, tl); return; }
+  const seats=SEATS.filter(q=>tl.some(([x,y])=>x===q.gx&&y===q.gy)); if (seats.length){ const free=seats.filter(q=>!seatTaken(q.gx,q.gy)); if (!free.length){ localMsg("Someone's already sitting there."); return; } const q=free.find(q=>q.gx===hit.tx&&q.gy===hit.ty) || free.slice().sort((a,b)=>Math.hypot(a.gx-hit.tx,a.gy-hit.ty)-Math.hypot(b.gx-hit.tx,b.gy-hit.ty))[0]; walkToSeatIn(q, tl); return; }
   const near=[]; for (const [x,y] of tl) for (const [dx,dy] of [[0,1],[1,0],[-1,0],[0,-1]]){ const a=x+dx, b=y+dy; if (a>=0&&b>=0&&a<N&&b<NY&&walkable(a,b)&&!seatAt(a,b)) near.push([a,b]); }
   near.sort((p,q)=>Math.hypot(p[0]-me.gx,p[1]-me.gy)-Math.hypot(q[0]-me.gx,q[1]-me.gy)); if (near.length) walkTo(near[0][0],near[0][1]); }
 /* walk to a seat; if it's boxed in (a bed's pillow end against a wall, a lamp and a plant), climb in over the piece itself */
