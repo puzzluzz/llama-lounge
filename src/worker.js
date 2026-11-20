@@ -104,7 +104,7 @@ const decoItem = (kind, id) => (kind === "w" ? "wp_" : "fl_") + id;
 const PR_WALLS = Object.keys(DECO_WALL), PR_FLOORS = Object.keys(DECO_FLOOR);
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
 const FURN_ITEMS = { cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30, rug_persian: 25, rug_round: 15, rug_stripe: 12, rug_shag: 18,
-  beanbag: 10, barstool: 7, dbed: 40, coffeetable: 14, roundtable: 16, floorlamp: 16, lavalamp: 12, cubeshelf: 14, dresser: 20, cactus: 5, flowers: 6, boombox: 18 };
+  beanbag: 10, barstool: 7, dbed: 40, coffeetable: 14, roundtable: 16, floorlamp: 16, lavalamp: 12, cubeshelf: 14, dresser: 20, cactus: 5, flowers: 6, boombox: 18 , rug_mat_green: 6, rug_mat_red: 6, rug_mat_blue: 6, rug_mat_coir: 6, rug_mat_pink: 6, rug_mat_purple: 6 };
 // what the store sells right now: one piece per category (the rest stay placeable for anyone who already owns them)
 // vending machines players can put in their rooms, and what each one sells
 const PV_ITEMS = { vending: { soda: 1, juice: 1, shake: 2 }, snackvend: { chips: 1, candy: 1, cookie: 2 } };
@@ -115,13 +115,13 @@ const FURN_SIDEWAYS = new Set(["loveseat", "sofa"]);
 const FURN_VARIANTS = { sofa_gray: "sofa", sofa_green: "sofa", sofa_red: "sofa", loveseat_mustard: "loveseat", loveseat_teal: "loveseat", loveseat_purple: "loveseat",
   armchair_mustard: "armchair", armchair_red: "armchair", armchair_gray: "armchair", bed_blue: "bed", bed_green: "bed", bed_purple: "bed", chair_walnut: "chair", chair_white: "chair", chair_red: "chair" };
 const furnBase = (item) => FURN_VARIANTS[item] || item;   // couches run along their back, so they turn the other way
-const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend", "rug_persian", "rug_round", "rug_stripe", "rug_shag",
+const FURN_SALE = new Set(["chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend", "rug_persian", "rug_round", "rug_stripe", "rug_shag", "rug_mat_green", "rug_mat_red", "rug_mat_blue", "rug_mat_coir", "rug_mat_pink", "rug_mat_purple",
   "beanbag", "barstool", "dbed", "coffeetable", "roundtable", "floorlamp", "lavalamp", "cubeshelf", "dresser", "cactus", "flowers", "boombox"]);
 for (const [k, b] of Object.entries(FURN_VARIANTS)) { FURN_ITEMS[k] = FURN_ITEMS[b]; FURN_SALE.add(k); }   // variants cost the same as their base
 const FURN_STAFF = new Set(["adminsign"]);   // only mods and the owner can buy these
 const FURN_WALL = new Set(["adminsign"]);
-const FURN_RUG = new Set(["rug_persian", "rug_round", "rug_stripe", "rug_shag"]);   // lie flat on the floor: walk on them, put furniture on top
-const FURN_DIM = { dbed: [2, 2], rug_persian: [3, 2], rug_round: [2, 2], rug_stripe: [3, 1], rug_shag: [2, 2] };   // width x depth (swapped when turned)
+const FURN_RUG = new Set(["rug_persian", "rug_round", "rug_stripe", "rug_shag", "rug_mat_green", "rug_mat_red", "rug_mat_blue", "rug_mat_coir", "rug_mat_pink", "rug_mat_purple"]);   // lie flat on the floor: walk on them, put furniture on top
+const FURN_DIM = { dbed: [2, 2], rug_persian: [3, 2], rug_round: [2, 2], rug_stripe: [3, 1], rug_shag: [2, 2], rug_mat_green: [2, 1], rug_mat_red: [2, 1], rug_mat_blue: [2, 1], rug_mat_coir: [2, 1], rug_mat_pink: [2, 1], rug_mat_purple: [2, 1] };   // width x depth (swapped when turned)
 const layerOf = (item) => (FURN_WALL.has(item) ? "wall" : FURN_RUG.has(item) ? "rug" : "floor");    // hang on a wall: placed on a tile along a wall, don't take up floor space
 const prId = (rm) => { const m = /^p:(\d{1,9})$/.exec(String(rm || "")); return m ? +m[1] : 0; };
 const cleanRoomName = (n) => String(n || "").replace(/[^A-Za-z0-9 '!?&.,:-]/g, "").replace(/\s+/g, " ").trim().slice(0, PR.nameMax);
