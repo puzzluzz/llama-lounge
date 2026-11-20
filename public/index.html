@@ -417,6 +417,14 @@
   .mkr canvas{width:44px;height:44px;flex:none} .mkr .mkn{flex:1;min-width:0;display:flex;flex-direction:column} .mkr .mkn b{font:600 14px var(--pxf);letter-spacing:.02em} .mkr .mkn small{font-size:12px;color:var(--sub)}
   .mkr .mkp{font:600 15px var(--pxf);white-space:nowrap} .mkr input{width:76px;padding:6px;border:2px solid var(--ink);border-radius:6px;font:600 14px var(--pxf)} .mkr .gbbtn{flex:none}
   .mktop{display:flex;gap:6px;margin:0 0 10px} .mktop input{flex:1;min-width:0;padding:8px 10px;border:2px solid var(--cardln);border-radius:8px;font:500 15px var(--ui)} .mktop select{padding:6px;border:2px solid var(--cardln);border-radius:8px;font:600 13px var(--pxf)}
+  /* guided first visit: a card from GUS and a pulsing ring around whatever he's talking about */
+  #tourbox{position:absolute;left:50%;transform:translateX(-50%);top:calc(64px + var(--sat,0px));z-index:9;display:none;gap:12px;align-items:flex-start;width:min(calc(100% - 20px),460px);box-sizing:border-box;padding:12px;background:#fff;border:3px solid var(--ink);border-radius:12px;box-shadow:0 6px 0 var(--ink),0 14px 30px rgba(0,0,0,.35);animation:popIn .18s ease-out}
+  body.touring #tourbox{display:flex} body.touring #evpop{display:none!important}
+  #tourbox .tbp{flex:none;width:64px;height:64px;border-radius:10px;background:#fff4d0;border:2px solid var(--cardln);display:grid;place-items:center;overflow:hidden}
+  #tourbox .tbx{flex:1;min-width:0} #tourbox b{display:block;font:600 16px var(--pxf);letter-spacing:.03em;color:var(--ink);margin:2px 0 4px} #tourbox p{margin:0 0 8px;font:500 14px/1.45 var(--ui);color:#3a3150}
+  #tourbox .tbr{display:flex;gap:6px;align-items:center} #tourbox .tbr small{flex:1;font:600 12px var(--pxf);color:var(--sub)} #tourbox .gbbtn{padding:6px 10px!important;min-height:0!important;font-size:13px!important}
+  #tourring{position:fixed;z-index:8;pointer-events:none;display:none;border:4px solid #ffd23f;border-radius:16px;box-shadow:0 0 0 4px rgba(29,21,48,.85),0 0 22px 6px rgba(255,210,63,.75);animation:tourPulse 1.1s ease-in-out infinite}
+  body.touring #tourring.on{display:block} @keyframes tourPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.08);opacity:.75}}
   #frbox,#acctbox,#dmbox,#catbox,#wardbox,#roomsbox,#bugbox,#mktbox{display:none;left:50%;top:50%;transform:translate(-50%,-50%);max-height:86vh;z-index:6;animation:popIn .18s ease-out}
   #frbox{width:min(calc(100% - 24px),420px)}
   #dmbox{width:min(calc(100% - 24px),440px)}
@@ -915,7 +923,7 @@
   <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button class="pbtn ic" id="zout" title="Zoom out" aria-label="Zoom out">−</button><button class="pbtn ic" id="zin" title="Zoom in" aria-label="Zoom in">+</button><button class="pbtn ic" id="musicbtn" title="Music" aria-label="Music">♪</button><button class="pbtn y" id="menubtn" aria-label="Menu"><span class="hamb"><i></i><i></i><i></i></span><span class="mtx">MENU</span></button></div>
   <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
   <div id="keys">CLICK TO WALK · SPACE ACTION · ENTER TALK<br>M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
-  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">ROOMS</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="market" data-i="🏪">MARKETPLACE</div><div data-a="bug" data-i="🐞">REPORT A BUG</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
+  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">ROOMS</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="market" data-i="🏪">MARKETPLACE</div><div data-a="bug" data-i="🐞">REPORT A BUG</div><div data-a="tour" data-i="💡">TAKE THE TOUR</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
   <div id="emenu" class="gb menu sheet"><div data-e="heart">♥ HEART</div><div data-e="bang">! WOW</div><div data-e="huh">? HUH</div><div data-e="note">♪ SING</div><div data-e="lol">^^ LOL</div><div data-e="zzz">Z SLEEP</div><div data-e="wave">✋ WAVE</div><div data-e="flex">💪 FLEX</div><div data-e="palm">-_- FACEPALM</div></div>
   <div id="pmenu" class="gb"><div class="pmtop"><div id="pm_pic" class="pmpic"></div><div class="pmx"><div id="pm_name" class="pmn"></div><div id="pm_meta" class="pmmeta"></div></div><button class="gbbtn pmclose" id="pm_close" aria-label="Close">✕</button></div><div id="pm_info"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_trade">🤝 TRADE</button></div></div>
   <div id="tmenu" class="gb sheet"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
@@ -962,6 +970,7 @@
   <div id="dmbox" class="gb sheet"><div class="dmhead"><button class="dmback" id="dm_back" aria-label="Back"><span class="pi pi-back" aria-hidden="true"></span></button><div class="slt" id="dm_title">💬 MESSAGES</div></div>
     <div id="dm_list"></div>
     <div id="dm_thread"><div id="dm_msgs"></div><form id="dm_form" autocomplete="off"><input id="dm_in" maxlength="300" placeholder="Message..." enterkeyhint="send"><button class="pbtn y" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10 15 12 3.4 14z" fill="currentColor"/></svg></button></form><div class="dmnote" id="dm_note"></div></div></div>
+  <div id="tourring" aria-hidden="true"></div><div id="tourbox" role="dialog" aria-live="polite"><div class="tbp" id="tour_pic"></div><div class="tbx"><b id="tour_t"></b><p id="tour_p"></p><div class="tbr"><small id="tour_n"></small><button class="gbbtn" id="tour_skip">SKIP</button><button class="gbbtn" id="tour_back">BACK</button><button class="gbbtn y" id="tour_next">NEXT</button></div></div></div>
   <div id="mktbox" class="gb sheet"><div class="slt">🏪 MARKETPLACE</div><div class="autabs" id="mk_tabs"><button type="button" data-t="buy">BUY</button><button type="button" data-t="sell">SELL</button><button type="button" data-t="mine">MY LISTINGS</button></div><div id="mk_body"></div><div class="prmsg" id="mk_msg"></div></div>
   <div id="bugbox" class="gb sheet"><div class="slt">🐞 REPORT A BUG</div><div class="fre">Something broken or weird? Tell us what you were doing and what happened. The owner reads every report.</div><textarea id="bug_text" maxlength="800" rows="6" placeholder="What happened? What did you expect?"></textarea><div class="srow"><button class="gbbtn y" id="bug_send">SEND REPORT</button></div><div class="prmsg" id="bug_msg"></div></div>
   <div id="acctbox" class="gb sheet"><div class="slt" id="ac_title">🔐 ACCOUNT</div><div id="ac_body"></div></div>
@@ -1260,6 +1269,7 @@ const CHARS = {
     fur:{ a:['#f0e2cc','#c8ae8e','#fffaf0'] }, tag:'#c83a3a' }
 };
 // PENNY works the LLAMA STORE register; she's drawn like everyone else but isn't a llama players can pick
+CHARS.gus = { label:'Gus', blurb:'Shows new llamas around.', ears:'up', npc:true, hat:'cap', fur:{ a:['#f2c27a','#c8904a','#fff0cc'] }, tag:'#f2c27a' };   // GUS the tour guide (only you see him, during the tour)
 CHARS.penny = { label:'Penny', blurb:'Runs the LLAMA STORE.', ears:'up', npc:true, outfit:'apron', hat:'visor', fur:{ a:['#c9b6f0','#9f8ad6','#ece2ff'] }, tag:'#c9b6f0' };
 // casino dealers: green dealer's visor, black vest over a white shirt, red bow tie
 const DEALER_VISOR=['#3fb86a','#1f7a44','#9ae8b0'];
@@ -3258,6 +3268,9 @@ function drawFurn(f,t){
       f.items.forEach((id,i)=>{ const ic=itemIcon(id), side=i%2?1:-1, hy=Y-40+Math.floor(i/2)*13, hx=X+side*7;
         g.fillStyle=INK; g.fillRect(Math.min(X,hx),hy+3,Math.abs(hx-X)+1,2); g.drawImage(ic, Math.round(hx-ic.width/2), Math.round(hy-ic.height/2)); });
       itemHits.push({id:f.pick, x0:X-16, x1:X+16, y0:Y-50, y1:Y+3}); break; }
+    case 'guide': { // GUS the tour guide: bobs a little and faces you
+      const [px,py]=P(f.gx+0.5,f.gy+0.5), dir = me.x+me.y > f.gx+f.gy+1 ? (me.x-me.y > f.gx-f.gy ? 'fr' : 'fl') : (me.x-me.y > f.gx-f.gy ? 'br' : 'bl');
+      g.drawImage(sprite('gus',dir,Math.floor(t*2)%2,'stand',{hat:'cap'}), Math.round(px)-14, Math.round(py)-46+(Math.floor(t*2)%2)); break; }
     case 'model': { // a model llama on a round stand, wearing an outfit from the racks; tap it to try the look on
       const [px,py]=P(f.gx+0.5,f.gy+0.5); const X=Math.round(px), Y=Math.round(py);
       ellPx(X,Y+1,11,5,INK); ellPx(X,Y,10,4.5,'#c88a10'); ellPx(X,Y-1,10,4.5,'#ffd23f'); ellPx(X,Y-1.5,8,3.4,'#fff2a0');
@@ -4410,6 +4423,7 @@ function menuAct(el){
   else if (a==='dash') openDash();
   else if (a==='account'){ openAccount(); }
   else if (a==='market'){ openMarket(); }
+  else if (a==='tour'){ tourStart(); }
   else if (a==='bug'){ $id('bug_msg').textContent=''; $id('bugbox').style.display='block'; sheetHead($id('bugbox')); setTimeout(()=>$id('bug_text').focus(), 50); }
   else if (a==='friends'){ openFriends(); }
   else if (a==='wardrobe'){ openWardrobe(bagTab()); }
@@ -4520,7 +4534,7 @@ cv.addEventListener('pointermove', e=>{ if(!touches.has(e.pointerId)) return; to
 const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0; };
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__ward=(t,k)=>openWardrobe(t,null,k); window.__close=()=>closeAll(); window.__dash=()=>openDash(); window.__mkt=()=>openMarket(); window.__msg=t=>localMsg(t); window.__give=k=>{ me.h=k; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; }; window.__prgo=id=>prGo(id); window.__plk=()=>plkGo(); window.__doorPt=()=>{ const d=DOORWAY[curRoom]; if (curRoom==='barn'){ const [x,y]=P(14.5,0); return [x*S,(y-24)*S]; } if (d[0]===0){ const [x,y]=P(0,d[1]+0.5); return [x*S,(y-22)*S]; } if (d[1]===0){ const [x,y]=P(d[0]+0.5,0); return [x*S,(y-22)*S]; } const [x,y]=P(d[0]+0.5,d[1]+0.5); return [x*S,y*S]; }; window.__room=()=>curRoom; window.__walk=(x,y)=>walkTo(x,y); window.__path=()=>me.path.map(p=>p.join(',')).join(' '); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__ward=(t,k)=>openWardrobe(t,null,k); window.__close=()=>closeAll(); window.__dash=()=>openDash(); window.__mkt=()=>openMarket(); window.__tour=()=>tourStart(); window.__period=v=>{ period=v; rebuildBG(); }; window.__tnext=()=>$id('tour_next').click(); window.__msg=t=>localMsg(t); window.__give=k=>{ me.h=k; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; }; window.__prgo=id=>prGo(id); window.__plk=()=>plkGo(); window.__doorPt=()=>{ const d=DOORWAY[curRoom]; if (curRoom==='barn'){ const [x,y]=P(14.5,0); return [x*S,(y-24)*S]; } if (d[0]===0){ const [x,y]=P(0,d[1]+0.5); return [x*S,(y-22)*S]; } if (d[1]===0){ const [x,y]=P(d[0]+0.5,0); return [x*S,(y-22)*S]; } const [x,y]=P(d[0]+0.5,d[1]+0.5); return [x*S,y*S]; }; window.__room=()=>curRoom; window.__walk=(x,y)=>walkTo(x,y); window.__path=()=>me.path.map(p=>p.join(',')).join(' '); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__wear=(sl,id)=>wdWear(sl,id); window.__face=d=>{ me.d=d; }; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
@@ -4991,6 +5005,7 @@ function drawSkySign(t){
     // two little brackets holding it to the wall
     for (const bxw of [xl+pad+14, xl+pad+bw-15]){ const top=Math.floor(-bxw/2)-hTop-3; g.fillStyle=INK; g.fillRect(OX+bxw-1,OY+top-1,3,4); g.fillStyle='#8a7aa8'; g.fillRect(OX+bxw,OY+top,1,2); }
     for (let x=0;x<W;x++){ const wxp=xl+x; g.drawImage(SIGN_CV, x,0,1,SIGN_CV.height, OX+wxp, OY+Math.floor(-wxp/2)-hTop, 1, SIGN_CV.height); }
+    signGlow=[OX-106, OY+53-hTop+SIGN_CV.height/2, W];   // where the night glow goes
     return; }
   const {bw, bh, pad}=neonBoard(t, 4), x0=Math.round(OX+188-bw/2), y0=Math.round(OY-96+1+Math.sin(t*1.2)*1.5);
   g.fillStyle='#3a3050'; g.fillRect(x0+14,y0-14,1,14); g.fillRect(x0+bw-15,y0-14,1,14);   // hung from two wires
@@ -4998,6 +5013,7 @@ function drawSkySign(t){
   for (const [dx,dy,ph] of [[-22,-5,0],[bw+20,1,1.7],[bw*0.3,-15,3.1],[bw*0.75,-11,4.4],[-14,29,2.2],[bw+12,33,5.3]]){ const on2=Math.sin(t*2.3+ph)>0.2; if (!on2) continue;
     const sx=Math.round(x0+dx), sy=Math.round(y0+dy); g.fillStyle='#f8f0c0'; g.fillRect(sx,sy,1,1); if (Math.sin(t*2.3+ph)>0.75){ g.fillRect(sx-1,sy,3,1); g.fillRect(sx,sy-1,1,3); } }
 }
+let signGlow=null;
 const overlayItems = [];
 function render(t){
   g = ctx; ctx.imageSmoothingEnabled=false;
@@ -5438,12 +5454,13 @@ function showRoomPick(first){
 }
 // first room after launching joins the game; after that it's a normal room switch
 function goRoom(r){ roomPickEl.style.display='none'; $id('roomsbox').style.display='none';
-  if (!joined){ if (dailyLater){ dailyLater=false; setTimeout(()=>{ if (!uiOpen() && $id('roomsbox').style.display!=='block') dailyPop(); }, 1800); } ensureAudio(); restartSong(); setRoom(r); joined=true; updateRoombar(); flash(); sysMsg(`${me.n} entered ${ROOM_NAMES[r]}!`); if (wallet.get()) localMsg(`You have ${wallet.get()} TOKENS.`); setTimeout(()=>walkTo(...spawnSpot(r)), 500); sendPresence(true); }
+  if (!joined){ if (tourWanted()) setTimeout(()=>{ if (joined && !TOUR.on) tourStart(); }, 1600);   /* brand-new llamas get the tour first; the daily reward waits until it's done */
+    else if (dailyLater){ dailyLater=false; setTimeout(()=>{ if (!uiOpen() && $id('roomsbox').style.display!=='block') dailyPop(); }, 1800); } ensureAudio(); restartSong(); setRoom(r); joined=true; updateRoombar(); flash(); sysMsg(`${me.n} entered ${ROOM_NAMES[r]}!`); if (wallet.get()) localMsg(`You have ${wallet.get()} TOKENS.`); setTimeout(()=>walkTo(...spawnSpot(r)), 500); sendPresence(true); }
   else switchRoom(r); }
 for (const b of document.querySelectorAll('#roompick [data-r]')) b.addEventListener('click', ()=>goRoom(b.dataset.r));
 document.getElementById('rp_close').addEventListener('click', ()=>{ roomPickEl.style.display='none'; });
 
-function setRoom(r){ if (me.fish) stopFish(true); if (typeof AR!=='undefined' && AR.on) arenaClose(true); if (typeof BW!=='undefined' && BW.on) bowlClose(true);
+function setRoom(r){ if (typeof TOUR!=='undefined' && TOUR.on) setTimeout(()=>tourGuide(true), 0); if (me.fish) stopFish(true); if (typeof AR!=='undefined' && AR.on) arenaClose(true); if (typeof BW!=='undefined' && BW.on) bowlClose(true);
   curRoom = (ROOMS.includes(r) || (isP(r) && PRD[r])) ? r : 'lounge'; store.room = isP(curRoom) ? 'lounge' : curRoom; saveStore();
   if (typeof prEditStop==='function') prEditStop();
   buildWorld(); rebuildBG();
@@ -5989,9 +6006,26 @@ mtips.textContent = tipsOff ? 'TIPS: OFF' : 'TIPS: ON';
 function dayPeriod(){ const h=new Date().getHours(); return (h>=7&&h<17)?'day':(h>=17&&h<20)||(h>=6&&h<7)?'dusk':'night'; }
 let period=dayPeriod();
 setInterval(()=>{ const p=dayPeriod(); if(p!==period){ period=p; rebuildBG(); } }, 30000);
+// evening and night in the LLAMA LOUNGE: the neon sign washes the left wall, the bar glows warm underneath,
+// the arcade and jukebox throw coloured light, and the dance floor lights the room in its colours when music plays
+function loungeGlow(t, k){
+  g.save(); g.globalCompositeOperation='lighter';
+  const a=v=>(v*k).toFixed(3), pulse=0.85+Math.sin(t*2.2)*0.15;
+  if (signGlow){ const [cx,cy,W]=signGlow;   // neon sign: a wash of pink and violet on the wall around it
+    ellPx(cx,cy,W/2+16,26,`rgba(130,30,110,${a(0.22*pulse)})`); ellPx(cx,cy,W/2,15,`rgba(80,50,150,${a(0.22*pulse)})`); ellPx(cx+8,cy+44,W/2-6,14,`rgba(100,30,90,${a(0.14)})`); }
+  for (let x=0; x<=6; x++){ const [bx,by]=P(x+0.5,1.95,2); ellPx(bx,by,13,4,`rgba(150,80,20,${a(0.30)})`); }   // warm strip under the bar
+  { const [cx,cy]=P(3.5,1,30); ellPx(cx,cy,60,16,`rgba(120,70,20,${a(0.16)})`); }   // bottle shelf
+  { const [ax,ay]=P(ARC_X+0.5,0.6,14); const fl=0.8+((Math.floor(t*6)%3)*0.1); ellPx(ax,ay,16,12,`rgba(30,120,160,${a(0.32*fl)})`); ellPx(ax,ay+10,22,8,`rgba(20,90,140,${a(0.18*fl)})`); }   // arcade screen
+  if (jukeOn()){ const [jx,jy]=P(JUKE_X+0.5,0.6,16); ellPx(jx,jy,18,13,`rgba(140,40,120,${a(0.30*pulse)})`); }
+  { const on=jukeOn(), [dx,dy]=P(10,4,0), c=DANCE_COLS[Math.floor(t*2)%DANCE_COLS.length], n=parseInt(c.slice(1),16), r=(n>>16)&255, gg=(n>>8)&255, b=n&255;
+    ellPx(dx,dy,48,24,`rgba(${r>>2},${gg>>2},${b>>2},${a(on?0.55:0.25)})`); if (on) ellPx(dx,dy-26,30,18,`rgba(${r>>3},${gg>>3},${b>>3},${a(0.5)})`); }
+  g.restore(); }
 function drawNight(t){
   if (period==='day') return;
-  g.fillStyle = period==='night' ? 'rgba(20,16,70,0.30)' : 'rgba(150,70,40,0.12)'; g.fillRect(0,0,LW,LH);
+  const lounge = curRoom==='lounge';   // the lounge gets its own evening look: darker, with everything that lights up glowing
+  if (lounge){ g.save(); g.globalCompositeOperation='multiply'; g.fillStyle = period==='night' ? 'rgb(86,78,168)' : 'rgb(236,176,184)'; g.fillRect(0,0,LW,LH); g.restore(); }   // multiply keeps the colours rich instead of greying them
+  else { g.fillStyle = period==='night' ? 'rgba(20,16,70,0.30)' : 'rgba(150,70,40,0.12)'; g.fillRect(0,0,LW,LH); }
+  if (lounge) loungeGlow(t, period==='night' ? 1 : 0.55);
   if (period==='night'){
     g.save(); g.globalCompositeOperation='lighter';
     if (curRoom==='barn'){ const [cx,cy]=P(10.5,11.5); const fl=0.32+Math.sin(t*9)*0.04; ellPx(cx,cy-10,34,20,`rgba(140,70,10,${fl})`); ellPx(cx,cy-10,18,11,'rgba(160,90,20,0.35)'); }
@@ -6319,6 +6353,37 @@ $id('afk_here').addEventListener('click', e=>{ e.stopPropagation(); afkHere(); }
 $id('afk_back').addEventListener('click', ()=>location.reload());
 $id('invbtn').addEventListener('click', ()=>{ ensureAudio(); openWardrobe(bagTab()); });
 $id('roomsbtn').addEventListener('click', ()=>{ ensureAudio(); if (joined) openRooms(); });
+// ---- GUIDED FIRST VISIT: GUS stands next to you and walks you through the game, one card at a time ----
+const TOUR_STEPS=[
+  {t:'HI, I\'M GUS!', p:'Welcome to the Llama Lounge! I\'ll show you around. Tap anywhere on the floor and your llama walks there.', el:null},
+  {t:'FOOD AND DRINKS', p:'Your llama gets hungry and thirsty. These bars show how full it is. Tap a cup on the bar to order a drink, or grab a snack in LLAMA ACRES.', el:'#status'},
+  {t:'SAY HI', p:'Type here and press enter to talk. Everyone in the room sees it in a bubble over your llama.', el:'#chatrow'},
+  {t:'JOBS AND TOKENS', p:'TOKENS buy clothes, furniture and more. Earn them from jobs, games and your daily reward. JOBS shows what you can do in this room.', el:'#jobsbtn'},
+  {t:'ROOMS', p:'MAP takes you to the CASINO, SPIT ARENA, LANES, ACRES and the STORE. PLAYER ROOMS is where you make your own room and visit other llamas.', el:'#roomsbtn'},
+  {t:'SHOP', p:'Furniture, wallpaper, floors and whole ROOM KITS. Everything you buy goes into your bag, ready for your room.', el:'#shopbtn'},
+  {t:'YOUR BAG', p:'Your clothes and items live here. Clothes are sold at the LLAMA STORE.', el:'#invbtn'},
+  {t:'FRIENDS', p:'Tap another llama to see their card, add them as a friend, or trade. Friends can message you and visit your room.', el:'#frbtn'},
+  {t:'THE MENU', p:'Emotes, the MARKETPLACE, rules, REPORT A BUG and more. You can take this tour again from here any time. Have fun!', el:'#menubtn'}];
+const TOUR={on:false, i:0, raf:0};
+function tourWanted(){ return !store.toured && acct && acct.since && Date.now()-acct.since < 3*864e5; }
+function tourStart(){ if (!joined) return; closeAll(); TOUR.on=true; TOUR.i=0; document.body.classList.add('touring'); $id('tour_pic').innerHTML=llamaPic('gus', {hat:'cap'}, 60); tourGuide(true); tourShow(); tourTrack(); }
+function tourEnd(){ TOUR.on=false; document.body.classList.remove('touring'); $id('tourring').classList.remove('on'); cancelAnimationFrame(TOUR.raf); tourGuide(false); store.toured=1; saveStore();
+  if (dailyLater){ dailyLater=false; setTimeout(()=>{ if (!uiOpen()) dailyPop(); }, 600); } }
+function tourShow(){ const S=TOUR_STEPS[TOUR.i]; $id('tour_t').textContent=S.t; $id('tour_p').textContent=S.p; $id('tour_n').textContent=`${TOUR.i+1} / ${TOUR_STEPS.length}`;
+  $id('tour_back').style.visibility = TOUR.i ? '' : 'hidden'; $id('tour_next').textContent = TOUR.i===TOUR_STEPS.length-1 ? 'DONE!' : 'NEXT'; $id('tour_skip').style.display = TOUR.i===TOUR_STEPS.length-1 ? 'none' : '';
+  // keep the card out of the way of the thing it points at
+  const tb=$id('tourbox'), el=S.el && document.querySelector(S.el), r=el && el.getBoundingClientRect(); tb.style.top = (r && r.top < 200) ? 'auto' : ''; tb.style.bottom = (r && r.top < 200) ? 'calc(var(--dockh,90px) + 110px)' : ''; }
+function tourTrack(){ cancelAnimationFrame(TOUR.raf); const ring=$id('tourring');
+  const step=()=>{ if (!TOUR.on) return; const S=TOUR_STEPS[TOUR.i], el=S.el && document.querySelector(S.el), r=el && el.offsetParent!==null ? el.getBoundingClientRect() : null;
+    if (r && r.width){ ring.classList.add('on'); ring.style.left=(r.left-8)+'px'; ring.style.top=(r.top-8)+'px'; ring.style.width=(r.width+16)+'px'; ring.style.height=(r.height+16)+'px'; } else ring.classList.remove('on');
+    TOUR.raf=requestAnimationFrame(step); }; step(); }
+// GUS himself: a llama standing beside you in the room (only on your screen)
+function tourGuide(on){ for (let i=FURN.length-1;i>=0;i--) if (FURN[i].t==='guide') FURN.splice(i,1); if (!on) return;
+  const spot=[[1,0],[0,1],[-1,0],[0,-1],[1,1]].map(([dx,dy])=>[me.gx+dx,me.gy+dy]).find(([x,y])=>x>=0&&y>=0&&x<N&&y<NY&&walkable(x,y)) || [me.gx,me.gy];
+  FURN.push({t:'guide', gx:spot[0], gy:spot[1]}); }
+$id('tour_next').addEventListener('click', ()=>{ ensureAudio(); if (TOUR.i>=TOUR_STEPS.length-1) return tourEnd(); TOUR.i++; tourShow(); });
+$id('tour_back').addEventListener('click', ()=>{ if (TOUR.i>0){ TOUR.i--; tourShow(); } });
+$id('tour_skip').addEventListener('click', ()=>tourEnd());
 // ---- MARKETPLACE: everything is checked and done by the server; this just shows the listings ----
 const MK={tab:(['buy','sell','mine'].includes(store.mkTab)?store.mkTab:'buy'), list:null, fee:0.05, max:10, q:'', sort:'cheap', have:null, rares:null};
 const mkName = (it, serial) => (serial ? '⭐ ' : '') + itemName(it) + (serial ? ` #${serial}` : '');

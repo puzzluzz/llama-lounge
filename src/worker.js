@@ -267,7 +267,7 @@ async function bump(env, k) {
 // The owner is ONLY the account with users.role = 'admin' in the database. Never by name, setting or anything the browser sends.
 const isAdmin = (env, u) => !!u && u.role === "admin";
 const staffRole = (env, u) => (isAdmin(env, u) ? "owner" : u.role === "mod" ? "mod" : "");
-const profileOf = (env, u, timers = []) => ({ email: u.email || "", emailOk: !!u.email_ok, mailOn: mailOn(env), name: u.name.toUpperCase(), c: u.c, agreed: u.agreed, bet: u.bet, tk: u.tk, bestHay: u.best_hay, bestDash: u.best_dash, admin: isAdmin(env, u), staff: staffRole(env, u), timers });
+const profileOf = (env, u, timers = []) => ({ since: u.created || 0, email: u.email || "", emailOk: !!u.email_ok, mailOn: mailOn(env), name: u.name.toUpperCase(), c: u.c, agreed: u.agreed, bet: u.bet, tk: u.tk, bestHay: u.best_hay, bestDash: u.best_dash, admin: isAdmin(env, u), staff: staffRole(env, u), timers });
 
 // ---------- email ----------
 // Sending uses Cloudflare Email Service: a "send_email" binding named EMAIL plus a MAIL_FROM address on a domain
