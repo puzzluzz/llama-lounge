@@ -124,6 +124,13 @@ export async function runApi(BASE, { root, persist }) {
   { const r = await C.act("box_leave"); check("you can leave the line", r.ok === true && r.left === true); }
   await A.act("box_quit"); await B.act("box_quit"); A.pres({ rm: "lounge" }); B.pres({ rm: "lounge" }); C.pres({ rm: "lounge" }); await sleep(2100);
 
+  console.log("Outdoor plots");
+  { const r = await B.act("pr_create", { name: "TEST PLOT " + tag.toUpperCase().slice(0, 4), kind: "plot" }); const mine = ((r.mines || []).find((x) => x.id === r.created)) || {};
+    check("a llama can make an outdoor plot", r.ok === true && mine.kind === "plot" && mine.open === true, JSON.stringify({ ok: r.ok, msg: r.msg, created: r.created, keys: Object.keys(r), mine }).slice(0, 260));
+    const e = await B.act("pr_enter", { rid: r.created }); check("the plot opens as an open field", e.ok === true && e.room.open === true && e.room.kind === "plot" && e.room.farm === false, JSON.stringify(e.room || e).slice(0, 160));
+    const pl = await B.act("pr_place", { rid: r.created, item: "plot", gx: 5, gy: 4, rot: 0 }); check("garden plots still only go in a farm", pl.ok === false, JSON.stringify(pl).slice(0, 120)); }
+  await sleep(2100);
+
   console.log("Tokens only change on the server");
   { const r = await A.act("furn_buy", { item: "plot" }); check("cannot buy what you cannot afford", r.ok === false, JSON.stringify(r)); }
   { const r = await A.act("furn_buy", { item: "plot", price: 0, tk: 99999 }); check("cannot name your own price", r.ok === false); }

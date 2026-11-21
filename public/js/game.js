@@ -1691,8 +1691,12 @@ const FURN_VARIANTS=[['sofa_gray','sofa','GRAY',{col:COUCH_COL.gray}],['sofa_gre
   ['chair_walnut','chair','WALNUT',{wc:'#7a4a2a'}],['chair_white','chair','WHITE',{wc:'#e8e4dc'}],['chair_red','chair','RED',{wc:'#d04a3a'}]];
 const furnBase = item => (FURN_DEF[item] && FURN_DEF[item].base) || item;
 for (const [k,base,cn,extra] of FURN_VARIANTS){ const B0=FURN_DEF[base]; FURN_DEF[k]={...B0, base, n:`${B0.n} (${cn})`, mk:rot=>({...B0.mk(rot), ...extra})}; }
+// OUTDOOR pieces: the palms, rocks, torches and fires from the game's own outdoor rooms, plus a beach umbrella and a picnic table
+Object.assign(FURN_DEF, { palm:{n:'PALM TREE',p:18,cat:'outdoor',mk:()=>({t:'palm',s:0})}, brock:{n:'BOULDERS',p:8,cat:'outdoor',mk:rot=>({t:'cvrock',k:rot%3})}, tiki:{n:'TIKI TORCH',p:10,cat:'outdoor',mk:()=>({t:'torch'})},
+  campfire:{n:'CAMPFIRE',p:15,cat:'outdoor',mk:()=>({t:'campfire'})}, jbush:{n:'FLOWER BUSH',p:8,cat:'outdoor',mk:()=>({t:'jbush'})}, brazier:{n:'STONE BRAZIER',p:15,cat:'outdoor',mk:()=>({t:'brazier'})},
+  parasol:{n:'BEACH UMBRELLA',p:16,cat:'outdoor',mk:rot=>({t:'parasol',v:rot%2})}, picnic:{n:'PICNIC TABLE',p:14,cat:'outdoor',mk:rot=>({t:'picnic',rot})} });
 // what the store sells, by category (one of each for now; add more pieces to a category by giving them its cat)
-const FURN_CATS=[['rares','🏆 FAIR PRIZES'],['staff','🛡️ STAFF ONLY'],['farm','🌾 FARM & GARDEN'],['seating','🪑 SEATING'],['sofas','🛋️ SOFAS & ARMCHAIRS'],['beds','🛏️ BEDS'],['tables','🍽️ TABLES'],['lighting','💡 LIGHTING'],['shelves','📚 SHELVES'],['electronics','📺 ELECTRONICS'],['plants','🪴 PLANTS'],['machines','🥤 VENDING MACHINES'],['rugs','🧶 RUGS']];
+const FURN_CATS=[['rares','🏆 FAIR PRIZES'],['staff','🛡️ STAFF ONLY'],['outdoor','🌴 OUTDOOR'],['farm','🌾 FARM & GARDEN'],['seating','🪑 SEATING'],['sofas','🛋️ SOFAS & ARMCHAIRS'],['beds','🛏️ BEDS'],['tables','🍽️ TABLES'],['lighting','💡 LIGHTING'],['shelves','📚 SHELVES'],['electronics','📺 ELECTRONICS'],['plants','🪴 PLANTS'],['machines','🥤 VENDING MACHINES'],['rugs','🧶 RUGS']];
 const SEAT_DIRS=['fr','fl','br','bl'];
 const PR_WALL={ lavender:['#b8a0f0','#d0b8f8','#7860c8','#8870d8'], cream:['#f2e2c8','#f8ecd6','#9a6436','#a86e3e'], mint:['#a8e0c8','#c0eed8','#4a9a7a','#58aa88'],
   barn:['#b0443a','#c4584a','#6a2620','#7a2c24'], pink:['#f8b8d0','#fcd0e0','#c86890','#d87aa0'], night:['#2a2450','#342c60','#141030','#1a1438'], wood:['#a87444','#b8834e','#6a4220','#7a4c26'] };
@@ -1927,7 +1931,7 @@ function drawFarmSky(ctx){ const per=(typeof period==='string')?period:'day'; if
   ctx.drawImage(FSKY.land, dx, dy);
   ctx.fillStyle=FSKY.botCol; ctx.fillRect(0, dy+FSKY.H-1, LW, LH); }
 function buildPlayerBG(){
-  if ((PRD[curRoom]||{}).farm) return buildFarmBG();
+  if ((PRD[curRoom]||{}).open) return buildFarmBG();   /* farms and outdoor plots share the open-field look */
   g = bg.getContext('2d'); g.clearRect(0,0,bg.width,bg.height);
   const ox=BGX, oy=BGY, R=PRD[curRoom]||{}, Wc=PR_WALL[R.wall]||PR_WALL.lavender, Fc=PR_FLOOR[R.floor]||PR_FLOOR.wood;
   { const T=DECO_WALL[R.wall]||DECO_WALL.lavender, x0=ox-NY*20, W2=(N+NY)*20, yTop=oy-WH-6, H2=Math.max(N,NY)*10+WH+8, img=g.getImageData(x0,yTop,W2,H2), D2=img.data, rail=dh(T.rail||'#f8f8f8'), trim=dh(T.trim), ink=dh(INK);
@@ -3401,6 +3405,31 @@ function drawFurn(f,t){
     case 'signpost': { g.fillStyle=INK; g.fillRect(sx-2,sy-30,4,30); g.fillStyle='#a87040'; g.fillRect(sx-1,sy-30,2,29);
       g.fillStyle=INK; g.fillRect(sx-20,sy-42,40,17); g.fillStyle='#c08850'; g.fillRect(sx-19,sy-41,38,15); g.fillStyle='#a87040'; g.fillRect(sx-19,sy-34,38,1);
       if (typeof pfDraw==='function'){ pfDraw(g,'LLAMA',sx-9,sy-40,'#f8f8f8'); pfDraw(g,'ACRES',sx-9,sy-32,'#f8f8f8'); } break; }
+    case 'parasol': { // beach umbrella: a striped canopy on a white pole, with a soft round shadow (v picks red or blue stripes)
+      const C = f.v ? ['#3a8ae8','#1f5ab8','#8ac0ff'] : ['#e03a48','#a81c30','#ff8a90'], W1='#f8f4ea', W2='#d8d0c0', R=17, HT=10, RY=6, cy=sy-34;
+      ellPx(sx,sy+1,13,6,'rgba(20,12,30,0.28)');
+      g.fillStyle=INK; g.fillRect(sx-2,cy,4,36); g.fillStyle='#f4f0e8'; g.fillRect(sx-1,cy,2,35); g.fillStyle='#b8b0a0'; g.fillRect(sx,cy,1,35);   // pole
+      const inside=(dx,dy)=> dy<=0 ? (dx*dx)/(R*R)+(dy*dy)/(HT*HT)<=1 : (dx*dx)/(R*R)+(dy*dy)/(RY*RY)<=1;
+      for (let dy=-HT-1; dy<=RY+1; dy++) for (let dx=-R-1; dx<=R+1; dx++){ if (inside(dx,dy)) continue; if (inside(dx-1,dy)||inside(dx+1,dy)||inside(dx,dy-1)||inside(dx,dy+1)){ g.fillStyle=INK; g.fillRect(sx+dx,cy+dy,1,1); } }
+      for (let dy=-HT; dy<=RY; dy++){ const hw = dy<=0 ? R*Math.sqrt(Math.max(0,1-(dy*dy)/(HT*HT))) : R*Math.sqrt(Math.max(0,1-(dy*dy)/(RY*RY)));
+        for (let dx=-Math.floor(hw); dx<=Math.floor(hw); dx++){ if (!inside(dx,dy)) continue; const u=hw>0?dx/hw:0, wedge=Math.floor((Math.asin(Math.max(-1,Math.min(1,u)))/Math.PI+0.5)*6.999), red=wedge%2===0;
+          let c = red ? C[0] : W1; if (dy>1 || u>0.55) c = red ? C[1] : W2; else if (dy<-HT+3 && u<0.1 && u>-0.6) c = red ? C[2] : '#ffffff';
+          g.fillStyle=c; g.fillRect(sx+dx,cy+dy,1,1); } }
+      for (let k=-2;k<=2;k++){ const xx=sx+Math.round(Math.sin(k*Math.PI/7)*R*0.96); g.fillStyle=INK; g.fillRect(xx,cy+RY+(Math.abs(k)===2?-3:Math.abs(k)===1?-1:0),1,2); }   // little scallop ticks along the front rim
+      g.fillStyle=INK; g.fillRect(sx-2,cy-HT-4,4,4); g.fillStyle='#ffd23f'; g.fillRect(sx-1,cy-HT-3,2,2); g.fillStyle='#fff6a0'; g.fillRect(sx-1,cy-HT-3,1,1);   // gold finial
+      break; }
+    case 'picnic': { // picnic table: a plank top on A-frame legs with a bench down each long side
+      const r=(f.rot||0)%2, x=f.gx, y=f.gy, T1='#d49a58', T2='#b47838', T3='#8a5422', L1='#a86a34', L2='#7a4a1c';
+      ellPx(sx,sy+1,15,7,'rgba(20,12,30,0.25)');
+      const legs = r===0 ? [[x+0.22,y+0.5],[x+0.78,y+0.5]] : [[x+0.5,y+0.22],[x+0.5,y+0.78]];
+      for (const [lx,ly] of legs){ for (const s2 of [-1,1]){ const a = r===0 ? P(lx,ly+s2*0.34,0) : P(lx+s2*0.34,ly,0), b = r===0 ? P(lx,ly+s2*0.1,10) : P(lx+s2*0.1,ly,10); linePx(a[0]-1,a[1],b[0]-1,b[1],INK); linePx(a[0]+1,a[1],b[0]+1,b[1],INK); linePx(a[0],a[1],b[0],b[1],L1); }
+        const c = r===0 ? [P(lx,ly-0.36,5),P(lx,ly+0.36,5)] : [P(lx-0.36,ly,5),P(lx+0.36,ly,5)]; linePx(c[0][0],c[0][1],c[1][0],c[1][1],L2); }
+      if (r===0){ box(x+0.08,y+0.03,0.84,0.16,2,T1,T2,T3,0,5); box(x+0.06,y+0.24,0.88,0.52,2,T1,T2,T3,0,10); box(x+0.08,y+0.81,0.84,0.16,2,T1,T2,T3,0,5);
+        for (const k of [0.41,0.59]){ const a=P(x+0.08,y+k,12), b=P(x+0.92,y+k,12); linePx(a[0],a[1],b[0],b[1],T2); } }
+      else { box(x+0.03,y+0.08,0.16,0.84,2,T1,T2,T3,0,5); box(x+0.24,y+0.06,0.52,0.88,2,T1,T2,T3,0,10); box(x+0.81,y+0.08,0.16,0.84,2,T1,T2,T3,0,5);
+        for (const k of [0.41,0.59]){ const a=P(x+k,y+0.08,12), b=P(x+k,y+0.92,12); linePx(a[0],a[1],b[0],b[1],T2); } }
+      { const q=P(x+0.5,y+0.5,12), X=Math.round(q[0]), Y=Math.round(q[1]); g.fillStyle=INK; g.fillRect(X-3,Y-5,7,6); g.fillStyle='#e03a48'; g.fillRect(X-2,Y-4,5,4); g.fillStyle='#f8f4ea'; g.fillRect(X-2,Y-4,1,1); g.fillRect(X,Y-4,1,1); g.fillRect(X+2,Y-4,1,1); g.fillRect(X-1,Y-2,1,1); g.fillRect(X+1,Y-2,1,1); g.fillStyle='#8a5422'; g.fillRect(X-1,Y-6,3,1); }   // a little checked picnic basket
+      break; }
     case 'campfire': {
       ellPx(sx,sy,13,6,INK); ellPx(sx,sy,12,5,'#787888'); ellPx(sx,sy,8,3,'#383038');
       g.fillStyle='#a8a8b8'; for (const [a,b] of [[-11,-1],[-6,3],[4,3],[10,0],[6,-4],[-5,-4]]) g.fillRect(sx+a,sy+b,3,2);
@@ -5054,7 +5083,7 @@ function render(t){
   const k=Math.min(1, frameDt*3.5); camX += (tx-camX)*k; camY += (ty-camY)*k;
   if (Math.abs(tx-camX)<0.3) camX=tx; if (Math.abs(ty-camY)<0.3) camY=ty;
   OX = Math.round(LW/2 - camX); OY = Math.round(UIT + viewH/2 - camY);
-  if (isP(curRoom) && (PRD[curRoom]||{}).farm) drawFarmSky(ctx);
+  if (isP(curRoom) && (PRD[curRoom]||{}).open) drawFarmSky(ctx);
   else if (curRoom==='cove') drawCoveSky(ctx, t);
   else if (curRoom==='jungle') drawJungleSky(ctx, t);
   else if (curRoom==='barn'){ const sk=barnSky(); const top=OY-BGY; ctx.fillStyle=sk[2]; ctx.fillRect(0,0,LW,LH); ctx.fillStyle=sk[1]; ctx.fillRect(0,0,LW,top+140); ctx.fillStyle=sk[0]; ctx.fillRect(0,0,LW,top+70); }
@@ -6590,6 +6619,7 @@ const FURN_DESC={ vending:'Keeps the hay soda ice cold. Every good hangout needs
   beanbag:'Flop down and sink in. Getting back up is the hard part.', barstool:'Tall, spinny and great for posing.', coffeetable:'Holds snacks, drinks and the remote you can never find.',
   roundtable:'Gather round for games, gossip and snacks.', floorlamp:'Tall lamp, warm light, instant cozy.', lavalamp:'Groovy blobs that float up and down forever.',
   cubeshelf:'Cubbies for all your stuff. Neat freaks love it.', dresser:'Drawers for hats, shades and bandanas.', cactus:'Low care, high style. Please do not hug.',
+  palm:'A tall coconut palm that sways in the breeze.', brock:'Weathered boulders with a bit of moss. Turn them for a different pile.', tiki:'A bamboo torch with a live flame.', campfire:'A crackling campfire in a ring of stones.', jbush:'A leafy bush dotted with flowers.', brazier:'A stone bowl of fire on a pedestal.', parasol:'A striped beach umbrella for a shady spot. Turn it for blue stripes.', picnic:'A wooden picnic table with a bench on each side and a basket on top.',
   flowers:'A pot of bright flowers to cheer up any corner.', boombox:'Old school beats. Turn it up!', statue:'A sparkling crystal llama, best in show at the HARVEST FAIR.',
   throne:'A bale of golden hay with a first-prize rosette: top prize at the HARVEST FAIR, and the comfiest seat on the farm.', rug_persian:'A fancy patterned rug that ties the whole room together.',
   rug_round:'A braided round rug, soft under your hooves.', rug_stripe:'A long striped runner for halls and walkways.', rug_shag:'Super fluffy. Your hooves will thank you.', rug_mat_green:'A bristly welcome mat. Wipe your hooves!', rug_mat_red:'A bristly welcome mat. Wipe your hooves!', rug_mat_blue:'A bristly welcome mat. Wipe your hooves!', rug_mat_coir:'A bristly welcome mat. Wipe your hooves!', rug_mat_pink:'A bristly welcome mat. Wipe your hooves!', rug_mat_purple:'A bristly welcome mat. Wipe your hooves!' };
@@ -6684,7 +6714,7 @@ function openRooms(view){ closeAll(); PRUI.view=view||(store.prView==='map'?'map
 function prRefresh(){ NET.act('pr_list').then(r=>{ if (r.ok){ PRUI.list=r; try{ store.prCache=r; saveStore(); }catch(_){} for (const x of (r.mines||(r.mine?[r.mine]:[]))) PRN['p:'+x.id]=x.name; for (const x of r.rooms) PRN['p:'+x.id]=x.name; if ($id('roomsbox').style.display==='block' && PRUI.view==='list') prDraw(); } });
   if (PRUI.view==='settings') NET.act('pr_info',{rid:PRUI.rid||0}).then(r=>{ if (r.ok){ PRUI.info=r; if (PRUI.view==='settings') prDraw(); } }); }
 const lock = (p, pw) => p ? (pw ? ' 🔒🔑' : ' 🔒') : '';
-function prRow(x, btns){ return `<div class="prr"><div class="prn"><b>${esc(x.name)}${lock(x.priv, x.pw)}${x.farm?'<span class="prfarm">🌾 FARM</span>':''}${x.feat?'<span class="prfeat">🏆 FEATURED</span>':''}</b><small>by ${esc(x.owner)}${x.friend?' · ⭐ friend':''}${x.invited?' · invited':''}</small></div>${x.likes?`<span class="prlk">♥ ${x.likes}</span>`:''}${x.n?`<span class="prcnt">● ${x.n}</span>`:''}${btns}</div>`; }
+function prRow(x, btns){ return `<div class="prr"><div class="prn"><b>${esc(x.name)}${lock(x.priv, x.pw)}${x.kind==='farm'||x.farm?'<span class="prkind farm">🌾 FARM</span>':x.kind==='plot'?'<span class="prkind plot">🌴 PLOT</span>':'<span class="prkind room">🏠 ROOM</span>'}${x.feat?'<span class="prfeat">🏆 FEATURED</span>':''}</b><small>by ${esc(x.owner)}${x.friend?' · ⭐ friend':''}${x.invited?' · invited':''}</small></div>${x.likes?`<span class="prlk">♥ ${x.likes}</span>`:''}${x.n?`<span class="prcnt">● ${x.n}</span>`:''}${btns}</div>`; }
 function prDraw(){
   const B=$id('pr_body'); let h='';
   for (const t of $id('pr_tabs').children) t.classList.toggle('on', t.dataset.v===(PRUI.view==='map'?'map':'list'));
@@ -6708,7 +6738,7 @@ function prDraw(){
     h+=`<div class="prsec">YOUR ROOMS (${mines.length}/${max})${farms.length?' · FARM':''}</div>`;
     for (const x of farms){ const here=curRoom==='p:'+x.id; h+=prRow(x, (here?'':`<button class="gbbtn y" data-go="${x.id}">GO ▶</button>`)+`<button class="gbbtn" data-set="${x.id}">SETTINGS</button>`); }
     for (const x of mines){ const here=curRoom==='p:'+x.id; h+=prRow(x, (here?'':`<button class="gbbtn y" data-go="${x.id}">GO ▶</button>`)+`<button class="gbbtn" data-set="${x.id}">SETTINGS</button>`); }
-    if (mines.length<max) h+=`<div class="fre">${mines.length?'Make another room!':'Make a room of your own! Fill it with furniture from the SHOP and invite your friends.'}</div><input id="pr_newname" maxlength="24" placeholder="${esc((me.n||'').toUpperCase())}'S ${mines.length?['','SECOND','THIRD','FOURTH'][mines.length]+' ROOM':'ROOM'}"><div class="srow"><button class="gbbtn y" id="pr_create">CREATE ${mines.length?'ANOTHER':'MY'} ROOM</button></div>`; }
+    if (mines.length<max) h+=`<div class="fre">${mines.length?'Make another room!':'Make a room of your own! Fill it with furniture from the SHOP and invite your friends.'}</div><input id="pr_newname" maxlength="24" placeholder="${esc((me.n||'').toUpperCase())}'S ${mines.length?['','SECOND','THIRD','FOURTH'][mines.length]+' ROOM':'ROOM'}"><div class="srow"><button class="gbbtn y" id="pr_create">🏠 INDOOR ROOM</button><button class="gbbtn y" id="pr_createplot">🌴 OUTDOOR PLOT</button></div><div class="fre">A ROOM has walls and wallpaper. A PLOT is an open field under the sky: bigger, no walls, great for palms, campfires and picnics.</div>`; }
   { const allMine=L.mines||(L.mine?[L.mine]:[]); if (!allMine.some(x=>x.farm)) h+=`<div class="prfarmnew"><div class="fre"><b>🌾 START A FARM</b><br>Grow carrots, corn, strawberries and pumpkins in garden plots, then sell the harvest for TOKENS. Up to ${L.maxPlots||12} plots. Garden plots and farm decorations are in the SHOP under FARM &amp; GARDEN. One farm each, on top of your rooms.</div><div class="srow"><button class="gbbtn y" id="pr_createfarm">CREATE ${esc((me.n||'').toUpperCase())} ACRES</button></div></div>`; }
   const btn=x=> curRoom==='p:'+x.id ? '<span class="prcnt">YOU\'RE HERE</span>' : x.can ? `<button class="gbbtn y" data-go="${x.id}">GO ▶</button>` : `<button class="gbbtn" data-knock="${x.id}">🚪 KNOCK</button>`+(x.pw?`<button class="gbbtn" data-pwask="${x.id}">🔑</button>`:'')+(PRUI.pwFor===x.id?`</div><div class="prpw"><input id="pr_pwin" type="password" maxlength="24" placeholder="Room password" autocomplete="off"><button class="gbbtn y" data-pwgo="${x.id}">ENTER</button>`:'');
   const staffBtn=x=> L.staff ? `<button class="gbbtn" data-reset="${x.id}" title="Staff: reset this room's name">↺</button>` : '';
@@ -6748,7 +6778,7 @@ $id('pr_body').addEventListener('click', e=>{ const b=e.target.closest('button')
   if (b.id==='pr_delyes'){ const rid=PRUI.rid || (PRUI.info&&PRUI.info.room&&PRUI.info.room.id); if (!rid) return; b.disabled=true;
     NET.act('pr_delete',{rid, confirm:'DELETE'}).then(r=>{ PRUI.delAsk=false; if (!r.ok){ b.disabled=false; return prMsg(r.msg||'That did not work.'); }
       delete PRD['p:'+rid]; PRUI.list=r; PRUI.view='list'; PRUI.rid=0; PRUI.info=null; prDraw(); prMsg(r.msg||'Deleted.', true); }); return; }
-  if (b.id==='pr_create'){ const n=($id('pr_newname').value||'').trim(); prMsg('BUILDING...'); NET.act('pr_create',{name:n}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.list=r; prDraw(); if (r.created) prGo(r.created); }); return; }
+  if (b.id==='pr_create' || b.id==='pr_createplot'){ const n=($id('pr_newname').value||'').trim(), plot=b.id==='pr_createplot'; prMsg(plot?'CLEARING THE GROUND...':'BUILDING...'); NET.act('pr_create', plot ? {name:n, kind:'plot'} : {name:n}).then(r=>{ if (!r.ok) return prMsg(r.msg||'That did not work.'); PRUI.list=r; prDraw(); if (r.created) prGo(r.created); }); return; }
   if (b.id==='pr_back'){ PRUI.view='list'; prDraw(); prRefresh(); return; }
   if (b.classList.contains('lock')){ prMsg('Buy that one in the SHOP first (🎨 WALLPAPER and FLOORS, at the bottom).'); return; }
   if (b.dataset.wall||b.dataset.floor||b.dataset.priv!==undefined){ const upd = b.dataset.wall?{wall:b.dataset.wall}:b.dataset.floor?{floor:b.dataset.floor}:{priv:b.dataset.priv==='1'};
@@ -6770,7 +6800,7 @@ function prDrawSettings(){ if (!prDrawSettings.loaded){ prDrawSettings.loaded=1;
   h+=`<div class="fre" style="margin-top:6px">${R.priv?(R.pw?'Only you, people you invite, people you let in when they knock, and anyone with the password.':'Only you, people you invite, and people you let in when they knock.'):'Anyone can come in.'}</div>`;
   h+=`<div class="prsec">PASSWORD 🔑</div><div class="fre">${R.pw?'This room has a password. Share it with people you want to let in any time.':'Give your room a password so friends can come in without knocking. Setting one makes the room private.'}</div><div class="prpw"><input id="pr_pwnew" type="password" maxlength="24" placeholder="${R.pw?'New password':'4 to 24 characters'}" autocomplete="new-password"><button class="gbbtn y" id="pr_setpw">${R.pw?'CHANGE':'SET'}</button>${R.pw?'<button class="gbbtn" id="pr_clearpw">REMOVE</button>':''}</div>`;
   const own=k=>DECO_OWN.includes(k), sw=(kind,k,T,cur)=>{ const ok=!T.p||own(kind+':'+k)||cur; return `<button ${kind==='w'?'data-wall':'data-floor'}="${k}" class="${cur?'on':''}${ok?'':' lock'}" title="${esc(T.n)}${ok?'':` (${T.p} TOKENS in the SHOP)`}" data-sw="${kind}:${k}">${ok?'':'<span>🔒</span>'}</button>`; };
-  if (!R.farm) h+='<div class="prsec">WALLPAPER</div><div class="sw">'+Object.entries(DECO_WALL).filter(([k])=>k!=='barn').map(([k,T])=>sw('w',k,T,R.wall===k)).join('')+'</div>';   /* farms have no walls */
+  if (!R.open) h+='<div class="prsec">WALLPAPER</div><div class="sw">'+Object.entries(DECO_WALL).filter(([k])=>k!=='barn').map(([k,T])=>sw('w',k,T,R.wall===k)).join('')+'</div>';   /* farms have no walls */
   h+='<div class="prsec">FLOOR</div><div class="sw">'+Object.entries(DECO_FLOOR).map(([k,T])=>sw('f',k,T,R.floor===k)).join('')+'</div>';
   h+='<div class="fre">🔒 ones are for sale in the SHOP. Putting one up uses it from your bag, and the one you take down goes back in your bag.</div>';
   h+=`<div class="prsec">INVITED (${I.invites.length})</div>`+(I.invites.length?I.invites.map(n=>`<span class="chip">${esc(n)}<button data-uninv="${esc(n)}" aria-label="Remove ${esc(n)}">✕</button></span>`).join(''):'<div class="fre">Nobody yet. Invited llamas can always come in, even when it\'s private.</div>');
@@ -6779,7 +6809,7 @@ function prDrawSettings(){ if (!prDrawSettings.loaded){ prDrawSettings.loaded=1;
   h+=`<div class="srow"><button class="gbbtn y" id="pr_edit">🎒 PLACE FURNITURE</button><button class="gbbtn" id="pr_back">◀ ROOMS</button></div><div class="prmsg"></div>`;
   // delete this room: asks first, says what happens to the furniture (and any crops)
   { const kind=R.farm?'farm':'room', n=I.furnN||0, c=I.crops||0;
-    if (!PRUI.delAsk) h+=`<div class="prsec">DELETE ${R.farm?'FARM':'ROOM'}</div><div class="srow"><button class="gbbtn bad" id="pr_delete">DELETE THIS ${R.farm?'FARM':'ROOM'}</button></div>`;
+    if (!PRUI.delAsk) h+=`<div class="prsec">DELETE ${R.farm?'FARM':R.kind==='plot'?'PLOT':'ROOM'}</div><div class="srow"><button class="gbbtn bad" id="pr_delete">DELETE THIS ${R.farm?'FARM':R.kind==='plot'?'PLOT':'ROOM'}</button></div>`;
     else h+=`<div class="prdel"><div class="bnq">Delete <b>${esc(R.name)}</b>?</div><div class="fre">${n ? `${n} ${n===1?'piece':'pieces'} of furniture will go back to your bag.` : 'There\'s no furniture in it.'}${c ? ` The ${c} ${c===1?'crop':'crops'} growing here will be lost.` : ''} Anyone inside goes back to the lounge. This can't be undone.</div><div class="srow"><button class="gbbtn bad" id="pr_delyes">YES, DELETE</button><button class="gbbtn" id="pr_delno">GO BACK</button></div></div>`; }
   B.innerHTML=h; for (const b of B.querySelectorAll('[data-sw]')){ const k=b.dataset.sw; if (!DSW_URL[k]){ const [kind,id]=k.split(':'); DSW_URL[k]=decoSwatch(kind,id).toDataURL(); } b.style.backgroundImage=`url(${DSW_URL[k]})`; }
 }
@@ -6789,7 +6819,7 @@ function prGo(id, pw){ const fresh=!joined;   /* picked from the launch screen: 
   NET.act('pr_enter',{rid:id, pw:pw||undefined}).then(r=>{
   if (!r.ok){ if (r.locked){ if ($id('roomsbox').style.display!=='block') openRooms(); if (r.pw){ PRUI.pwFor=id; if (PRUI.view!=='list'){ PRUI.view='list'; } prDraw(); } prMsg(r.msg); } else localMsg(r.msg||'That room is closed.'); PRED.pending=false; return; }
   PRUI.pwFor=null;
-  const key='p:'+id; PRD[key]={...r.room, furn:r.furn, mine:r.mine}; PRN[key]=r.room.name; ROOM_NAMES[key]=r.room.name; { const W=r.room.farm?12:11, H=r.room.farm?9:7; ROOM_DIMS[key]=[W,H]; ENTRY[key]={any:{at:[1,H-1],to:[3,H-1]}}; DOORWAY[key]=[0,H-1]; }   /* farms are a bigger open field */   /* player rooms: 11 wide, 7 deep; the door is at the front of the short left wall */ ROOM_SHORT[key]=r.room.farm?'FARM':'ROOM';
+  const key='p:'+id; PRD[key]={...r.room, furn:r.furn, mine:r.mine}; PRN[key]=r.room.name; ROOM_NAMES[key]=r.room.name; { const W=r.room.open?12:11, H=r.room.open?9:7; ROOM_DIMS[key]=[W,H]; ENTRY[key]={any:{at:[1,H-1],to:[3,H-1]}}; DOORWAY[key]=[0,H-1]; }   /* farms are a bigger open field */   /* player rooms: 11 wide, 7 deep; the door is at the front of the short left wall */ ROOM_SHORT[key]=r.room.farm?'FARM':'ROOM';
   if (fresh && !joined){ goRoom(key); if (PRED.pending){ PRED.pending=false; setTimeout(()=>{ if (curRoom===key) prEditStart(); }, 800); } return; }
   closeAll(); if (curRoom===key){ buildWorld(); if (PRED.pending){ PRED.pending=false; prEditStart(); } return; }
   if (arcade.on) exitArcade(); localMsg(`Heading to ${r.room.name}...`); goThroughDoor(key); }); }

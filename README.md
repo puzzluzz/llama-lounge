@@ -516,3 +516,9 @@ So on this test machine the old server kept up to about 50 llamas and the new on
 
 ### Fair prizes and the prize hay bale (Nov 21)
 To give the game its own identity, the "limited rares" are now FAIR PRIZES: keepsakes from the LLAMA ACRES HARVEST FAIR. The game no longer shows them as numbered editions ("#3 of 25"); cards say how many are left and how many you have. The golden throne is replaced by the PRIZE HAY BALE (same item id `throne`, same price and seat, so existing owners keep theirs): a bale of golden hay tied with red twine, with a blue first-prize rosette. Copies still have a number inside the trade and marketplace screens so two copies can be told apart.
+
+### Outdoor plots, room badges, outdoor furniture (Nov 21)
+- **Room kinds.** A player room is a ROOM (indoors, walls and wallpaper), a PLOT (an outdoor lot: an open field under the sky, 12 x 9, no walls, no crops) or a FARM. `prooms.kind` holds it; `prOpen` is true for plots and farms, which share the open-field look. Plots count toward the 3-room limit; the farm is still extra.
+- **Badges.** Every room in the PLAYER ROOMS list shows a ROOM, PLOT or FARM badge. Creating a room now offers INDOOR ROOM or OUTDOOR PLOT.
+- **Outdoor furniture.** A new OUTDOOR shelf in the shop: PALM TREE, BOULDERS, TIKI TORCH, CAMPFIRE, FLOWER BUSH and STONE BRAZIER (the game's own scenery pieces), plus a new BEACH UMBRELLA and PICNIC TABLE.
+- Fixed on the way (found by the new tests): on a brand-new database the room table rebuild dropped the `kind` and password columns. The live database was never affected.

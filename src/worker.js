@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-28b";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-28c";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -112,12 +112,15 @@ const PR_WALLS = Object.keys(DECO_WALL), PR_FLOORS = Object.keys(DECO_FLOOR);
 // Crops: seed cost (TOKENS), grow time and what the harvest sells for. Short crops pay best per hour if you tend them; long ones suit time away.
 // A visitor (not the owner) can water a growing plot once per planting: it finishes FARM.waterCut of its grow time sooner.
 const FARM = { max: 1, maxPlots: 12, waterCut: 0.2, w: 12, h: 9, clear: ["0,8", "1,8", "2,8", "3,8"] };   // 12 plots plus paths and a few decorations fit; income is set by the plot cap, not the size   // farms are open fields, bigger than rooms, with a gate where the door would be
-const prDim = (r) => (r && r.kind === "farm" ? FARM : PR);
+// ROOM KINDS: "room" (indoors, with walls), "plot" (an outdoor lot: an open field like a farm, no walls, no crops) and "farm".
+const prOpen = (r) => !!r && (r.kind === "farm" || r.kind === "plot");
+const prDim = (r) => (prOpen(r) ? FARM : PR);
 const CROPS = { carrot: { n: "CARROTS", seed: 1, ms: 20 * 60e3, pay: 3 }, corn: { n: "CORN", seed: 2, ms: 45 * 60e3, pay: 5 },
   berry: { n: "STRAWBERRIES", seed: 3, ms: 2 * 3600e3, pay: 8 }, pumpkin: { n: "PUMPKINS", seed: 5, ms: 6 * 3600e3, pay: 13 } };
 const FARM_ONLY = new Set(["plot"]);
 // furniture you buy in the LLAMA STORE (kept in STORAGE until you place it); prices in tokens
 const FURN_ITEMS = { plot: 20, scarecrow: 15, wheelbarrow: 14, trough: 12, beehive: 18, appletree: 25, sunflowers: 8, gfence: 6, cushion_pink: 5, cushion_teal: 5, cushion_gold: 5, stool: 6, hayseat: 6, log: 5, table: 12, lamp: 12, fern: 6, hay: 4, keg: 8, cabinet: 15, counter: 10, vending: 30, adminsign: 50, chair: 8, armchair: 15, bed: 25, bookshelf: 18, tv: 22, plant: 7, bigtv: 35, loveseat: 22, sofa: 30, snackvend: 30, rug_persian: 25, rug_round: 15, rug_stripe: 12, rug_shag: 18,
+  palm: 18, brock: 8, tiki: 10, campfire: 15, jbush: 8, brazier: 15, parasol: 16, picnic: 14,   // OUTDOOR
   beanbag: 10, barstool: 7, dbed: 40, coffeetable: 14, roundtable: 16, floorlamp: 16, lavalamp: 12, cubeshelf: 14, dresser: 20, cactus: 5, flowers: 6, boombox: 18 , rug_mat_green: 6, rug_mat_red: 6, rug_mat_blue: 6, rug_mat_coir: 6, rug_mat_pink: 6, rug_mat_purple: 6 };
 // what the store sells right now: one piece per category (the rest stay placeable for anyone who already owns them)
 // vending machines players can put in their rooms, and what each one sells
@@ -139,7 +142,7 @@ const KITS = { living: { n: "COZY LIVING ROOM", items: { sofa: 1, coffeetable: 1
   farm: { n: "FARM STARTER", items: { plot: 2, scarecrow: 1, sunflowers: 1, trough: 1, gfence: 2 } } };
 const kitPrice = (k) => Math.round(Object.entries(KITS[k].items).reduce((t, [it, n]) => t + (FURN_ITEMS[it] || 0) * n, 0) * 0.8);
 const furnBase = (item) => FURN_VARIANTS[item] || item;   // couches run along their back, so they turn the other way
-const FURN_SALE = new Set(["plot", "scarecrow", "wheelbarrow", "trough", "beehive", "appletree", "sunflowers", "gfence", "chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend", "rug_persian", "rug_round", "rug_stripe", "rug_shag", "rug_mat_green", "rug_mat_red", "rug_mat_blue", "rug_mat_coir", "rug_mat_pink", "rug_mat_purple",
+const FURN_SALE = new Set(["palm", "brock", "tiki", "campfire", "jbush", "brazier", "parasol", "picnic", "plot", "scarecrow", "wheelbarrow", "trough", "beehive", "appletree", "sunflowers", "gfence", "chair", "armchair", "bed", "table", "lamp", "bookshelf", "tv", "plant", "adminsign", "bigtv", "loveseat", "sofa", "vending", "snackvend", "rug_persian", "rug_round", "rug_stripe", "rug_shag", "rug_mat_green", "rug_mat_red", "rug_mat_blue", "rug_mat_coir", "rug_mat_pink", "rug_mat_purple",
   "beanbag", "barstool", "dbed", "coffeetable", "roundtable", "floorlamp", "lavalamp", "cubeshelf", "dresser", "cactus", "flowers", "boombox"]);
 for (const [k, b] of Object.entries(FURN_VARIANTS)) { FURN_ITEMS[k] = FURN_ITEMS[b]; FURN_SALE.add(k); }   // variants cost the same as their base
 const FURN_STAFF = new Set(["adminsign"]);   // only mods and the owner can buy these
@@ -1072,7 +1075,6 @@ export class Lounge extends DurableObject {
       "CREATE TABLE IF NOT EXISTS plike (room INTEGER NOT NULL, uid INTEGER NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (room, uid))"]) await this.env.DB.prepare(q).run();
     try { await this.env.DB.prepare("ALTER TABLE prooms ADD COLUMN feat INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {}   // rooms the owner features in the room browser
     try { await this.env.DB.prepare("ALTER TABLE pfurn ADD COLUMN off INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {}
-    for (const col of ["kind TEXT NOT NULL DEFAULT 'room'", "pwh TEXT", "pws TEXT"]) { try { await this.env.DB.prepare("ALTER TABLE prooms ADD COLUMN " + col).run(); } catch (e) {} }   // kind: room or farm; pwh/pws: password hash and salt
     await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS pplot (fid INTEGER PRIMARY KEY, room INTEGER NOT NULL, crop TEXT NOT NULL, planted INTEGER NOT NULL, ready INTEGER NOT NULL, wat INTEGER NOT NULL DEFAULT 0, wby TEXT)").run();   // TVs and lamps can be switched off (already there after the first time)
     // one llama can own several rooms now: rebuild prooms once without the UNIQUE on owner (ids stay the same, so furniture, likes and invites stay put)
     { const t = await this.env.DB.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'prooms'").first();
@@ -1082,6 +1084,8 @@ export class Lounge extends DurableObject {
         this.env.DB.prepare("DROP TABLE prooms"),
         this.env.DB.prepare("ALTER TABLE prooms_new RENAME TO prooms"),
         this.env.DB.prepare("CREATE INDEX IF NOT EXISTS prooms_owner ON prooms (owner)")]); }
+    // (after the rebuild above, which only carries the original columns: on a brand-new database these would otherwise be lost)
+    for (const col of ["kind TEXT NOT NULL DEFAULT 'room'", "pwh TEXT", "pws TEXT"]) { try { await this.env.DB.prepare("ALTER TABLE prooms ADD COLUMN " + col).run(); } catch (e) {} }   // kind: room, plot or farm; pwh/pws: password hash and salt
     // old wallpaper/floor unlocks become bag items (the one already up in the room stays on the wall); runs until the old table is empty
     await this.env.DB.batch([
       this.env.DB.prepare("INSERT INTO finv (uid, item, n) SELECT d.uid, CASE WHEN substr(d.k, 1, 2) = 'w:' THEN 'wp_' || substr(d.k, 3) ELSE 'fl_' || substr(d.k, 3) END, 1 FROM deco d WHERE NOT EXISTS (SELECT 1 FROM prooms r WHERE r.owner = d.uid AND (d.k = 'w:' || r.wall OR d.k = 'f:' || r.floor)) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1"),
@@ -1094,7 +1098,7 @@ export class Lounge extends DurableObject {
     const li = this.letIn.get(r.id); if (li && (li.get(a.uid) || 0) > Date.now()) return true;
     return !!(await this.env.DB.prepare("SELECT 1 FROM pinv WHERE room = ? AND uid = ?").bind(r.id, a.uid).first());
   }
-  prOut(r) { return { id: r.id, name: r.name, owner: r.oname.toUpperCase(), priv: !!r.priv, wall: r.wall, floor: r.floor, likes: r.likes || 0, liked: !!r.liked, feat: !!r.feat, farm: r.kind === "farm", pw: !!(r.priv && r.pwh) }; }
+  prOut(r) { return { id: r.id, name: r.name, owner: r.oname.toUpperCase(), priv: !!r.priv, wall: r.wall, floor: r.floor, likes: r.likes || 0, liked: !!r.liked, feat: !!r.feat, farm: r.kind === "farm", kind: r.kind === "farm" || r.kind === "plot" ? r.kind : "room", open: prOpen(r), pw: !!(r.priv && r.pwh) }; }
   async prLikes(id, uid) { const r = await this.env.DB.prepare("SELECT (SELECT COUNT(*) FROM plike WHERE room = ?) AS likes, EXISTS(SELECT 1 FROM plike WHERE room = ? AND uid = ?) AS liked").bind(id, id, uid).first(); return { likes: r.likes || 0, liked: !!r.liked }; }
   // like or unlike someone else's room: only while you're inside it, never your own, a few times a minute at most
   async prLike(ws, a, m) {
@@ -1150,12 +1154,12 @@ export class Lounge extends DurableObject {
   }
   async prCreate(a, m) {
     await this.prTables();
-    const farm = m.kind === "farm";
+    const farm = m.kind === "farm", plot = m.kind === "plot";
     if (farm) { const f = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM prooms WHERE owner = ? AND kind = 'farm'").bind(a.uid).first(); if (f && f.n >= FARM.max) return { ok: false, msg: "You already have a farm. Each llama gets one." }; }
     else { const have = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM prooms WHERE owner = ? AND kind != 'farm'").bind(a.uid).first(); if (have && have.n >= PR.maxRooms) return { ok: false, msg: `You can have up to ${PR.maxRooms} rooms for now.` }; }
-    const name = farm ? (a.name + " ACRES").slice(0, PR.nameMax) : (cleanRoomName(m.name) || (a.name + "'S ROOM").slice(0, PR.nameMax));   // farms are always named after their farmer: NAME ACRES
+    const name = farm ? (a.name + " ACRES").slice(0, PR.nameMax) : (cleanRoomName(m.name) || (a.name + (plot ? "'S PLOT" : "'S ROOM")).slice(0, PR.nameMax));   // farms are always named after their farmer: NAME ACRES
     if (!WF.nameOk(name)) return { ok: false, msg: "That room name isn't allowed. Try another." };
-    const ins = await this.env.DB.prepare("INSERT INTO prooms (owner, name, priv, wall, floor, t, kind) VALUES (?, ?, 0, ?, ?, ?, ?)").bind(a.uid, name, "lavender", farm ? "meadow" : "wood", Date.now(), farm ? "farm" : "room").run();
+    const ins = await this.env.DB.prepare("INSERT INTO prooms (owner, name, priv, wall, floor, t, kind) VALUES (?, ?, 0, ?, ?, ?, ?)").bind(a.uid, name, "lavender", farm || plot ? "meadow" : "wood", Date.now(), farm ? "farm" : plot ? "plot" : "room").run();
     return { ...(await this.prList(a)), created: ins.meta.last_row_id };
   }
   async prMine(a, m) { await this.prTables(); const want = Math.floor(+((m && (m.rid || m.room)) || 0)) || prId(a.pres && a.pres.rm) || 0;
@@ -1366,7 +1370,7 @@ export class Lounge extends DurableObject {
     const k = String(m.item || ""); if (!Object.hasOwn(FURN_ITEMS, k)) return { ok: false, msg: "That's not furniture." };
     const gx = Math.floor(+m.gx), gy = Math.floor(+m.gy), rot = ((Math.floor(+m.rot) || 0) % 4 + 4) % 4;
     const DM = prDim(r); if (!(gx >= 0 && gy >= 0 && gx < DM.w && gy < DM.h)) return { ok: false, msg: "That's outside the room." };
-    const wall = FURN_WALL.has(k); if (wall && r.kind === "farm") return { ok: false, msg: "A farm has no walls, so wall pieces can't go here." };
+    const wall = FURN_WALL.has(k); if (wall && prOpen(r)) return { ok: false, msg: "There are no walls out here, so wall pieces can't go here." };
     if (wall && gx !== 0 && gy !== 0) return { ok: false, msg: "Wall items go on a wall. Tap a spot right next to a wall." };
     if (wall && gx === 0 && gy >= PR.h - 2) return { ok: false, msg: "That's where the door is." };
     const furn = await this.prFurn(r.id); if (furn.length >= PR.maxFurn) return { ok: false, msg: `Rooms hold up to ${PR.maxFurn} pieces.` };
