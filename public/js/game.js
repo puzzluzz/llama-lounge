@@ -1586,8 +1586,11 @@ function drawJunglePiece(f, t, sx, sy){
       break; }
     case 'jbush': { // leafy bush with flowers
       ellPx(sx,sy+1,13,4,'rgba(10,24,8,0.35)'); const B=[[0,-8,9],[-8,-4,7],[8,-4,7],[0,-14,6]];
-      for (const [dx,dy,r] of B) pDisc(g,sx+dx,sy+dy,r+1,INK); for (const [dx,dy,r] of B) pDisc(g,sx+dx,sy+dy,r,'#2e6a2c'); for (const [dx,dy,r] of B) pDisc(g,sx+dx-1,sy+dy-2,r-3,'#4c9a42');
-      const fc=f.v?'#ff6ea0':'#ffd23f'; for (const [dx,dy] of [[-6,-8],[4,-12],[7,-5],[-2,-15],[0,-5]]){ g.fillStyle=INK; g.fillRect(sx+dx-1,sy+dy-1,4,4); g.fillStyle=fc; g.fillRect(sx+dx,sy+dy,2,2); g.fillStyle='#ffffff'; g.fillRect(sx+dx,sy+dy,1,1); }
+      for (const [dx,dy,r] of B) pDisc(g,sx+dx,sy+dy,r+1,INK); for (const [dx,dy,r] of B) pDisc(g,sx+dx,sy+dy,r,'#235a26'); for (const [dx,dy,r] of B) pDisc(g,sx+dx-1,sy+dy-1,r-1,'#2e6e2c'); for (const [dx,dy,r] of B) pDisc(g,sx+dx-1,sy+dy-2,r-3,'#449640');
+      for (const [dx,dy,r] of B) pDisc(g,sx+dx-2,sy+dy-3,Math.max(1,r-5),'#62b454');
+      g.fillStyle='#86d070'; for (const [dx,dy] of [[-10,-7],[-4,-18],[2,-17],[-3,-11],[6,-8],[-9,-3],[10,-6]]){ g.fillRect(sx+dx,sy+dy,2,1); g.fillRect(sx+dx+1,sy+dy-1,1,1); }   // leaf tips catching the light
+      g.fillStyle='#1a4420'; for (const [dx,dy] of [[-6,-1],[3,-2],[10,-2],[-12,-2],[5,-10],[-2,-7],[12,-4]]){ g.fillRect(sx+dx,sy+dy,2,1); g.fillRect(sx+dx,sy+dy+1,1,1); }                // shadows between the leaves
+      const fc=f.v?'#ff6ea0':'#ffd23f'; for (const [dx,dy] of [[-6,-8],[4,-12],[8,-5],[-2,-16],[0,-5]]){ const X=sx+dx, Y=sy+dy; g.fillStyle='#1a4420'; g.fillRect(X-1,Y+2,3,1); g.fillStyle=fc; g.fillRect(X,Y-1,1,3); g.fillRect(X-1,Y,3,1); g.fillStyle=f.v?'#ffd0e0':'#fff4b0'; g.fillRect(X-1,Y-1,1,1); g.fillStyle=f.v?'#ffd23f':'#f08a20'; g.fillRect(X,Y,1,1); }   // four-petal blossoms
       break; }
   }
 }
@@ -1714,12 +1717,16 @@ const dhash=(a,b)=>{ let n=(a*374761393+b*668265263)|0; n=(n^(n>>>13))*127412617
 const dmul=(c,f)=>[Math.min(255,c[0]*f|0),Math.min(255,c[1]*f|0),Math.min(255,c[2]*f|0)];
 const dmix=(a,b,t)=>[a[0]+(b[0]-a[0])*t|0,a[1]+(b[1]-a[1])*t|0,a[2]+(b[2]-a[2])*t|0];
 // walls: field(s,h) above the chair rail, low(s,h) below it (s = pixels along the wall, h = pixels above the floor), and trim colours
+// the lower wall for plain paints: a baseboard and recessed panels in the paint's own trim colour
+const wainscot=hex=>{ const b=dh(hex), dk=dmul(b,0.78), lt=dshadeW(b,1.16), in2=dmul(b,0.93), base=dmul(b,0.68);
+  return (s,h)=>{ const k=((s%24)+24)%24; if (h<=2) return base; if (h===3) return lt; if (k>=4&&k<=20&&h>=8&&h<=22){ if (k===4||h===22) return dk; if (k===20||h===8) return lt; return in2; } return b; }; };
+const dshadeW=(c,f)=>[Math.min(255,Math.round(c[0]*f)),Math.min(255,Math.round(c[1]*f)),Math.min(255,Math.round(c[2]*f))];
 const DECO_WALL={
-  lavender:{n:'LAVENDER PAINT',p:0, field:(s,h)=>s%10===0?dmix(dh('#b8a0f0'),dh('#7860c8'),0.25):dh('#c4acf4'), low:()=>dh('#8068cc'), trim:'#7860c8'},
-  cream:{n:'CREAM PAINT',p:15, field:(s,h)=>s%10===0?dmix(dh('#f2e2c8'),dh('#9a6436'),0.18):dh('#f5e8d0'), low:()=>dh('#a06a3a'), trim:'#9a6436'},
-  mint:{n:'MINT PAINT',p:15, field:(s,h)=>s%10===0?dmix(dh('#a8e0c8'),dh('#4a9a7a'),0.25):dh('#b4e6d0'), low:()=>dh('#509e80'), trim:'#4a9a7a'},
-  pink:{n:'BUBBLEGUM PAINT',p:15, field:(s,h)=>s%10===0?dmix(dh('#f8b8d0'),dh('#c86890'),0.25):dh('#fac4d8'), low:()=>dh('#cc6e96'), trim:'#c86890'},
-  night:{n:'MIDNIGHT PAINT',p:15, field:(s,h)=>s%10===0?dh('#262048'):dh('#2e2858'), low:()=>dh('#161232'), trim:'#141030'},
+  lavender:{n:'LAVENDER PAINT',p:0, field:(s,h)=>s%10===0?dmix(dh('#b8a0f0'),dh('#7860c8'),0.25):dh('#c4acf4'), low:wainscot('#8068cc'), trim:'#7860c8'},
+  cream:{n:'CREAM PAINT',p:15, field:(s,h)=>s%10===0?dmix(dh('#f2e2c8'),dh('#9a6436'),0.18):dh('#f5e8d0'), low:wainscot('#a06a3a'), trim:'#9a6436'},
+  mint:{n:'MINT PAINT',p:15, field:(s,h)=>s%10===0?dmix(dh('#a8e0c8'),dh('#4a9a7a'),0.25):dh('#b4e6d0'), low:wainscot('#509e80'), trim:'#4a9a7a'},
+  pink:{n:'BUBBLEGUM PAINT',p:15, field:(s,h)=>s%10===0?dmix(dh('#f8b8d0'),dh('#c86890'),0.25):dh('#fac4d8'), low:wainscot('#cc6e96'), trim:'#c86890'},
+  night:{n:'MIDNIGHT PAINT',p:15, field:(s,h)=>s%10===0?dh('#262048'):dh('#2e2858'), low:wainscot('#221c48'), trim:'#141030'},
   wood:{n:'WOOD PANELING',p:25, field:(s,h)=>{ const pl=Math.floor(s/9), c=dh(['#a87444','#b8834e','#9c6a3c'][pl%3]); if (s%9===0) return dh('#5a3418'); const gr=dhash(pl,Math.floor(h/7)); return (gr<0.12 && (h+pl)%5===0) ? dmul(c,0.85) : c; }, low:(s,h)=>((s%18===0)||h===3||h===22)?dh('#4a2a12'):dh('#6a4220'), trim:'#6a4220'},
   stripes:{n:'REGENCY STRIPES',p:30, field:(s,h)=>{ const k=s%14; if (k===0) return dh('#e0b860'); return dh(k<7?'#2c3c74':'#3c5090'); },
     low:(s,h)=>{ const k=s%24; if (k===0||h===2||h===23) return dh('#3a2210'); if ((k===3||k===21)&&h>5&&h<20 || (h===6||h===19)&&k>3&&k<21) return dh('#4a2e16'); if ((k===4)&&h>6&&h<19 || h===7&&k>4&&k<20) return dh('#8a5a30'); return dh('#6a4220'); }, trim:'#3a2210'},
@@ -2716,13 +2723,17 @@ function drawFurn(f,t){
       arm(U1-AW,U1);
       if (r>=2) back();
       break; }
-    case 'beanbag': { // slouchy bean bag: a squashed blob with a raised back, a sitting dent and a soft shine
-      const {FP}=frm(f), M='#9a5ae0', D='#6e3cb0', L='#c8a0f8', [cx,cy]=P(f.gx+0.5,f.gy+0.5,0), X=Math.round(cx), Y=Math.round(cy), [bx0,by0]=FP(0.5,0.25,0), BX=Math.round(bx0), BY=Math.round(by0);
-      const bump=()=>{ ellO(BX,BY-9,9,7,M); ellPx(BX-1,BY-8,8,5.5,M); ellPx(BX+3,BY-7,4,4,D); ellPx(BX-3,BY-12,3,1.5,L); };
-      if ((f.rot||0)<2) bump();
-      ellO(X,Y-4,13,6,D); ellPx(X,Y-5,12,5,M); ellPx(X+1,Y-5,6,2.5,tint(M,-0.12)); ellPx(X-6,Y-7,3,1,L);
-      if ((f.rot||0)>=2) bump();
-      g.fillStyle=D; g.fillRect(X+8,Y-3,3,1); g.fillRect(X-10,Y-3,2,1);
+    case 'beanbag': { // slouchy bean bag: one soft pear shape with a slumped back, a sitting dent, stitched seams and a pinched top
+      const {FP}=frm(f), M='#9a5ae0', D='#7340bc', DD='#54298e', L='#b488f0', HL='#e0ccfc', [cx,cy]=P(f.gx+0.5,f.gy+0.5,0), X=Math.round(cx), Y=Math.round(cy);
+      const [bx0,by0]=FP(0.5,0.3,0), BX=Math.round(bx0), BY=Math.round(by0), [sx0,sy0]=FP(0.5,0.66,0), SX=Math.round(sx0), SY=Math.round(sy0), back=(f.rot||0)<2, dir=BX<=X?1:-1;
+      ellPx(X,Y+1,15,5,'rgba(20,10,40,0.22)');
+      ellPx(X,Y-5,14,7,INK); ellPx(BX,BY-11,10,9,INK);                                   // one outline around the whole bag
+      const seat=()=>{ ellPx(X,Y-5,13,6,DD); ellPx(X,Y-6,13,5,D); ellPx(X,Y-7,12,4.5,M); ellPx(SX,SY-7,7,3,D); ellPx(SX,SY-6,6,2,tint(M,-0.08)||M); };
+      const mound=()=>{ ellPx(BX,BY-11,9,8,D); ellPx(BX-1,BY-12,8,7,M); ellPx(BX-3,BY-14,4,3.5,L); ellPx(BX-4,BY-16,2,1,HL);
+        for (const [a,b,c2,d2] of [[0,-19,-5,-7],[1,-19,6,-8]]) linePx(BX+a,BY+b,BX+c2,BY+d2,D);                                        // seams running down from the pinch
+        g.fillStyle=INK; g.fillRect(BX-2,BY-21,4,2); g.fillStyle=L; g.fillRect(BX-1,BY-21,2,1); };
+      if (back){ mound(); seat(); } else { seat(); mound(); }
+      g.fillStyle=DD; g.fillRect(X-9,Y-1,5,1); g.fillRect(X+5,Y-1,4,1); g.fillStyle=HL; g.fillRect(X-9,Y-9,3,1); g.fillRect(X-10,Y-8,1,1);   // creases underneath, a glint on the rim
       break; }
     case 'pstool': { // tall bar stool: round base, chrome post, foot ring and a padded red seat
       const [cx,cy]=P(f.gx+0.5,f.gy+0.5,0), X=Math.round(cx), Y=Math.round(cy);
@@ -2790,12 +2801,13 @@ function drawFurn(f,t){
     case 'cactus': { // potted cactus: ribbed body with two arms, little spines and a pink flower on top
       const x=f.gx, y=f.gy; box(x+0.34,y+0.34,0.32,0.32,6,'#5a3018','#c8642e','#a04a1c'); box(x+0.31,y+0.31,0.38,0.38,2,'#4a2810','#e07a40','#b85a28',0,6);
       const [cx,cy]=P(x+0.5,y+0.5,8), X=Math.round(cx), Y=Math.round(cy), G='#4aa04a', GD='#2e7a2e', GL='#7fd07f';
-      const col=(x0,y0,w,h)=>{ g.fillStyle=INK; g.fillRect(x0-1,y0-1,w+2,h+2); g.fillStyle=G; g.fillRect(x0,y0,w,h); g.fillStyle=GD; g.fillRect(x0+w-1,y0,1,h); g.fillStyle=GL; g.fillRect(x0,y0,1,h); };
-      col(X-6,Y-12,3,5); col(X-6,Y-12,4,2); col(X+4,Y-15,3,6); col(X+3,Y-11,3,2);
-      col(X-3,Y-20,6,20); g.fillStyle=GD; g.fillRect(X,Y-19,1,18); g.fillStyle=INK; g.fillRect(X-2,Y-21,4,1);
-      g.fillStyle='#f8f4e0'; for (const [dx,dy] of [[-4,-16],[3,-13],[-4,-8],[3,-5],[-7,-10],[7,-12]]) g.fillRect(X+dx,Y+dy,1,1);
-      g.fillStyle=INK; g.fillRect(X-2,Y-24,4,3); g.fillStyle='#f878b8'; g.fillRect(X-1,Y-23,2,2); g.fillStyle='#ffd0e8'; g.fillRect(X-1,Y-23,1,1);
-      break; }
+      const col=(x0,y0,w,h)=>{ g.fillStyle=INK; g.fillRect(x0-1,y0,w+2,h+1); g.fillRect(x0,y0-1,w,1); g.fillStyle=G; g.fillRect(x0,y0,w,h); g.fillStyle=GD; g.fillRect(x0+w-1,y0+1,1,h-1); g.fillStyle=GL; g.fillRect(x0,y0+1,1,h-1); };   // a rounded-top column
+      col(X-8,Y-13,3,6); g.fillStyle=INK; g.fillRect(X-8,Y-8,6,3); g.fillStyle=G; g.fillRect(X-7,Y-8,4,2); g.fillStyle=GD; g.fillRect(X-7,Y-7,4,1);      // left arm: out, then up
+      col(X+6,Y-17,3,7); g.fillStyle=INK; g.fillRect(X+4,Y-12,6,4); g.fillStyle=G; g.fillRect(X+4,Y-11,5,2); g.fillStyle=GD; g.fillRect(X+4,Y-10,5,1); g.fillRect(X+8,Y-12,1,2);   // right arm, higher
+      col(X-3,Y-21,7,21); g.fillStyle=GL; g.fillRect(X-2,Y-20,1,19); g.fillStyle='#3a8c3a'; g.fillRect(X,Y-20,1,19); g.fillStyle=GD; g.fillRect(X+2,Y-20,1,19);   // ribbed body
+      g.fillStyle='#f8f4e0'; for (const [dx,dy] of [[-1,-17],[1,-13],[-1,-9],[1,-5],[-1,-2],[-7,-11],[6,-14],[3,-17],[-3,-14],[3,-7]]) g.fillRect(X+dx,Y+dy,1,1);   // spines
+      g.fillStyle=INK; g.fillRect(X-2,Y-25,5,3); g.fillRect(X-1,Y-26,3,1); g.fillStyle='#f878b8'; g.fillRect(X-1,Y-25,3,2); g.fillRect(X,Y-26,1,1); g.fillStyle='#ffd0e8'; g.fillRect(X-1,Y-25,1,1); g.fillStyle='#ffd23f'; g.fillRect(X,Y-24,1,1);   // bloom on top
+            break; }
     case 'plot': { // raised garden bed: plank frame, dark soil with furrows, and what's growing (stages from seed to ripe)
       const x=f.gx, y=f.gy, st=plotState(f), wet=st&&st.wat;
       box(x+0.06,y+0.06,0.88,0.88,5,'#9a6636','#b07a44','#7a4a22');
@@ -2916,7 +2928,10 @@ function drawFurn(f,t){
       ellPx(X,Y,5,1.5,'#3a2010');
       for (const [dx,h,c] of [[-4,12,'#e03048'],[0,16,'#f8d030'],[4,13,'#f878b8'],[-1,10,'#ffffff'],[2,9,'#e03048']]){ g.fillStyle='#3a8a3a'; g.fillRect(X+dx,Y-h,1,h); }
       g.fillStyle='#4aa04a'; g.fillRect(X-6,Y-6,3,2); g.fillRect(X+4,Y-7,3,2); g.fillRect(X-3,Y-9,2,3);
-      for (const [dx,h,c] of [[-4,12,'#e03048'],[0,16,'#f8d030'],[4,13,'#f878b8'],[-1,10,'#ffffff'],[2,9,'#e03048']]){ g.fillStyle=INK; g.fillRect(X+dx-2,Y-h-4,5,5); g.fillStyle=c; g.fillRect(X+dx-1,Y-h-3,3,3); g.fillStyle=tint(c,-0.25)||c; g.fillRect(X+dx,Y-h-3,1,3); g.fillStyle=INK; g.fillRect(X+dx,Y-h-4,1,1); }
+      g.fillStyle='#2e7a2e'; g.fillRect(X-6,Y-5,1,1); g.fillRect(X+6,Y-6,1,1); g.fillStyle='#6cc060'; g.fillRect(X-6,Y-7,2,1); g.fillRect(X+5,Y-8,2,1);   // leaves curl out with a lit edge
+      for (const [dx,h,c] of [[-1,10,'#ffffff'],[2,9,'#e03048'],[-5,13,'#e03048'],[5,14,'#f878b8'],[0,17,'#f8d030']]){ const hx=X+dx, hy=Y-h, dk=tint(c,-0.28)||c, lt=tint(c,0.3)||c;   // tulip cups: three petal tips over a rounded cup
+        g.fillStyle=INK; g.fillRect(hx-2,hy-4,5,4); g.fillRect(hx-1,hy,3,1); g.fillRect(hx-2,hy-5,1,1); g.fillRect(hx,hy-5,1,1); g.fillRect(hx+2,hy-5,1,1);
+        g.fillStyle=c; g.fillRect(hx-1,hy-3,3,3); g.fillRect(hx-2,hy-4,1,3); g.fillRect(hx+2,hy-4,1,3); g.fillRect(hx,hy-4,1,1); g.fillStyle=dk; g.fillRect(hx+1,hy-3,2,3); g.fillRect(hx,hy-1,1,1); g.fillStyle=lt; g.fillRect(hx-2,hy-4,1,2); g.fillRect(hx-1,hy-3,1,1); g.fillStyle=INK; g.fillRect(hx-2,hy-1,1,1); g.fillRect(hx+2,hy-1,1,1); }
       break; }
     case 'boombox': { // chunky boombox: two speakers, a tape deck, a carry handle, and music notes floating up when it's on
       const {RB,FP,face}=frm(f), on=!f.off;
@@ -4625,7 +4640,7 @@ const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0;
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
 window.__llRoom=()=>curRoom;   // lets the crash reporter (outside this closure) name the room
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__edit=()=>prEditStart(); window.__pt=(gx,gy,h)=>{ const [x,y]=P(gx,gy,h||0); return [x*S, y*S]; }; window.__peers=()=>[...others.values()].filter(o=>!o.leaving).map(o=>({n:o.n, rm:o.rm, x:+o.tx.toFixed(2), y:+o.ty.toFixed(2)})); window.__ward=(t,k)=>openWardrobe(t,null,k); window.__arc=()=>startArcade(); window.__fsky=()=>({key:FSKY.key, n:FSKY.clouds.length, w:FSKY.clouds.map(c=>c.width), OX, OY, LW, LH, X0:FSKY.X0}); window.__scr=(gx,gy,h)=>{ const [x,y]=P(gx,gy,h||0); return [x*S,y*S]; }; window.__pred=()=>({on:PRED.on, piece:PRED.piece&&PRED.piece.item, box:document.getElementById('plotbox').style.display}); window.__fi=(k,cs)=>furnIcon(k,cs); window.__go=r=>goRoom(r); window.__arena=()=>openArena(); window.__bowl=()=>openBowl(); window.__close=()=>closeAll(); window.__dash=()=>openDash(); window.__mkt=()=>openMarket(); window.__tour=()=>tourStart(); window.__period=v=>{ period=v; rebuildBG(); }; window.__juke=v=>{ juke.s=v; }; window.__tnext=()=>$id('tour_next').click(); window.__msg=t=>localMsg(t); window.__give=k=>{ me.h=k; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; }; window.__prgo=id=>prGo(id); window.__plk=()=>plkGo(); window.__bxw=(t,k,sm)=>bxWordImg(t,k,sm).toDataURL(); window.__pkAdd=p=>pkAdd(p); window.__api=(u,b)=>apiPost(u,b); window.__auView=()=>auView; window.__acct=()=>!!(acct && acct.name); window.__cvs=()=>({earned:CVS.earned, heat:CVS.heat, holes:[...COVEH.keys()].length, dig:!!CVS.dig, tk:wallet.get()}); window.__fb=(k,r,bg)=>{ const D=FURN_DEF[k], c=document.createElement('canvas'); c.width=90; c.height=90; const sg=g, sOX=OX, sOY=OY; try{ g=c.getContext('2d'); g.fillStyle=bg||'#5aa83c'; g.fillRect(0,0,90,90); OX=45; OY=50; drawFurn({...D.mk(), rot:r, gx:0, gy:0}, 0); } finally { g=sg; OX=sOX; OY=sOY; } return c.toDataURL(); }; window.__plots=()=>FURN.filter(f=>f.item==='plot').map(f=>[f.fid,f.gx,f.gy,!!plotState(f)]); window.__plotR=()=>{ me.plotF=null; plotCur=null; }; window.__plotF=()=>[me.plotF||null, plotCur, $id('plotbox').style.display]; window.__act=(n,a)=>NET.act(n,a); window.__doorPt=()=>{ const d=DOORWAY[curRoom]; if (curRoom==='barn'){ const [x,y]=P(14.5,0); return [x*S,(y-24)*S]; } if (d[0]===0){ const [x,y]=P(0,d[1]+0.5); return [x*S,(y-22)*S]; } if (d[1]===0){ const [x,y]=P(d[0]+0.5,0); return [x*S,(y-22)*S]; } const [x,y]=P(d[0]+0.5,d[1]+0.5); return [x*S,y*S]; }; window.__room=()=>curRoom; window.__walk=(x,y)=>walkTo(x,y); window.__path=()=>me.path.map(p=>p.join(',')).join(' '); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__edit=()=>prEditStart(); window.__fkeys=()=>Object.keys(FURN_DEF).filter(k=>FURN_DEF[k].cat); window.__walls=()=>Object.keys(DECO_WALL); window.__wall=w=>{ PRD[curRoom].wall=w; PRD[curRoom].tiles={}; rebuildBG(); }; window.__pt=(gx,gy,h)=>{ const [x,y]=P(gx,gy,h||0); return [x*S, y*S]; }; window.__peers=()=>[...others.values()].filter(o=>!o.leaving).map(o=>({n:o.n, rm:o.rm, x:+o.tx.toFixed(2), y:+o.ty.toFixed(2)})); window.__ward=(t,k)=>openWardrobe(t,null,k); window.__arc=()=>startArcade(); window.__fsky=()=>({key:FSKY.key, n:FSKY.clouds.length, w:FSKY.clouds.map(c=>c.width), OX, OY, LW, LH, X0:FSKY.X0}); window.__scr=(gx,gy,h)=>{ const [x,y]=P(gx,gy,h||0); return [x*S,y*S]; }; window.__pred=()=>({on:PRED.on, piece:PRED.piece&&PRED.piece.item, box:document.getElementById('plotbox').style.display}); window.__fi=(k,cs)=>furnIcon(k,cs); window.__go=r=>goRoom(r); window.__arena=()=>openArena(); window.__bowl=()=>openBowl(); window.__close=()=>closeAll(); window.__dash=()=>openDash(); window.__mkt=()=>openMarket(); window.__tour=()=>tourStart(); window.__period=v=>{ period=v; rebuildBG(); }; window.__juke=v=>{ juke.s=v; }; window.__tnext=()=>$id('tour_next').click(); window.__msg=t=>localMsg(t); window.__give=k=>{ me.h=k; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; }; window.__prgo=id=>prGo(id); window.__plk=()=>plkGo(); window.__bxw=(t,k,sm)=>bxWordImg(t,k,sm).toDataURL(); window.__pkAdd=p=>pkAdd(p); window.__api=(u,b)=>apiPost(u,b); window.__auView=()=>auView; window.__acct=()=>!!(acct && acct.name); window.__cvs=()=>({earned:CVS.earned, heat:CVS.heat, holes:[...COVEH.keys()].length, dig:!!CVS.dig, tk:wallet.get()}); window.__fb=(k,r,bg)=>{ const D=FURN_DEF[k], c=document.createElement('canvas'); c.width=90; c.height=90; const sg=g, sOX=OX, sOY=OY; try{ g=c.getContext('2d'); g.fillStyle=bg||'#5aa83c'; g.fillRect(0,0,90,90); OX=45; OY=50; drawFurn({...D.mk(), rot:r, gx:0, gy:0}, 0); } finally { g=sg; OX=sOX; OY=sOY; } return c.toDataURL(); }; window.__plots=()=>FURN.filter(f=>f.item==='plot').map(f=>[f.fid,f.gx,f.gy,!!plotState(f)]); window.__plotR=()=>{ me.plotF=null; plotCur=null; }; window.__plotF=()=>[me.plotF||null, plotCur, $id('plotbox').style.display]; window.__act=(n,a)=>NET.act(n,a); window.__doorPt=()=>{ const d=DOORWAY[curRoom]; if (curRoom==='barn'){ const [x,y]=P(14.5,0); return [x*S,(y-24)*S]; } if (d[0]===0){ const [x,y]=P(0,d[1]+0.5); return [x*S,(y-22)*S]; } if (d[1]===0){ const [x,y]=P(d[0]+0.5,0); return [x*S,(y-22)*S]; } const [x,y]=P(d[0]+0.5,d[1]+0.5); return [x*S,y*S]; }; window.__room=()=>curRoom; window.__walk=(x,y)=>walkTo(x,y); window.__path=()=>me.path.map(p=>p.join(',')).join(' '); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__wear=(sl,id)=>wdWear(sl,id); window.__face=d=>{ me.d=d; }; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
