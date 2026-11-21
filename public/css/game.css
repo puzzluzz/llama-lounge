@@ -283,14 +283,15 @@
   #chatin::placeholder{color:#9a91b5} #chatin:focus{background:#fff;box-shadow:0 0 0 3px rgba(255,210,63,.55)}
   #emobtn{position:absolute;right:44px;top:4px;width:36px;height:36px;padding:0;border-radius:10px;display:flex;align-items:center;justify-content:center;background:transparent!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none;backdrop-filter:none} #emobtn .pi{width:26px;height:26px} #emobtn:hover{background:#efecf7!important}
   #saybtn{position:absolute;right:4px;top:4px;width:36px;height:36px;padding:0;border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
-  /* pixel-art chat bar: hard ink border with stepped corners, shaded bottom lip */
-  #chatin{--nc:3px;border:3px solid var(--ink);border-radius:0;background:#fffdf6;box-shadow:inset 0 -4px 0 #e8dfcc,inset 0 3px 0 #fff;clip-path:polygon(var(--nc) 0,calc(100% - var(--nc)) 0,calc(100% - var(--nc)) var(--nc),100% var(--nc),100% calc(100% - var(--nc)),calc(100% - var(--nc)) calc(100% - var(--nc)),calc(100% - var(--nc)) 100%,var(--nc) 100%,var(--nc) calc(100% - var(--nc)),0 calc(100% - var(--nc)),0 var(--nc),var(--nc) var(--nc));padding:0 90px 2px 14px}
-  #chatin::placeholder{font:400 10px var(--pxf);letter-spacing:.06em;color:#a49bbd}
-  #chatin:focus{background:#fff;box-shadow:inset 0 -4px 0 #ffd23f,inset 0 0 0 2px #ffe58a}
-  #saybtn,#emobtn{--nc:2px;clip-path:polygon(var(--nc) 0,calc(100% - var(--nc)) 0,calc(100% - var(--nc)) var(--nc),100% var(--nc),100% calc(100% - var(--nc)),calc(100% - var(--nc)) calc(100% - var(--nc)),calc(100% - var(--nc)) 100%,var(--nc) 100%,var(--nc) calc(100% - var(--nc)),0 calc(100% - var(--nc)),0 var(--nc),var(--nc) var(--nc))}
-  #saybtn{top:6px;right:6px;width:32px;height:32px;border:2px solid var(--ink)!important;border-radius:0;background:var(--yel)!important;box-shadow:inset 0 -3px 0 #c88a10,inset 0 2px 0 #fff2a8!important}
-  #saybtn .pi{width:24px;height:24px} #saybtn:active{transform:translateY(1px);box-shadow:inset 0 2px 0 #c88a10!important}
-  #emobtn{top:6px;right:42px;width:32px;height:32px;border-radius:0} #emobtn .pi{width:24px;height:24px} #emobtn:hover{background:#f3eedf!important} #emobtn:active .pi{transform:translateY(1px)}
+  /* chat bar matches the menu buttons: dark rounded field, with the smiley and send as rounded colour tiles holding a pixel symbol */
+  #chatin{border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.09);box-shadow:none;color:#fff;caret-color:#ffd23f;padding:0 92px 0 16px}
+  #chatin::placeholder{font:500 15px var(--ui);letter-spacing:0;color:#b9b0d6}
+  #chatin:focus{background:rgba(255,255,255,.14);border-color:rgba(255,210,63,.8);box-shadow:0 0 0 3px rgba(255,210,63,.28)}
+  #saybtn,#emobtn{top:5px;width:34px;height:34px;border-radius:11px;border:0!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 3px 8px rgba(0,0,0,.25)!important;transition:transform .12s}
+  #saybtn{right:5px;background:linear-gradient(160deg,#ffe066,#f5b400)!important}
+  #emobtn{right:44px;background:linear-gradient(160deg,#7fd3ff,#3a9ee8)!important}
+  #emobtn:hover{background:linear-gradient(160deg,#9adcff,#4aaaf0)!important}
+  #saybtn .pi,#emobtn .pi{width:22px;height:22px} #saybtn:active,#emobtn:active{transform:scale(.92)}
   #abtn{min-width:96px;height:44px;background:var(--pink);border-color:transparent;color:#fff;text-shadow:none;font-size:14px;box-shadow:0 6px 18px rgba(255,92,138,.4)}
   #abtn span{background:rgba(255,255,255,.95)}
   @media (pointer:coarse){ #abtn{min-width:96px;padding:0 14px;font-size:14px} }
@@ -821,7 +822,7 @@
   @media (min-width:641px){ #roombar .pbtn{padding:0 9px} #roombar.fl,#roombar.fr,#roombar.fl.fr{-webkit-mask-image:none;mask-image:none} }
   @media (max-width:640px){ #rbwrap{width:100%;max-width:none} #rbwrap #roombar{flex:1 1 auto} .rbarrow,#rbwrap.over .rbarrow{display:none} }
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-  @media (max-height:520px) and (min-width:641px){ #dock{bottom:6px;padding:6px} .pbtn{height:38px} #chatin{height:38px} #saybtn,#emobtn{width:30px;height:30px} #emobtn{right:38px} }
+  @media (max-height:520px) and (min-width:641px){ #dock{bottom:6px;padding:6px} .pbtn{height:38px} #chatin{height:38px} #saybtn,#emobtn{top:4px;width:30px;height:30px} #emobtn{right:40px} }
 
   /* ---------- pixel icons ---------- */
   .pi{display:inline-block;width:var(--pi1,16px);height:var(--pi1,16px);vertical-align:-.2em;background:no-repeat center/100% 100%;image-rendering:pixelated;image-rendering:crisp-edges;flex:none;font-style:normal}
