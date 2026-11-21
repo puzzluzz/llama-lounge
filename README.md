@@ -501,3 +501,4 @@ So on this test machine the old server kept up to about 50 llamas and the new on
 - **Slots.** Tap a slot machine anywhere and your llama walks to its stool, sits down and the game opens (`slotGo`). Tap it again while seated to spin. A machine someone else is using says so.
 - **Boxing call-outs** sit above the fighter's name tag, so they never cover a name.
 - Slot odds are unchanged from the design: FRUIT FRENZY and LUCKY LINES pay back about 89%, the PRIZE WHEEL about 88%.
+- **One llama at a time.** The arcade, jukebox, PLINKO machine, both store vending machines, the changing booth and each slot machine are used from the tile right in front of them (`USE`, `useGo`). Tap one anywhere and your llama walks there and uses it. If someone is already on it, your llama walks up beside them and you are told who is using it; it never opens for two llamas at once. The gym bells also count a tap anywhere on them.

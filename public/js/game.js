@@ -3700,8 +3700,28 @@ function drawRags(t){ for (const [x,y,walking] of RAGS){ if (walking) continue; 
   RAGS.length=0; }
 function ropeClick(){ if (me.bar){ leaveBar(7,1,null); return; } if (otherBartenders().length>=BAR_MAX){ localMsg('The bar is full! Two llamas are already pouring.'); return; } if (near(7,0)) doAction('bartend'); else walkTo(7,1,'bartend'); }
 function face(tx,ty){ me.d = dirFrom(tx-me.gx, ty-me.gy, me.d); }
+// ONE LLAMA AT A TIME: machines you use by standing right in front of them. Tap one (anywhere on it) and your llama walks to that spot and uses it.
+// If someone is already there, you walk up beside them instead and get told who is on it; it never opens for two llamas at once.
+const USE = {
+  arcade: { n:'ARCADE',           rm:'lounge',  at:()=>[[ARC_X,1]] },
+  juke:   { n:'JUKEBOX',          rm:'lounge',  at:()=>[[JUKE_X,1]] },
+  plinko: { n:'PLINKO machine',   rm:'casino',  at:()=>[[1,PLK.gy+1],[1,PLK.gy]] },
+  vend:   { n:'DRINK MACHINE',    rm:'store',   at:()=>[[STORE_VEND[0],STORE_VEND[1]+1]] },
+  svend:  { n:'SNACK MACHINE',    rm:'store',   at:()=>[[STORE_SNACK[0],STORE_SNACK[1]+1]] },
+  booth:  { n:'CHANGING BOOTH',   rm:'account', at:()=>[[BOOTH[0],BOOTH[1]+1]] },
+};
+function useBusy(k){ const T=USE[k].at(); return [...others.values()].find(o=>!o.leaving && sameRoom(o) && ((k==='arcade' && o.a==='arcade') || (!o.walking && T.some(([x,y])=>Math.floor(o.x)===x && Math.floor(o.y)===y)))) || null; }
+// true when you are standing at the machine and it is yours to use right now; otherwise it sends you walking (to the spot, or beside whoever is on it)
+function useGo(k){ const U=USE[k]; if (!U || curRoom!==U.rm) return true; const T=U.at(), here=!me.moving && me.p!=='sit' && T.some(([x,y])=>me.gx===x && me.gy===y), busy=useBusy(k);
+  if (busy){ localMsg(`${String(busy.n||'Someone').toUpperCase()} is using the ${U.n}. You can use it when they are done.`);
+    if (!here){ let best=null, bd=1e9; for (const [tx,ty] of T) for (const [dx,dy] of DIRS8){ const x=tx+dx, y=ty+dy; if (!walkable(x,y) || T.some(([a,b])=>a===x&&b===y) || [...others.values()].some(o=>!o.leaving && sameRoom(o) && Math.floor(o.x)===x && Math.floor(o.y)===y)) continue; const d=Math.abs(x-me.gx)+Math.abs(y-me.gy); if (d<bd){ bd=d; best=[x,y]; } }
+      if (best && !(me.gx===best[0] && me.gy===best[1])){ if (me.p==='sit') doAction('stand'); walkTo(best[0],best[1]); } }
+    return false; }
+  if (here) return true;
+  if (me.p==='sit') doAction('stand'); const spot=T.find(([x,y])=>walkable(x,y)); if (!spot || !walkTo(spot[0],spot[1],k)) localMsg(`Walk up to the ${U.n}.`); return false; }
 function doAction(a){
   a = a || context(); if(!a) return;
+  if (USE[a] && curRoom===USE[a].rm && !useGo(a)) return;   // single-user machines: walk to the spot first, or wait beside whoever is on it
   if (a==='travel'){ const r=me.travelTo; me.travelTo=null; if (r) switchRoom(r); return; }
   if (a==='goBarn'){ if (!me.moving) showSwap('barn'); return; }
   if (a==='roul'||a==='bj'){ openTable(a); return; }
@@ -4526,12 +4546,12 @@ cv.addEventListener('pointerdown', e => {
   { const lx=e.clientX/S, ly=e.clientY/S; const [tx,ty]=P(0.5,6.5);
     if (Math.abs(lx-tx)<=10 && ly>=ty-34 && ly<=ty+4){ if(near(0,6)) doAction('lamp'); else { const t=nearestFree(0,6); if(t) walkTo(t[0],t[1],'lamp'); } return; } }
   { const lx=e.clientX/S, ly=e.clientY/S; const [rx,ry]=P(7.04,0.5); if (Math.abs(lx-rx)<=11 && ly>=ry-26 && ly<=ry+6){ ropeClick(); return; } }
-  if (curRoom==='lounge'){ const lx=e.clientX/S, ly=e.clientY/S; for (const [mx,act] of [[ARC_X,'arcade'],[JUKE_X,'juke']]) if (tallHit(lx,ly,mx,0,12,54)){ if (near(mx,0)) doAction(act); else { const t=nearestFree(mx,0); if (t) walkTo(t[0],t[1],act); } return; } }
+  if (curRoom==='lounge'){ const lx=e.clientX/S, ly=e.clientY/S; for (const [mx,act] of [[ARC_X,'arcade'],[JUKE_X,'juke']]) if (tallHit(lx,ly,mx,0,12,54)){ doAction(act); return; } }
   // the door sits on the wall, outside the floor grid, so check it before the grid bounds
   const [gx,gy] = toGrid(e.clientX, e.clientY);
   if (gx<0||gy<0||gx>=N||gy>=NY) return;
   if (gx===7 && gy===0){ ropeClick(); return; }
-  if ((gx===ARC_X||gx===JUKE_X) && gy===0){ const act = gx===ARC_X?'arcade':'juke'; if(near(gx,0)) doAction(act); else { const t=nearestFree(gx,0); if(t) walkTo(t[0],t[1],act); } return; }
+  if ((gx===ARC_X||gx===JUKE_X) && gy===0){ doAction(gx===ARC_X?'arcade':'juke'); return; }
   if (gx===0 && gy===6){ if(near(0,6)) doAction('lamp'); else { const t=nearestFree(0,6); if(t) walkTo(t[0],t[1],'lamp'); } return; }
   if (walkable(gx,gy)){ walkTo(gx,gy); return; }
   let best=null, bd=1e9; for (const s of SEATS){ const d=Math.abs(s.gx-gx)+Math.abs(s.gy-gy); if(d<=1 && d<bd){ bd=d; best=s; } }
@@ -5183,7 +5203,7 @@ const PLKS={bet:1, balls:[], wait:false, seq:0};   // several balls can be falli
 try{ const b=+localStorage.getItem('ll_plkBet'); if (PLK.bets.includes(b)) PLKS.bet=b; }catch(_){}
 function plkHit(lx,ly){ if (curRoom!=='casino') return false; const [ax,ay]=P(PLK.gx+0.9,PLK.gy+1.9,0), [bx,by]=P(PLK.gx+0.9,PLK.gy+0.1,0); return lx>=Math.min(ax,bx)-2 && lx<=Math.max(ax,bx)+2 && ly>=Math.min(ay,by)-58 && ly<=Math.max(ay,by)+2; }
 function plkNear(){ return !me.moving && me.p!=='sit' && me.gx<=1 && me.gy>=PLK.gy-1 && me.gy<=PLK.gy+2; }
-function plkGo(){ if (plkNear()){ openPlinko(); return; } if (me.p==='sit') doAction('stand'); if (!walkTo(1,PLK.gy+1,'plinko') && !walkTo(1,PLK.gy,'plinko')) localMsg('Walk up to the PLINKO machine.'); }
+function plkGo(){ doAction('plinko'); }
 function plkMsg(t,good){ const el=$id('plk_msg'); el.textContent=t; el.classList.toggle('good',!!good); }
 function plkBetUI(){ for (const b of $id('plk_bet').querySelectorAll('[data-pb]')) b.classList.toggle('on', +b.dataset.pb===PLKS.bet); }
 function plkFit(){ const dpr=window.devicePixelRatio||1, room=Math.min(plkEl.clientWidth-44, 360), k=Math.max(1, Math.floor(room*dpr/PLKB.W)); plkCv.style.width=(PLKB.W*k/dpr)+'px'; plkCv.style.height=(PLKB.H*k/dpr)+'px'; }
@@ -5518,8 +5538,8 @@ function showroomTag(f){ const [bx,by]=P(f.gx+0.5,f.gy+0.95,0), X=Math.round(bx)
   const top=P(f.gx+0.5,f.gy+0.5,36), l=P(f.gx,f.gy+1,0), r=P(f.gx+1,f.gy,0), b=P(f.gx+1,f.gy+1,0);
   itemHits.push({id:f.show, furn:true, x0:Math.round(l[0]), x1:Math.round(r[0]), y0:Math.round(top[1]), y1:Math.round(b[1])+4}); }
 // tap the vending machine: open it if you're next to it, otherwise walk over and open it when you get there
-function svendGo(){ if (me.p!=='sit' && nearStand(STANDS.svend)){ openFw('svend'); return; } if (me.p==='sit') doAction('stand'); if (!walkTo(STORE_SNACK[0],STORE_SNACK[1]+1,'svend')) localMsg('Walk up to the snack machine.'); }
-function vendGo(){ if (me.p!=='sit' && nearStand(STANDS.vend)){ openFw('vend'); return; } if (me.p==='sit') doAction('stand'); if (!walkTo(STORE_VEND[0],STORE_VEND[1]+1,'vend')) localMsg('Walk up to the vending machine.'); }
+function svendGo(){ doAction('svend'); }
+function vendGo(){ doAction('vend'); }
 function storePointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
   for (let i=itemHits.length-1;i>=0;i--){ const h=itemHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if (h.furn) openWardrobe('shop', null, 'rares'); else openWardrobe('shop', h.id); return; } }
@@ -5563,7 +5583,8 @@ function arenaPointer(e){
 function tallHit(lx, ly, gx, gy, half, tall){ const [px,py]=P(gx+0.5, gy+0.5); return Math.abs(lx-px)<=(half||13) && ly>=py-(tall||56) && ly<=py+8; }
 // tap a slot machine anywhere: walk over, sit down, and the game opens (tap again while seated to spin)
 function slotGo(gx){ if (me.p==='sit' && me.gx===gx && me.gy===1){ if (slotEl.style.display==='block') slotSpin(); else openSlots(); return; }
-  if (seatTaken(gx,1)){ localMsg("Someone's already playing that machine."); return; }
+  if (seatTaken(gx,1)){ const o=[...others.values()].find(q=>!q.leaving && sameRoom(q) && q.p==='sit' && Math.floor(q.x)===gx && Math.floor(q.y)===1); localMsg(`${String((o&&o.n)||'Someone').toUpperCase()} is playing that machine. You can play when they are done.`);
+    const w=[[gx,2],[gx-1,2],[gx+1,2],[gx,3]].find(([x,y])=>walkable(x,y) && !(me.gx===x && me.gy===y)); if (w && !(me.gy===2 && Math.abs(me.gx-gx)<=1)){ if (me.p==='sit') doAction('stand'); walkTo(w[0],w[1]); } return; }
   if (me.p==='sit') doAction('stand'); if (!walkTo(gx,1)) localMsg('Walk over to the slot machine.'); }
 function casinoPointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
@@ -5589,7 +5610,7 @@ function accountPointer(e){
   const st=seatAt(gx,gy); if (st){ if (seatTaken(st.gx,st.gy)) localMsg("Someone's already sitting there."); else walkTo(gx,gy); return; }
   if (walkable(gx,gy)){ walkTo(gx,gy); return; }
 }
-function boothGo(){ if (boothNear() && me.p!=='sit'){ openBooth(); return; } if (me.p==='sit') doAction('stand'); if (!walkTo(BOOTH[0],BOOTH[1]+1,'booth') && !walkTo(BOOTH[0]-1,BOOTH[1]+1,'booth')) localMsg('Walk up to the changing booth.'); }
+function boothGo(){ doAction('booth'); }
 function barnPointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
   { const [gx0,gy0]=toGrid(e.clientX, e.clientY); const [px,py]=P(DUNK_TGT[0]+0.5,DUNK_TGT[1]+0.5,0);
@@ -7089,7 +7110,7 @@ function gymPointer(e){ const lx=e.clientX/S, ly=e.clientY/S;
   if (bxMine() && bxMine().s.phase!=='over'){ localMsg('You\'re in a fight! Use the move buttons.'); return; }
   for (const f of FURN) if (f.t==='hbag'){ const [bx,by]=P(f.gx+0.5,f.gy+0.5); if (Math.abs(lx-bx)<=10 && ly>=by-62 && ly<=by+3){ f.hitT=performance.now(); sfxTone(90,0.09,'square',0.06); sfxTone(70,0.08,'triangle',0.05,0.04); if (Math.max(Math.abs(me.gx-f.gx),Math.abs(me.gy-f.gy))>1){ const sp=[[f.gx+1,f.gy],[f.gx,f.gy+1],[f.gx+1,f.gy+1]].find(([x,y])=>walkable(x,y)); if (sp) walkTo(sp[0],sp[1]); } return; } }
   const [gx,gy]=toGrid(e.clientX, e.clientY), [rx,ry]=toGrid(e.clientX, e.clientY+RINGS[0].H*S);
-  if (inRing(rx,ry) || inRing(gx,gy) || RINGS.some(R=>R.bell[0]===gx && R.bell[1]===gy)){ openBox(); return; }
+  if (inRing(rx,ry) || inRing(gx,gy) || RINGS.some(R=>(R.bell[0]===gx && R.bell[1]===gy) || tallHit(lx,ly,R.bell[0],R.bell[1],10,26))){ openBox(); return; }
   if (gx<0||gy<0||gx>=N||gy>=NY) return;
   if (walkable(gx,gy)){ walkTo(gx,gy); return; }
   let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } } if (best) walkTo(best.gx,best.gy); }
