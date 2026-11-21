@@ -6295,10 +6295,12 @@ function drawBoardWall(t){
 // ======================= LOOP =======================
 rebuildBG(); resize();
 setSel(me.c); pname.value=me.n; tokUI(0); initWallet();
-const RULES_V=2;   // 2: chat is no longer filtered, so everyone sees the rules once more
+const RULES_V=3;   // 3: everyone confirms their age and the Terms once (2: chat is no longer filtered)
  const rulesEl=document.getElementById('rules');
 function showRules(){ closeAll(); rulesEl.style.display='flex'; rulesEl.scrollTop=0; }
-document.getElementById('ragree').addEventListener('click', ()=>{ store.agreed=RULES_V; saveStore(); acctSave(); rulesEl.style.display='none'; if (!joined){ if (acctHasLlama()) autoEnter(); else pick.style.display='flex'; } });
+// the age and Terms box has to be ticked whenever the rules are new to this account (every login until it is)
+new MutationObserver(()=>{ if (rulesEl.style.display!=='flex' && rulesEl.style.display!=='block') return; const need=(+store.agreed||0)<RULES_V; $id('ragree_l').style.display=need?'':'none'; if (need) $id('ragree_t').checked=false; $id('ragree_msg').textContent=''; }).observe(rulesEl, {attributes:true, attributeFilter:['style']});
+document.getElementById('ragree').addEventListener('click', ()=>{ if ((+store.agreed||0)<RULES_V && !$id('ragree_t').checked){ $id('ragree_msg').textContent='Tick the box to confirm you\'re 13 or older and agree to the Terms.'; return; } store.agreed=RULES_V; saveStore(); acctSave(); rulesEl.style.display='none'; if (!joined){ if (acctHasLlama()) autoEnter(); else pick.style.display='flex'; } });
 
 // ======================= GAME ACCOUNT (tied to the player's sign-in) =======================
 // Each signed-in player gets a private profile doc: data/users/<id>/profile. It remembers their llama,
@@ -6355,7 +6357,7 @@ const authEl=document.getElementById('auth'), auErr=document.getElementById('au_
 const $id = id=>document.getElementById(id);
 let auView='login', resetTok='', pendingNote='';
 const AU_VIEWS = {
-  login:  {sub:'Welcome back! Log in with your llama name or email.', u:'NAME OR EMAIL', ua:'username', um:254, e:false, p:'PASSWORD', pa:'current-password', go:'LOG IN', forgot:true, back:false, note:"Don't reuse a password from another site."},
+  login:  {sub:'Welcome back! Log in with your llama name or email.', u:'NAME OR EMAIL', ua:'username', um:254, e:false, p:'PASSWORD', pa:'current-password', go:'LOG IN', forgot:true, back:false, note:"By logging in you confirm you're 13 or older and agree to the Terms. Don't reuse a password from another site."},
   signup: {sub:'Make your llama account. You start with 10 tokens!', u:'LLAMA NAME', ua:'username', um:12, e:true, p:'PASSWORD', pa:'new-password', go:'MAKE MY LLAMA', forgot:false, back:false, note:'Names: 3 to 12 letters, numbers or _. Passwords: 8+ characters, stored encrypted. Your email is only used for password resets and is never shown to other players.'},
   forgot: {sub:"Enter your account's email and we'll send you a link to pick a new password.", u:null, e:true, p:null, go:'SEND RESET LINK', forgot:false, back:true, note:'The link works once and expires in 30 minutes. Check your spam folder too.'},
   pk:     {sub:'This account has a passkey. Confirm it\'s you with Face ID, your fingerprint or your screen lock.', u:null, e:false, p:null, go:'USE MY PASSKEY', forgot:false, back:true, note:'No device with you? Use one of the backup codes you saved when you set up the passkey.'},

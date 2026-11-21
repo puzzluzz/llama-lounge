@@ -37,6 +37,7 @@ input:focus{border-color:var(--yel);box-shadow:0 0 0 3px rgba(255,210,63,.4)}
 .btn[disabled]{opacity:.65;cursor:default}
 .play{background:var(--yel)} .play:hover{background:#ffdc66}
 .ghost{background:#fff} .ghost:hover{background:#f3eefc}
+.fine{margin:10px 0 0;font-size:12.5px;line-height:1.45;color:#5d5380;text-align:center} .fine a{color:#5a3fb0}
 .alt{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:16px}
 .link{background:none;border:0;padding:4px;font:600 14px var(--ui);color:#5a3fb0;text-decoration:underline;cursor:pointer}
 .who{margin:0 0 16px} .who b{font:400 12px var(--px)}

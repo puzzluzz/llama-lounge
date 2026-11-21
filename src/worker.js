@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-30a";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-30b";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -2009,7 +2009,7 @@ export class Lounge extends DurableObject {
         const c = LLAMAS.includes(m.c) ? m.c : null;
         const bet = Math.max(0, Math.min(10, Math.floor(+m.bet || 0)));
         // the llama picked at sign-up is the account's llama for good: once it's set, it never changes
-        await this.env.DB.prepare("UPDATE users SET c = COALESCE(c, ?), agreed = MAX(agreed, ?), bet = ? WHERE id = ?").bind(c, Math.max(0, Math.min(9, +m.agreed || 0)), bet, uid).run();
+        await this.env.DB.prepare("UPDATE users SET c = COALESCE(c, ?), terms = CASE WHEN ? > agreed THEN ? ELSE terms END, agreed = MAX(agreed, ?), bet = ? WHERE id = ?").bind(c, Math.max(0, Math.min(9, +m.agreed || 0)), Date.now(), Math.max(0, Math.min(9, +m.agreed || 0)), bet, uid)   /* terms: when they last ticked the age and Terms box */.run();
         return { ok: true };
       }
       case "drink": {
