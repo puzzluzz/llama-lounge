@@ -1031,3 +1031,6 @@
   .em2box{margin-top:14px;padding-top:12px;border-top:2px dashed var(--line)} .em2box .ach{margin-bottom:6px}
 
   #rules #ragree_l{margin:10px auto 0;max-width:520px} #ragree_msg{min-height:18px;margin:6px 0 2px;text-align:center;font:600 13px var(--ui);color:#c2264f}
+
+  .bdgrow{display:flex;align-items:center;gap:10px;margin:8px 0;font:600 14px var(--ui);color:var(--ink);cursor:pointer} .bdgrow input{width:20px;height:20px;flex:none} .bdgrow .pi{width:18px;height:18px;vertical-align:-3px}
+  .pmst.vip{color:#2060c0} .pmst.f50{color:#a86a00}

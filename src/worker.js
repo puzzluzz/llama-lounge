@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-30d";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-12-01a";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -344,7 +344,7 @@ const tfaOn = (env, u) => !!(u && (u.pk_on || em2On(env, u)));
 const staffRole = (env, u) => (tfaOn(env, u) ? baseRole(env, u) : "");
 const maskEmail = (e) => String(e || "").replace(/^(.)[^@]*(@.*)$/, "$1***$2");
 const staffLog = (env, by, cmd, target) => env.LOUNGE.get(env.LOUNGE.idFromName("main")).fetch(new Request("https://room/log", { method: "POST", body: JSON.stringify({ by, cmd, target }) })).catch(() => {});
-const profileOf = (env, u, timers = []) => ({ since: u.created || 0, email: u.email || "", emailOk: !!u.email_ok, mailOn: mailOn(env), name: u.name.toUpperCase(), c: u.c, agreed: u.agreed, bet: u.bet, tk: u.tk, bestHay: u.best_hay, bestDash: u.best_dash, admin: staffRole(env, u) === "owner", staff: staffRole(env, u), pkNeed: tfaOn(env, u) ? "" : baseRole(env, u), seen: u.seen || "", timers });
+const profileOf = (env, u, timers = []) => ({ since: u.created || 0, email: u.email || "", emailOk: !!u.email_ok, mailOn: mailOn(env), name: u.name.toUpperCase(), c: u.c, agreed: u.agreed, bet: u.bet, tk: u.tk, bestHay: u.best_hay, bestDash: u.best_dash, admin: staffRole(env, u) === "owner", staff: staffRole(env, u), pkNeed: tfaOn(env, u) ? "" : baseRole(env, u), seen: u.seen || "", badges: badgeInfo(env, u), timers });
 
 // ---------- email ----------
 // Sending uses Cloudflare Email Service: a "send_email" binding named EMAIL plus a MAIL_FROM address on a domain
@@ -449,6 +449,20 @@ function ensureAuthSchema(env) {
   })().catch((e) => { authSchema = null; throw e; });
   return authSchema;
 }
+// BADGES next to a llama's name. Staff show their staff badge and nothing else.
+//  - VIP: given and taken away by mods and the owner (users.vip)
+//  - FIRST 50: automatic for the first 50 accounts to join, not counting the owner (users.founder = their number, 1 to 50). There is no way to hand it out.
+//  - players choose which of their badges show (users.bhide bits: 1 hides VIP, 2 hides FIRST 50)
+const FOUNDERS = 50;
+let badgeReady = null;
+async function ensureBadges(env) { if (!badgeReady) badgeReady = (async () => {
+  let fresh = false; try { await env.DB.prepare("ALTER TABLE users ADD COLUMN founder INTEGER NOT NULL DEFAULT 0").run(); fresh = true; } catch (e) { if (!/duplicate column/i.test(String(e && e.message || e))) throw e; }
+  for (const col of ["vip INTEGER NOT NULL DEFAULT 0", "bhide INTEGER NOT NULL DEFAULT 0"]) { try { await env.DB.prepare("ALTER TABLE users ADD COLUMN " + col).run(); } catch (e) { if (!/duplicate column/i.test(String(e && e.message || e))) throw e; } }
+  // the one-time count of who was already here when badges arrived: the earliest accounts in joining order, the owner left out
+  if (fresh) await env.DB.prepare("UPDATE users SET founder = (SELECT COUNT(*) FROM users u2 WHERE u2.id <= users.id AND u2.role != 'admin') WHERE role != 'admin' AND (SELECT COUNT(*) FROM users u2 WHERE u2.id <= users.id AND u2.role != 'admin') <= ?").bind(FOUNDERS).run();
+})().catch((e) => { badgeReady = null; throw e; }); return badgeReady; }
+const badgesOf = (env, u) => (!u || baseRole(env, u) ? "" : (u.vip && !(u.bhide & 1) ? "v" : "") + (u.founder > 0 && !(u.bhide & 2) ? "f" : ""));
+const badgeInfo = (env, u) => ({ vip: !!u.vip, founder: +u.founder || 0, hide: +u.bhide || 0, staff: !!baseRole(env, u) });
 let pkReady = null; async function ensurePk(env) { if (!pkReady) pkReady = pkSchema(env).catch((e) => { pkReady = null; throw e; }); return pkReady; }
 async function setPassword(env, uid, pw) {
   const salt = new Uint8Array(16); crypto.getRandomValues(salt); const h = await pbkdf2(pw, salt, PBKDF2_ITERS);
@@ -542,7 +556,7 @@ export default {
       return env.LOUNGE.get(env.LOUNGE.idFromName("main")).fetch(fwd);
     }
     if (url.pathname.startsWith("/api/")) {
-      try { await ensureAuthSchema(env); await ensurePk(env); await sweepBans(env); return await api(req, env, url, ctx); } catch (e) { console.error(e); return json({ error: "server error" }, 500); }
+      try { await ensureAuthSchema(env); await ensurePk(env); await ensureBadges(env); await sweepBans(env); return await api(req, env, url, ctx); } catch (e) { console.error(e); return json({ error: "server error" }, 500); }
     }
     return env.ASSETS ? env.ASSETS.fetch(req) : new Response("not found", { status: 404 });
   },
@@ -589,6 +603,8 @@ async function api(req, env, url, ctx) {
     try {
       const r = await env.DB.prepare("INSERT INTO users (name, salt, hash, iters, created, tk, email, terms) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(name, b64(salt), b64(hash), PBKDF2_ITERS, Date.now(), START_TOKENS, email, Date.now()).run();
       await bump(env, "su:" + ip);
+      // FIRST 50: the next number while any are left. After number 50 is taken nobody else ever gets one
+      await env.DB.prepare("UPDATE users SET founder = (SELECT COALESCE(MAX(founder), 0) + 1 FROM users) WHERE id = ? AND (SELECT COALESCE(MAX(founder), 0) FROM users) < ?").bind(r.meta.last_row_id, FOUNDERS).run();
       const tok = await newSession(env, r.meta.last_row_id);
       const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(r.meta.last_row_id).first();
       later(sendVerify(env, url, u, email));
@@ -1003,10 +1019,11 @@ const WF = (() => {
   };
 })();
 
-function cleanPresence(p, name, tk, muted, staff) {
+function cleanPresence(p, name, tk, muted, staff, bg) {
   const o = {};
   if (!p || typeof p !== "object") return o;
   for (const k of Object.keys(p)) if (PRES_KEYS.has(k)) o[k] = p[k];
+  if (bg && !staff) o.bg = bg; else delete o.bg;   // badges come from the account, never from the browser
   o.n = name; o.tk = tk; if (staff) o.st = staff; else delete o.st;   // the server decides who you are, what you hold and your staff badge
   if (o.s && typeof o.s === "object") { o.s = { k: +o.s.k || 0, t: String(o.s.t || "").slice(0, 120), y: o.s.y ? 1 : 0, f: o.s.f ? 1 : 0 }; if (muted) delete o.s;
     else if (WF.slur(o.s.t)) delete o.s; else o.s.t = WF.mask(o.s.t); }   // every line, action lines too (the flag comes from the browser, so it can't skip the filter): slurs never go out; swears go out as stars
@@ -1022,7 +1039,7 @@ const MAX_PLAYERS_DEFAULT = 200, QUEUE_GRACE_MS = 120000;
 const PRES_BATCH_MS = 100;
 const ACT_LIMIT = { burstMs: 2000, burst: 24, perMin: 300 };   // per connection, across every action
 const HEALTH = { everyMs: 5 * 60000, slowMs: 1500, keepMs: 7 * 86400000, keepLog: 200 };
-const presSig = (p) => { const s = JSON.stringify([p.rm, p.c, p.n, p.st || "", p.w || 0, p.tk, p.s ? p.s.k : 0, p.g ? p.g.k : 0, p.j ? p.j.ts : 0, p.l ? p.l.ts : 0]); let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h; };   // a short hash, so it stays small in the socket attachment
+const presSig = (p) => { const s = JSON.stringify([p.rm, p.c, p.n, p.st || "", p.bg || "", p.w || 0, p.tk, p.s ? p.s.k : 0, p.g ? p.g.k : 0, p.j ? p.j.ts : 0, p.l ? p.l.ts : 0]); let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h; };   // a short hash, so it stays small in the socket attachment
 const fmtDur = (ms) => { const m = Math.ceil(ms / 60000); return m >= 120 ? `${Math.round(m / 6) / 10} hours`.replace(".0 ", " ") : m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
 // what a player can report someone for (the key is stored; staff see the label)
 const REPORT_REASONS = { rude: "Rude or bullying", hate: "Hate speech or slurs", spam: "Spam", scam: "Scam or trade trouble", name: "Bad name, room or outfit", other: "Something else" };
@@ -1139,7 +1156,7 @@ export class Lounge extends DurableObject {
     if (a.nd) await this.needsTick(ws, a, now);
     if (m.t === "p") {
       // balance / mute / ban are cached for a few seconds so moving around doesn't hit the database every step
-      if (!a.uc || now - a.uc.t > 15000){ const u = await this.user(a.uid); if (!u || u.banned) { ws.close(4003, "banned"); return; } a.uc = { t: now, tk: u.tk, muted: u.muted, c: u.c || null }; a.staff = staffRole(this.env, u); }
+      if (!a.uc || now - a.uc.t > 15000){ const u = await this.user(a.uid); if (!u || u.banned) { ws.close(4003, "banned"); return; } a.uc = { t: now, tk: u.tk, muted: u.muted, c: u.c || null, bg: badgesOf(this.env, u), vip: !!u.vip }; a.staff = staffRole(this.env, u); }
       const first = !a.pres;
       if (m.p && prId(m.p.rm) && prId(m.p.rm) !== a.proom) return;   // you have to be let in (pr_enter) before you can be in a player room
       // anything a person does (walking, changing rooms, chatting) counts as being here
@@ -1157,7 +1174,7 @@ export class Lounge extends DurableObject {
       if (a.pres && m.p && m.p.rm !== a.pres.rm) this.tradeDrop(a.uid, `${a.name} left the room, so the trade was cancelled.`);
       const prevRm = a.pres ? a.pres.rm : null, prevSig = a.gs;
       const prevSit = a.pres && a.pres.p === "sit" ? a.pres.rm + ":" + Math.floor(a.pres.x) + "," + Math.floor(a.pres.y) : null;
-      a.pres = cleanPresence(m.p, a.name, a.uc.tk, !!a.uc.muted, a.staff); if (a.uc.c) a.pres.c = a.uc.c;   // everyone sees the llama the account picked
+      a.pres = cleanPresence(m.p, a.name, a.uc.tk, !!a.uc.muted, a.staff, a.uc.bg); if (a.uc.c) a.pres.c = a.uc.c;   // everyone sees the llama the account picked
       // one llama per seat: whoever sat down first keeps it
       if (a.pres.p === "sit" && Number.isFinite(a.pres.x) && Number.isFinite(a.pres.y)) { const key = a.pres.rm + ":" + Math.floor(a.pres.x) + "," + Math.floor(a.pres.y);
         if (key !== prevSit) for (const w2 of this.sockets()) { if (w2 === ws) continue; const x = w2.deserializeAttachment(); const q = x && x.pres;
@@ -2029,6 +2046,21 @@ export class Lounge extends DurableObject {
   async act(ws, a, kind, m) {
     const uid = a.uid, now = Date.now();
     switch (kind) {
+      case "badge_show": {   // show or hide one of your own badges
+        const bit = m.k === "v" ? 1 : m.k === "f" ? 2 : 0; if (!bit) return { ok: false };
+        await ensureBadges(this.env); await this.env.DB.prepare(m.on ? "UPDATE users SET bhide = bhide & ~? WHERE id = ?" : "UPDATE users SET bhide = bhide | ? WHERE id = ?").bind(bit, a.uid).run();
+        const u = await this.user(a.uid); a.uc = null; ws.serializeAttachment(a); return { ok: true, badges: badgeInfo(this.env, u), bg: badgesOf(this.env, u) }; }
+      case "mail_test": {   // OWNER ONLY: one of each kind of email, sent to the owner's own address, with sample buttons and codes
+        const u = await this.user(a.uid); if (staffRole(this.env, u) !== "owner") return { ok: false, msg: "Only the owner can do that." };
+        if (!mailOn(this.env) || !u.email) return { ok: false, msg: "Emails aren't switched on, or your account has no email." };
+        if (this.mailTestAt && Date.now() - this.mailTestAt < 60000) return { ok: false, msg: "Wait a minute between tests." }; this.mailTestAt = Date.now();
+        const N = u.name.toUpperCase(), site = "https://" + SITE_HOST + "/play", E = this.env;
+        const sent = [
+          await sendMail(E, u.email, "TEST: Reset your Llama Lounge password", [`Hi ${N}!`, "This is a test of the password reset email. The button is a sample and changes nothing.", "Didn't ask for this? Ignore this email and your password stays the same."], site, "RESET MY PASSWORD"),
+          await sendMail(E, u.email, "TEST: Your Llama Lounge login code", [`Hi ${N}, your code is 123456`, "This is a test of the login code email. The code is a sample and does not work.", "Didn't ask for a code? Someone may have your password. Change it and tell the owner."]),
+          await sendMail(E, u.email, "TEST: Confirm your Llama Lounge email", [`Hi ${N}!`, "This is a test of the confirm-your-email message. The button is a sample."], site, "CONFIRM MY EMAIL"),
+          await sendMail(E, u.email, "TEST: A passkey was added to your Llama Lounge account", [`Hi ${N}, this is a test of a security notice.`, "Real ones tell you when a passkey, your email or your password changes."]) ];
+        return { ok: sent.every(Boolean), msg: `Sent ${sent.filter(Boolean).length} of 4 test emails to ${maskEmail(u.email)}.` }; }
       case "seen_save": {   // which first-time pop-ups, tips and the tour this account has already had, so they don't repeat on another device
         const sv = String(m.s || ""); if (sv.length > 9000) return { ok: false }; try { const o = JSON.parse(sv); if (!o || typeof o !== "object") return { ok: false }; } catch (e) { return { ok: false }; }
         if (!this.seenReady) { try { await this.env.DB.prepare("ALTER TABLE users ADD COLUMN seen TEXT NOT NULL DEFAULT ''").run(); } catch (e) { /* already there */ } this.seenReady = true; }
@@ -2885,7 +2917,7 @@ export class Lounge extends DurableObject {
     await this.reportTable(); const tst = baseRole(this.env, u);
     const reps = (tst && st !== "owner") ? 0 : ((await this.env.DB.prepare("SELECT COUNT(*) AS n FROM reports WHERE tuid = ? AND done = 0").bind(u.id).first()) || {}).n || 0;
     const can = u.id !== a.uid && tst !== "owner" && (st === "owner" || tst !== "mod");
-    return { ok: true, me: st, n: u.name.toUpperCase(), st: tst, muted: !!u.muted, banned: !!u.banned, until: +u.ban_until || 0, wfn: +u.wfn || 0, reports: reps, can };
+    return { ok: true, me: st, n: u.name.toUpperCase(), st: tst, muted: !!u.muted, banned: !!u.banned, until: +u.ban_until || 0, wfn: +u.wfn || 0, reports: reps, can, vip: !!u.vip, founder: +u.founder || 0 };
   }
   async logStaff(by, cmd, target) {
     const log = (await this.ctx.storage.get("modlog")) || [];
@@ -2928,10 +2960,12 @@ export class Lounge extends DurableObject {
     if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can open the dashboard." };
     const online = []; const seen = new Set();
     for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (!x || !x.pres || seen.has(x.uid)) continue; seen.add(x.uid);
-      online.push({ n: x.name, rm: x.pres.rm || "lounge", st: x.staff || "", muted: !!(x.uc && x.uc.muted) }); }
+      online.push({ n: x.name, rm: x.pres.rm || "lounge", st: x.staff || "", muted: !!(x.uc && x.uc.muted), vip: !!(x.uc && x.uc.vip) }); }
     const rows = async (sql) => ((await this.env.DB.prepare(sql).all()).results || []).map((r) => ({ n: r.name.toUpperCase(), role: r.role }));
     const staff = await rows("SELECT name, role FROM users WHERE role IN ('admin','mod') ORDER BY role, name");
     const muted = await rows("SELECT name, role FROM users WHERE muted = 1 ORDER BY name LIMIT 50");
+    await ensureBadges(this.env); const vips = await rows("SELECT name, role FROM users WHERE vip = 1 ORDER BY name LIMIT 200");
+    const founders = ((await this.env.DB.prepare("SELECT COALESCE(MAX(founder), 0) AS n FROM users").first()) || {}).n || 0;
     await ensureAuthSchema(this.env); await sweepBans(this.env);
     const banned = ((await this.env.DB.prepare("SELECT name, role, ban_until FROM users WHERE banned = 1 ORDER BY name LIMIT 50").all()).results || []).map((r) => ({ n: r.name.toUpperCase(), role: r.role, until: +r.ban_until || 0 }));
     // every token gift by staff, from the permanent ledger (newest first), plus what each mod has given today
@@ -2945,7 +2979,7 @@ export class Lounge extends DurableObject {
     if (a.staff === "owner") { await this.bugTable(); bugs = (await this.env.DB.prepare("SELECT id, name, t, room, text, ver, ua, scr, done FROM bugs ORDER BY done, id DESC LIMIT 60").all()).results || []; }
     let signups = null;
     if (a.staff === "owner") signups = ((await this.env.DB.prepare("SELECT name, created FROM users ORDER BY created DESC LIMIT 30").all()).results || []).map((r) => ({ n: r.name.toUpperCase(), t: r.created }));
-    return { ok: true, me: a.staff, online, staff, muted, banned, gifts, giftsToday: today, giftCap: STAFF_GIVE_DAY, log: (await this.ctx.storage.get("modlog")) || [], ...(signups ? { signups } : {}), ...(bugs ? { bugs } : {}) };
+    return { ok: true, me: a.staff, online, staff, muted, vips, founders, foundersMax: FOUNDERS, banned, gifts, giftsToday: today, giftCap: STAFF_GIVE_DAY, log: (await this.ctx.storage.get("modlog")) || [], ...(signups ? { signups } : {}), ...(bugs ? { bugs } : {}) };
   }
   async admin(a, m) {
     if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can do that." };
@@ -2955,7 +2989,7 @@ export class Lounge extends DurableObject {
     const cmd = String(m.cmd || ""), target = String(m.target || "").trim();
     if (cmd === "give") return this.staffGive(a, target, m.amount);
     const ownerOnly = ["unban", "mod", "unmod", "pkreset"];   // pkreset: clear a staff member's passkeys if they lose their device   // mods can mute, kick and ban players; only the owner can unban or change mods
-    if (![...ownerOnly, "mute", "unmute", "kick", "ban"].includes(cmd) || !/^[A-Za-z0-9_]{3,12}$/.test(target)) return { ok: false, msg: a.staff === "owner" ? "Use /mute, /unmute, /kick, /ban, /unban, /mod or /unmod NAME" : "Use /mute, /unmute, /kick or /ban NAME" };
+    if (![...ownerOnly, "mute", "unmute", "kick", "ban", "vip", "unvip"].includes(cmd) || !/^[A-Za-z0-9_]{3,12}$/.test(target)) return { ok: false, msg: a.staff === "owner" ? "Use /mute, /unmute, /kick, /ban, /unban, /vip, /unvip, /mod or /unmod NAME" : "Use /mute, /unmute, /kick, /ban, /vip or /unvip NAME" };
     if (ownerOnly.includes(cmd) && a.staff !== "owner") return { ok: false, msg: "Only the owner can do that." };
     await ensurePk(this.env); const u = await this.env.DB.prepare("SELECT id, name, role, pk_on, em2, em2_hold, email, email_ok FROM users WHERE name = ?").bind(target).first();
     if (!u) return { ok: false, msg: "No player named " + target.toUpperCase() };
@@ -2971,11 +3005,13 @@ export class Lounge extends DurableObject {
     const until = cmd === "ban" && hrs > 0 ? Date.now() + hrs * 36e5 : 0, len = hrs > 0 ? `${hrs} ${hrs === 1 ? "HOUR" : "HOURS"}` : "PERMANENTLY";
     if (cmd === "ban" || cmd === "unban") { await ensureAuthSchema(this.env); await this.env.DB.prepare("UPDATE users SET banned = ?, ban_until = ? WHERE id = ?").bind(cmd === "ban" ? 1 : 0, until, u.id).run(); }
     if (cmd === "ban") await this.env.DB.prepare("DELETE FROM sessions WHERE uid = ?").bind(u.id).run();
+    if (cmd === "vip" || cmd === "unvip") { await ensureBadges(this.env); await this.env.DB.prepare("UPDATE users SET vip = ? WHERE id = ?").bind(cmd === "vip" ? 1 : 0, u.id).run(); }
     if (cmd === "mod" || cmd === "unmod") await this.env.DB.prepare("UPDATE users SET role = ? WHERE id = ? AND role != 'admin'").bind(cmd === "mod" ? "mod" : "player", u.id).run();
     for (const w of this.sockets()) { const a2 = w.deserializeAttachment(); if (!a2 || a2.uid !== u.id) continue;
       if (cmd === "ban" || cmd === "kick") { this.send(w, { t: "kick", msg: cmd === "ban" ? (hrs > 0 ? `You have been banned from the lounge for ${hrs} ${hrs === 1 ? "hour" : "hours"}.` : "You have been banned from the lounge.") : "You were removed from the lounge." }); try { w.close(4003, cmd); } catch (e) {} }
       else { // their badge and mute show up straight away
         a2.uc = null; const has2 = tfaOn(this.env, { ...u, role: "mod" }), live = cmd === "mod" && has2 ? "mod" : ""; if (cmd === "mod" || cmd === "unmod") a2.staff = live; w.serializeAttachment(a2);
+        if (cmd === "vip" || cmd === "unvip") { const nu = await this.user(u.id); this.send(w, { t: "badges", badges: badgeInfo(this.env, nu), bg: badgesOf(this.env, nu), msg: cmd === "vip" ? "You are now a VIP! Show or hide the badge in MENU > ACCOUNT." : "Your VIP badge was removed." }); }
         if (cmd === "mod" || cmd === "unmod") this.send(w, { t: "staff", st: live, pk: cmd === "mod" && !has2 ? "mod" : "", msg: cmd === "mod" ? (has2 ? "You are now a MOD! Open MENU > DASHBOARD." : "You are now a MOD! Add a passkey or turn on EMAIL LOGIN CODES in MENU > ACCOUNT to switch on your staff tools.") : "You are no longer a mod." }); } }
     await this.logStaff(a.name, cmd, u.name.toUpperCase() + (cmd === "ban" ? (hrs > 0 ? ` FOR ${len}` : " PERMANENTLY") : ""));
     const done = { mute: "muted", unmute: "unmuted", kick: "kicked", ban: hrs > 0 ? `banned for ${len.toLowerCase()}` : "banned permanently", unban: "unbanned", mod: "is now a MOD", unmod: "is no longer a mod" }[cmd];

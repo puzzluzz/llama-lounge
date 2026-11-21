@@ -23,6 +23,8 @@ const PIXSRC={
   chest:'............/..kkkkkkkk../.knnnnnnnnk./knttttttttNk/kkkkkyykkkkk/knnnkyyknnNk/knnnnkknnnNk/kyyyyyyyyyYk/knnnnnnnnnNk/knnnnnnnnNNk/kNNNNNNNNNNk/kkkkkkkkkkkk',
   radar:'........kk../.......kSk../......kSk.../.....kSk..../....kSk...../...kSk....../..kSk......./.kkSkkkkk.../kbbbbbbbbk../kbcccccccbk./.kbbbbbbbk../..kkkkkkk...',
   coin:'...kkkkkk.../..kyyyyyyk../.kyyyyyyyYk./kyywYYYYyyYk/kywYyyyyYyYk/kywYyyyyYyYk/kyyYyyyyYyYk/kyyYyyyyYyYk/kyyyYYYYyYYk/.kyyyyyyyYk./..kYYYYYYk../...kkkkkk...',
+  vip:'............/..kkkkkkkk../.kcwccbbbBk./kcwccbbbbBBk/kkkkkkkkkkkk/kbccbbbbBBBk/.kbcbbbbBBk./..kbcbbBBk../...kbbBBk.../....kbBk..../.....kk...../............',
+  first50:'.kkk....kkk./.krRk..krRk./..krRkkrRk../...kkkkkk.../..kyyyyyyk../.kywyyyyyYk./.kyyyooyyYk./.kyyyooyyYk./.kyyyyyyYYk./..kYYYYYYk../...kkkkkk.../............',
   star:'.....kk...../....kyyk..../....kwyk..../kkkkkwyykkkk/kyywwyyyyyYk/.kyyyyyyyYk./..kyyyyyYk../..kyyyyyYk../.kyyYkkyyYk./.kyYk..kyYk./kyYk....kYYk/kkk......kkk',
   splash:'.....kk...../....kck...../...kcbk..k../...kbbk.kck./..kcbbbkkbk./..kcbbbk.k../.kcbbbbbk.../.kcwbbbbk.../.kcwbbbBk.k./..kcbbBk.kck/...kkkk...k./............',
   drop:'.....kk...../....kcck..../....kcbk..../...kcbbbk.../...kcbbbk.../..kcbbbbbk../..kcwbbbbk../.kcwbbbbbBk./.kcwbbbbbBk./.kcbbbbbBBk./..kBbbbBBk../...kkkkkk...',
@@ -4295,7 +4297,7 @@ function readPeer(peer){
   const gsc = (pr.g&&typeof pr.g==='object'&&['hay','dash'].includes(pr.g.id)&&isFinite(+pr.g.v)) ? {k:+pr.g.k||0, id:pr.g.id, v:Math.max(0,Math.min(99999,Math.floor(+pr.g.v)))} : null;
   const bj = Array.isArray(pr.bj) ? pr.bj.slice(0,8).map(v=>Math.max(0,Math.min(51,Math.floor(+v||0)))) : null;
   const ea = (pr.ea&&typeof pr.ea==='object'&&/^a\d{1,2},\d{1,2}$/.test(String(pr.ea.a))) ? {k:+pr.ea.k||0, a:String(pr.ea.a)} : null;
-  return { w: cleanWear(pr.w), st: ['owner','mod'].includes(pr.st) ? pr.st : '', bj, ea, l, c:pr.c, n:clean(pr.n,12)||'LLAMA', x:Math.min(40,Math.max(0,x)), y:Math.min(40,Math.max(0,y)), d:['fr','fl','br','bl'].includes(pr.d)?pr.d:'fr',
+  return { w: cleanWear(pr.w), st: ['owner','mod'].includes(pr.st) ? pr.st : '', bg: /^v?f?$/.test(pr.bg||'') ? (pr.bg||'') : '', bj, ea, l, c:pr.c, n:clean(pr.n,12)||'LLAMA', x:Math.min(40,Math.max(0,x)), y:Math.min(40,Math.max(0,y)), d:['fr','fl','br','bl'].includes(pr.d)?pr.d:'fr',
     p:['sit','dance','bar'].includes(pr.p)?pr.p:'stand', s, e, j, h: DRINK_IDS.includes(pr.h)?pr.h:null, hl:Math.max(0,Math.min(SIPS,Math.floor(+pr.hl||SIPS))), sk:+pr.sk||0, a: pr.a==='arcade'?'arcade':null, sp, td, g:gsc, tg, fk:+pr.fk||0, tk:Math.max(0,Math.min(1e6,Math.floor(+pr.tk||0))), rm: validRoom(pr.rm)?pr.rm:'lounge', fs: (pr.fs&&typeof pr.fs==='object'&&['cast','bite','got'].includes(pr.fs.st)) ? {k:+pr.fs.k||0, st:pr.fs.st, f:Math.max(0,Math.min(2,Math.floor(+pr.fs.f||0))), bx:Math.max(0,Math.min(40,+pr.fs.bx||0)), by:Math.max(0,Math.min(40,+pr.fs.by||0))} : null, sl: (pr.sl&&typeof pr.sl==='object'&&Array.isArray(pr.sl.r)) ? {k:+pr.sl.k||0, r:pr.sl.r.slice(0,3).map(v=>Math.max(0,Math.min(SLOT_SYMS.length-1,Math.floor(+v||0))))} : null };
 }
 function upsertPeer(peer){
@@ -4327,7 +4329,7 @@ function upsertPeer(peer){
   if (st.fs && st.fs.st==='got' && (!o.fs || o.fs.st!=='got' || o.fs.k!==st.fs.k)) o.fishShow={f:st.fs.f, until:performance.now()+2200};
   if (o.rm && st.rm && o.rm!==st.rm) sysMsg(`${st.n.toUpperCase()} went to ${roomName(st.rm)}.`);
   { const sig=[st.x,st.y,st.p,st.s?st.s.k:0,st.e?st.e.k:0,st.sk,st.h,st.tk,st.c,st.j?st.j.ts:0].join('|'); if (sig!==o.sig){ o.sig=sig; o.actT=performance.now(); } }   /* when this llama last did anything */
-  o.w=st.w; o.st=st.st; o.bj=st.bj; o.tk=st.tk; o.rm=st.rm; o.fs=st.fs; o.c=st.c; o.n=st.n; o.tx=st.x; o.ty=st.y; o.d=st.d; o.p=st.p; o.h=st.h; o.hl=st.hl; o.a=st.a;
+  o.w=st.w; o.st=st.st; o.bg=st.bg; o.bj=st.bj; o.tk=st.tk; o.rm=st.rm; o.fs=st.fs; o.c=st.c; o.n=st.n; o.tx=st.x; o.ty=st.y; o.d=st.d; o.p=st.p; o.h=st.h; o.hl=st.hl; o.a=st.a;
   if (Math.hypot(o.tx-o.x,o.ty-o.y)>3){ o.x=o.tx; o.y=o.ty; }
 }
 const LEAVE_T=1200;
@@ -5305,7 +5307,8 @@ function drawOverlay(t){
     for (const it of overlayItems){
       const name = (it.me ? (me.n||'YOU') : it.l.n).toUpperCase(); const fa = it.fa==null?1:it.fa;
       const cid = it.me ? me.c : (it.l && it.l.c); const tag = (CHARS[cid]||{}).tag || '#f8d030';
-      const st = staffOf(it.me, it.l), icons = [st ? 'crown' : null, !it.me && isFriend(name) ? 'star' : null].filter(Boolean), icon = '';
+      const st = staffOf(it.me, it.l), bg = st ? '' : (it.me ? (me.bg||'') : ((it.l && it.l.bg) || ''));   // staff show the crown only
+      const icons = [st ? 'crown' : null, bg.includes('v') ? 'vip' : null, bg.includes('f') ? 'first50' : null, !it.me && isFriend(name) ? 'star' : null].filter(Boolean), icon = '';
       c.font = `800 ${10.5*u}px Inter, system-ui, sans-serif`; const isz = 12*u, tw = c.measureText(name).width + icons.length*(isz+3*u);
       const h = 18*u, w = tw + 22*u, nx = it.x - w/2, ny = (it.balloon ? it.y - 27 : it.y) - h - 5*u;   // with an emote bubble showing, the name sits above it
       c.globalAlpha = fa;
@@ -6355,8 +6358,11 @@ function applyProfile(p){
   store.agreed = p.agreed||0; store.bet = Number.isInteger(p.bet)?p.bet:2; store.tk = p.tk;
   best.hay = p.bestHay||0; best.dash = p.bestDash||0;
   for (const tm of (p.timers||[])) cropState[tm.k] = Date.now()+tm.left; store.crops=cropState;
-  saveStore(); tokUI(0); seenMerge(p.seen);
+  saveStore(); tokUI(0); seenMerge(p.seen); badgeSet(p.badges);
 }
+// your own badges: what you hold, and which of them show next to your name (staff show the staff badge only)
+function badgeSet(b){ if (!b || typeof b!=='object') return; if (acct) acct.badges=b; me.bg = b.staff ? '' : ((b.vip && !(b.hide&1)) ? 'v' : '') + ((b.founder>0 && !(b.hide&2)) ? 'f' : ''); }
+NET.handlers.badges = m => { badgeSet(m.badges); if (m.msg) localMsg(String(m.msg).slice(0,140)); };
 function afterLogin(){
   NET.connect(); maybeAskEmail();
   if (pendingNote){ const n=pendingNote; pendingNote=''; const t=setInterval(()=>{ if (joined){ clearInterval(t); setTimeout(()=>localMsg(n), 1500); } }, 500); }
@@ -6690,7 +6696,7 @@ const TOUR_STEPS=[
   {t:'SHOP', p:'Furniture, wallpaper, floors and whole ROOM KITS. Everything you buy goes into your bag, ready for your room. Taste is not included.', el:'#shopbtn'},
   {t:'YOUR BAG', p:'Your clothes, furniture, wallpaper and floors live here. Buy clothes at the LLAMA STORE, or trade with other llamas. Side effects may include free thought.', el:'#invbtn'},
   {t:'FRIENDS', p:'Tap another llama to see their card. You can add them as a friend or trade. Jokes are fine here. Picking on a real player is not: if someone is actually being a jerk, BLOCK or REPORT them. That\'s the one kind of cancelling we do.', el:'#frbtn'},
-  {t:'THE MENU', p:'The MARKETPLACE, your ACCOUNT, the rules, REPORT A BUG and more. Want me again? Pick ASK GUS FOR A TOUR here, or type /tour in chat. Now go offend a slot machine.', el:'#menubtn'}];
+  {t:'THE MENU', p:'The MARKETPLACE, your ACCOUNT, the rules, REPORT A BUG and more. Got a VIP or FIRST 50 badge next to your name? Show or hide it in ACCOUNT. Want me again? Pick ASK GUS FOR A TOUR here, or type /tour in chat. Now go offend a slot machine.', el:'#menubtn'}];
 const TOUR={on:false, i:0, raf:0};
 function tourWanted(){ return !store.toured && acct && acct.since && Date.now()-acct.since < 3*864e5; }
 function tourStart(){ if (!joined) return; closeAll(); TOUR.on=true; TOUR.i=0; document.body.classList.add('touring'); $id('tour_pic').innerHTML=llamaPic('gus', {hat:'cap'}, 60); tourGuide(true); tourShow(); tourTrack(); }
@@ -6833,7 +6839,7 @@ function pmCard(o){ const P=PM.p&&PM.p.n===o.n.toUpperCase() ? PM.p : null;
   $id('pm_pic').innerHTML=llamaPic(o.c, o.w||{}, 92);
   const since = P&&P.since ? new Date(P.since).toLocaleDateString([], {month:'short', year:'numeric'}).toUpperCase() : '';
   const st = P&&P.st==='owner' ? `<span class="pmst own">${pix('crown')} OWNER</span>` : P&&P.st==='mod' ? `<span class="pmst mod">${pix('crown')} MOD</span>` : '';
-  $id('pm_meta').innerHTML = (since?`LLAMA SINCE ${since}`:'LOADING...') + (st?'<br>'+st:'') + (isFriend(o.n)?` <span class="pmst fr">${pix('star')} FRIEND</span>`:'');
+  $id('pm_meta').innerHTML = (since?`LLAMA SINCE ${since}`:'LOADING...') + (st?'<br>'+st:'') + (!st && (o.bg||'').includes('v') ? `<br><span class="pmst vip">${pix('vip')} VIP</span>` : '') + (!st && (o.bg||'').includes('f') ? ` <span class="pmst f50">${pix('first50')} FIRST 50</span>` : '') + (isFriend(o.n)?` <span class="pmst fr">${pix('star')} FRIEND</span>`:'');
   if (!P){ $id('pm_info').innerHTML=''; return; }
   const sc=(ic,v,l)=>`<div>${pix(ic)}<b>${v}</b><small>${l}</small></div>`;
   let h=ageBadges(P.since)+`<div class="pmsc">${sc('joystick',P.hay,'HAY CATCH')}${sc('fire',P.dash,'LLAMA DASH')}${sc('splash',P.arena,'SPIT ARENA')}${sc('bowl',P.bowl,'BOWLING')}</div>`;
@@ -7442,7 +7448,9 @@ function openAccount(ask){
     $id('ac_later').onclick=()=>{ try{ localStorage.setItem('ll_emailLater', String(Date.now())); }catch(_){} acctEl.style.display='none'; };
   } else {
     const st = !a.email ? '' : !mailOn ? '' : a.emailOk ? '<div class="acst ok">✅ CONFIRMED</div>' : '<div class="acst no">⏳ NOT CONFIRMED YET · <button class="aclink" id="ac_resend">SEND CONFIRM EMAIL AGAIN</button></div>';
-    acBody.innerHTML = `<div class="acsec"><div class="ach">LLAMA</div><div class="acv">${esc(me.n||'')}</div></div>
+    const B=(acct&&acct.badges)||{}, bRow=(k,ic,nm,on)=>`<label class="bdgrow"><input type="checkbox" data-bdg="${k}" ${on?'checked':''}><span>${pix(ic)} Show my ${nm} badge next to my name</span></label>`;
+    const bdg = (B.vip||B.founder>0) ? `<div class="acsec"><div class="ach">BADGES</div>${B.staff?'<div class="acv">You hold these, but staff show the staff badge only.</div>':''}${B.vip?bRow('v','vip','VIP',!(B.hide&1)):''}${B.founder>0?bRow('f','first50','FIRST 50 (you are number '+B.founder+')',!(B.hide&2)):''}</div>` : `<div class="acsec"><div class="ach">BADGES</div><div class="acv">No badges yet. VIP is handed out by staff. FIRST 50 went to the first 50 llamas to join.</div></div>`;
+    acBody.innerHTML = `<div class="acsec"><div class="ach">LLAMA</div><div class="acv">${esc(me.n||'')}</div></div>${bdg}
       <div class="acsec"><div class="ach">EMAIL</div><div class="acv">${a.email?esc(a.email):'No email yet. Add one so you can reset your password.'}</div>${st}
         <input id="ac_e" type="email" autocomplete="email" placeholder="${a.email?'New email':'you@example.com'}" maxlength="254" autocapitalize="off" spellcheck="false">
         <input id="ac_p" type="password" autocomplete="current-password" placeholder="Your password" maxlength="72">
@@ -7457,6 +7465,7 @@ function openAccount(ask){
     const drawBlocks=()=>{ const el=$id('ac_blocks'); if (!el) return; const list=[...BLOCKS].sort();
       el.innerHTML = list.length ? list.map(n=>`<div class="acblk"><span>${esc(n)}</span><button class="gbbtn s" data-unb="${esc(n)}">UNBLOCK</button></div>`).join('') : '<div class="acv">Nobody. To block someone, tap their llama and press BLOCK.</div>';
       for (const b of el.querySelectorAll('[data-unb]')) b.addEventListener('click', ()=>{ b.disabled=true; blockDo(b.dataset.unb, false).then(drawBlocks); }); };
+    for (const cb of acBody.querySelectorAll('[data-bdg]')) cb.addEventListener('change', ()=>{ NET.act('badge_show',{k:cb.dataset.bdg, on:cb.checked}).then(r=>{ if (r && r.ok){ badgeSet(r.badges); sendPresence(true); acMsg(cb.checked?'Badge showing.':'Badge hidden.', true); } else { cb.checked=!cb.checked; acMsg('That did not work.'); } }); });
     NET.act('block_list').then(r=>{ if (r && r.ok) blocksSet(r.blocks); drawBlocks(); }); if (me.st || (acct && acct.pkNeed)) pkSection();
     $id('ac_close').onclick=()=>{ acctEl.style.display='none'; };
     $id('ac_pw').onclick=async ()=>{ const o=$id('ac_op').value, n=$id('ac_np').value; if (n.length<8) return acMsg('New passwords need 8+ characters.');
@@ -7514,6 +7523,7 @@ $id('bn_yes').addEventListener('click', ()=>{ const m=$id('bn_msg'); const b=$id
   NET.act('admin',{cmd:'ban', target:banName, hours:banHrs}).then(r=>{ b.disabled=false; if (!r.ok){ $id('banbox').classList.remove('sure'); m.textContent=r.msg||'That did not work.'; return; }
     $id('banbox').style.display='none'; localMsg(r.msg||'Banned.'); if (dashEl.style.display==='block') loadDash(); }); });
 function dashDo(cmd, target){
+  if (cmd==='mailtest'){ localMsg('Sending test emails...'); NET.act('mail_test',{}).then(r=>localMsg(r.msg||(r.ok?'Sent.':'That did not work.'))); return; }
   if (cmd==='give'){ const v=prompt(`How many tokens to give ${target}? (1 to 1000)`, '10'); if (v===null) return; const n=Math.floor(+v); if (!(n>=1 && n<=1000)){ localMsg('Give between 1 and 1000 tokens.'); return; }
     NET.act('admin',{cmd:'give', target, amount:n}).then(r=>{ localMsg(r.msg||(r.ok?'Done.':'That did not work.')); loadDash(); }); return; }
   if (cmd==='ban'){ openBan(target); return; }   // pick how long first
@@ -7634,9 +7644,12 @@ function loadDash(){
     const btn=(label,cmd,name,cls)=>`<button class="gbbtn s ${cls||''}" data-cmd="${cmd}" data-name="${esc(name)}">${label}</button>`;
     const canAct = (n, st) => n!==myName && st!=='owner' && (owner || st!=='mod');
     h+=`<h4>ONLINE NOW (${r.online.length})</h4>`;
-    if (r.online.length) h+=dgrid('auto auto 1fr', ['LLAMA','ROOM','STATUS'], r.online.map(p=>{ const acts = !canAct(p.n,p.st) ? '' : (p.muted?btn('UNMUTE','unmute',p.n):btn('MUTE','mute',p.n)) + btn('KICK','kick',p.n,'bad') + btn('BAN','ban',p.n,'bad') + btn('🪙 GIVE','give',p.n,'gd') + (owner ? (p.st==='mod'?btn('UNMOD','unmod',p.n):btn('MOD','mod',p.n,'gd')) : '');
+    if (r.online.length) h+=dgrid('auto auto 1fr', ['LLAMA','ROOM','STATUS'], r.online.map(p=>{ const acts = !canAct(p.n,p.st) ? '' : (p.muted?btn('UNMUTE','unmute',p.n):btn('MUTE','mute',p.n)) + btn('KICK','kick',p.n,'bad') + btn('BAN','ban',p.n,'bad') + btn('🪙 GIVE','give',p.n,'gd') + (p.st ? '' : (p.vip?btn('UNVIP','unvip',p.n):btn('VIP','vip',p.n,'gd'))) + (owner ? (p.st==='mod'?btn('UNMOD','unmod',p.n):btn('MOD','mod',p.n,'gd')) : '');
       return dgName(p.st,p.n)+`<span>${ROOM_SHORT[p.rm]||esc(roomName(p.rm)||'')}</span><span>${p.muted?'<em class="dgbad">MUTED</em>':(p.st?(p.st==='owner'?'OWNER':'MOD'):'')}</span>`+(acts?`<span class="dga">${acts}</span>`:''); }), true);
     if (!r.online.length) h+='<div class="dl">NOBODY ONLINE.</div>';
+    h+=`<h4>VIPS (${(r.vips||[]).length})</h4><div class="dl">Make someone a VIP with the VIP button next to their name above, or type /vip NAME in chat. FIRST 50 badges given so far: ${r.founders||0} of ${r.foundersMax||50} (automatic, in joining order).</div>`;
+    if ((r.vips||[]).length) h+=dgrid('auto 1fr', ['LLAMA',''], r.vips.map(p=>dgName(p.role==='admin'?'owner':p.role==='mod'?'mod':'',p.n)+`<span class="dga r">${btn('UNVIP','unvip',p.n)}</span>`), true);
+    if (owner) h+=`<h4>EMAIL</h4><div class="dl">Send yourself one of each kind of email the game sends, with sample buttons and codes.</div><span class="dga">${btn('SEND TEST EMAILS TO ME','mailtest',myName,'gd')}</span>`;
     if (owner && Array.isArray(r.signups)){   // OWNER ONLY: who made an account (the server never sends this to mods)
       const day=new Date().toDateString(), nToday=r.signups.filter(s2=>new Date(s2.t).toDateString()===day).length;
       h+=`<h4>NEW ACCOUNTS (${nToday} TODAY)</h4>`;

@@ -29,6 +29,7 @@ export function runStatic() {
     check("security: that change can never touch an admin row", sets.every((s) => /role != 'admin'/.test(s)));
     check("security: nothing writes role 'admin'", !/SET role = 'admin'|role\s*=\s*\?[^;]*bind\(\s*"admin"/.test(worker) && !/"admin"\s*:\s*"player"/.test(worker));
     check("security: role changes are owner-only", /const ownerOnly = \[[^\]]*"mod", "unmod"[^\]]*\]/.test(worker) && /ownerOnly\.includes\(cmd\) && a\.staff !== "owner"/.test(worker));
+    check("badges: only staff can give VIP, and FIRST 50 has no way to be handed out", /"vip", "unvip"\]\.includes\(cmd\)/.test(worker) && (worker.match(/SET founder/g) || []).length === 2 && /if \(bg && !staff\) o\.bg = bg; else delete o\.bg;/.test(worker));
     check("security: staff powers need a second login step", /const staffRole = \(env, u\) => \(tfaOn\(env, u\) \? baseRole\(env, u\) : ""\);/.test(worker) && /const tfaOn = \(env, u\) => !!\(u && \(u\.pk_on \|\| em2On\(env, u\)\)\);/.test(worker));
     check("security: email login codes are mods only, need a confirmed email, and pause after a reset or email change", /const em2On = \(env, u\) => !!\(u && u\.em2 && u\.email && u\.email_ok && mailOn\(env\) && baseRole\(env, u\) === "mod" && !\(u\.em2_hold > Date\.now\(\)\)\);/.test(worker));
     check("security: the server stamps name, tokens and staff badge on presence", /o\.n = name; o\.tk = tk; if \(staff\) o\.st = staff; else delete o\.st;/.test(worker));

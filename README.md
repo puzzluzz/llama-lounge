@@ -567,3 +567,11 @@ Which first-time pop-ups, tips and the tour a player has already had is saved on
 ## Email design
 
 `mailHtml` in src/worker.js builds every email: dark purple background, logo and wordmark, one card with a purple title bar, a yellow button for links and a large boxed code for login codes. Tables and inline styles only, so it renders the same in mail apps.
+
+## Badges: VIP and FIRST 50
+
+- Shown next to a llama's name tag and on their card. Staff show the staff crown only, never these.
+- **VIP** (`users.vip`): given or removed by mods and the owner, from DASHBOARD > PLAYERS (the VIP button on an online llama, or the VIPS list) or with `/vip NAME` and `/unvip NAME`.
+- **FIRST 50** (`users.founder`, the llama's number 1 to 50): automatic for the first 50 accounts to join, not counting the owner. Assigned at sign up while numbers are left; existing accounts were numbered in joining order when the feature arrived. No command or screen can hand it out.
+- Each player picks which of their badges show in MENU > ACCOUNT > BADGES (`badge_show`, `users.bhide`). The badge on a name tag comes from the account on the server (`badgesOf`), never from the browser.
+- Owner only: DASHBOARD > PLAYERS > SEND TEST EMAILS TO ME sends one of each kind of email with sample buttons and codes (`mail_test`).
