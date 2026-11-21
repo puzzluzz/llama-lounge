@@ -559,7 +559,7 @@ async function api(req, env, url, ctx) {
   if (path === "/api/pk/start") {
     const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
     if (await blocked(env, "pw:" + u.id, PW_CHECK_FAILS)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
-    if (!(await checkPassword(u, String(body.p || "")))) { await bump(env, "pw:" + u.id); return json({ error: "Password is wrong." }, 401); }
+    if (!(await checkPassword(u, String(body.p || "")))) { await bump(env, "pw:" + u.id); return json({ error: "That isn't your login password. Type the one you log in with." }, 401); }
     const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM passkeys WHERE uid = ?").bind(u.id).first(); if (n && n.n >= 5) return json({ error: "You already have 5 passkeys. Remove them and start again." }, 400);
     const { chal, ticket } = await pkChallenge(env, u.id, "reg"), uidBytes = enc.encode("ll:" + u.id);
     const have = ((await env.DB.prepare("SELECT id FROM passkeys WHERE uid = ?").bind(u.id).all()).results || []).map((r) => ({ type: "public-key", id: r.id }));
