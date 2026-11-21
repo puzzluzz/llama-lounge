@@ -5168,7 +5168,6 @@ function drawOverlay(t){
       c.font=`${b.yell?800:500} ${12*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#1d1530'; c.fillText(b._txt, bx+13*u+b._hw+5*u, by+b.h/2+0.5*u);
       c.textBaseline='alphabetic';
     }
-    if (curRoom==='gym' && BXFX.bursts.length){ const g0=g; g=c; c.imageSmoothingEnabled=false; try { drawBoxWords(t); } finally { g=g0; } }   /* fight call-outs sit over the name tags */
   } else { const g0=g; g=c; c.imageSmoothingEnabled=false; try { drawArcade(t); } finally { g=g0; } if (arcadeText) drawArcadeText(c, t); }
 }
 
@@ -6979,7 +6978,7 @@ const BX_WORDS = { jab:['POP!','BIFF!','JAB!','THWAP!'], hook:['POW!','WHAM!','B
 function bxHead(r, side){ const S=BXR[r].s, L = side==='b' && S && S.b.bot ? BOTS[r] : null; let x, y;
   if (L){ x=L.x; y=L.y; } else { const n=S && S[side] && S[side].n; if (me.n && n===String(me.n).toUpperCase()){ x=me.x; y=me.y; } else { const o=[...others.values()].find(q=>sameRoom(q) && String(q.n||'').toUpperCase()===n); if (!o) return null; x=o.x; y=o.y; } }
   const [sx,sy]=P(x,y,RINGS[r].H); return [Math.round(sx), Math.round(sy)-34]; }
-function drawBoxFx(t){ if (curRoom!=='gym') return; const now=performance.now();
+function drawBoxFx(t){ if (curRoom!=='gym') return; const now=performance.now(); drawBoxWords(t);
   for (let r=0;r<BXR.length;r++){ const X=BXR[r], S=X.s; if (!S) continue;
     // the punch itself: a glove flying out to the other fighter's face
     if (X.out && now-X.outT<420) for (const side of ['a','b']){ const R=X.out[side]; if (!R || (R.mv!=='jab' && R.mv!=='hook')) continue; const A=bxHead(r,side), B=bxHead(r,side==='a'?'b':'a'); if (!A||!B) continue;
@@ -6989,10 +6988,11 @@ function drawBoxFx(t){ if (curRoom!=='gym') return; const now=performance.now();
     // dizzy stars over anyone nearly out, and over a knocked-down fighter
     for (const side of ['a','b']){ const P2=S[side]; const ko = S.phase==='over' && X.how==='ko' && X.win && X.win!==P2.n; if (P2.hp>25 && !ko) continue; const H=bxHead(r,side); if (!H) continue;
       const yy = ko ? H[1]+16 : H[1]-4; for (let k=0;k<3;k++){ const a=t*4+k*2.1, XX=Math.round(H[0]+Math.cos(a)*9), Y=Math.round(yy+Math.sin(a)*3); g.fillStyle='#ffd23f'; g.fillRect(XX-1,Y,3,1); g.fillRect(XX,Y-1,1,3); } } } }
-// the comic call-outs (POW!, BLOCKED!, WHOOSH!...) and their stars. These are drawn on the top layer, AFTER the name tags, so a name never covers them.
+// the comic call-outs (POW!, BLOCKED!...) and their stars. Each one sits ABOVE its fighter's name tag, so the name stays readable and the call-out is never hidden.
 function drawBoxWords(t){ if (curRoom!=='gym') return; const now=performance.now();
   for (let i=BXFX.bursts.length-1;i>=0;i--){ const b=BXFX.bursts[i], u=(now-b.t)/900; if (u>=1 || !BXR[b.r].s){ BXFX.bursts.splice(i,1); continue; } const H=bxHead(b.r,b.side); if (!H) continue;
-    const img=bxWordImg(b.txt, b.kind||'hit', u<0.07), X=H[0]+b.ox, Y=H[1]-10+(b.oy||0)-Math.round(Math.min(u,0.7)*12);
+    const img=bxWordImg(b.txt, b.kind||'hit', u<0.07), side=b.kind==='whoosh', tagTop=H[1]-Math.ceil(31/S)-3;   /* the name tag is about 23 screen pixels tall and sits just over the head */
+    const X=H[0]+b.ox, Y = side ? H[1]-10+(b.oy||0)-Math.round(Math.min(u,0.7)*12) : tagTop-Math.ceil(img.height/2)-Math.round(Math.min(u,0.7)*8);
     if (b.star) for (let k=0;k<6;k++){ const a=k*1.047+u*2, rr=6+u*14; g.fillStyle=k%2?'#fff6a0':'#ffd23f'; const px=Math.round(H[0]+Math.cos(a)*rr), py=Math.round(H[1]+4+Math.sin(a)*rr*0.6); g.fillRect(px-1,py,3,1); g.fillRect(px,py-1,1,3); }
     if (u<0.78 || Math.floor(u*30)%2===0) g.drawImage(img, Math.round(X-img.width/2), Math.round(Y-img.height/2)); } }
 // the HUD (everyone in the gym), the move pad (only the two fighters)
