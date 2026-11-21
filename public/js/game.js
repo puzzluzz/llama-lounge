@@ -4471,13 +4471,16 @@ const WF = (() => {
     for (const w of raw) { if (w.length === 1) run += w; else { if (run.length > 1) out.push(run); run = ""; } } if (run.length > 1) out.push(run); return out; };
   const isSlurWord = (w) => slurRoot.test(w) || slurWord.test(w);
   const isSwearWord = (w) => swearRoot.test(w) || swearWord.test(w);
+  const CHAT_FILTER = false;   // false: chat is not filtered. true brings back starred swears and blocked slurs
+  const hasSlur = (text) => { const ws = words(text); return ws.some(isSlurWord) || slurRoot.test(letters(text)) || slurPhrase.test(letters(text)); };
   return {
     // true if the text has a slur anywhere (also caught when letters are spread over several words: "nig ger")
-    slur(text) { const ws = words(text); return ws.some(isSlurWord) || slurRoot.test(letters(text)) || slurPhrase.test(letters(text)); },
+    // CHAT_FILTER is off (the owner's choice): chat and DMs go out exactly as typed. Names and room names are still checked (nameOk).
+    slur(text) { return CHAT_FILTER && hasSlur(text); },
     // chat and DMs: swear words become stars (same length), everything else stays as typed
-    mask(text) { return String(text).replace(/[^\s]+/g, (tok) => { const w = letters(tok); return w && (isSwearWord(w) || isSlurWord(w)) ? "*".repeat(Math.min(tok.length, 12)) : tok; }); },
+    mask(text) { return !CHAT_FILTER ? String(text) : String(text).replace(/[^\s]+/g, (tok) => { const w = letters(tok); return w && (isSwearWord(w) || isSlurWord(w)) ? "*".repeat(Math.min(tok.length, 12)) : tok; }); },
     // names and room names: no slurs and no swears, even inside other letters ("xxfuckxx")
-    nameOk(text) { const l = letters(text), ws = words(text); return !(this.slur(text) || swearRoot.test(l) || ws.some(isSwearWord)); },
+    nameOk(text) { const l = letters(text), ws = words(text); return !(hasSlur(text) || swearRoot.test(l) || ws.some(isSwearWord)); },
   };
 })();
 
@@ -4537,7 +4540,7 @@ function menuAct(el){
   else if (a==='bug'){ $id('bug_msg').textContent=''; $id('bugbox').style.display='block'; sheetHead($id('bugbox')); setTimeout(()=>$id('bug_text').focus(), 50); }
   else if (a==='friends'){ openFriends(); }
   else if (a==='wardrobe'){ openWardrobe(bagTab()); }
-  else if (a==='logout'){ apiPost('/api/logout').then(()=>{ NET.closedForGood=true; location.reload(); }); }
+  else if (a==='logout'){ apiPost('/api/logout').then(()=>{ NET.closedForGood=true; location.href='/'; /* back to the home page */ }); }
   else if (a==='sit') toggleSit();
   else if (a==='tips'){ tipsOff=!tipsOff; if(!tipsOff){ tipHidden={}; store.tipHidden={}; } store.tipsOff=tipsOff; saveStore(); mtips.textContent=tipsOff?'TIPS: OFF':'TIPS: ON'; localMsg(tipsOff?'Tips are off.':'Tips are back on!'); }
   else if (a==='rules') showRules();
@@ -6292,7 +6295,8 @@ function drawBoardWall(t){
 // ======================= LOOP =======================
 rebuildBG(); resize();
 setSel(me.c); pname.value=me.n; tokUI(0); initWallet();
-const RULES_V=1; const rulesEl=document.getElementById('rules');
+const RULES_V=2;   // 2: chat is no longer filtered, so everyone sees the rules once more
+ const rulesEl=document.getElementById('rules');
 function showRules(){ closeAll(); rulesEl.style.display='flex'; rulesEl.scrollTop=0; }
 document.getElementById('ragree').addEventListener('click', ()=>{ store.agreed=RULES_V; saveStore(); acctSave(); rulesEl.style.display='none'; if (!joined){ if (acctHasLlama()) autoEnter(); else pick.style.display='flex'; } });
 
@@ -6322,7 +6326,13 @@ async function startGate(){
   bootHide();
   if (r && r.ok){ applyProfile(await r.json()); afterLogin(); }
   else if (r && r.status===403){ const j=await r.json().catch(()=>({})); showKicked(j.error||'This account is banned.'); }
-  else showAuth('login', pendingNote, /confirmed/.test(pendingNote)), pendingNote='';
+  else {
+    // arriving from the home page: a passkey login that the home page started is finished here; #signup and #forgot open on that tab
+    let pk=null; try { pk=JSON.parse(sessionStorage.getItem('ll_pk')||'null'); sessionStorage.removeItem('ll_pk'); } catch(_){}
+    const hv=(/^#(signup|forgot)$/.exec(location.hash||'')||[])[1]; if (hv){ try { history.replaceState(null, '', location.pathname+location.search); } catch(_){} }
+    if (pk && pk.t && pk.opts && Date.now()-(+pk.at||0)<120000){ PKL.t=pk.t; PKL.opts=pk.opts; PKL.reset=false; showAuth('pk'); }
+    else showAuth(hv||'login', pendingNote, /confirmed/.test(pendingNote)), pendingNote='';
+  }
 }
 function applyProfile(p){
   acct = Object.assign({}, p); isAdminUser = !!p.admin; me.st = ['owner','mod'].includes(p.staff) ? p.staff : ''; dashMenu();
@@ -6629,17 +6639,18 @@ $id('afk_back').addEventListener('click', ()=>location.reload());
 $id('invbtn').addEventListener('click', ()=>{ ensureAudio(); openWardrobe(bagTab()); });
 $id('roomsbtn').addEventListener('click', ()=>{ ensureAudio(); if (joined) openRooms(); });
 // ---- GUIDED FIRST VISIT: GUS stands next to you and walks you through the game, one card at a time ----
+// the tour is written in the La Llama P.I.C. voice (satire: it laughs at everyone equally, never at one group of people). Keep every step's real instruction intact.
 const TOUR_STEPS=[
-  {t:'HI, I\'M GUS!', p:'Welcome to the Llama Lounge! I\'ll show you around. Tap anywhere on the floor and your llama walks there.', el:null},
-  {t:'FOOD AND DRINKS', p:'Your llama gets hungry and thirsty. These bars show how full it is. Tap a cup on the bar to order a drink. Snacks are in LLAMA ACRES and the LLAMA STORE.', el:'#status'},
-  {t:'SAY HI', p:'Type here and press enter to talk. Everyone in the room sees it in a bubble over your llama. Tap the smiley button next to it to wave, flex, laugh, or send a quick line like HI! or GG with one tap.', el:'#chatrow'},
-  {t:'PLAY GAMES', p:'Tap any machine, table or ring and your llama walks over and plays. If another llama is using it, yours waits beside them for a turn. Box in the GYM, dig for treasure in the COVE and the JUNGLE, and watch for DOUBLE TREASURE events.', el:null},
-  {t:'JOBS AND TOKENS', p:'TOKENS buy clothes, furniture and more. Earn them from jobs, games and your daily reward. JOBS shows what you can do in this room.', el:'#jobsbtn'},
-  {t:'ROOMS', p:'Tap ROOMS to go anywhere. The MAP tab takes you to the CASINO, SPIT ARENA, LANES, ACRES, the STORE, the BOXING GYM, TREASURE COVE and the JUNGLE TEMPLE. The PLAYER ROOMS tab is where you make your own room and visit other llamas.', el:'#roomsbtn'},
-  {t:'SHOP', p:'Furniture, wallpaper, floors and whole ROOM KITS. Everything you buy goes into your bag, ready for your room.', el:'#shopbtn'},
-  {t:'YOUR BAG', p:'Your clothes, furniture, wallpaper and floors live here. Buy clothes at the LLAMA STORE, or trade with other llamas.', el:'#invbtn'},
-  {t:'FRIENDS', p:'Tap another llama to see their card. You can add them as a friend or trade. If someone is being mean, BLOCK or REPORT them from there. Friends can send you messages.', el:'#frbtn'},
-  {t:'THE MENU', p:'The MARKETPLACE, your ACCOUNT, rules, REPORT A BUG and more. Want me again? Pick ASK GUS FOR A TOUR here, or type /tour in chat. Have fun!', el:'#menubtn'}];
+  {t:'HI, I\'M GUS!', p:'Welcome to the Llama Lounge, the one safe space where nobody is safe from a joke. I\'ll show you around, and no, I\'m not sorry. Tap anywhere on the floor and your llama walks there.', el:null},
+  {t:'FOOD AND DRINKS', p:'Your llama gets hungry and thirsty and will complain about it. These bars show how full it is. Tap a cup on the bar to order a drink. Snacks are in LLAMA ACRES and the LLAMA STORE. Yes, eating plants is murder. Eat up.', el:'#status'},
+  {t:'SAY HI', p:'Type here and press enter to talk. Everyone in the room sees it in a bubble over your llama, so choose your words like an adult, or don\'t. Tap the smiley button to wave, flex, laugh, or fire off a quick line like NOT SORRY with one tap.', el:'#chatrow'},
+  {t:'PLAY GAMES', p:'Tap any machine, table or ring and your llama walks over and plays. If another llama is using it, yours waits beside them, because even here you can\'t cut the line. Box in the GYM, dig for treasure in the COVE and the JUNGLE, and watch for DOUBLE TREASURE events. Warning: losing may trigger someone.', el:null},
+  {t:'JOBS AND TOKENS', p:'TOKENS buy clothes, furniture and more. Nobody is handing them out, so get a job: earn them from jobs, games and your daily reward. JOBS shows what you can do in this room.', el:'#jobsbtn'},
+  {t:'ROOMS', p:'Tap ROOMS to go anywhere. The MAP tab takes you to the CASINO, SPIT ARENA, LANES, ACRES, the STORE, the BOXING GYM, TREASURE COVE and the JUNGLE TEMPLE. The PLAYER ROOMS tab is where you make your own room and judge everyone else\'s.', el:'#roomsbtn'},
+  {t:'SHOP', p:'Furniture, wallpaper, floors and whole ROOM KITS. Everything you buy goes into your bag, ready for your room. Taste is not included.', el:'#shopbtn'},
+  {t:'YOUR BAG', p:'Your clothes, furniture, wallpaper and floors live here. Buy clothes at the LLAMA STORE, or trade with other llamas. Side effects may include free thought.', el:'#invbtn'},
+  {t:'FRIENDS', p:'Tap another llama to see their card. You can add them as a friend or trade. Jokes are fine here. Picking on a real player is not: if someone is actually being a jerk, BLOCK or REPORT them. That\'s the one kind of cancelling we do.', el:'#frbtn'},
+  {t:'THE MENU', p:'The MARKETPLACE, your ACCOUNT, the rules, REPORT A BUG and more. Want me again? Pick ASK GUS FOR A TOUR here, or type /tour in chat. Now go offend a slot machine.', el:'#menubtn'}];
 const TOUR={on:false, i:0, raf:0};
 function tourWanted(){ return !store.toured && acct && acct.since && Date.now()-acct.since < 3*864e5; }
 function tourStart(){ if (!joined) return; closeAll(); TOUR.on=true; TOUR.i=0; document.body.classList.add('touring'); $id('tour_pic').innerHTML=llamaPic('gus', {hat:'cap'}, 60); tourGuide(true); tourShow(); tourTrack(); }
@@ -7123,7 +7134,7 @@ NET.handlers.rinv = m => { const rm=String(m.rm||''), by=String(m.by||'').toUppe
   try{ ensureAudio(); if (actx){ const o=actx.createOscillator(), gn=actx.createGain(); o.frequency.value=660; gn.gain.value=0.06*(svol/100); o.connect(gn); gn.connect(actx.destination); o.start(); o.stop(actx.currentTime+0.12); } }catch(_){}
   if (isP(rm)){ closeAll(); swapTo=rm; } else { showSwap(rm); }
   document.getElementById('sw_text').textContent=`📨 ${by} invited you to ${nm}. GO?`; swapEl.style.display='block'; };
-NET.handlers.wfwarn = m => { closeAll(); $id('wf_text').textContent=`Our word filter has caught your messages ${m.n} times. Please keep chat friendly: swear words get starred out, and slurs are never allowed. Staff can see blocked messages and can mute or ban accounts that keep breaking the rules.`; $id('wfbox').style.display='block'; sheetHead($id('wfbox')); };
+NET.handlers.wfwarn = () => { closeAll(); $id('wf_text').textContent='Heads up: some of your recent messages may offend some people. Chat here is not filtered, so nothing was blocked. Just know that harassing another player is still against the rules.'; $id('wfbox').style.display='block'; sheetHead($id('wfbox')); };
 NET.handlers.filtered = () => { me.bubble=null; localMsg("That message has a word that isn't allowed here, so nobody saw it."); };
 NET.handlers.toast = m => { if (m && m.msg) localMsg(String(m.msg).slice(0,120)); };
 

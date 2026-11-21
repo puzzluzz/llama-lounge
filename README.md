@@ -536,3 +536,13 @@ Floors are sold by the square (SHOP > WALLS & FLOORS) and laid one square at a t
 ## Menu back buttons
 
 A panel opened from the MENU shows a back arrow in its header that returns to the menu (`menuBackOn/menuBackOff`, class `frommenu` on body). Panels opened any other way do not show it. Menu items act on a finished tap, so scrolling the menu on a phone never picks one.
+
+## Home page and launch flow
+
+- `/` is the home page (`public/index.html`, `public/css/site.css`, `public/js/site.js`): live player count, a log in, general information and the satire warning.
+- The game itself is `/play` (`public/play.html`). Logging in on the home page sets the same session cookie and then opens `/play`. An installed home-screen app starts at `/play`.
+- Sign up, forgot password and the staff passkey step still happen on the game's own login screen (`/play#signup`, `/play#forgot`); a passkey login started on the home page is handed over with a short-lived ticket in sessionStorage, never the password.
+- `GET /api/status` is public and returns `{online, cap, waiting}` only. The room is asked at most once every 10 seconds.
+- Email links go to `/play#reset=` and `/play#verify=`; old links to `/#...` are forwarded.
+- Voice: the tour and quick-chat lines use the La Llama P.I.C. satire voice. It jokes about everything in general and never targets a group of people; the player rules and the word filter are unchanged.
+- Chat filter: OFF by the owner's choice (`CHAT_FILTER = false` inside `WF` in both src/worker.js and public/js/game.js; set both to true to bring back starred swears and blocked slurs). Llama names and room names are still checked. Swears and slurs are still counted (`WF.flag`, `wfHit`): `WF_WARN_AT` (10) flagged messages within `WF_WINDOW_MS` (10 minutes) shows the sender a heads-up that the messages may offend some people and adds a line to the staff log; nothing is blocked. The login screen, the home page and the Terms all warn that chat can contain offensive language. `RULES_V` was raised to 2 so every player sees the updated rules once.

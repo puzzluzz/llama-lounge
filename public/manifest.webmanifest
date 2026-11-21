@@ -2,7 +2,7 @@
   "name": "Llama Lounge",
   "short_name": "Llama Lounge",
   "description": "Hang out, chat and play games as a llama.",
-  "start_url": "/",
+  "start_url": "/play",
   "scope": "/",
   "display": "standalone",
   "background_color": "#120d22",

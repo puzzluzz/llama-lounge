@@ -1024,3 +1024,6 @@
   .sheetback:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(29,21,48,.35)}
   body.frommenu.joined .shead .sheetback{display:grid}
   @media (max-width:640px){ #screen .menu>div.shead .sheetback{align-self:center;width:38px;height:38px} }
+
+  /* satire disclaimer under the login form */
+  .audisc{margin-top:12px;padding:10px 12px;border:2px dashed #c9bfe2;border-radius:8px;background:#faf7ff;color:#4a3f6b;font:500 12px/1.5 var(--ui);text-align:left}

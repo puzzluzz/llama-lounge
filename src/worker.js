@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-28i";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-29c";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -366,7 +366,7 @@ async function takeLink(env, tok, kind) {
 }
 async function sendVerify(env, url, u, email) {
   const tok = await newLink(env, u.id, "verify", email, VERIFY_MS);
-  return sendMail(env, email, "Confirm your Llama Lounge email", [`Hi ${u.name.toUpperCase()}!`, "Tap the button to confirm this is your email. That way you can reset your password if you ever forget it.", "Didn't make a Llama Lounge account? You can ignore this email."], `${siteUrl(env, url)}/#verify=${tok}`, "CONFIRM MY EMAIL");
+  return sendMail(env, email, "Confirm your Llama Lounge email", [`Hi ${u.name.toUpperCase()}!`, "Tap the button to confirm this is your email. That way you can reset your password if you ever forget it.", "Didn't make a Llama Lounge account? You can ignore this email."], `${siteUrl(env, url)}/play#verify=${tok}`, "CONFIRM MY EMAIL");
 }
 // names that could pass for staff or the game's own llamas can't be taken at sign-up (looks only: powers come from users.role, never a name)
 function staffyName(name) {
@@ -492,9 +492,19 @@ export default {
   async scheduled(event, env, ctx) { banSweepAt = 0; ctx.waitUntil(sweepBans(env)); ctx.waitUntil(makeBackup(env, "automatic").then((b) => console.log("backup done", JSON.stringify(b))).catch((e) => console.error("backup failed", e && e.message))); },
 };
 
+// the home page's player count: asked of the room at most once every 10 seconds, however many people are looking at the page
+let statusCache = { t: 0, v: null };
 async function api(req, env, url, ctx) {
   const later = (p) => (ctx && ctx.waitUntil ? ctx.waitUntil(p) : p);
   const path = url.pathname;
+  if (req.method === "GET" && path === "/api/status") {   // public: how many llamas are playing (numbers only, no names)
+    const now = Date.now();
+    if (!statusCache.v || now - statusCache.t > 10000) {
+      try { const r = await env.LOUNGE.get(env.LOUNGE.idFromName("main")).fetch(new Request("https://room/count")); statusCache = { t: now, v: await r.json() }; }
+      catch (e) { if (!statusCache.v) statusCache = { t: now, v: { online: 0, cap: 0, waiting: 0 } }; }
+    }
+    return json(statusCache.v, 200, { "cache-control": "public, max-age=10" });
+  }
   if (req.method === "GET" && path === "/api/me") {
     const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
     { const bm = await banMsg(env, u); if (bm) return json({ error: bm }, 403); }
@@ -686,7 +696,7 @@ async function api(req, env, url, ctx) {
     await bump(env, "fg:" + ip); await bump(env, "fe:" + email);
     const u = await env.DB.prepare("SELECT * FROM users WHERE email = ? AND banned = 0").bind(email).first();
     if (u) {
-      const tok = await newLink(env, u.id, "reset", email, RESET_MS), link = `${siteUrl(env, url)}/#reset=${tok}`;
+      const tok = await newLink(env, u.id, "reset", email, RESET_MS), link = `${siteUrl(env, url)}/play#reset=${tok}`;
       if (!mailOn(env) && ["localhost", "127.0.0.1"].includes(url.hostname)) console.log("[dev] reset link for " + u.name + ": " + link);
       later(sendMail(env, email, "Reset your Llama Lounge password", [`Hi ${u.name.toUpperCase()}!`, "Someone asked to reset your password. Tap the button to pick a new one. The link works once and expires in 30 minutes.", "Didn't ask for this? Ignore this email and your password stays the same."], link, "RESET MY PASSWORD"));
     }
@@ -852,6 +862,7 @@ const LANES = { minGap: 2200, dayCap: 40, expire: 30 * 60000 };
 // ---------- realtime room ----------
 const PRES_KEYS = new Set(["bj", "c", "n", "x", "y", "d", "p", "m", "s", "h", "hl", "sk", "e", "a", "sp", "td", "g", "fk", "rm", "fs", "sl", "j", "l", "ea"]);
 // ---- word filter (the same copy lives in src/worker.js and public/index.html) ----
+const WF_WARN_AT = 10, WF_WINDOW_MS = 10 * 60 * 1000;   // language heads-up: this many flagged messages within this long
 // SLURS: a message with one of these isn't sent at all. SWEARS: masked with stars in chat and DMs.
 // Names and room names can't contain either. Checks see through leetspeak (n1gg3r), repeated letters,
 // accents, and spaced-out letters (f a g). Words match whole (with -s/-es/-ed/-ing endings) unless listed in *_ROOT,
@@ -872,13 +883,18 @@ const WF = (() => {
     for (const w of raw) { if (w.length === 1) run += w; else { if (run.length > 1) out.push(run); run = ""; } } if (run.length > 1) out.push(run); return out; };
   const isSlurWord = (w) => slurRoot.test(w) || slurWord.test(w);
   const isSwearWord = (w) => swearRoot.test(w) || swearWord.test(w);
+  const CHAT_FILTER = false;   // false: chat is not filtered. true brings back starred swears and blocked slurs
+  const hasSlur = (text) => { const ws = words(text); return ws.some(isSlurWord) || slurRoot.test(letters(text)) || slurPhrase.test(letters(text)); };
   return {
     // true if the text has a slur anywhere (also caught when letters are spread over several words: "nig ger")
-    slur(text) { const ws = words(text); return ws.some(isSlurWord) || slurRoot.test(letters(text)) || slurPhrase.test(letters(text)); },
+    // CHAT_FILTER is off (the owner's choice): chat and DMs go out exactly as typed. Names and room names are still checked (nameOk).
+    slur(text) { return CHAT_FILTER && hasSlur(text); },
+    // MONITORING (always on): true if a message has a swear or a slur. Nothing is blocked or changed; it only counts toward the heads-up (see wfHit)
+    flag(text) { return hasSlur(text) || words(text).some(isSwearWord); },
     // chat and DMs: swear words become stars (same length), everything else stays as typed
-    mask(text) { return String(text).replace(/[^\s]+/g, (tok) => { const w = letters(tok); return w && (isSwearWord(w) || isSlurWord(w)) ? "*".repeat(Math.min(tok.length, 12)) : tok; }); },
+    mask(text) { return !CHAT_FILTER ? String(text) : String(text).replace(/[^\s]+/g, (tok) => { const w = letters(tok); return w && (isSwearWord(w) || isSlurWord(w)) ? "*".repeat(Math.min(tok.length, 12)) : tok; }); },
     // names and room names: no slurs and no swears, even inside other letters ("xxfuckxx")
-    nameOk(text) { const l = letters(text), ws = words(text); return !(this.slur(text) || swearRoot.test(l) || ws.some(isSwearWord)); },
+    nameOk(text) { const l = letters(text), ws = words(text); return !(hasSlur(text) || swearRoot.test(l) || ws.some(isSwearWord)); },
   };
 })();
 
@@ -920,6 +936,8 @@ export class Lounge extends DurableObject {
   }
 
   async fetch(req) {
+    if (new URL(req.url).pathname === "/count") { const cap = await this.capNow(), live = this.allSockets().filter((w) => w.readyState === 1); const waiting = live.filter((w) => this.isQ(w)).length;
+      return json({ online: live.length - waiting, cap, waiting }); }
     const uid = +req.headers.get("x-uid"), name = req.headers.get("x-name"), staff = ["owner", "mod"].includes(req.headers.get("x-staff")) ? req.headers.get("x-staff") : "";
     // one llama per account: an older connection for this account (another tab, or one left over from a reload) is closed and removed for everyone
     let held = false;   // this account already had a playing connection (another tab, or one being replaced)
@@ -1026,7 +1044,7 @@ export class Lounge extends DurableObject {
       if (rs && typeof rs === "object" && rs.t && +rs.k !== a.ck && !first) { if (!a.cr || now - a.cr[0] > 5000) a.cr = [now, 0];
         if (++a.cr[1] > 8) { a.ck = +rs.k; delete m.p.s; if (a.cr[1] === 9) this.send(ws, { t: "toast", msg: "Slow down a little. Some of your messages weren't sent." }); } }
       if (rs && typeof rs === "object" && rs.t && m.p.s && +rs.k !== a.ck) { const was = a.ck; a.ck = +rs.k; const bad = WF.slur(String(rs.t)); if (bad) this.send(ws, { t: "filtered" });
-        if (!first && was !== undefined && !rs.f && (bad || WF.mask(String(rs.t)) !== String(rs.t))) await this.wfHit(ws, a, bad ? "blocked" : "masked");
+        if (!first && was !== undefined && !rs.f && WF.flag(String(rs.t))) await this.wfHit(ws, a, "chat");
         if (!first && was !== undefined) { await this.chatLog(a, m.p.rm, (bad ? "BLOCKED: " : rs.f ? "* " : "") + String(rs.t).slice(0, 120), !!a.uc.muted); if (!rs.f && !a.uc.muted && !bad) { try { await this.questTick(ws, a.uid, "chat"); } catch (e) {} } } }
       else if (first && rs && typeof rs === "object") a.ck = +rs.k;
       if (first && a.ck === undefined) a.ck = 0;
@@ -1771,7 +1789,7 @@ export class Lounge extends DurableObject {
     const text = WF.mask(String(m.text || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, DM.len));
     if (!text) return { ok: false, msg: "Type a message first." };
     if (WF.slur(text)) { await this.wfHit(ws, a, "blocked DM"); return { ok: false, msg: "That message has a word that isn't allowed here." }; }
-    if (/\*{3,}/.test(text) && WF.mask(String(m.text || "")) !== String(m.text || "")) await this.wfHit(ws, a, "masked DM");
+    if (WF.flag(text)) await this.wfHit(ws, a, "DM");
     const me = await this.user(a.uid); if (!me || me.banned) return { ok: false, msg: "You can't send messages." };
     if (me.muted) return { ok: false, msg: "You're muted, so you can't send messages right now." };
     const T = await this.frTarget(a, m); if (T.err) return { ok: false, msg: T.err };
@@ -2661,10 +2679,14 @@ export class Lounge extends DurableObject {
     return { ok: true, msg: `Gave ${u.name.toUpperCase()} ${n} TOKENS.` };
   }
   // the word filter caught this llama (a blocked slur or a masked swear): every 5th time they get a warning pop-up, and staff see it in the log
-  async wfHit(ws, a, how) {
+  async wfHit(ws, a, how) {   // a message with a swear or slur went out: count it (users.wfn keeps the all-time total)
     if (!this.wfReady){ try { await this.env.DB.prepare("ALTER TABLE users ADD COLUMN wfn INTEGER NOT NULL DEFAULT 0").run(); } catch (e) {} this.wfReady = true; }
     const r = await this.env.DB.prepare("UPDATE users SET wfn = wfn + 1 WHERE id = ? RETURNING wfn").bind(a.uid).first(); const n = r ? r.wfn : 0;
-    if (n && n % 5 === 0){ if (ws) this.send(ws, { t: "wfwarn", n }); await this.logStaff("WORD FILTER", "wfwarn", `${a.name} (${n} times, last: ${how})`); }
+    // heads-up: WF_WARN_AT flagged messages inside WF_WINDOW_MS. The messages were sent as typed; this only tells the llama they may offend some people, and notes it in the staff log
+    if (!this.wfWin) this.wfWin = new Map();
+    const now = Date.now(), list = (this.wfWin.get(a.uid) || []).filter((t) => now - t < WF_WINDOW_MS); list.push(now);
+    if (list.length >= WF_WARN_AT) { this.wfWin.delete(a.uid); if (ws) this.send(ws, { t: "wfwarn", n }); await this.logStaff("LANGUAGE", "wfwarn", `${a.name}: ${WF_WARN_AT} flagged messages in ${Math.round(WF_WINDOW_MS / 60000)} minutes (${n} all time, last: ${how})`); }
+    else this.wfWin.set(a.uid, list);
   }
   async bugTable() { if (this.bugReady) return; await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS bugs (id INTEGER PRIMARY KEY AUTOINCREMENT, uid INTEGER NOT NULL, name TEXT NOT NULL, t INTEGER NOT NULL, room TEXT, text TEXT NOT NULL, ver TEXT, ua TEXT, scr TEXT, done INTEGER NOT NULL DEFAULT 0)").run(); this.bugReady = true; }
   async bugReport(a, m) {

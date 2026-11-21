@@ -8,7 +8,7 @@ const check = (name, ok, detail = "") => { if (ok) console.log("  ok   " + name)
 
 export function runStatic() {
   console.log("Static checks");
-  const worker = read("src/worker.js"), game = read("public/js/game.js"), net = read("public/js/net.js"), html = read("public/index.html"), css = read("public/css/game.css"), headers = read("public/_headers");
+  const worker = read("src/worker.js"), game = read("public/js/game.js"), net = read("public/js/net.js"), html = read("public/play.html"), home = read("public/index.html") + read("public/js/site.js") + read("public/css/site.css"), css = read("public/css/game.css"), headers = read("public/_headers");
 
   // 1. every script parses
   for (const f of ["src/worker.js", "public/js/game.js", "public/js/net.js"]) {
@@ -35,10 +35,15 @@ export function runStatic() {
   // 5. SECURITY: page hardening
   check("security: no inline scripts in the page", !/<script(?![^>]*\bsrc=)[^>]*>/.test(html));
   check("security: no inline event handlers", !/\son[a-z]+\s*=\s*["']/.test(html));
+  check("security: the home page has no inline scripts or handlers", !/<script(?![^>]*\bsrc=)[^>]*>/.test(home) && !/\son[a-z]+\s*=\s*["']/.test(home));
+  check("satire disclaimer is on the home page and the login screen", /SATIRE WARNING/.test(home) && /id="au_disc"[^>]*>SATIRE WARNING/.test(html));
+  check("offensive language warning is on the home page, the login screen and in the Terms", /not filtered and can contain offensive language/.test(home) && /not filtered and can contain offensive language/.test(html) && /Chat is not filtered/.test(read("public/terms.html")));
+  check("names and room names are still checked", /nameOk\(text\) \{[^\n]*hasSlur\(text\)/.test(worker) && /WF\.nameOk\(name\)/.test(worker));
+  check("security: the home page never stores a password", !/localStorage|document\.cookie/.test(home));
   check("security: content policy only runs the game's own scripts", /script-src 'self'/.test(headers) && /frame-ancestors 'none'/.test(headers) && /object-src 'none'/.test(headers));
   check("security: no eval or new Function", !/\beval\(|new Function\(/.test(game + net + worker));
   // 6. house rules
-  for (const [n, t] of [["game.js", game], ["net.js", net], ["index.html", html], ["game.css", css]]) check("style: no em dashes in " + n, !t.includes("—"));
+  for (const [n, t] of [["game.js", game], ["net.js", net], ["play.html", html], ["home page", home], ["game.css", css]]) check("style: no em dashes in " + n, !t.includes("—"));
   // 7. every art file the game points at exists
   { const want = [...new Set((game.match(/\/art\/[a-z0-9]+\.png/g) || []))], have = new Set(existsSync(root + "public/art") ? readdirSync(root + "public/art") : []);
     check(`assets: all ${want.length} art files exist`, want.length > 0 && want.every((w) => have.has(w.slice(5))), want.filter((w) => !have.has(w.slice(5))).join(", ")); }

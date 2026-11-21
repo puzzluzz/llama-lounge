@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="referrer" content="no-referrer">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#120d22">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Llama Lounge">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Llama Lounge</title>
+<meta name="description" content="Llama Lounge: hang out, chat and play games as a llama.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preload" href="/fonts/pixelify-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/pressstart-400.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/game.css">
+</head>
+<body>
+<div id="boot" role="status" aria-live="polite"><div class="bootc"><div id="boot_l" aria-hidden="true"></div><div class="bootn">LLAMA<br>LOUNGE</div><div class="bootbar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div id="boot_t">LOADING...</div><div id="boot_s"></div></div></div>
+<div id="screen">
+  <canvas id="game"></canvas>
+  <canvas id="ui"></canvas>
+  <button id="likebtn" type="button" aria-label="Like this room"><span class="lh">♥</span><span id="like_n">0</span></button>
+  <div id="status" class="hb"><div class="st1"><b id="stitle">LLAMA LOUNGE</b><span class="st2"><span id="dot"></span><span id="stxt">CONNECTING</span></span></div><div id="needs"><span class="nd" id="nd_hu" title="Hunger: eat food at the bar or in LLAMA ACRES">🍔<i><b></b></i></span><span class="nd" id="nd_th" title="Thirst: drinks at the bar or cider in LLAMA ACRES">💧<i><b></b></i></span></div><div id="tokrow" title="Your tokens"><span class="coin"></span><span id="tokn">0</span><span class="tkl">TOKENS</span></div></div>
+  <button id="camL" class="camarr" aria-label="Look left"><span class="pi pi-caml" aria-hidden="true"></span></button><button id="camR" class="camarr" aria-label="Look right"><span class="pi pi-camr" aria-hidden="true"></span></button>
+  <div id="topbtns"><button class="pbtn" id="exitbtn">EXIT</button><button id="arcx" type="button" aria-label="Close the arcade"><span class="pi pi-x" aria-hidden="true"></span></button><button class="pbtn ic" id="zout" title="Zoom out" aria-label="Zoom out">−</button><button class="pbtn ic" id="zin" title="Zoom in" aria-label="Zoom in">+</button><button class="pbtn ic" id="musicbtn" title="Music" aria-label="Music">♪</button><button class="pbtn y" id="menubtn" aria-label="Menu"><span class="hamb"><i></i><i></i><i></i></span><span class="mtx">MENU</span></button></div>
+  <div id="tip" class="hb"><span id="tiptxt"></span><span class="tipbtns"><span id="tipx" title="Hide this tip">✕</span><span id="tipall">HIDE ALL</span></span></div>
+  <div id="keys">CLICK TO WALK · SPACE ACTION · ENTER TALK<br>M MENU · 1-9 EMOTES · Q SPIT · F FLIP · SCROLL ZOOM</div>
+  <div id="menu" class="gb menu sheet"><div data-a="emote" data-i="😄">EMOTE</div><div data-a="spit" data-i="💦">SPIT</div><div data-a="scores" data-i="🏆">HIGH SCORES</div><div data-a="sit" data-i="🪑">SIT/STAND</div><div data-a="drop" data-i="🥤">DROP DRINK</div><div data-a="log" data-i="💬">CHAT LOG</div><div data-a="tips" id="mtips" data-i="💡">TIPS: ON</div><div data-a="rules" data-i="📜">RULES</div><div data-a="room" data-i="🚪">ROOMS</div><div data-a="dash" id="mdash" data-i="🛡️" style="display:none">DASHBOARD</div><div data-a="wardrobe" data-i="🎒">INVENTORY</div><div data-a="friends" data-i="⭐">FRIENDS<b class="mbadge" id="fr_badge"></b></div><div data-a="account" data-i="🔐">ACCOUNT</div><div data-a="market" data-i="🏪">MARKETPLACE</div><div data-a="bug" data-i="🐞">REPORT A BUG</div><div data-a="tour" data-i="🦙">ASK GUS FOR A TOUR</div><div data-a="terms" data-i="📜">TERMS &amp; PRIVACY</div><div data-a="logout" data-i="👋">LOG OUT</div><div data-a="close" data-i="✕" class="mclose">CLOSE</div></div>
+  <div id="emenu" class="gb menu sheet"><div class="slt">😄 EMOTES</div><div data-e="heart"><span class="pi pi-heart" aria-hidden="true"></span><b>HEART</b></div><div data-e="bang"><span class="pi pi-em_wow" aria-hidden="true"></span><b>WOW</b></div><div data-e="huh"><span class="pi pi-em_huh" aria-hidden="true"></span><b>HUH</b></div><div data-e="note"><span class="pi pi-music" aria-hidden="true"></span><b>SING</b></div><div data-e="lol"><span class="pi pi-em_lol" aria-hidden="true"></span><b>LOL</b></div><div data-e="zzz"><span class="pi pi-em_zzz" aria-hidden="true"></span><b>SLEEP</b></div><div data-e="wave"><span class="pi pi-hand" aria-hidden="true"></span><b>WAVE</b></div><div data-e="flex"><span class="pi pi-muscle" aria-hidden="true"></span><b>FLEX</b></div><div data-e="palm"><span class="pi pi-em_palm" aria-hidden="true"></span><b>FACEPALM</b></div><div class="emh">QUICK CHAT</div><div data-q="HI!"><b>HI!</b></div><div data-q="GG"><b>GG</b></div><div data-q="LOL"><b>LOL</b></div><div data-q="NICE!"><b>NICE!</b></div><div data-q="THANKS!"><b>THANKS!</b></div><div data-q="BRB"><b>BRB</b></div><div data-q="WANT TO BOX?"><b>WANT TO BOX?</b></div><div data-q="FOLLOW ME!"><b>FOLLOW ME!</b></div><div data-q="BYE!"><b>BYE!</b></div><div data-q="NOT SORRY"><b>NOT SORRY</b></div><div data-q="CANCEL ME THISSSS"><b>CANCEL ME THISSSS</b></div><div data-q="TRIGGERED?"><b>TRIGGERED?</b></div></div>
+  <div id="pmenu" class="gb"><div class="pmtop"><div id="pm_pic" class="pmpic"></div><div class="pmx"><div id="pm_name" class="pmn"></div><div id="pm_meta" class="pmmeta"></div></div><button class="gbbtn pmclose" id="pm_close" aria-label="Close">✕</button></div><div id="pm_info"></div><div class="pmb"><button class="gbbtn" id="pm_spit">💦 SPIT</button><button class="gbbtn" id="pm_wave">✋ WAVE</button><button class="gbbtn" id="pm_friend">⭐ ADD</button><button class="gbbtn" id="pm_trade">🤝 TRADE</button></div><div class="pmb2"><button class="gbbtn" id="pm_block">🚫 BLOCK</button><button class="gbbtn" id="pm_report">🚩 REPORT</button></div><div class="pmmod" id="pm_mod"></div></div>
+  <div id="tmenu" class="gb sheet"><div id="tm_title" class="lbt"></div><div id="tm_who" class="tmw"></div><div class="tmg"><button class="gbbtn" data-g="roll">🎲 HIGH ROLL<br><small>HIGHEST DIE WINS</small></button><button class="gbbtn" data-g="card">🂡 HIGH CARD<br><small>HIGHEST CARD WINS</small></button></div><div class="tmbet"><span class="tmbl">YOUR BET</span><button class="gbbtn" id="tm_minus">−</button><span id="tm_bet">FREE</span><button class="gbbtn" id="tm_plus">+</button></div><div id="tm_note" class="tmw"></div><div class="srow"><button class="gbbtn" id="tm_close">CLOSE</button></div></div>
+  <div id="lboard" class="gb sheet"><div class="lbt">🏆 HIGH SCORES</div><div class="lbcols"><div><div class="lbh">HAY CATCH</div><div id="lb_hay"></div></div><div><div class="lbh">LLAMA DASH</div><div id="lb_dash"></div></div></div><div class="srow"><button class="gbbtn" id="lbclose">CLOSE</button></div></div>
+  <div id="shop" class="gb sheet"><img id="shopimg" alt=""><div id="shopname"></div><div id="shopprice"></div><div id="shopsub"></div><div class="srow"><a id="shoplink" class="gbbtn" href="#" target="_blank" rel="noopener noreferrer">VIEW PRODUCT ▶</a><button class="gbbtn" id="shopclose">CLOSE</button></div></div>
+  <div id="logbox" class="gb sheet"><span class="x" id="logx">✕</span><div id="loglines"></div></div>
+  <div id="holdring" aria-hidden="true"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" class="hr0"/><circle cx="22" cy="22" r="18" class="hr1"/></svg></div>
+  <div id="netdown" role="status" aria-live="polite"></div>
+  <div id="evpop" role="status" aria-live="polite"><span class="evnew">NEW!</span><span class="evi"></span><span class="evt"></span></div>
+  <div id="tbox" class="gb"><span id="ttext"></span><span id="tarrow">▼</span></div>
+  <div id="dock">
+  <div id="rbwrap"><button class="rbarrow" id="rb_l" type="button" aria-label="Scroll rooms left">‹</button><div id="roombar"><button class="pbtn" data-go="lounge">🍸 LOUNGE</button><button class="pbtn" data-go="barn">🌾 ACRES</button><button class="pbtn" data-go="casino">🎰 CASINO</button><button class="pbtn" data-go="arena">💦 ARENA</button><button class="pbtn" data-go="lanes">🎳 LANES</button><button class="pbtn" data-go="gym">🥊 GYM</button><button class="pbtn" data-go="cove">🧰 COVE</button><button class="pbtn" data-go="jungle">🌴 JUNGLE</button><button class="pbtn" data-go="store">🛍️ STORE</button><button class="pbtn" data-go="account">🔐 ACCOUNT</button></div><button class="rbarrow" id="rb_r" type="button" aria-label="Scroll rooms right">›</button></div>
+  <div id="bottom">
+    <form id="chatrow" autocomplete="off"><input id="chatin" maxlength="120" placeholder="Say something..." enterkeyhint="send"><button class="pbtn" id="emobtn" type="button" aria-label="Emotes" title="Emotes"><span class="pi pi-smile" aria-hidden="true"></span></button><button class="pbtn y" id="saybtn" type="submit" aria-label="Send"><span class="pi pi-send" aria-hidden="true"></span></button></form>
+    <button class="pbtn" id="abtn" title="Action (Space)"><b id="alabel">SIT</b></button>
+  </div>
+  </div>
+  <div id="scrim"></div>
+  <div id="signs"><button id="jobsbtn" class="mbtn m-jobs" aria-label="Jobs: ways to earn coins"><span class="mchip"><span class="pi pi-d_jobs dk" aria-hidden="true"></span></span><span class="mlb">JOBS</span><span id="jobs_dot" class="fr-req"></span></button><button id="frbtn" class="mbtn m-fr" aria-label="Friends"><span class="mchip"><span class="pi pi-d_friends dk" aria-hidden="true"></span></span><span class="mlb">FRIENDS</span><span class="fr-on" id="fr_on"></span><span class="fr-req" id="fr_req"></span></button><button id="dmbtn" class="mbtn m-dm" aria-label="Messages"><span class="mchip"><span class="pi pi-d_chat dk" aria-hidden="true"></span></span><span class="mlb">CHAT</span><span class="fr-req" id="dm_un"></span></button><button id="mapbtn" class="mbtn m-map" aria-label="Map: go to another room"><span class="mchip"><span class="pi pi-d_map dk" aria-hidden="true"></span></span><span class="mlb">MAP</span><span class="fr-on" id="map_on"></span></button><button id="shopbtn" class="mbtn m-shop" aria-label="Shop: buy furniture"><span class="mchip"><span class="pi pi-d_shop dk" aria-hidden="true"></span></span><span class="mlb">SHOP</span></button><button id="roomsbtn" class="mbtn m-rooms" aria-label="Rooms: player rooms"><span class="mchip"><span class="pi pi-d_rooms dk" aria-hidden="true"></span></span><span class="mlb">ROOMS</span><span class="fr-on" id="rooms_on"></span></button><button id="invbtn" class="mbtn m-bag" aria-label="Inventory"><span class="mchip"><span class="pi pi-d_bag dk" aria-hidden="true"></span></span><span class="mlb">BAG</span></button><button id="signshide" type="button" aria-label="Hide these buttons" title="Hide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button></div>
+  <button id="signsshow" type="button" aria-label="Show Jobs, Friends, Chat, Rooms and Bag" title="Show buttons"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><i id="signsdot"></i></button>
+  <div id="auth" class="gb">
+    <div class="rt">🦙 <b>LLAMA LOUNGE</b></div>
+    <div class="autabs" id="au_tabs"><button type="button" data-v="login">LOG IN</button><button type="button" data-v="signup">SIGN UP</button></div>
+    <div id="au_sub"></div>
+    <form id="au_form" autocomplete="on" novalidate>
+      <label id="au_ul"><span id="au_ut">NAME OR EMAIL</span><input id="au_u" name="username" autocomplete="username" maxlength="254" spellcheck="false" autocapitalize="off"></label>
+      <label id="au_el">EMAIL<input id="au_e" name="email" type="email" autocomplete="email" maxlength="254" spellcheck="false" autocapitalize="off"></label>
+      <label id="au_pl"><span id="au_pt">PASSWORD</span><span class="pwrap"><input id="au_p" name="password" type="password" autocomplete="current-password" maxlength="72"><button type="button" class="eye" data-for="au_p">SHOW</button></span></label>
+      <label id="au_tl" class="aucheck"><input type="checkbox" id="au_t"><span>I'm 13 or older and I agree to the <a href="/terms" target="_blank" rel="noopener">Terms and Privacy</a></span></label>
+      <div id="au_err" role="alert"></div>
+      <div class="srow"><button class="gbbtn y" id="au_go" type="submit">LOG IN</button></div>
+      <div id="au_pkbk"><label>OR A BACKUP CODE<input id="au_code" maxlength="9" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="ABCD-1234"></label><div class="srow"><button class="gbbtn" id="au_usecode" type="button">USE BACKUP CODE</button></div></div>
+      <div class="aulinks"><button type="button" class="aulink" id="au_forgot">Forgot password?</button><button type="button" class="aulink" id="au_back">Back to log in</button></div>
+    </form>
+    <div class="aunote" id="au_note"></div>
+    <div class="audisc" id="au_disc">SATIRE WARNING. Llama Lounge comes from the La Llama Politically Incorrect Club. It laughs at everyone equally and it is not sorry. None of it is a real opinion or advice. Chat between players is not filtered and can contain offensive language. If you are easily offended, this is not the game for you. Ages 13 and up. The player rules still apply: joke around, but do not harass other llamas.</div>
+  </div>
+  <div id="frbox" class="gb sheet"><div class="slt">⭐ FRIENDS</div>
+    <form class="fradd" id="fr_form" autocomplete="off"><input id="fr_name" maxlength="12" placeholder="Add a friend by llama name" autocapitalize="off" spellcheck="false"><button class="gbbtn y" type="submit">ADD</button></form>
+    <div class="frmsg" id="fr_msg"></div><div id="fr_body"></div><div class="srow"><button class="gbbtn" id="fr_close">DONE</button></div></div>
+  <div id="catbox" class="gb sheet"><div class="slt">🛍️ LLAMA STORE</div><div class="jsub">La Llama P.I.C. shirts. Tap one to see it, or VIEW to open it on the store website.</div><div id="cat_body"></div><div class="srow"><button class="gbbtn y" id="cat_clothes">👕 IN-GAME CLOTHES</button><button class="gbbtn y" id="cat_furn" style="display:none">🛋️ FURNITURE</button><button class="gbbtn" id="cat_close">DONE</button></div></div>
+  <div id="wardbox" class="gb sheet"><div class="slt" id="wd_title">👕 WARDROBE</div>
+    <div class="wdtop"><canvas id="wd_prev" width="28" height="46" title="Tap to turn around"></canvas><div class="wdinfo"><b id="wd_name"></b><small id="wd_sub"></small><div class="srow" id="wd_acts"></div></div></div>
+    <div class="autabs" id="wd_tabs"><button type="button" data-t="clothing">👕 CLOTHING</button><button type="button" data-t="storage">📦 ITEMS</button></div>
+    <div id="wd_msg"></div><div id="wd_body"></div></div>
+  <div id="itembox" class="gb sheet"><div class="slt" id="it_title">ITEM</div><div id="it_body"></div><div id="it_msg"></div></div>
+  <div id="roomsbox" class="gb sheet"><div class="slt" id="pr_title">🏠 ROOMS</div><div class="autabs" id="pr_tabs"><button type="button" data-v="map">🗺️ MAP</button><button type="button" data-v="list">🏠 PLAYER ROOMS</button></div><div id="pr_body"></div></div>
+  <div id="dmbox" class="gb sheet"><div class="dmhead"><button class="dmback" id="dm_back" aria-label="Back"><span class="pi pi-back" aria-hidden="true"></span></button><div class="slt" id="dm_title">💬 MESSAGES</div></div>
+    <div id="dm_list"></div>
+    <div id="dm_thread"><div id="dm_msgs"></div><form id="dm_form" autocomplete="off"><input id="dm_in" maxlength="300" placeholder="Message..." enterkeyhint="send"><button class="pbtn y" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10 15 12 3.4 14z" fill="currentColor"/></svg></button></form><div class="dmnote" id="dm_note"></div></div></div>
+  <div id="tourring" aria-hidden="true"></div><div id="tourbox" role="dialog" aria-live="polite"><div class="tbp" id="tour_pic"></div><div class="tbx"><b id="tour_t"></b><p id="tour_p"></p><div class="tbr"><small id="tour_n"></small><button class="gbbtn" id="tour_skip">SKIP</button><button class="gbbtn" id="tour_back">BACK</button><button class="gbbtn y" id="tour_next">NEXT</button></div></div></div>
+  <div id="mktbox" class="gb sheet"><div class="slt">🏪 MARKETPLACE</div><div class="autabs" id="mk_tabs"><button type="button" data-t="buy">BUY</button><button type="button" data-t="sell">SELL</button><button type="button" data-t="mine">MY LISTINGS</button></div><div id="mk_body"></div><div class="prmsg" id="mk_msg"></div></div>
+  <div id="wfbox" class="gb sheet"><div class="slt">⚠️ HEADS UP</div><p class="fre" id="wf_text"></p><div class="srow"><button class="gbbtn y" id="wf_ok">GOT IT</button></div></div>
+  <div id="bugbox" class="gb sheet"><div class="slt">🐞 REPORT A BUG</div><div class="fre">Something broken or weird? Tell us what you were doing and what happened. The owner reads every report.</div><textarea id="bug_text" maxlength="800" rows="6" placeholder="What happened? What did you expect?"></textarea><div class="srow"><button class="gbbtn y" id="bug_send">SEND REPORT</button></div><div class="prmsg" id="bug_msg"></div></div>
+  <div id="boxbox" class="gb sheet"><div class="slt">🥊 BOXING RING</div><div id="bx_body"></div></div>
+  <div id="pkask" class="afk"><div class="afkc"><div class="afki">🔑</div><b>TURN ON YOUR STAFF PASSKEY</b><small>Your staff tools stay off until this llama has a passkey. It takes about a minute: your phone or computer makes it with Face ID, a fingerprint or your screen lock.</small><div class="srow pkaskb"><button class="gbbtn y" id="pka_yes">YES, SET IT UP</button><button class="gbbtn" id="pka_no">LATER</button></div></div></div>
+  <div id="bxinv" class="afk"><div class="afkc"><div class="afki">🥊</div><b id="bxi_t"></b><small>Step into the ring for 3 rounds?</small><div class="srow" style="display:flex;gap:8px"><button class="gbbtn y" id="bxi_yes">LET'S BOX</button><button class="gbbtn" id="bxi_no">NO THANKS</button></div></div></div>
+  <div id="boxhud"><div id="bx_row"></div><div class="bxbeat"><i id="bx_beat"></i></div></div>
+  <div id="boxpad"><button data-mv="jab"><span class="bxi">🥊</span><b>JAB</b><small>A</small></button><button data-mv="hook"><span class="bxi">💪</span><b>HOOK</b><small>S</small></button><button data-mv="block"><span class="bxi">🛡</span><b>BLOCK</b><small>D</small></button><button data-mv="dodge"><span class="bxi">↩</span><b>DODGE</b><small>F</small></button><button id="bx_quit" type="button">QUIT</button></div>
+  <div id="covepad"><button id="cv_det" type="button" aria-label="Detector on or off">📡</button><div class="cvm"><div id="cv_heat"></div><b id="cv_txt">SCANNING...</b><small id="cv_tod"></small></div><button class="gbbtn y" id="cv_dig" type="button">DIG</button></div>
+  <div id="plotbox" class="gb sheet"><div class="slt">🌾 GARDEN PLOT</div><div id="pl_body"></div></div>
+  <div id="banbox" class="gb sheet"><div class="slt" id="bn_title">🔨 BAN</div><div class="fre" id="bn_who"></div><div class="bnopts" id="bn_opts"></div><div class="bnrow"><input id="bn_hours" type="number" inputmode="numeric" min="1" max="8760" step="1" placeholder="Or type hours (1 to 8760)"><span>HOURS</span></div><div class="prmsg" id="bn_msg"></div><div class="srow" id="bn_row1"><button class="gbbtn bad" id="bn_go">BAN</button><button class="gbbtn" id="bn_cancel">CANCEL</button></div><div class="bnsure" id="bn_sure"><div class="bnq" id="bn_q"></div><div class="bnsub" id="bn_qs"></div><div class="srow"><button class="gbbtn bad" id="bn_yes">YES, BAN</button><button class="gbbtn" id="bn_back">GO BACK</button></div></div></div>
+  <div id="repbox" class="gb sheet"><div class="slt" id="rp_title">🚩 REPORT</div><div class="fre" id="rp_who"></div><div class="rpr" id="rp_reasons"></div><textarea id="rp_note" maxlength="400" rows="3" placeholder="Anything else staff should know? (optional)"></textarea><div class="fre rpsmall">Staff also see what they said in chat lately, so you don't need to copy it.</div><div class="prmsg" id="rp_msg"></div><div class="srow"><button class="gbbtn y" id="rp_send">SEND REPORT</button><button class="gbbtn" id="rp_cancel">CANCEL</button></div></div>
+  <div id="acctbox" class="gb sheet"><div class="slt" id="ac_title">🔐 ACCOUNT</div><div id="ac_body"></div></div>
+  <div id="kicked"></div>
+  <div id="knockbox" class="afk"><div class="afkc"><div class="afki">🚪</div><b id="kn_t"></b><small>Let them into your room?</small><div class="srow" style="display:flex;gap:8px"><button class="gbbtn y" id="kn_yes">LET IN</button><button class="gbbtn" id="kn_no">NO THANKS</button></div></div></div>
+  <div id="editbar"><button class="gbbtn" id="eb_floor" type="button">FLOOR</button><div id="eb_items"></div><div id="eb_piece"></div><button class="gbbtn y" id="eb_done">DONE</button></div>
+  <div id="afkbox" class="afk"><div class="afkc"><div class="afki">⏰</div><b>Are you still there?</b><small>You haven't moved in a while. You'll be logged out of the room in <span id="afk_left">2:00</span>.</small><button class="gbbtn y" id="afk_here">I'M STILL HERE</button></div></div>
+  <div id="afkout" class="afk"><div class="afkc"><div class="afki">💤</div><b>You were away, so we logged you out.</b><small>Your tokens and stuff are all saved.</small><button class="gbbtn y" id="afk_back">COME BACK</button></div></div>
+  <div id="roompick" class="gb sheet"><div class="rpt" id="rp_title">WHERE TO?</div>
+    <button class="rpb" data-r="lounge"><span class="rpi">🍸</span><span class="rpx"><b>LLAMA LOUNGE</b><small>BAR · ARCADE · JUKEBOX · DANCE FLOOR · TABLE GAMES</small><i id="rp_n_lounge"></i></span></button>
+    <button class="rpb" data-r="casino"><span class="rpi">🎰</span><span class="rpx"><b>LLAMA CASINO</b><small>SLOTS · ROULETTE · BLACKJACK TABLES</small><i id="rp_n_casino"></i></span></button>
+    <button class="rpb" data-r="arena"><span class="rpi">💦</span><span class="rpx"><b>SPIT ARENA</b><small>60-SECOND SPIT-BALL ROUNDS · SOLO OR FREE-FOR-ALL · WEEKLY LEADERBOARD</small><i id="rp_n_arena"></i></span></button>
+    <button class="rpb" data-r="lanes"><span class="rpi">🎳</span><span class="rpx"><b>LLAMA LANES</b><small>HAY BALE BOWLING · 5-FRAME GAMES · STRIKES PAY COINS</small><i id="rp_n_lanes"></i></span></button>
+    <button class="rpb" data-r="gym"><span class="rpi">🥊</span><span class="rpx"><b>BOXING GYM</b><small>BOX A BOT OR CHALLENGE A LLAMA · HEAVY BAGS · WINS PAY TOKENS</small><i id="rp_n_gym"></i></span></button>
+    <button class="rpb" data-r="cove"><span class="rpi">🧰</span><span class="rpx"><b>TREASURE COVE</b><small>METAL DETECTOR · DIG FOR COINS, GEMS AND A RARE PIRATE CHEST</small><i id="rp_n_cove"></i></span></button>
+    <button class="rpb" data-r="jungle"><span class="rpi">🌴</span><span class="rpx"><b>JUNGLE TEMPLE</b><small>LOST RUINS · WATERFALL · DIG FOR GEMS AND A RARE GOLDEN IDOL</small><i id="rp_n_jungle"></i></span></button>
+    <button class="rpb" data-r="store"><span class="rpi">🛍️</span><span class="rpx"><b>LLAMA STORE</b><small>LA LLAMA P.I.C. SHIRTS · TAP A FRAME OR THE COUNTER TO SHOP</small><i id="rp_n_store"></i></span></button>
+    <button class="rpb" data-r="barn"><span class="rpi">🌾</span><span class="rpx"><b>LLAMA ACRES</b><small>BARN · CAMPFIRE · CARROT PATCH (EARN TOKENS)</small><i id="rp_n_barn"></i></span></button>
+    <button class="rpb" data-r="account"><span class="rpi">🔐</span><span class="rpx"><b>ACCOUNT</b><small>CHANGING BOOTH (SWITCH LLAMAS) · ACCOUNT DESK (EMAIL AND PASSWORD)</small><i id="rp_n_account"></i></span></button>
+    <div class="srow"><button class="gbbtn" id="rp_close">CLOSE</button></div></div>
+  <div id="slotbox" class="gb sheet"><div class="slt" id="sl_title">🎰 LLAMA SLOTS</div><canvas id="slotcv" width="130" height="70"></canvas><div id="sl_msg">1 TOKEN A SPIN. GOOD LUCK!</div>
+    <div class="slbet" id="sl_bet"><span>BET</span><button class="gbbtn" data-bet="1">1</button><button class="gbbtn" data-bet="2">2</button><button class="gbbtn" data-bet="5">5</button><button class="gbbtn" data-bet="10">10</button></div>
+    <div class="srow"><button class="gbbtn y" id="sl_spin">SPIN ▶</button><button class="gbbtn" id="sl_close">CLOSE</button></div>
+    <canvas id="slpaycv" width="130" height="40"></canvas><div id="sl_tok"></div></div>
+  <div id="plkbox" class="gb sheet"><div class="slt" id="plk_title">🎯 PLINKO</div><div class="plkwrap"><canvas id="plkcv" width="176" height="218"></canvas></div><div id="plk_msg">PICK A BET, THEN DROP THE BALL.</div>
+    <div class="slbet" id="plk_bet"><span>BET</span><button class="gbbtn" data-pb="1">1</button><button class="gbbtn" data-pb="2">2</button><button class="gbbtn" data-pb="5">5</button></div>
+    <div class="srow"><button class="gbbtn y" id="plk_drop">DROP ▶</button></div></div>
+  <div id="sndbox" class="gb sheet"><div class="slt">🔊 SOUND</div>
+    <label class="vrow"><span>🎵 MUSIC</span><input type="range" id="mvol" min="0" max="100" step="1" aria-label="Music volume"><b id="mvol_n"></b></label>
+    <label class="vrow"><span>💦 EFFECTS</span><input type="range" id="svol" min="0" max="100" step="1" aria-label="Sound effects volume"><b id="svol_n"></b></label>
+    <div class="srow"><button class="gbbtn" id="mmute">MUTE MUSIC</button><button class="gbbtn" id="snd_close">DONE</button></div></div>
+  <div id="dkbox" class="gb sheet"><div class="slt">💦 DUNK TANK</div><canvas id="dkcv" width="160" height="120"></canvas><div id="dk_msg"></div>
+    <div class="dkn">1 COIN A THROW · A DUNK PAYS 3 · SIT ON THE TANK AND EARN 1 EVERY TIME YOU GET DUNKED</div>
+    <div class="srow"><button class="gbbtn y" id="dk_throw">THROW ⚾</button><button class="gbbtn" id="dk_close">CLOSE</button></div></div>
+  <div id="dailypop" class="gb sheet"><div class="dpt">🎁 DAILY REWARD</div><div id="dp_body"></div><div class="srow"><button class="gbbtn y" id="dp_claim">CLAIM</button><button class="gbbtn" id="dp_later">LATER</button></div></div>
+  <div id="tradeask" class="gb sheet"><div class="dpt">🤝 TRADE?</div><div class="dpsub" id="ta_txt"></div><div class="srow"><button class="gbbtn y" id="ta_yes">LET'S TRADE</button><button class="gbbtn" id="ta_no">NO THANKS</button></div></div>
+  <div id="tradebox" class="gb sheet"><div class="slt" id="tr_title">🤝 TRADE</div><div id="tr_body"></div><div id="tr_msg"></div><div class="srow"><button class="gbbtn y" id="tr_ready">✓ READY</button><button class="gbbtn" id="tr_cancel">CANCEL</button></div></div>
+  <div id="jobsbox" class="gb sheet"><div class="slt">💰 JOB BOARD</div><div class="jsub">Ways to earn coins. Keep your 🍔 and 💧 up, or most jobs pay half.</div><div id="jobs_body"></div><div class="srow"><button class="gbbtn" id="jobs_close">CLOSE</button></div></div>
+  <div id="dashbox" class="gb sheet"><div class="slt" id="ds_title">STAFF DASHBOARD</div><div class="autabs" id="ds_tabs"><button type="button" data-t="players" class="on">PLAYERS</button><button type="button" data-t="chat">CHAT LOG</button><button type="button" data-t="reports">REPORTS<b class="mbadge" id="ds_repn"></b></button><button type="button" data-t="errors">ERRORS<b class="mbadge" id="ds_errn"></b></button></div><div id="ds_body"></div><div class="srow"><button class="gbbtn" id="ds_refresh">REFRESH</button><button class="gbbtn" id="ds_close">CLOSE</button></div></div>
+  <div id="tblbox" class="gb sheet"><div class="slt" id="tb_title"></div><canvas id="tbcv" width="150" height="66"></canvas><div id="tb_msg"></div>
+    <div class="tbopts" id="tb_opts"></div>
+    <div class="slbet" id="tb_bet"><span>BET</span><button class="gbbtn" data-bet="1">1</button><button class="gbbtn" data-bet="2">2</button><button class="gbbtn" data-bet="5">5</button><button class="gbbtn" data-bet="10">10</button></div>
+    <div class="srow" id="tb_acts"></div><div id="tb_tok"></div></div>
+  <div id="fwbox" class="gb sheet"><div class="fwt" id="fw_t"></div><div class="fwn" id="fw_n"></div>
+    <div class="srow" id="fw_items"></div>
+    <div id="fw_msg"></div><div class="srow"><button class="gbbtn" id="fw_close">CLOSE</button></div></div>
+  <div id="swapbox" class="gb sheet"><div id="sw_text">SWAP TO LLAMA ACRES?</div><div class="srow"><button class="gbbtn y" id="sw_go">GO ▶</button><button class="gbbtn" id="sw_stay">STAY</button></div></div>
+  <div id="loading" class="gb">LOADING YOUR LLAMA...</div>
+  <div id="rules" class="gb sheet">
+    <div class="rbody">
+    <div class="rt">WELCOME TO THE <b>LLAMA LOUNGE</b>!</div>
+    <div class="rsec">HOW TO PLAY</div>
+    <ul>
+      <li>Tap the floor to walk. Tap stools, cushions and loveseats to sit.</li>
+      <li>Type in the chat box to talk. Your words float above your llama.</li>
+      <li>Tap things to use them: the arcade, jukebox, lamp, bar cups, tables and shirt frames. Tap the rope to work the bar.</li>
+      <li>Tap another llama to wave or spit. Use MENU for emotes and more.</li>
+      <li>The pink button does the action for wherever you are. On the dance floor it does a FLIP (or press F).</li>
+      <li>Keep your llama fed and watered! The 🍔 and 💧 meters at the top go down while you play. Order food and drinks at the bar (sit on a bar stool and press ORDER), buy cider and snacks in LLAMA ACRES, or eat apples off the ground in LLAMA ACRES (+15 🍔). If a meter runs empty your llama walks slower and games pay half.</li>
+      <li>Earn LLAMA TOKENS by hitting arcade milestones and working the bar. Spend them on drinks (1 token), or bet up to 10 against THE HOUSE at the table games. Table games can also be played for free.</li>
+      <li>Five rooms: the LLAMA LOUNGE, LLAMA ACRES outside, the LLAMA CASINO, the SPIT ARENA and LLAMA LANES. Tap a room in the bar at the bottom to walk there. Harvest the carrot patch in LLAMA ACRES for tokens.</li>
+      <li>Try the DUNK TANK in LLAMA ACRES: stand on the grass in front of the target (left of the barn) and press THROW. Hit the bullseye to dunk whoever is on the seat (1 coin a throw, a dunk pays 3). Brave llamas can sit on the tank and earn a coin every time they get dunked.</li>
+      <li>In the SPIT ARENA, press PLAY for a 60-second spit-ball round. Play solo against rival llamas, or with everyone who joins. Earn tokens, level up to unlock spit colors, and keep a daily streak.</li>
+      <li>At LLAMA LANES, press BOWL for a 5-frame game of hay bale bowling. Swipe up to roll. Strikes, spares and high scores win coins.</li>
+      <li>Scroll, pinch, or use + and − to zoom.</li>
+    </ul>
+    <div class="rsec">LOUNGE RULES</div>
+    <ul>
+      <li>Chat is not filtered. Swearing and crude jokes are allowed, and you may see offensive language.</li>
+      <li>Jokes are fine. Harassing a player is not: no targeting, bullying or threatening other llamas. BLOCK or REPORT anyone who does.</li>
+      <li>No spamming the chat.</li>
+      <li>No sharing personal info, yours or anyone else's.</li>
+      <li>No sexual or graphic content.</li>
+      <li>Spitting is for fun. Don't target someone who asks you to stop.</li>
+    </ul>
+    <div class="rnote">Llamas who break the rules may be removed from the lounge.</div>
+    </div>
+    <p class="rterms">These rules are part of the <a href="/terms" target="_blank" rel="noopener">Terms and Privacy</a>, which you agreed to when you made your account.</p>
+    <div class="srow"><button class="gbbtn" id="ragree">I AGREE</button></div>
+  </div>
+  <div id="pick" class="gb sheet">
+    <div class="tt">Which <b>LLAMA</b> will<br>you choose?</div><div class="picknote">Choose carefully: this llama is yours for good.</div>
+    <div id="cards"></div>
+    <div id="who"></div>
+    <div class="row"><input id="pname" maxlength="12" placeholder="NAME"><button class="gbbtn" id="bGo">OK</button></div>
+  </div>
+  <div id="arena">
+    <canvas id="arcv"></canvas>
+    <div id="ar_hud"><button id="ar_exit" aria-label="Leave the arena">✕</button><div class="arsc"><span id="ar_score">0</span><em id="ar_combo"></em><div id="ar_pow"></div></div><div id="ar_time">1:00</div><div id="ar_rank" style="display:none"></div></div>
+    <div id="ar_stick"><div id="ar_knob"></div></div>
+    <button id="ar_fire" aria-label="Spit">SPIT</button>
+    <div id="arbox" class="gb sheet"><div id="ar_body"></div></div>
+  </div>
+  <div id="bowl">
+    <canvas id="bwcv"></canvas>
+    <div id="bw_top"><button id="bw_exit" aria-label="Leave the lanes">✕</button><div id="bw_card"></div></div>
+    <div id="bw_alley" style="display:none"></div>
+    <div id="bw_toast"></div>
+    <div id="bw_bottom"><button class="bwlr" id="bw_l" aria-label="Move left">◀</button><div id="bw_hint"></div><button class="bwlr" id="bw_r" aria-label="Move right">▶</button></div>
+    <div id="bwbox" class="gb sheet"><div id="bw_body"></div></div>
+  </div>
+  <div id="flash"></div>
+</div>
+
+<script src="/js/net.js"></script>
+<script src="/js/game.js"></script>
+</body>
+</html>

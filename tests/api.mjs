@@ -107,6 +107,11 @@ export async function runApi(BASE, { root, persist }) {
   { const r = await D.act("dash"); check("a mod without a passkey cannot open the dashboard", r.ok === false, JSON.stringify(r).slice(0, 100)); }
   { const r = await D.act("admin", { cmd: "mute", target: names.b }); check("a mod without a passkey cannot mute", r.ok === false); }
   { B.mark(); D.pres({ s: { k: 1, t: "hi" } }); await sleep(300); check("a mod without a passkey shows no staff badge", !(B.seen(D.peer).pop() || {}).st); }
+  // the home page: the game lives at /play, and the public player count gives numbers only
+  { const h = await fetch(BASE + "/"), g = await fetch(BASE + "/play"), ht = await h.text(), gt = await g.text();
+    check("home page is at / and the game is at /play", h.status === 200 && /id="login"/.test(ht) && g.status === 200 && /id="game"/.test(gt));
+    const r = await fetch(BASE + "/api/status"), j = await r.json();
+    check("public player count has only numbers", r.status === 200 && Object.keys(j).sort().join() === "cap,online,waiting" && Object.values(j).every((v) => Number.isInteger(v)), JSON.stringify(j)); }
   { const r = await fetch(BASE + "/api/me", { headers: { cookie: cookies.d, origin: BASE } }); const j = await r.json(); check("their profile says a passkey is needed", j.pkNeed === "mod" && !j.staff, JSON.stringify({ pkNeed: j.pkNeed, staff: j.staff })); }
   { const r = await fetch(BASE + "/api/me", { headers: { cookie: cookies.c, origin: BASE } }); const j = await r.json(); check("a mod with a passkey has their tools", j.staff === "mod" && !j.pkNeed); }
   { const r = await C.act("admin", { cmd: "mute", target: names.d }); check("they still count as staff to others (a mod cannot moderate them)", r.ok === false, r.msg); }
