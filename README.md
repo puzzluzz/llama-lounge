@@ -446,3 +446,22 @@ Players' bug reports now show at the top of the dashboard's REPORTS tab (owner o
 
 ### Emotes float on their own
 Emotes (heart, wow, huh, music, lol, zzz, wave, flex, facepalm) show as their outlined pixel icon above the llama, bobbing, with no white speech bubble. The small bubble is kept only for the "playing a game" controller sign.
+
+### Scaling, safety net and structure (Nov 21)
+
+**Movement is per room and bundled.** Steps, turns, sitting and emotes only go to llamas in the same room, and they are sent as one bundle per room every 100 ms (`queueMove`, `flushMoves`). Things every room shows (chat, changing room, outfit, tokens, scores, the jukebox) still go to everyone at once. A llama that walks into a room gets a snapshot of everyone already there (`roomSnapshot`). `presSig` decides which kind of change it is.
+
+**Every action is rate limited.** On top of each action's own cooldowns and daily caps, a connection gets at most 24 actions per 2 seconds and 300 per minute (`ACT_LIMIT`). Extra ones get "Slow down a little and try again."
+
+**Server health (owner only).** DASHBOARD > ERRORS now starts with SERVER HEALTH: llamas online now and per room, the 24 hour peak, actions handled, slow actions (over 1.5 s), server errors and blocked floods, an hour by hour table, and a list of recent server problems with details. A sample is saved every 5 minutes (`health` table, kept 7 days; `srvlog` keeps the last 200 problems). The server checks you are the owner.
+
+**Tests run before every deploy.** `wrangler.jsonc` runs `node tests/run.mjs --build` as its build step, so a failing test stops the deploy and the live game keeps the last good version.
+- `tests/static.mjs`: syntax, a mistakes-only lint (misspelled names, duplicate keys and cases, dead code), page and server versions match, the security rules (one place changes `users.role`, never an admin row, owner-only; the server stamps name, tokens and badge), page hardening, no em dashes, every art file exists, every action the page sends exists on the server.
+- `tests/api.mjs`: starts a throwaway local server with an empty database and checks signup and login rules, that the room refuses strangers and other websites, per-room movement and bundling, that names, tokens, badges and clothes cannot be faked, that players and mods cannot use powers above them, that tokens only change on the server, and the flood limits.
+- Run them by hand with `npm test` (everything) or `npm run check` (fast checks only).
+
+**The page is split into cached files.** `public/index.html` is now just the markup (31 KB, was 1.7 MB). Styles are in `public/css/game.css`, the network layer in `public/js/net.js`, the game in `public/js/game.js`, and the shirt and logo pictures are real PNG files in `public/art/` (named by content, cached for a year). Browsers re-download only what changed.
+
+**Content policy.** `public/_headers` now only lets the game's own script files run (`script-src 'self'`), so injected or inline scripts are blocked by the browser.
+
+**Cleanup.** The lint found and removed dead duplicate drawing code (an old scarecrow, palm and plant), a duplicate icon and label, and unreachable drink code. Crash reports now include the room. The REPORTS and ERRORS count badges on the dashboard tabs now show (a style rule was hiding them).

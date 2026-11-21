@@ -1,1 +1,16 @@
-{ "name": "llama-lounge", "private": true, "scripts": { "dev": "wrangler dev", "deploy": "wrangler deploy" }, "devDependencies": { "wrangler": "^4.0.0" } }
+{
+  "name": "llama-lounge",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node tests/run.mjs",
+    "check": "node tests/run.mjs --static"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.5",
+    "globals": "^17.14.0",
+    "wrangler": "^4.0.0",
+    "ws": "^8.23.0"
+  }
+}

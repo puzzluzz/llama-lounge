@@ -2,6 +2,8 @@
   // Llama Lounge: game page + accounts API + realtime room, all on one Worker
   "name": "llama-lounge",
   "main": "src/worker.js",
+  // tests run before every deploy; if one fails, the deploy stops and the live game keeps the last good version
+  "build": { "command": "node tests/run.mjs --build", "watch_dir": "src" },
   "compatibility_date": "2025-11-01",
   "assets": { "directory": "./public", "not_found_handling": "single-page-application" },
   "durable_objects": { "bindings": [ { "name": "LOUNGE", "class_name": "Lounge" } ] },

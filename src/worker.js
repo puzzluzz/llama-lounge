@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-25a";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-26a";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -876,6 +876,8 @@ function cleanPresence(p, name, tk, muted, staff) {
 // the parts of a llama's presence that every room shows (chat log, who is where, outfit, tokens, scores, jukebox, lamp).
 // When none of these changed, the update is just movement and only goes to the llama's own room.
 const PRES_BATCH_MS = 100;
+const ACT_LIMIT = { burstMs: 2000, burst: 24, perMin: 300 };   // per connection, across every action
+const HEALTH = { everyMs: 5 * 60000, slowMs: 1500, keepMs: 7 * 86400000, keepLog: 200 };
 const presSig = (p) => { const s = JSON.stringify([p.rm, p.c, p.n, p.st || "", p.w || 0, p.tk, p.s ? p.s.k : 0, p.g ? p.g.k : 0, p.j ? p.j.ts : 0, p.l ? p.l.ts : 0]); let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h; };   // a short hash, so it stays small in the socket attachment
 const fmtDur = (ms) => { const m = Math.ceil(ms / 60000); return m >= 120 ? `${Math.round(m / 6) / 10} hours`.replace(".0 ", " ") : m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
 // what a player can report someone for (the key is stored; staff see the label)
@@ -949,9 +951,10 @@ export class Lounge extends DurableObject {
   async webSocketMessage(ws, raw) {
     const a = ws.deserializeAttachment(); if (!a) return;
     // simple flood control: 40 messages a second per connection
-    const now = Date.now(); if (now - a.rate[0] > 1000) a.rate = [now, 0]; a.rate[1]++; if (a.rate[1] > 40) { ws.serializeAttachment(a); return; }
+    const now = Date.now(); const H = this.hInit(); H.msgs++; if (now - a.rate[0] > 1000) a.rate = [now, 0]; a.rate[1]++; if (a.rate[1] > 40) { H.drop++; ws.serializeAttachment(a); return; }
     let m; try { m = JSON.parse(typeof raw === "string" ? raw : new TextDecoder().decode(raw)); } catch (e) { return; }
     if (!m || typeof m !== "object") return;
+    if (now - H.t0 >= HEALTH.everyMs) { try { await this.healthTick(now); } catch (e) {} }   // a health sample every few minutes, whatever kind of message this is
 
     if (a.nd) await this.needsTick(ws, a, now);
     if (m.t === "p") {
@@ -990,8 +993,17 @@ export class Lounge extends DurableObject {
     }
     if (m.t === "ar") { this.arenaRelay(ws, a, m, now); return; }
     if (m.t === "act") {
-      let res;
-      try { res = await this.act(ws, a, String(m.a || ""), m); } catch (e) { console.error(e); res = { ok: false, msg: "Server hiccup, try again." }; }
+      // EVERY action is rate limited per connection, whatever it is: a short burst allowance and a per-minute cap.
+      // (Many actions also have their own cooldowns and daily caps; this is the floor under all of them.)
+      const ar = a.ar && a.ar.length === 4 ? a.ar : [now, 0, now, 0];
+      if (now - ar[0] > ACT_LIMIT.burstMs) { ar[0] = now; ar[1] = 0; } if (now - ar[2] > 60000) { ar[2] = now; ar[3] = 0; }
+      ar[1]++; ar[3]++; a.ar = ar;
+      if (ar[1] > ACT_LIMIT.burst || ar[3] > ACT_LIMIT.perMin) { H.drop++; ws.serializeAttachment(a); this.send(ws, { t: "res", id: m.id, ok: false, msg: "Slow down a little and try again." }); return; }
+      ws.serializeAttachment(a);
+      let res; const t0 = Date.now(), an = String(m.a || "").slice(0, 40); H.acts++;
+      try { res = await this.act(ws, a, String(m.a || ""), m); } catch (e) { console.error(e); H.errs++; res = { ok: false, msg: "Server hiccup, try again." }; try { await this.healthNote("error", an, Date.now() - t0, String((e && e.stack) || e).slice(0, 700)); } catch (e2) {} }
+      { const ms = Date.now() - t0; if (ms > HEALTH.slowMs) { H.slow++; try { await this.healthNote("slow", an, ms, ""); } catch (e2) {} } }
+      try { await this.healthTick(Date.now()); } catch (e2) {}
       if (res && res.ok) { const qk = questKeyFor(String(m.a || ""), res); if (qk) { try { await this.questTick(ws, a.uid, qk); } catch (e) { console.error("quest", e); } } }
       if (res && Number.isFinite(res.tk)) { const a2 = ws.deserializeAttachment(); if (a2) { a2.uc = { ...(a2.uc || {}), t: Date.now(), tk: res.tk, muted: a2.uc ? a2.uc.muted : 0 }; ws.serializeAttachment(a2); } }
       this.send(ws, { t: "res", id: m.id, ...res });
@@ -1967,6 +1979,8 @@ export class Lounge extends DurableObject {
       case "block_list": return { ok: true, blocks: await this.blockList(a.uid) };
       case "report": return this.reportSend(a, m);
       case "report_list": return this.reportList(a);
+      case "health": return this.health(a);
+      case "health_clear": return this.healthClear(a);
       case "err_list": return this.errList(a);
       case "err_clear": return this.errClear(a, m);
       case "report_done": return this.reportDone(a, m);
@@ -2624,6 +2638,28 @@ export class Lounge extends DurableObject {
     log.unshift({ t: Date.now(), by, cmd, target }); await this.ctx.storage.put("modlog", log.slice(0, 40));
   }
   // Re-reads the caller's role from the database on every staff request, so a removed mod loses access instantly.
+  // ---------- server health (OWNER ONLY): players online, slow actions, server errors, blocked floods ----------
+  hInit() { if (!this.h) this.h = { t0: Date.now(), acts: 0, slow: 0, errs: 0, drop: 0, msgs: 0, peak: 0 }; return this.h; }
+  async healthTable() { if (this.hReady) return;
+    await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS health (t INTEGER PRIMARY KEY, online INTEGER, peak INTEGER, acts INTEGER, slow INTEGER, errs INTEGER, dropped INTEGER, msgs INTEGER)").run();
+    await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS srvlog (id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, kind TEXT, what TEXT, ms INTEGER, detail TEXT)").run(); this.hReady = true; }
+  onlineNow() { let n = 0; const rooms = {}; for (const w of this.sockets()) { if (w.readyState !== 1) continue; const rm = this.rmOf(w); if (rm === null) continue; n++; rooms[rm] = (rooms[rm] || 0) + 1; } return { n, rooms }; }
+  async healthNote(kind, what, ms, detail) { await this.healthTable();
+    await this.env.DB.prepare("INSERT INTO srvlog (t, kind, what, ms, detail) VALUES (?, ?, ?, ?, ?)").bind(Date.now(), kind, what, Math.round(ms) || 0, detail || "").run();
+    await this.env.DB.prepare("DELETE FROM srvlog WHERE id <= (SELECT MAX(id) FROM srvlog) - ?").bind(HEALTH.keepLog).run(); }
+  async healthTick(now) { const H = this.hInit(); const on = this.onlineNow().n; if (on > H.peak) H.peak = on;
+    if (now - H.t0 < HEALTH.everyMs) return;
+    this.h = { t0: now, acts: 0, slow: 0, errs: 0, drop: 0, msgs: 0, peak: on };   // start the next window first, so a slow write can't double count
+    await this.healthTable();
+    await this.env.DB.prepare("INSERT OR REPLACE INTO health (t, online, peak, acts, slow, errs, dropped, msgs) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(now, on, H.peak, H.acts, H.slow, H.errs, H.drop, H.msgs).run();
+    await this.env.DB.prepare("DELETE FROM health WHERE t < ?").bind(now - HEALTH.keepMs).run(); }
+  async health(a) { if ((await this.staffNow(a)) !== "owner") return { ok: false, msg: "Only the owner can see server health." };
+    await this.healthTable(); const now = Date.now(), H = this.hInit(), on = this.onlineNow();
+    const rows = (await this.env.DB.prepare("SELECT t, online, peak, acts, slow, errs, dropped, msgs FROM health WHERE t > ? ORDER BY t DESC LIMIT 400").bind(now - 86400000).all()).results || [];
+    const log = (await this.env.DB.prepare("SELECT t, kind, what, ms, detail FROM srvlog ORDER BY id DESC LIMIT 40").all()).results || [];
+    return { ok: true, now: { t: now, online: on.n, rooms: on.rooms, peak: Math.max(H.peak, on.n), acts: H.acts, slow: H.slow, errs: H.errs, dropped: H.drop, msgs: H.msgs, since: H.t0 }, rows, log }; }
+  async healthClear(a) { if ((await this.staffNow(a)) !== "owner") return { ok: false, msg: "Only the owner can clear that." };
+    await this.healthTable(); await this.env.DB.prepare("DELETE FROM srvlog").run(); return { ok: true }; }
   async errList(a) { if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can see that." };
     try { const r = await this.env.DB.prepare("SELECT k, msg, src, line, stack, ua, room, first, last, n, users FROM clienterr ORDER BY last DESC LIMIT 60").all(); return { ok: true, errs: (r.results || []).map((e) => ({ ...e, users: JSON.parse(e.users || "[]") })), owner: a.staff === "owner" }; }
     catch (e) { return { ok: true, errs: [], owner: a.staff === "owner" }; } }
