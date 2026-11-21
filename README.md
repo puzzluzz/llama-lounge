@@ -495,3 +495,9 @@ So on this test machine the old server kept up to about 50 llamas and the new on
 - **Two rings.** The gym is now 21 tiles wide with a second ring beside the first (same art: `RINGS[0]` and `RINGS[1]`, each with its own bell, steps and scoreboard). The server keeps one fight per ring (`this.bxs`), every `bx` message says which ring it is about (`r`), and a llama can only be in one fight. The top bar follows your own fight, or the nearest one when you are watching.
 - **Call-outs on top.** POW!, BLOCKED!, WHOOSH! and their stars are drawn on the top layer after the name tags (`drawBoxWords`), so a name never covers them.
 - **Waiting line.** At most `MAX_PLAYERS_DEFAULT` (200) llamas play at once. Extra visitors stay connected on a "YOU ARE 3RD IN LINE" screen and go in by themselves, longest wait first, as others leave. Staff skip the line, a llama whose connection blipped gets straight back in, and a place in line is kept for two minutes. Nothing from the game is sent to llamas in line and they cannot act. The owner changes the limit in DASHBOARD > ERRORS > SERVER HEALTH (saved in the room's storage; logged in the staff log).
+
+### Tapping machines, boxing call-outs (Nov 21)
+- **Whole-machine taps.** Slot machines, the PLINKO machine, the arcade cabinet and the jukebox now count a tap anywhere on their body (`tallHit`, checked on screen before the floor grid), not just on their floor tile.
+- **Slots.** Tap a slot machine anywhere and your llama walks to its stool, sits down and the game opens (`slotGo`). Tap it again while seated to spin. A machine someone else is using says so.
+- **Boxing call-outs** sit above the fighter's name tag, so they never cover a name.
+- Slot odds are unchanged from the design: FRUIT FRENZY and LUCKY LINES pay back about 89%, the PRIZE WHEEL about 88%.
