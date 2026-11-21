@@ -559,3 +559,11 @@ Staff tools only switch on for an account with a second login step (`tfaOn` in s
 ## One address
 
 `llamalounge.club` is the game's address (`SITE_HOST`). The old `llama-lounge.*.workers.dev` address and `www.` forward to it, because passkeys and logins are tied to the address.
+
+## First-time pop-ups follow the account
+
+Which first-time pop-ups, tips and the tour a player has already had is saved on the account (`users.seen`, action `seen_save`) as well as on the device, and merged at login (`seenMerge`), so a second device does not replay them.
+
+## Email design
+
+`mailHtml` in src/worker.js builds every email: dark purple background, logo and wordmark, one card with a purple title bar, a yellow button for links and a large boxed code for login codes. Tables and inline styles only, so it renders the same in mail apps.

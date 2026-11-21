@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-30b";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-30c";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -344,7 +344,7 @@ const tfaOn = (env, u) => !!(u && (u.pk_on || em2On(env, u)));
 const staffRole = (env, u) => (tfaOn(env, u) ? baseRole(env, u) : "");
 const maskEmail = (e) => String(e || "").replace(/^(.)[^@]*(@.*)$/, "$1***$2");
 const staffLog = (env, by, cmd, target) => env.LOUNGE.get(env.LOUNGE.idFromName("main")).fetch(new Request("https://room/log", { method: "POST", body: JSON.stringify({ by, cmd, target }) })).catch(() => {});
-const profileOf = (env, u, timers = []) => ({ since: u.created || 0, email: u.email || "", emailOk: !!u.email_ok, mailOn: mailOn(env), name: u.name.toUpperCase(), c: u.c, agreed: u.agreed, bet: u.bet, tk: u.tk, bestHay: u.best_hay, bestDash: u.best_dash, admin: staffRole(env, u) === "owner", staff: staffRole(env, u), pkNeed: tfaOn(env, u) ? "" : baseRole(env, u), timers });
+const profileOf = (env, u, timers = []) => ({ since: u.created || 0, email: u.email || "", emailOk: !!u.email_ok, mailOn: mailOn(env), name: u.name.toUpperCase(), c: u.c, agreed: u.agreed, bet: u.bet, tk: u.tk, bestHay: u.best_hay, bestDash: u.best_dash, admin: staffRole(env, u) === "owner", staff: staffRole(env, u), pkNeed: tfaOn(env, u) ? "" : baseRole(env, u), seen: u.seen || "", timers });
 
 // ---------- email ----------
 // Sending uses Cloudflare Email Service: a "send_email" binding named EMAIL plus a MAIL_FROM address on a domain
@@ -353,10 +353,36 @@ const mailOn = (env) => !!(env.EMAIL && env.MAIL_FROM);
 const normEmail = (e) => String(e || "").trim().toLowerCase();
 const emailOk = (e) => e.length <= 254 && /^[^\s@<>()",;:]{1,64}@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(e);
 const siteUrl = (env, url) => (env.APP_URL || url.origin).replace(/\/+$/, "");
+// The look of every email: the game's dark purple and yellow, a pixel-style wordmark, one card, one big button (or a big code).
+// Built from tables and inline styles because that is what mail apps render reliably. No pictures are needed for it to look right.
+function mailHtml(subject, lines, link, button) {
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const F = "font-family:'Segoe UI',Helvetica,Arial,sans-serif", PX = "font-family:'Courier New',Courier,monospace";
+  const body = lines.map((l, i) => { const m = /^(.*?)(?:your code is |code: )(\d{6})$/i.exec(l);
+    if (m) return `<p style="margin:0 0 14px;${F};font-size:16px;line-height:1.55;color:#2a2340">${esc(m[1].replace(/,\s*$/, "") || "Your login code")}</p>
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 18px"><tr><td style="background:#1d1530;border:3px solid #1d1530;border-radius:10px;padding:14px 22px;${PX};font-size:32px;font-weight:bold;letter-spacing:8px;color:#ffd23f">${m[2]}</td></tr></table>`;
+    return `<p style="margin:0 0 14px;${F};font-size:${i === 0 ? 17 : 15}px;line-height:1.55;color:${i === 0 ? "#1d1530" : "#4a3f6b"};${i === 0 ? "font-weight:600" : ""}">${esc(l)}</p>`; }).join("");
+  const btn = link ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 18px"><tr><td style="background:#ffd23f;border:3px solid #1d1530;border-radius:10px;box-shadow:0 4px 0 #1d1530"><a href="${esc(link)}" style="display:block;padding:14px 26px;${PX};font-size:16px;font-weight:bold;letter-spacing:1px;color:#1d1530;text-decoration:none">${esc(button || "OPEN")}</a></td></tr></table>
+    <p style="margin:0;${F};font-size:12px;line-height:1.5;color:#7a7194">Button not working? Paste this into your browser:<br><a href="${esc(link)}" style="color:#5a3fb0;word-break:break-all">${esc(link)}</a></p>` : "";
+  return `<!doctype html><html><body style="margin:0;padding:0;background:#120d22">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(lines[1] || lines[0] || subject)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#120d22"><tr><td align="center" style="padding:28px 14px">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
+    <tr><td style="padding:0 4px 16px"><table role="presentation" cellpadding="0" cellspacing="0"><tr>
+      <td style="background:#ffd23f;border:3px solid #1d1530;border-radius:8px;padding:0;line-height:0"><img src="https://${SITE_HOST}/icons/icon-192.png" width="40" height="40" alt="LL" style="display:block;border-radius:5px;${PX};font-size:13px;font-weight:bold;color:#1d1530;line-height:40px;text-align:center"></td>
+      <td style="padding-left:12px;${PX};font-size:20px;font-weight:bold;letter-spacing:2px;color:#ffffff">LLAMA LOUNGE</td></tr></table></td></tr>
+    <tr><td style="background:#fffdf6;border:3px solid #1d1530;border-radius:12px;padding:0">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr><td style="background:#6b4bd8;border-bottom:3px solid #1d1530;border-radius:8px 8px 0 0;padding:16px 22px;${PX};font-size:15px;font-weight:bold;letter-spacing:1px;line-height:1.4;color:#ffffff">${esc(subject.toUpperCase())}</td></tr>
+        <tr><td style="padding:22px 22px 20px">${body}${btn}</td></tr>
+      </table></td></tr>
+    <tr><td style="padding:16px 6px 0;${F};font-size:12px;line-height:1.6;color:#9a91b5">You got this because of your Llama Lounge account. We only email about your account, never ads.<br><a href="https://${SITE_HOST}/" style="color:#ffd23f">${SITE_HOST}</a> &nbsp;·&nbsp; <a href="https://${SITE_HOST}/terms" style="color:#ffd23f">Terms and privacy</a></td></tr>
+  </table></td></tr></table></body></html>`;
+}
 async function sendMail(env, to, subject, lines, link, button) {
   if (!mailOn(env)) return false;
   const text = lines.join("\n\n") + (link ? "\n\n" + link : "") + "\n\nLlama Lounge";
-  const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;color:#2a2340"><h2 style="color:#d62d6a">🦙 Llama Lounge</h2>${lines.map((l) => `<p>${l.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]))}</p>`).join("")}${link ? `<p><a href="${link}" style="display:inline-block;background:#ffd23f;color:#2a1d00;padding:12px 22px;border-radius:12px;font-weight:bold;text-decoration:none">${button}</a></p><p style="font-size:12px;color:#777">Or paste this link into your browser:<br>${link}</p>` : ""}</div>`;
+  const html = mailHtml(subject, lines, link, button);
   try { await env.EMAIL.send({ to, from: { email: env.MAIL_FROM, name: "Llama Lounge" }, subject, text, html }); return true; }
   catch (e) { console.error("mail failed", e && e.code, e && e.message); return false; }
 }
@@ -2005,6 +2031,10 @@ export class Lounge extends DurableObject {
   async act(ws, a, kind, m) {
     const uid = a.uid, now = Date.now();
     switch (kind) {
+      case "seen_save": {   // which first-time pop-ups, tips and the tour this account has already had, so they don't repeat on another device
+        const sv = String(m.s || ""); if (sv.length > 9000) return { ok: false }; try { const o = JSON.parse(sv); if (!o || typeof o !== "object") return { ok: false }; } catch (e) { return { ok: false }; }
+        if (!this.seenReady) { try { await this.env.DB.prepare("ALTER TABLE users ADD COLUMN seen TEXT NOT NULL DEFAULT ''").run(); } catch (e) { /* already there */ } this.seenReady = true; }
+        await this.env.DB.prepare("UPDATE users SET seen = ? WHERE id = ?").bind(sv, a.uid).run(); return { ok: true }; }
       case "profile": {
         const c = LLAMAS.includes(m.c) ? m.c : null;
         const bet = Math.max(0, Math.min(10, Math.floor(+m.bet || 0)));
