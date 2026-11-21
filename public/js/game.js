@@ -4478,7 +4478,8 @@ function menuAct(el){
   else if (a==='drop'){ if(me.h){ localMsg('You put your drink down.'); me.h=null; me.hl=0; sendPresence(true);} }
   else if (a==='log'){ logbox.style.display='block'; logbox.scrollTop=logbox.scrollHeight; }
 }
-for (const m of [menu,emenu]) items(m).forEach((el,k)=>{ el.addEventListener('pointerdown', e=>{ e.stopPropagation(); setMenu(k); menuAct(el); }); });
+// act on a finished tap (click), not on touch-down, so dragging to scroll the menu on a phone never picks an item
+for (const m of [menu,emenu]) items(m).forEach((el,k)=>{ el.addEventListener('pointerdown', e=>e.stopPropagation()); el.addEventListener('click', e=>{ e.stopPropagation(); setMenu(k); menuAct(el); }); });
 document.getElementById('logx').addEventListener('pointerdown', e=>{ e.stopPropagation(); closeAll(); });
 document.getElementById('menubtn').addEventListener('click', ()=>openMenu());
 
