@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-26c";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-27a";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -878,6 +878,9 @@ function cleanPresence(p, name, tk, muted, staff) {
 
 // the parts of a llama's presence that every room shows (chat log, who is where, outfit, tokens, scores, jukebox, lamp).
 // When none of these changed, the update is just movement and only goes to the llama's own room.
+// THE WAITING LINE: at most this many llamas play at once (the owner can change it in DASHBOARD > ERRORS > SERVER HEALTH). Extra visitors wait in line
+// and are let in, first come first served, as others leave. Staff skip the line; someone whose connection blipped gets straight back in.
+const MAX_PLAYERS_DEFAULT = 200, QUEUE_GRACE_MS = 120000;
 const PRES_BATCH_MS = 100;
 const ACT_LIMIT = { burstMs: 2000, burst: 24, perMin: 300 };   // per connection, across every action
 const HEALTH = { everyMs: 5 * 60000, slowMs: 1500, keepMs: 7 * 86400000, keepLog: 200 };
@@ -891,6 +894,9 @@ export class Lounge extends DurableObject {
     super(ctx, env);
     this.tables = [null, null];   // live table games (lost if the room ever sleeps, which only happens when it's empty)
     try { this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong")); } catch (e) {}   // keep-alive check from the page, answered without waking the room
+    this.qc = new WeakMap();      // socket -> waiting in line?
+    this.recent = new Map();      // uid -> when they last left (a quick reconnect skips the line)
+    this.qkeep = new Map();       // uid -> their place in line, kept for a couple of minutes if their connection blips
     this.rmc = new WeakMap();     // socket -> room id, so movement can be sent per room without re-reading every attachment
     this.pend = new Map();        // peer -> socket with movement waiting for the next batch
     this.flushT = null;
@@ -899,23 +905,45 @@ export class Lounge extends DurableObject {
   async fetch(req) {
     const uid = +req.headers.get("x-uid"), name = req.headers.get("x-name"), staff = ["owner", "mod"].includes(req.headers.get("x-staff")) ? req.headers.get("x-staff") : "";
     // one llama per account: an older connection for this account (another tab, or one left over from a reload) is closed and removed for everyone
-    for (const w of this.sockets()) { const old = w.deserializeAttachment(); if (!old || old.uid !== uid) continue;
+    let held = false;   // this account already had a playing connection (another tab, or one being replaced)
+    for (const w of this.allSockets()) { const old = w.deserializeAttachment(); if (!old || old.uid !== uid) continue; if (!old.q) held = true;
       if (old.pres) this.broadcast({ t: "peers", left: [{ peer: old.peer }] }, w);
-      this.pend.delete(old.peer); this.rmc.set(w, null);
+      this.pend.delete(old.peer); this.rmc.set(w, null); this.qc.set(w, true);   // counted out from here on
       try { w.serializeAttachment({ ...old, pres: null }); w.close(4001, "replaced"); } catch (e) {} }
     const pair = new WebSocketPair(); const [client, server] = Object.values(pair);
     const peer = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
     this.ctx.acceptWebSocket(server);
     const nd = await this.needsLoad(uid);
     const wear = await this.wearLoad(uid);
-    server.serializeAttachment({ uid, name, staff, peer, pres: null, rate: [Date.now(), 0], nd, wear, act: Date.now() });
-    // greet with everyone already here, the leaderboard and table states
-    const peers = this.sockets().filter((w) => w !== server && w.readyState === 1).map((w) => w.deserializeAttachment()).filter((a) => a && a.pres && a.uid !== uid).map((a) => ({ peer: a.peer, presence: (prId(a.pres.rm) && (!this.prPriv || this.prPriv.get(prId(a.pres.rm)) !== false)) ? { ...a.pres, s: undefined, e: undefined } : a.pres }));   // never show what's said in a private room
-    server.send(JSON.stringify({ t: "hello", now: Date.now(), v: VERSION, peer, peers, board: await this.board(), nd: { hu: nd.hu, th: nd.th, rate: { hu: 100 / NEEDS.hungerMs, th: 100 / NEEDS.thirstMs } } }));
+    const now = Date.now(), att = { uid, name, staff, peer, pres: null, rate: [now, 0], nd, wear, act: now };
+    // full? then this llama waits in line (the socket stays open so it can be told its place and let in the moment there's room)
+    const cap = await this.capNow(), playing = this.sockets().filter((w) => w !== server && w.readyState === 1).length;
+    const back = held || (this.recent.get(uid) || 0) > now - QUEUE_GRACE_MS;
+    if (!staff && !back && playing >= cap) { const kept = this.qkeep.get(uid); att.q = kept && kept.t > now - QUEUE_GRACE_MS ? kept.q : now; this.qkeep.delete(uid);
+      server.serializeAttachment(att); this.qc.set(server, true); await this.queuePump(); return new Response(null, { status: 101, webSocket: client }); }
+    server.serializeAttachment(att); this.qc.set(server, false);
+    await this.hello(server, att);
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  sockets() { return this.ctx.getWebSockets(); }
+  // everyone PLAYING. Llamas waiting in line are connected too, but nothing in the game is sent to them and they can't do anything yet.
+  allSockets() { return this.ctx.getWebSockets(); }
+  isQ(w) { let q = this.qc.get(w); if (q === undefined) { const x = w.deserializeAttachment(); q = !!(x && x.q); this.qc.set(w, q); } return q; }
+  sockets() { return this.ctx.getWebSockets().filter((w) => !this.isQ(w)); }
+  async capNow() { if (this.cap === undefined) { let v = 0; try { v = +(await this.ctx.storage.get("cap")) || 0; } catch (e) {} this.cap = v >= 1 ? v : MAX_PLAYERS_DEFAULT; } return this.cap; }
+  // greet a llama that is in: everyone already here, the leaderboard and its meters
+  async hello(server, a) {
+    const peers = this.sockets().filter((w) => w !== server && w.readyState === 1).map((w) => w.deserializeAttachment()).filter((x) => x && x.pres && x.uid !== a.uid).map((x) => ({ peer: x.peer, presence: (prId(x.pres.rm) && (!this.prPriv || this.prPriv.get(prId(x.pres.rm)) !== false)) ? { ...x.pres, s: undefined, e: undefined } : x.pres }));   // never show what's said in a private room
+    this.send(server, { t: "hello", now: Date.now(), v: VERSION, peer: a.peer, peers, board: await this.board(), nd: a.nd ? { hu: a.nd.hu, th: a.nd.th, rate: { hu: 100 / NEEDS.hungerMs, th: 100 / NEEDS.thirstMs } } : undefined });
+  }
+  // let waiting llamas in while there is room (longest wait first), then tell the rest their place
+  async queuePump() {
+    const all = this.ctx.getWebSockets().filter((w) => w.readyState === 1), Q = all.filter((w) => this.isQ(w)).map((w) => [w, w.deserializeAttachment()]).filter(([, x]) => x && x.q).sort((x, y) => x[1].q - y[1].q);
+    if (!Q.length) return; let playing = all.length - Q.length; const cap = await this.capNow();
+    while (Q.length && playing < cap) { const [w, x] = Q.shift(); delete x.q; x.rate = [Date.now(), 0]; w.serializeAttachment(x); this.qc.set(w, false); playing++; await this.hello(w, x); }
+    Q.forEach(([w], i) => this.send(w, { t: "queue", pos: i + 1, of: Q.length }));
+  }
+  queueLen() { return this.ctx.getWebSockets().filter((w) => w.readyState === 1 && this.isQ(w)).length; }
   // presence goes to everyone, but what's said inside a private player room only reaches the people in it
   peersOut(ws, a, kind) {
     const full = JSON.stringify({ t: "peers", [kind]: [{ peer: a.peer, presence: a.pres }] });
@@ -955,6 +983,7 @@ export class Lounge extends DurableObject {
   async webSocketMessage(ws, raw) {
     if (raw === "ping") { try { ws.send("pong"); } catch (e) {} return; }
     const a = ws.deserializeAttachment(); if (!a) return;
+    if (a.q) return;   // still waiting in line
     // simple flood control: 40 messages a second per connection
     const now = Date.now(); const H = this.hInit(); H.msgs++; if (now - a.rate[0] > 1000) a.rate = [now, 0]; a.rate[1]++; if (a.rate[1] > 40) { H.drop++; ws.serializeAttachment(a); return; }
     let m; try { m = JSON.parse(typeof raw === "string" ? raw : new TextDecoder().decode(raw)); } catch (e) { return; }
@@ -1015,10 +1044,12 @@ export class Lounge extends DurableObject {
     }
   }
 
-  async webSocketClose(ws) { this.left(ws); try { ws.close(1000, "bye"); } catch (e) {}   // finish the closing handshake, so the page knows at once and can reconnect
+  async webSocketClose(ws) { this.left(ws); try { ws.close(1000, "bye"); } catch (e) {} this.qc.set(ws, true); try { await this.queuePump(); } catch (e) {}   // finish the closing handshake, so the page knows at once and can reconnect
     try { const a = ws.deserializeAttachment(); if (a && a.nd) { this.needsDrain(a, Date.now()); await this.needsSave(a); } } catch (e) {} }
-  async webSocketError(ws) { this.left(ws); }
-  left(ws) { const a = ws.deserializeAttachment(); if (a) this.pend.delete(a.peer); this.rmc.set(ws, null); if (a && a.pres) this.broadcast({ t: "peers", left: [{ peer: a.peer }] }, ws); if (a) this.tradeDrop(a.uid, `${a.name} left, so the trade was cancelled.`); }
+  async webSocketError(ws) { this.left(ws); this.qc.set(ws, true); try { await this.queuePump(); } catch (e) {} }
+  left(ws) { const a = ws.deserializeAttachment(); if (a) { this.pend.delete(a.peer); const now = Date.now(); if (a.q) this.qkeep.set(a.uid, { q: a.q, t: now }); else this.recent.set(a.uid, now);
+      if (this.recent.size > 2000) for (const [k, v] of this.recent) if (v < now - QUEUE_GRACE_MS) this.recent.delete(k); if (this.qkeep.size > 2000) for (const [k, v] of this.qkeep) if (v.t < now - QUEUE_GRACE_MS) this.qkeep.delete(k); }
+    this.rmc.set(ws, null); if (a && a.q) return; if (a && a.pres) this.broadcast({ t: "peers", left: [{ peer: a.peer }] }, ws); if (a) this.tradeDrop(a.uid, `${a.name} left, so the trade was cancelled.`); }
 
   // ---------- player rooms ----------
   async prTables() { if (this.prReady) return;
@@ -1987,6 +2018,7 @@ export class Lounge extends DurableObject {
       case "report_list": return this.reportList(a);
       case "health": return this.health(a);
       case "health_clear": return this.healthClear(a);
+      case "cap_set": return this.capSet(a, m);
       case "err_list": return this.errList(a);
       case "err_clear": return this.errClear(a, m);
       case "report_done": return this.reportDone(a, m);
@@ -2274,22 +2306,28 @@ export class Lounge extends DurableObject {
   sockFor(uid) { for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.uid === uid) return [w, x]; } return [null, null]; }
   inGym(uid) { const [, x] = this.sockFor(uid); return !!(x && x.pres && x.pres.rm === "gym"); }
   gymBroadcast(obj) { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === "gym") { try { w.send(s); } catch (e) {} } } }
-  boxPublic() { const M = this.bx; if (!M) return null; const f = (P) => ({ n: P.name, bot: P.bot || null, hp: P.hp, st: P.st });
-    return { id: M.id, a: f(M.a), b: f(M.b), round: M.round, beat: M.beat, beats: BOX.beats, rounds: BOX.rounds, phase: M.phase, next: M.next, ms: BOX.beat }; }
+  // TWO RINGS: this.bxs[0] and this.bxs[1] each hold one fight (or null). Every "bx" message says which ring it is about (r).
+  rings() { return this.bxs || (this.bxs = [null, null]); }
+  boxingOf(uid) { return this.rings().find((M) => M && M.phase !== "over" && (M.a.uid === uid || (!M.b.bot && M.b.uid === uid))) || null; }
+  boxPublic(M) { if (!M) return null; const f = (P) => ({ n: P.name, bot: P.bot || null, hp: P.hp, st: P.st });
+    return { id: M.id, ring: M.ring, a: f(M.a), b: f(M.b), round: M.round, beat: M.beat, beats: BOX.beats, rounds: BOX.rounds, phase: M.phase, next: M.next, ms: BOX.beat }; }
   async boxInfo(a, now) { const r = await this.boxRow(a.uid), today = etDay(now);
-    return { ok: true, s: this.boxPublic(), me: { wins: r.wins, losses: r.losses, draws: r.draws, kos: r.kos, earned: r.earn_day === today ? r.earned : 0, cap: BOX.dayCap }, bots: BOX_BOTS, pay: BOX.pay }; }
-  boxFree() { if (this.bx && this.bx.phase === "over" && Date.now() - this.bx.ended > 3500) this.bx = null; return !this.bx; }
-  boxStart(A, B, now) {
+    const rings = this.rings().map((M) => this.boxPublic(M));
+    return { ok: true, s: rings[0], rings, me: { wins: r.wins, losses: r.losses, draws: r.draws, kos: r.kos, earned: r.earn_day === today ? r.earned : 0, cap: BOX.dayCap }, bots: BOX_BOTS, pay: BOX.pay }; }
+  // the first ring with nothing going on, or -1 when both are busy
+  boxFree() { const R = this.rings(); for (let i = 0; i < R.length; i++) { if (R[i] && R[i].phase === "over" && Date.now() - R[i].ended > 3500) R[i] = null; if (!R[i]) return i; } return -1; }
+  boxStart(A, B, now, ring) {
     const id = String(now), mk = (P) => ({ uid: P.uid || 0, name: P.name, bot: P.bot || null, hp: BOX.hp, st: BOX.st, mv: null, hist: [] });
-    this.bx = { id, a: mk(A), b: mk(B), round: 1, beat: 0, phase: "start", next: now + BOX.start, t0: now, beatsDone: 0 };
-    this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "start" });
-    const M = this.bx; setTimeout(() => this.boxTick(M).catch((e) => console.error("box", e)), BOX.start);
+    const M = this.rings()[ring] = { id, ring, a: mk(A), b: mk(B), round: 1, beat: 0, phase: "start", next: now + BOX.start, t0: now, beatsDone: 0 };
+    this.gymBroadcast({ t: "bx", r: ring, s: this.boxPublic(M), ev: "start" });
+    setTimeout(() => this.boxTick(M).catch((e) => console.error("box", e)), BOX.start);
   }
   async boxBot(ws, a, m, now) {
     if (!a.pres || a.pres.rm !== "gym") return { ok: false, msg: "Head to the BOXING GYM to box." };
     const k = String(m.bot || ""); if (!BOX_BOTS[k]) return { ok: false, msg: "Pick a sparring partner." };
-    if (!this.boxFree()) return { ok: false, msg: "The ring is busy. Watch this fight, you're next!" };
-    this.boxStart({ uid: a.uid, name: a.name }, { bot: k, name: BOX_BOTS[k].n }, now); return { ok: true };
+    if (this.boxingOf(a.uid)) return { ok: false, msg: "You're already in a fight." };
+    const ring = this.boxFree(); if (ring < 0) return { ok: false, msg: "Both rings are busy. Watch a fight, you're next!" };
+    this.boxStart({ uid: a.uid, name: a.name }, { bot: k, name: BOX_BOTS[k].n }, now, ring); return { ok: true };
   }
   async boxInvite(ws, a, m, now) {
     if (!a.pres || a.pres.rm !== "gym") return { ok: false, msg: "Head to the BOXING GYM to box." };
@@ -2297,7 +2335,9 @@ export class Lounge extends DurableObject {
     if (!them) return { ok: false, msg: `${n || "They"} isn't in the gym right now.` };
     const [tw, tx] = them; if (tx.uid === a.uid) return { ok: false, msg: "You can't box yourself." };
     if (await this.blockedPair(a.uid, tx.uid)) return { ok: false, msg: `You can't challenge ${n}.` };
-    if (!this.boxFree()) return { ok: false, msg: "The ring is busy. Challenge them after this fight." };
+    if (this.boxingOf(a.uid)) return { ok: false, msg: "You're already in a fight." };
+    if (this.boxingOf(tx.uid)) return { ok: false, msg: `${n} is in a fight right now.` };
+    if (this.boxFree() < 0) return { ok: false, msg: "Both rings are busy. Challenge them after a fight ends." };
     (this.bxInv = this.bxInv || new Map()).set(tx.uid, { from: a.uid, name: a.name, t: now });
     this.send(tw, { t: "bxinv", from: a.name, ms: BOX.inviteMs }); return { ok: true, msg: `Challenge sent to ${n}!` };
   }
@@ -2307,13 +2347,14 @@ export class Lounge extends DurableObject {
     const [fw] = this.sockFor(inv.from);
     if (!m.yes) { if (fw) this.send(fw, { t: "toast", msg: `${a.name} turned down your challenge.` }); return { ok: true }; }
     if (!a.pres || a.pres.rm !== "gym" || !this.inGym(inv.from)) return { ok: false, msg: "You both need to be in the gym." };
-    if (!this.boxFree()) return { ok: false, msg: "The ring got busy. Try again after this fight." };
-    this.boxStart({ uid: inv.from, name: inv.name }, { uid: a.uid, name: a.name }, now); return { ok: true };
+    if (this.boxingOf(a.uid) || this.boxingOf(inv.from)) return { ok: false, msg: "One of you is already in a fight." };
+    const ring = this.boxFree(); if (ring < 0) return { ok: false, msg: "Both rings got busy. Try again after a fight ends." };
+    this.boxStart({ uid: inv.from, name: inv.name }, { uid: a.uid, name: a.name }, now, ring); return { ok: true };
   }
-  boxMove(a, m) { const M = this.bx; if (!M || M.phase !== "fight") return { ok: false };
+  boxMove(a, m) { const M = this.boxingOf(a.uid); if (!M || M.phase !== "fight") return { ok: false };
     const P = M.a.uid === a.uid ? M.a : M.b.uid === a.uid && !M.b.bot ? M.b : null; if (!P) return { ok: false };
     const mv = String(m.mv || ""); if (!BOX_MOVES.has(mv)) return { ok: false }; P.mv = mv; return { ok: true, mv }; }
-  boxQuit(a) { const M = this.bx; if (!M || M.phase === "over") return { ok: false }; const P = M.a.uid === a.uid ? M.a : M.b.uid === a.uid ? M.b : null; if (!P) return { ok: false };
+  boxQuit(a) { const M = this.boxingOf(a.uid); if (!M || M.phase === "over") return { ok: false }; const P = M.a.uid === a.uid ? M.a : M.b.uid === a.uid ? M.b : null; if (!P) return { ok: false };
     P.quit = true; return { ok: true }; }
   boxBotMove(P, O) {   // the bot's move: the champ watches what you've been throwing and counters it; both rest when tired
     const B = BOX_BOTS[P.bot], r = Math.random(); if (r < B.idle) return null;
@@ -2322,11 +2363,11 @@ export class Lounge extends DurableObject {
     const pool = ["jab", "jab", "hook", "block", "dodge"]; return pool[Math.floor(Math.random() * pool.length)];
   }
   async boxTick(M) {
-    if (this.bx !== M || M.phase === "over") return;
+    if (this.rings()[M.ring] !== M || M.phase === "over") return;
     const now = Date.now();
     // someone walked out or dropped: the other fighter wins
     for (const [P, O] of [[M.a, M.b], [M.b, M.a]]) if (!P.bot && (P.quit || !this.inGym(P.uid))) return this.boxEnd(M, O, P, "forfeit");
-    if (M.phase === "start" || M.phase === "rest") { M.phase = "fight"; M.beat = 0; M.next = now + BOX.beat; this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "bell" }); setTimeout(() => this.boxTick(M).catch((e) => console.error("box", e)), BOX.beat); return; }
+    if (M.phase === "start" || M.phase === "rest") { M.phase = "fight"; M.beat = 0; M.next = now + BOX.beat; this.gymBroadcast({ t: "bx", r: M.ring, s: this.boxPublic(M), ev: "bell" }); setTimeout(() => this.boxTick(M).catch((e) => console.error("box", e)), BOX.beat); return; }
     // settle this beat
     for (const [P, O] of [[M.a, M.b], [M.b, M.a]]) if (P.bot) P.mv = this.boxBotMove(P, O);
     const out = {};
@@ -2335,14 +2376,14 @@ export class Lounge extends DurableObject {
     for (const P of [M.a, M.b]) { P.hist.push(P.mv); if (P.hist.length > 8) P.hist.shift(); P.mv = null; }
     M.beat++; M.beatsDone++;
     const ko = M.a.hp <= 0 || M.b.hp <= 0;
-    if (ko) { M.phase = "over"; this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "beat", out });
+    if (ko) { M.phase = "over"; this.gymBroadcast({ t: "bx", r: M.ring, s: this.boxPublic(M), ev: "beat", out });
       const win = M.a.hp > M.b.hp ? M.a : M.b.hp > M.a.hp ? M.b : null; return this.boxEnd(M, win, win === M.a ? M.b : win === M.b ? M.a : null, "ko"); }
     if (M.beat >= BOX.beats) {
-      if (M.round >= BOX.rounds) { M.phase = "over"; this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "beat", out });
+      if (M.round >= BOX.rounds) { M.phase = "over"; this.gymBroadcast({ t: "bx", r: M.ring, s: this.boxPublic(M), ev: "beat", out });
         const win = M.a.hp > M.b.hp ? M.a : M.b.hp > M.a.hp ? M.b : null; return this.boxEnd(M, win, win === M.a ? M.b : win === M.b ? M.a : null, "points"); }
       M.round++; M.phase = "rest"; M.next = now + BOX.rest; for (const P of [M.a, M.b]) P.st = Math.min(BOX.st, P.st + 25);
-      this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "beat", out }); setTimeout(() => this.boxTick(M).catch((e) => console.error("box", e)), BOX.rest); return; }
-    M.next = now + BOX.beat; this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "beat", out });
+      this.gymBroadcast({ t: "bx", r: M.ring, s: this.boxPublic(M), ev: "beat", out }); setTimeout(() => this.boxTick(M).catch((e) => console.error("box", e)), BOX.rest); return; }
+    M.next = now + BOX.beat; this.gymBroadcast({ t: "bx", r: M.ring, s: this.boxPublic(M), ev: "beat", out });
     setTimeout(() => this.boxTick(M).catch((e) => console.error("box", e)), BOX.beat);
   }
   async boxEnd(M, win, lose, how) {
@@ -2362,8 +2403,8 @@ export class Lounge extends DurableObject {
         .bind(P.uid, won ? 1 : 0, lost ? 1 : 0, drew ? 1 : 0, won && how === "ko" ? 1 : 0, today, so + earn).run();
       const tk = earn ? await this.credit(P.uid, earn, "boxing") : null; pays[P.name] = earn; if (ws) this.send(ws, { t: "bxpay", earned: earn, tk, capped: so + earn >= BOX.dayCap, practice: !!pairNote || (pvp && !real) });
     }
-    this.gymBroadcast({ t: "bx", s: this.boxPublic(), ev: "end", win: win ? win.name : null, how, pays });
-    setTimeout(() => { if (this.bx === M) { this.bx = null; this.gymBroadcast({ t: "bx", s: null, ev: "clear" }); } }, 4000);
+    this.gymBroadcast({ t: "bx", r: M.ring, s: this.boxPublic(M), ev: "end", win: win ? win.name : null, how, pays });
+    setTimeout(() => { if (this.rings()[M.ring] === M) { this.rings()[M.ring] = null; this.gymBroadcast({ t: "bx", r: M.ring, s: null, ev: "clear" }); } }, 4000);
   }
 
   // ---------- treasure cove ----------
@@ -2663,7 +2704,10 @@ export class Lounge extends DurableObject {
     await this.healthTable(); const now = Date.now(), H = this.hInit(), on = this.onlineNow();
     const rows = (await this.env.DB.prepare("SELECT t, online, peak, acts, slow, errs, dropped, msgs FROM health WHERE t > ? ORDER BY t DESC LIMIT 400").bind(now - 86400000).all()).results || [];
     const log = (await this.env.DB.prepare("SELECT t, kind, what, ms, detail FROM srvlog ORDER BY id DESC LIMIT 40").all()).results || [];
-    return { ok: true, now: { t: now, online: on.n, rooms: on.rooms, peak: Math.max(H.peak, on.n), acts: H.acts, slow: H.slow, errs: H.errs, dropped: H.drop, msgs: H.msgs, since: H.t0 }, rows, log }; }
+    return { ok: true, cap: await this.capNow(), queue: this.queueLen(), now: { t: now, online: on.n, rooms: on.rooms, peak: Math.max(H.peak, on.n), acts: H.acts, slow: H.slow, errs: H.errs, dropped: H.drop, msgs: H.msgs, since: H.t0 }, rows, log }; }
+  async capSet(a, m) { if ((await this.staffNow(a)) !== "owner") return { ok: false, msg: "Only the owner can change the player limit." };
+    const n = Math.floor(+m.n || 0); if (!(n >= 1 && n <= 5000)) return { ok: false, msg: "Pick a limit from 1 to 5000." };
+    this.cap = n; await this.ctx.storage.put("cap", n); await this.logStaff(a.name, "cap", String(n)); await this.queuePump(); return { ok: true, cap: n, queue: this.queueLen() }; }
   async healthClear(a) { if ((await this.staffNow(a)) !== "owner") return { ok: false, msg: "Only the owner can clear that." };
     await this.healthTable(); await this.env.DB.prepare("DELETE FROM srvlog").run(); return { ok: true }; }
   async errList(a) { if (!(await this.staffNow(a))) return { ok: false, msg: "Only staff can see that." };

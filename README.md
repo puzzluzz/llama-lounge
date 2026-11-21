@@ -490,3 +490,8 @@ Same machine, same bots, before and after the per-room change:
 | 400 | could not connect | falls behind (seconds of delay) |
 
 So on this test machine the old server kept up to about 50 llamas and the new one to about 300. Cloudflare's machines differ, so treat the numbers as a ratio (roughly 5 times more), not a promise. Two small trims came out of it: the hunger and thirst meters no longer rewrite the connection's saved state on every step, and the account check (ban, mute, tokens) is cached for 15 seconds instead of 5 (mutes and bans still apply at once).
+
+### Two boxing rings, the waiting line, call-outs on top (Nov 21)
+- **Two rings.** The gym is now 21 tiles wide with a second ring beside the first (same art: `RINGS[0]` and `RINGS[1]`, each with its own bell, steps and scoreboard). The server keeps one fight per ring (`this.bxs`), every `bx` message says which ring it is about (`r`), and a llama can only be in one fight. The top bar follows your own fight, or the nearest one when you are watching.
+- **Call-outs on top.** POW!, BLOCKED!, WHOOSH! and their stars are drawn on the top layer after the name tags (`drawBoxWords`), so a name never covers them.
+- **Waiting line.** At most `MAX_PLAYERS_DEFAULT` (200) llamas play at once. Extra visitors stay connected on a "YOU ARE 3RD IN LINE" screen and go in by themselves, longest wait first, as others leave. Staff skip the line, a llama whose connection blipped gets straight back in, and a place in line is kept for two minutes. Nothing from the game is sent to llamas in line and they cannot act. The owner changes the limit in DASHBOARD > ERRORS > SERVER HEALTH (saved in the room's storage; logged in the staff log).

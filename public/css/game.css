@@ -12,6 +12,8 @@
   #boot .bootbar i:nth-child(1){animation-delay:0s} #boot .bootbar i:nth-child(2){animation-delay:.2s} #boot .bootbar i:nth-child(3){animation-delay:.4s} #boot .bootbar i:nth-child(4){animation-delay:.6s} #boot .bootbar i:nth-child(5){animation-delay:.8s} #boot .bootbar i:nth-child(6){animation-delay:1s} #boot .bootbar i:nth-child(7){animation-delay:1.2s} #boot .bootbar i:nth-child(8){animation-delay:1.4s}
   @keyframes bootseg{0%{background:#ffd23f;box-shadow:inset 0 -3px 0 #c88a10,inset 0 3px 0 #fff2a8}60%{background:#2e2350;box-shadow:none}100%{background:#2e2350;box-shadow:none}}
   #boot_t{font:400 14px/1.6 var(--pxf);color:#cfc6ee;letter-spacing:.08em;min-height:16px}
+  #boot.hold{animation:none} #boot_s{font:500 14px/1.5 var(--ui);color:#a79fce;max-width:300px;min-height:0} #boot_s:empty{display:none} #boot.hold #boot_t{font-size:16px;color:#ffd23f}
+  #dashbox .capset{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 12px;font:600 14px var(--ui);color:var(--sub)} #dashbox .capset input{width:86px;height:38px;border:3px solid var(--ink);border-radius:0;background:#fffdf6;font:400 13px var(--pxf);text-align:center;color:var(--ink)}
   @media (prefers-reduced-motion: reduce){ #boot_l{animation:none} }
   html,body{margin:0;height:100%;background:#100c1c;overflow:hidden;font-family:'Press Start 2P',monospace;color:var(--ink);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   #screen{position:fixed;inset:0;overflow:hidden}

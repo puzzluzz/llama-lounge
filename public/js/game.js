@@ -541,7 +541,7 @@ function itemIcon(id){ let c=itemIconCache.get(id); if (c) return c; const it=IT
 // ======================= WORLD =======================
 const ARC_X = 9, JUKE_X = 12;   // arcade cabinet and jukebox spots on the lounge's back wall
 const TW = 40, TH = 20, WH = 96;
-const ROOM_DIMS = { lounge:[13,12], barn:[22,20], casino:[13,12], arena:[13,12], lanes:[13,12], store:[13,12], account:[9,6], gym:[13,12], cove:[20,16], jungle:[20,16] };
+const ROOM_DIMS = { lounge:[13,12], barn:[22,20], casino:[13,12], arena:[13,12], lanes:[13,12], store:[13,12], account:[9,6], gym:[21,12], cove:[20,16], jungle:[20,16] };
 let N = 13, NY = 12;   // current room: N = width (gx) and row stride, NY = depth (gy)
 const proj = (gx,gy) => [(gx-gy)*TW/2, (gx+gy)*TH/2];
 let BLOCK = new Uint8Array(N*NY);
@@ -1004,28 +1004,34 @@ function buildLanesBG(){
 
 // ======================= BOXING GYM =======================
 // the ring: inside tiles gx 4..8, gy 3..7 (edges at 4..9 and 3..8), raised RING.H pixels; fighters stand at RING.A and RING.B
-const RING = { x0:4, y0:3, x1:9, y1:8, H:10, A:[5,5], B:[7,5], outA:[3,8], outB:[10,6] };
-const inRing = (x,y) => x>=RING.x0 && x<RING.x1 && y>=RING.y0 && y<RING.y1;
-const ringLift = (x,y) => (curRoom==='gym' && x>=RING.x0 && x<=RING.x1 && y>=RING.y0 && y<=RING.y1) ? RING.H : 0;
-const GYM_BAGS = [[1,2],[1,5],[11,3]];
+// TWO RINGS side by side (the second is the first moved 9 tiles along the back wall). RING is whichever one is being built or drawn right now.
+const RINGS = [ { x0:4, y0:3, x1:9, y1:8, H:10, A:[5,5], B:[7,5], outA:[3,8], outB:[10,6], bell:[10,8] }, { x0:13, y0:3, x1:18, y1:8, H:10, A:[14,5], B:[16,5], outA:[12,8], outB:[19,6], bell:[19,8] } ];
+let RING = RINGS[0];
+const ringAt = (x,y) => RINGS.findIndex(R=>x>=R.x0 && x<R.x1 && y>=R.y0 && y<R.y1);
+const inRing = (x,y) => ringAt(x,y)>=0;
+const ringLift = (x,y) => (curRoom==='gym' && RINGS.some(R=>x>=R.x0 && x<=R.x1 && y>=R.y0 && y<=R.y1)) ? RINGS[0].H : 0;
+const GYM_BAGS = [[1,2],[1,5],[11,1],[19,3]];
 function buildGymWorld(){
   clearWorld();
+  for (let ri=0; ri<RINGS.length; ri++){ RING=RINGS[ri];
   // the ring and a one-tile margin round its back edges (so nobody stands half under the apron); fighters are put in by the bell
   for (let x=RING.x0-1; x<=RING.x1; x++) for (let y=RING.y0-1; y<=RING.y1; y++) if (x<RING.x1 && y<RING.y1 || false) block(x,y);
   for (let x=RING.x0; x<RING.x1; x++) for (let y=RING.y0; y<RING.y1; y++){
-    if (y===RING.y1-1) FURN.push({t:'ropeseg', gx:x, gy:y, side:'S', dz:0.3});
-    if (x===RING.x1-1) FURN.push({t:'ropeseg', gx:x, gy:y, side:'E', dz:0.32});
-    if (y===RING.y0) FURN.push({t:'ropeseg', gx:x, gy:y, side:'N', dz:-0.6});
-    if (x===RING.x0) FURN.push({t:'ropeseg', gx:x, gy:y, side:'W', dz:-0.62}); }
-  FURN.push({t:'ringpost', gx:RING.x1-1, gy:RING.y1-1, dz:0.45});
-  FURN.push({t:'ringsteps', gx:RING.x0, gy:RING.y1}); block(RING.x0, RING.y1);
+    if (y===RING.y1-1) FURN.push({t:'ropeseg', ring:ri, gx:x, gy:y, side:'S', dz:0.3});
+    if (x===RING.x1-1) FURN.push({t:'ropeseg', gx:x, gy:y, side:'E', dz:0.32, ring:ri});
+    if (y===RING.y0) FURN.push({t:'ropeseg', gx:x, gy:y, side:'N', dz:-0.6, ring:ri});
+    if (x===RING.x0) FURN.push({t:'ropeseg', gx:x, gy:y, side:'W', dz:-0.62, ring:ri}); }
+  FURN.push({t:'ringpost', ring:ri, gx:RING.x1-1, gy:RING.y1-1, dz:0.45});
+  FURN.push({t:'ringsteps', ring:ri, gx:RING.x0, gy:RING.y1}); block(RING.x0, RING.y1);
+  FURN.push({t:'ringbell', ring:ri, gx:RING.bell[0], gy:RING.bell[1]}); block(RING.bell[0], RING.bell[1]);
+  }
   for (const [x,y] of GYM_BAGS){ FURN.push({t:'hbag', gx:x, gy:y}); block(x,y); }
   FURN.push({t:'lockers', gx:2, gy:0}); block(2,0); FURN.push({t:'lockers', gx:3, gy:0, b:1}); block(3,0);
   FURN.push({t:'cooler', gx:10, gy:0}); block(10,0);
   FURN.push({t:'weights', gx:12, gy:0}); block(12,0);
-  FURN.push({t:'ringbell', gx:10, gy:8}); block(10,8);
-  for (const [x,y] of [[6,10],[9,10]]){ FURN.push({t:'gbench', gx:x, gy:y, dz:0.5}); for (const xx of [x,x+1]) SEATS.push({gx:xx, gy:y, dir:'br', lift:7}); }
-  FURN.push({t:'fern', gx:12, gy:11, flip:true}); block(12,11);
+  FURN.push({t:'lockers', gx:19, gy:0}); block(19,0); FURN.push({t:'lockers', gx:20, gy:0, b:1}); block(20,0);
+  for (const [x,y] of [[6,10],[9,10],[14,10],[17,10]]){ FURN.push({t:'gbench', gx:x, gy:y, dz:0.5}); for (const xx of [x,x+1]) SEATS.push({gx:xx, gy:y, dir:'br', lift:7}); }
+  FURN.push({t:'fern', gx:20, gy:11, flip:true}); block(20,11);
 }
 // lettering laid along a slanted face (slope 0.5 = along +gx on screen, -0.5 = along +gy)
 function slantText(c, str, x, y, slope, col, sc=1){ const w=pfW(str,sc)+2, h=5*sc+2, cv=document.createElement('canvas'); cv.width=w; cv.height=h; pfDraw(cv.getContext('2d'), str, 1, 1, col, sc);
@@ -1047,7 +1053,7 @@ function buildGymBG(){
   }
   g.fillStyle=INK; g.fillRect(ox-1, oy-WH-1, 2, WH+2); g.fillRect(ox-NY*20-1, oy+NY*10-WH-1, 1, WH+2); g.fillRect(ox+N*20, oy+N*10-WH-1, 1, WH+2);
   // three high windows on the back wall, light falling in
-  for (const wx of [18,186]){ const per=(typeof period==='string')?period:'day', sky = per==='day' ? ['#9ad4fa','#c4e8ff'] : per==='dusk' ? ['#f8a070','#ffc890'] : ['#2e3e88','#46589e'];
+  for (const wx of [18,186,374]){ const per=(typeof period==='string')?period:'day', sky = per==='day' ? ['#9ad4fa','#c4e8ff'] : per==='dusk' ? ['#f8a070','#ffc890'] : ['#2e3e88','#46589e'];
     for (let x=wx; x<wx+22; x++){ const b=Math.floor(x/2); g.fillStyle=INK; g.fillRect(ox+x, oy+b-84, 1, 16);
       if (x===wx || x===wx+21) continue; const frame = x===wx+1 || x===wx+20 || x===wx+11; g.fillStyle = frame ? '#3a3a48' : sky[(x-wx)<6?1:0]; g.fillRect(ox+x, oy+b-83, 1, 14);
       if (!frame){ g.fillStyle='#3a3a48'; g.fillRect(ox+x, oy+b-76, 1, 1); } } }
@@ -1067,6 +1073,7 @@ function buildGymBG(){
   // welcome mat
   { const R=(a,b,c,d,col)=>polyPx([T(a,b),T(c,b),T(c,d),T(a,d)],col); R(0.05,10.12,1.6,10.88,INK); R(0.1,10.18,1.55,10.82,'#c83a44'); R(0.25,10.32,1.4,10.68,'#e8505a'); }
   // the ring: soft shadow, blue skirted apron, canvas mat with a painted logo and a spotlight on it
+  for (const RG of RINGS){ RING=RG;
   const {x0,y0,x1,y1,H}=RING;
   polyPx([T(x0-0.15,y1+0.25),T(x1+0.25,y1+0.25),T(x1+0.25,y0-0.15),T(x1,y0),T(x0,y1)],'rgba(10,8,20,0.45)');
   polyPx([T(x0,y1,0),T(x1,y1,0),T(x1,y1,H),T(x0,y1,H)],'#2c4fc4'); polyPx([T(x1,y0,0),T(x1,y1,0),T(x1,y1,H),T(x1,y0,H)],'#1f3a98');
@@ -1087,12 +1094,14 @@ function buildGymBG(){
     const st=[]; for (let k=0;k<10;k++){ const a=-Math.PI/2+k*Math.PI/5, r=k%2?5.5:13; st.push([cx+Math.cos(a)*r, cy+Math.sin(a)*r*0.5]); } polyPx(st,'#f4ede0'); }
   L(T(x0,y0,H),T(x1,y0,H),'#b8ae98'); L(T(x0,y0,H),T(x0,y1,H),'#b8ae98'); L(T(x0,y1,H),T(x1,y1,H),INK); L(T(x1,y0,H),T(x1,y1,H),INK);
   L(T(x0+0.02,y1,H-1),T(x1,y1,H-1),'#f4ede0'); L(T(x1,y0+0.02,H-1),T(x1,y1,H-1),'#c8c0ac');
+  }
 }
 function dshadeHex(c,k){ const r=Math.max(0,Math.min(255,Math.round(parseInt(c.slice(1,3),16)*k))), gg=Math.max(0,Math.min(255,Math.round(parseInt(c.slice(3,5),16)*k))), b=Math.max(0,Math.min(255,Math.round(parseInt(c.slice(5,7),16)*k))); return '#'+[r,gg,b].map(v=>v.toString(16).padStart(2,'0')).join(''); }
 // corner pads: red and blue on the two side corners, white on the back and front ones
-const RING_PAD = { '4,8':['#e83850','#a81c34','#ff8090'], '9,3':['#3a6ae8','#1f3a98','#8ab0ff'], '4,3':['#f4ede0','#b8ae98','#ffffff'], '9,8':['#f4ede0','#b8ae98','#ffffff'] };
+const RING_PADS = { red:['#e83850','#a81c34','#ff8090'], blue:['#3a6ae8','#1f3a98','#8ab0ff'], white:['#f4ede0','#b8ae98','#ffffff'] };
+const ringPad = (cx,cy) => RING_PADS[(cx===RING.x0 && cy===RING.y1) ? 'red' : (cx===RING.x1 && cy===RING.y0) ? 'blue' : 'white'];
 const ROPE_COLS = [['#e83850','#9a1c30'],['#f4ede0','#a8a090'],['#3a6ae8','#1c3488']];
-function ringPost(cx, cy){ const H=RING.H, k=cx+','+cy, pad=RING_PAD[k]; const [bx,by]=P(cx,cy,H), X=Math.round(bx), Y=Math.round(by);
+function ringPost(cx, cy){ const H=RING.H, pad=ringPad(cx,cy); const [bx,by]=P(cx,cy,H), X=Math.round(bx), Y=Math.round(by);
   g.fillStyle=INK; g.fillRect(X-2,Y-31,5,32); g.fillStyle='#6a6e80'; g.fillRect(X-1,Y-30,3,30); g.fillStyle='#a8aec0'; g.fillRect(X-1,Y-30,1,30); g.fillStyle='#454858'; g.fillRect(X+1,Y-30,1,30);
   g.fillStyle=INK; g.fillRect(X-3,Y-33,7,3); g.fillStyle='#c8ccd8'; g.fillRect(X-2,Y-32,5,1);
   // padded cover over the turnbuckles
@@ -1100,6 +1109,7 @@ function ringPost(cx, cy){ const H=RING.H, k=cx+','+cy, pad=RING_PAD[k]; const [
   g.fillStyle=pad[1]; g.fillRect(X-3,Y-18,7,1); g.fillRect(X-3,Y-12,7,1); }
 function ropeSpan(a, b, side){ for (let r=0;r<3;r++){ const hh=RING.H+20-r*6; const p=P(a[0],a[1],hh), q=P(b[0],b[1],hh); linePx(p[0],p[1],q[0],q[1],ROPE_COLS[r][0]); linePx(p[0],p[1]+1,q[0],q[1]+1,ROPE_COLS[r][1]); } }
 function drawGymPiece(f, t, sx, sy){
+  if (f.ring!==undefined) RING=RINGS[f.ring];
   switch (f.t){
     case 'ropeseg': { const {x0,y0,x1,y1}=RING, s=f.side;
       if (s==='S'){ ropeSpan([f.gx,y1],[f.gx+1,y1]); if (f.gx===x0) ringPost(x0,y1); if (f.gx===Math.floor((x0+x1)/2)){ const p=P(f.gx+0.5,y1,RING.H+8), q=P(f.gx+0.5,y1,RING.H+21); g.fillStyle='#f4ede0'; g.fillRect(Math.round(p[0]),Math.round(q[1]),1,Math.round(p[1]-q[1])); } }
@@ -1145,7 +1155,7 @@ function drawGymPiece(f, t, sx, sy){
         g.fillStyle=INK; g.fillRect(X-5,Y-4,11,6); g.fillStyle='#22202c'; g.fillRect(X-4,Y-3,3,4); g.fillRect(X+2,Y-3,3,4); g.fillStyle='#4a4858'; g.fillRect(X-4,Y-3,1,4); g.fillRect(X+2,Y-3,1,4); g.fillStyle='#c8ccd8'; g.fillRect(X-1,Y-2,3,2); }
       break; }
     case 'ringbell': { // the bell on a post by the ring: rings (and shakes) at the start of every round
-      const shake=BXFX.bellT && performance.now()-BXFX.bellT<900 ? (Math.floor(performance.now()/50)%2?1:-1) : 0;
+      const bT=BXR[f.ring||0].bellT, shake=bT && performance.now()-bT<900 ? (Math.floor(performance.now()/50)%2?1:-1) : 0;
       ellPx(sx,sy,13,5,'rgba(10,8,20,0.35)');
       for (const [u,v] of [[0.22,0.22],[0.78,0.22],[0.22,0.78],[0.78,0.78]]) box(f.gx+u-0.04,f.gy+v-0.04,0.08,0.08,14,'#6a4220','#5a3418','#3a2010');
       box(f.gx+0.16,f.gy+0.16,0.68,0.68,3,'#b47a44','#8a5a30','#6a4220',0,14);
@@ -1166,7 +1176,7 @@ function drawGymPiece(f, t, sx, sy){
   }
 }
 // wall signs: the club's name, a live scoreboard over the ring, and two fight posters
-const GYMS = { title:null, board:document.createElement('canvas'), boardKey:'', posters:null };
+const GYMS = { title:null, boards:[document.createElement('canvas'), document.createElement('canvas')], boardKeys:['',''], posters:null };
 function gymPoster(a, b, col){ const c=document.createElement('canvas'); c.width=26; c.height=36; const x=c.getContext('2d');
   x.fillStyle=INK; x.fillRect(0,0,26,36); x.fillStyle='#f4ede0'; x.fillRect(1,1,24,34); x.fillStyle=col; x.fillRect(2,2,22,15);
   // two llama heads facing off with gloves up
@@ -1178,17 +1188,17 @@ function drawGymSigns(t){
     pfDraw(m,'LLAMA',(W-pfW('LLAMA'))>>1,7,'#8ab0ff'); pfDraw(m,txt,10,14,'#7a1020',sc); pfDraw(m,txt,9,13,'#ffffff',sc); GYMS.title=c;
     GYMS.posters=[gymPoster('RUSTY','DUKE','#e03a48'), gymPoster('YOU?','DUKE','#3a6ae8')]; }
   wallPlate(GYMS.title, -112, 54, -1);
-  wallPlate(GYMS.posters[0], -30, 46, -1); wallPlate(GYMS.posters[1], 236, 46, 1);
+  wallPlate(GYMS.posters[0], -30, 46, -1); wallPlate(GYMS.posters[1], 222, 46, 1);
   // scoreboard over the ring: who's fighting and the round, or that the ring is open
-  const S=BXS.s, key = S ? `${S.a.n}|${S.b.n}|${S.round}|${S.phase}|${BXS.win||''}|${Math.floor(t*2)%2}` : 'open|'+(Math.floor(t*1.5)%2);
-  if (key!==GYMS.boardKey){ GYMS.boardKey=key; const c=GYMS.board, W=96, H=30; c.width=W; c.height=H; const m=c.getContext('2d');
+  for (let r=0; r<RINGS.length; r++){ const X=BXR[r], S=X.s, key = S ? `${S.a.n}|${S.b.n}|${S.round}|${S.phase}|${X.win||''}|${Math.floor(t*2)%2}` : 'open|'+(Math.floor(t*1.5)%2);
+  if (key!==GYMS.boardKeys[r]){ GYMS.boardKeys[r]=key; const c=GYMS.boards[r], W=96, H=30; c.width=W; c.height=H; const m=c.getContext('2d');
     m.fillStyle=INK; m.fillRect(0,0,W,H); m.fillStyle='#3a3a48'; m.fillRect(1,1,W-2,H-2); m.fillStyle='#0c0a16'; m.fillRect(3,3,W-6,H-6);
     for (let i=0;i<9;i++){ m.fillStyle=(Math.floor(t*4)+i)%3===0?'#ffd23f':'#7a6420'; m.fillRect(6+i*10,4,2,1); }
     const fit=(s,max)=>{ s=String(s); while (s.length>1 && pfW(s)>max) s=s.slice(0,-1); return s; };
     if (S){ const A=fit(S.a.n,38), B=fit(S.b.n,38); pfDraw(m,A,6,8,'#ff8a90'); pfDraw(m,B,W-6-pfW(B),8,'#8ab0ff'); pfDraw(m,'VS',(W-pfW('VS'))>>1,8,'#ffffff');
-      const line = S.phase==='over' ? (BXS.win ? fit(BXS.win+' WINS',84) : 'DRAW') : S.phase==='fight' ? `ROUND ${S.round}` : S.phase==='rest' ? 'BREAK' : 'GET READY'; pfDraw(m,line,(W-pfW(line))>>1,18,'#ffd23f'); }
-    else { pfDraw(m,'RING OPEN',(W-pfW('RING OPEN'))>>1,9,(Math.floor(t*1.5)%2)?'#7ce07c':'#3fae4a'); pfDraw(m,'TAP TO BOX',(W-pfW('TAP TO BOX'))>>1,18,'#c8c0e0'); } }
-  wallPlate(GYMS.board, 130, 56, 1);
+      const line = S.phase==='over' ? (X.win ? fit(X.win+' WINS',84) : 'DRAW') : S.phase==='fight' ? `ROUND ${S.round}` : S.phase==='rest' ? 'BREAK' : 'GET READY'; pfDraw(m,line,(W-pfW(line))>>1,18,'#ffd23f'); }
+    else { pfDraw(m,'RING '+(r+1)+' OPEN',(W-pfW('RING '+(r+1)+' OPEN'))>>1,9,(Math.floor(t*1.5)%2)?'#7ce07c':'#3fae4a'); pfDraw(m,'TAP TO BOX',(W-pfW('TAP TO BOX'))>>1,18,'#c8c0e0'); } }
+    wallPlate(GYMS.boards[r], (RINGS[r].x0+RINGS[r].x1)*10, 56, 1); }
 }
 
 // ======================= TREASURE COVE =======================
@@ -4553,7 +4563,7 @@ addEventListener('keydown', e => {
   const ae=document.activeElement;
   if (ae===chatin){ if(e.key==='Escape') chatin.blur(); return; }
   if (ae && (/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) || ae.isContentEditable)) return;   /* typing in any box (bug report, notes, search...) never moves your llama or starts a game */
-  if (typeof bxMe==='function' && bxMe() && BXS.s && BXS.s.phase!=='over'){ const mk={KeyA:'jab',KeyS:'hook',KeyD:'block',KeyF:'dodge',KeyJ:'jab',KeyK:'hook',KeyL:'block',Semicolon:'dodge'}[e.code]; if (mk){ e.preventDefault(); if (!e.repeat) bxPick(mk); return; } if (/^(Arrow|Space|Key)/.test(e.code)) { e.preventDefault(); return; } }
+  if (typeof bxMine==='function' && bxMine() && bxMine().s.phase!=='over'){ const mk={KeyA:'jab',KeyS:'hook',KeyD:'block',KeyF:'dodge',KeyJ:'jab',KeyK:'hook',KeyL:'block',Semicolon:'dodge'}[e.code]; if (mk){ e.preventDefault(); if (!e.repeat) bxPick(mk); return; } if (/^(Arrow|Space|Key)/.test(e.code)) { e.preventDefault(); return; } }
   if (ae===pname) return;
   const k=KEYMAP[e.code];
   if (k){ e.preventDefault(); if (arcade.on){ if(arcadeNav(k)) return; if(k==='up' && !e.repeat) dashJump(); keys.add(k); return; } navArrow=e.code.startsWith('Arrow'); if(navKey(k)) return; return; }   /* walking is tap/click only; arrows still move through menus and arcade games */
@@ -5022,7 +5032,7 @@ function render(t){
   const items = [];
   for (const f of FURN) items.push({d: f.gx+f.gy+1+(f.dz||0), f});
   if (joined) items.push({d: me.x+me.y+0.02, l: me, me:true});
-  if (curRoom==='gym' && BXS.s && BXS.s.b.bot) items.push({d: BOT_LL.x+BOT_LL.y+0.01, l: BOT_LL});
+  if (curRoom==='gym') for (let r=0;r<BXR.length;r++) if (BXR[r].s && BXR[r].s.b.bot) items.push({d: BOTS[r].x+BOTS[r].y+0.01, l: BOTS[r]});
   if (curRoom==='cove') for (const c of coveCrabs(Math.min(0.05,frameDt||0.016))) items.push({d:c.x+c.y, f:{t:'crab', gx:c.x-0.5, gy:c.y-0.5}});
   // someone sitting in a chair or couch whose back or arm is on the camera side: draw those parts again over them
   if (isP(curRoom)){ const sitters=[]; if (joined && me.p==='sit') sitters.push([me.gx,me.gy,me.x+me.y+0.02]); for (const o of others.values()) if (sameRoom(o) && o.p==='sit') sitters.push([Math.floor(o.x),Math.floor(o.y),o.x+o.y+0.01]);
@@ -5158,6 +5168,7 @@ function drawOverlay(t){
       c.font=`${b.yell?800:500} ${12*u}px Inter, system-ui, sans-serif`; c.fillStyle = b.yell ? '#ffffff' : '#1d1530'; c.fillText(b._txt, bx+13*u+b._hw+5*u, by+b.h/2+0.5*u);
       c.textBaseline='alphabetic';
     }
+    if (curRoom==='gym' && BXFX.bursts.length){ const g0=g; g=c; c.imageSmoothingEnabled=false; try { drawBoxWords(t); } finally { g=g0; } }   /* fight call-outs sit over the name tags */
   } else { const g0=g; g=c; c.imageSmoothingEnabled=false; try { drawArcade(t); } finally { g=g0; } if (arcadeText) drawArcadeText(c, t); }
 }
 
@@ -5451,7 +5462,7 @@ for (const b of document.querySelectorAll('#roompick [data-r]')) b.addEventListe
 document.getElementById('rp_close').addEventListener('click', ()=>{ roomPickEl.style.display='none'; });
 
 // load what the server knows about the room you're standing in (treasure holes, the boxing ring). Runs on entering and again after a reconnect.
-function roomSync(){ if (typeof bxHudDraw!=='function') return; bxHudDraw(); coveHud(); if (curRoom==='cove' || curRoom==='jungle') enterCove(); if (curRoom==='gym') NET.act('box_info').then(r=>{ if (r && r.ok){ BXUI.info=r; BXS.s=r.s; bxHudDraw(); } }); }
+function roomSync(){ if (typeof bxHudDraw!=='function') return; bxHudDraw(); coveHud(); if (curRoom==='cove' || curRoom==='jungle') enterCove(); if (curRoom==='gym') NET.act('box_info').then(r=>{ if (r && r.ok){ bxSetInfo(r); bxHudDraw(); } }); }
 function setRoom(r){ if (typeof TOUR!=='undefined' && TOUR.on) setTimeout(()=>tourGuide(true), 0); if (me.fish) stopFish(true); if (typeof AR!=='undefined' && AR.on) arenaClose(true); if (typeof BW!=='undefined' && BW.on) bowlClose(true);
   curRoom = (ROOMS.includes(r) || (isP(r) && PRD[r])) ? r : 'lounge'; store.room = isP(curRoom) ? 'lounge' : curRoom; saveStore();
   if (typeof prEditStop==='function') prEditStop();
@@ -6128,11 +6139,13 @@ function acctSave(){ clearTimeout(acctTimer); acctTimer=setTimeout(()=>{ NET.act
 const acctHasLlama = () => !!(acct && CHAR_IDS.includes(acct.c));
 function autoEnter(){ try { setSel(me.c); pname.value=me.n; enter(); } catch(e){ console.error(e); if (!joined){ roomPickEl.style.display='none'; $id('roomsbox').style.display='none'; pick.style.display='flex'; } } }
 // ---- loading screen ----
+const QUEUED={on:false, pos:0};
 const bootEl=document.getElementById('boot'); let bootAt=performance.now();
 function bootLlama(c){ try { const h=document.getElementById('boot_l'); h.innerHTML=llamaPic(CHARS[c]?c:'twotone', null, 96); } catch(_){} }
-function bootShow(t, c){ bootAt=performance.now(); document.getElementById('boot_t').textContent=t||'LOADING...'; if (c) bootLlama(c); bootEl.classList.remove('out'); bootEl.style.display='none'; void bootEl.offsetWidth; bootEl.style.display='flex'; }
+function bootShow(t, c, sub){ bootAt=performance.now(); document.getElementById('boot_t').textContent=t||'LOADING...'; document.getElementById('boot_s').textContent=sub||''; bootEl.classList.remove('hold'); if (c) bootLlama(c); bootEl.classList.remove('out'); bootEl.style.display='none'; void bootEl.offsetWidth; bootEl.style.display='flex'; }
 // hide once the pixel fonts are in and a couple of frames have been drawn, and never sooner than `min` ms after it appeared (so it doesn't just flicker)
-function bootHide(min){ const go=()=>setTimeout(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{ bootEl.classList.add('out'); setTimeout(()=>{ if (bootEl.classList.contains('out')) bootEl.style.display='none'; }, 260); })), Math.max(0, (min||450)-(performance.now()-bootAt)));
+function bootHide(min){ if (QUEUED.on) return;   /* waiting in line: the screen stays up until the server lets us in */
+  const go=()=>setTimeout(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{ bootEl.classList.add('out'); setTimeout(()=>{ if (bootEl.classList.contains('out')) bootEl.style.display='none'; }, 260); })), Math.max(0, (min||450)-(performance.now()-bootAt)));
   let f=null; try { f=document.fonts && Promise.all([document.fonts.load("10px 'Press Start 2P'"), document.fonts.load("600 14px 'Pixelify Sans'")]); } catch(_){}
   (f ? Promise.race([f, new Promise(r=>setTimeout(r, 1200))]) : Promise.resolve()).then(go, go); }
 async function startGate(){
@@ -6917,23 +6930,31 @@ CHARS.rusty = { label:'Rusty', blurb:'Sparring partner (easy).', ears:'up', npc:
 CHARS.duke  = { label:'Duke',  blurb:'The gym champ (hard).', ears:'mixed', npc:true, tuft:true, look:'big', fur:{ a:['#6a4428','#46281a','#8e5c38'] }, tag:'#8e5c38' };
 ITEMS.gloves_b = {s:'hands',p:0,n:'BLUE GLOVES',c:['#3a6ae8','#1c3488','#8ab0ff'],cuff:'#f8f4ea',hide:1};
 ITEMS.shorts_r = {s:'legs',p:0,n:'RED SHORTS',c:['#e03a48','#a01c30','#ff8a90'],cuff:'#f8f4ea',hide:1};
-const BXS = { s:null, mine:null, pick:null, out:null, outT:0, endT:0, win:null, how:null, pays:null, bellT:0, round:0, banner:null, bannerT:0 };
-const BXFX = { bellT:0, bursts:[] };
-const boxSideOf = n => { const S=BXS.s; if (!S || !n) return null; n=String(n).toUpperCase(); return S.a.n===n ? 'a' : (!S.b.bot && S.b.n===n) ? 'b' : null; };
-const bxMe = () => (BXS.s && joined && curRoom==='gym') ? boxSideOf(me.n) : null;
-const BOT_LL = { x:RING.B[0]+0.5, y:RING.B[1]+0.5, d:'bl', p:'stand', w:{}, n:'', c:'rusty', id:null, anim:0 };
+// one fight state per ring; BXS only holds the move I've picked for this beat
+const mkBX = () => ({ s:null, out:null, outT:0, endT:0, win:null, how:null, pays:null, bellT:0 });
+const BXR = RINGS.map(mkBX);
+const BXS = { pick:null };
+const BXFX = { bursts:[] };
+// where a llama is fighting: {r: ring, side: 'a' or 'b'}, or null
+const boxWhere = n => { if (!n) return null; n=String(n).toUpperCase(); for (let r=0;r<BXR.length;r++){ const S=BXR[r].s; if (!S) continue; if (S.a.n===n) return {r, side:'a'}; if (!S.b.bot && S.b.n===n) return {r, side:'b'}; } return null; };
+const bxMe = () => (joined && curRoom==='gym') ? boxWhere(me.n) : null;
+const bxMine = () => { const w=bxMe(); return w ? BXR[w.r] : null; };
+// the ring the top bar follows: mine if I'm fighting, otherwise the nearest ring with a fight on
+const bxShown = () => { const w=bxMe(); if (w) return w.r; let best=-1, bd=1e9; for (let r=0;r<BXR.length;r++){ if (!BXR[r].s) continue; const d=Math.abs(me.x-(RINGS[r].x0+RINGS[r].x1)/2)+(BXR[r].s.phase==='over'?100:0); if (d<bd){ bd=d; best=r; } } return best; };
+const BOTS = RINGS.map(R=>({ x:R.B[0]+0.5, y:R.B[1]+0.5, d:'bl', p:'stand', w:{}, n:'', c:'rusty', id:null, anim:0 }));
+function bxSetInfo(r){ BXUI.info=r; const L = Array.isArray(r.rings) ? r.rings : [r.s||null]; for (let i=0;i<BXR.length;i++){ BXR[i].s = L[i]||null; const S=BXR[i].s; if (S && S.b.bot){ BOTS[i].c = S.b.bot==='champ' ? 'duke' : 'rusty'; BOTS[i].n=S.b.n; } } }
 // a fighter's look this frame: gloves and shorts in their corner's colour, lunges, ducks, the knockdown
-function boxLook(o, isMe){ const S=BXS.s; if (!S || curRoom!=='gym') return null;
-  const side = o===BOT_LL ? 'b' : boxSideOf(isMe ? me.n : o.n); if (!side) return null;
+function boxLook(o, isMe){ if (curRoom!=='gym') return null; const bi=BOTS.indexOf(o);
+  const w = bi>=0 ? (BXR[bi].s ? {r:bi, side:'b'} : null) : boxWhere(isMe ? me.n : o.n); if (!w) return null; const X=BXR[w.r], S=X.s, side=w.side;
   const base = (isMe ? me.w : o.w) || {}, W = {...base, hands: side==='a' ? 'gloves' : 'gloves_b', legs: side==='a' ? 'shorts_r' : 'shorts'};
-  const now=performance.now(), u=(now-BXS.outT)/1000, sg = side==='a' ? 1 : -1; let dx=0, dy=0, pose=null;
-  const R = BXS.out && BXS.out[side], O = BXS.out && BXS.out[side==='a'?'b':'a'];
+  const now=performance.now(), u=(now-X.outT)/1000, sg = side==='a' ? 1 : -1; let dx=0, dy=0, pose=null;
+  const R = X.out && X.out[side];
   if (R && u<0.45){ const k = u<0.12 ? u/0.12 : Math.max(0, 1-(u-0.12)/0.33);
     if (R.mv==='jab'){ dx=3*k*sg; dy=1.5*k*sg; }
     else if (R.mv==='hook'){ dx=5*k*sg; dy=1*k*sg; dy-=Math.round(2*k); }
     else if (R.mv==='dodge'){ dx=-4*k*sg; dy=-2*k*sg+2*k; }
     if (R.took){ const kb=Math.max(0,1-u/0.35); dx-=2*kb*sg; dy-=1*kb*sg; } }
-  const P2 = S[side]; if (S.phase==='over' && BXS.win){ if (BXS.win!==P2.n && BXS.how==='ko') pose='sit'; else if (BXS.win===P2.n) dy-=Math.round(Math.abs(Math.sin(now/120))*3); }
+  const P2 = S[side]; if (S.phase==='over' && X.win){ if (X.win!==P2.n && X.how==='ko') pose='sit'; else if (X.win===P2.n) dy-=Math.round(Math.abs(Math.sin(now/120))*3); }
   return { W, dx:Math.round(dx), dy:Math.round(dy), pose, dir: side==='a' ? 'fr' : 'bl', side }; }
 // pixel glove (6x5) for punches and guards
 function bxGlove(X, Y, side){ const C = side==='a' ? ['#e8303c','#a8141e','#ff8a90'] : ['#3a6ae8','#1c3488','#8ab0ff']; g.fillStyle=INK; g.fillRect(X-1,Y-1,8,7); g.fillStyle=C[0]; g.fillRect(X,Y,6,5); g.fillStyle=C[2]; g.fillRect(X+1,Y,2,1); g.fillStyle=C[1]; g.fillRect(X,Y+4,6,1); g.fillStyle='#f8f4ea'; g.fillRect(X+(side==='a'?0:5),Y+1,1,3); }
@@ -6955,50 +6976,52 @@ function bxWordImg(txt, kind, small){ const key=txt+'|'+kind+'|'+(small?1:0); if
   pfDraw(x,txt,tx,ty,S.t,sc); if (!small && S.t==='#ffffff'){ x.fillStyle='rgba(255,255,255,0)'; }
   return BXW[key]=c; }
 const BX_WORDS = { jab:['POP!','BIFF!','JAB!','THWAP!'], hook:['POW!','WHAM!','BAM!','KAPOW!'], counter:['COUNTER!'], block:['BLOCKED!'], dodge:['WHOOSH!'], cut:['CUT OFF!'] };
-function bxHead(side){ const L = side==='b' && BXS.s && BXS.s.b.bot ? BOT_LL : null; let x, y;
-  if (L){ x=L.x; y=L.y; } else { const n=BXS.s && BXS.s[side] && BXS.s[side].n; if (me.n && n===String(me.n).toUpperCase()){ x=me.x; y=me.y; } else { const o=[...others.values()].find(q=>sameRoom(q) && String(q.n||'').toUpperCase()===n); if (!o) return null; x=o.x; y=o.y; } }
-  const [sx,sy]=P(x,y,RING.H); return [Math.round(sx), Math.round(sy)-34]; }
-function drawBoxFx(t){ const S=BXS.s; if (!S || curRoom!=='gym') return; const now=performance.now();
-  // the punch itself: a glove flying out to the other fighter's face
-  if (BXS.out && now-BXS.outT<420) for (const side of ['a','b']){ const R=BXS.out[side]; if (!R || (R.mv!=='jab' && R.mv!=='hook')) continue; const A=bxHead(side), B=bxHead(side==='a'?'b':'a'); if (!A||!B) continue;
-    const u=Math.min(1,(now-BXS.outT)/140), back=(now-BXS.outT)>220 ? Math.max(0,1-((now-BXS.outT)-220)/200) : 1, k=u*back, arc = R.mv==='hook' ? Math.sin(k*Math.PI)*-7 : 0;
-    bxGlove(Math.round(A[0]+(B[0]-A[0])*0.62*k)-3, Math.round(A[1]+8+(B[1]-A[1])*0.62*k+arc), side); }
-  if (BXS.out && now-BXS.outT<600) for (const side of ['a','b']){ const R=BXS.out[side]; if (R && R.mv==='block'){ const H=bxHead(side); if (H){ const sg=side==='a'?1:-1; bxGlove(H[0]+sg*5-3, H[1]+6, side); bxGlove(H[0]+sg*2-3, H[1]+11, side); } } }
-  // words and stars where the hits land
-  for (let i=BXFX.bursts.length-1;i>=0;i--){ const b=BXFX.bursts[i], u=(now-b.t)/900; if (u>=1){ BXFX.bursts.splice(i,1); continue; } const H=bxHead(b.side); if (!H) continue;
+function bxHead(r, side){ const S=BXR[r].s, L = side==='b' && S && S.b.bot ? BOTS[r] : null; let x, y;
+  if (L){ x=L.x; y=L.y; } else { const n=S && S[side] && S[side].n; if (me.n && n===String(me.n).toUpperCase()){ x=me.x; y=me.y; } else { const o=[...others.values()].find(q=>sameRoom(q) && String(q.n||'').toUpperCase()===n); if (!o) return null; x=o.x; y=o.y; } }
+  const [sx,sy]=P(x,y,RINGS[r].H); return [Math.round(sx), Math.round(sy)-34]; }
+function drawBoxFx(t){ if (curRoom!=='gym') return; const now=performance.now();
+  for (let r=0;r<BXR.length;r++){ const X=BXR[r], S=X.s; if (!S) continue;
+    // the punch itself: a glove flying out to the other fighter's face
+    if (X.out && now-X.outT<420) for (const side of ['a','b']){ const R=X.out[side]; if (!R || (R.mv!=='jab' && R.mv!=='hook')) continue; const A=bxHead(r,side), B=bxHead(r,side==='a'?'b':'a'); if (!A||!B) continue;
+      const u=Math.min(1,(now-X.outT)/140), back=(now-X.outT)>220 ? Math.max(0,1-((now-X.outT)-220)/200) : 1, k=u*back, arc = R.mv==='hook' ? Math.sin(k*Math.PI)*-7 : 0;
+      bxGlove(Math.round(A[0]+(B[0]-A[0])*0.62*k)-3, Math.round(A[1]+8+(B[1]-A[1])*0.62*k+arc), side); }
+    if (X.out && now-X.outT<600) for (const side of ['a','b']){ const R=X.out[side]; if (R && R.mv==='block'){ const H=bxHead(r,side); if (H){ const sg=side==='a'?1:-1; bxGlove(H[0]+sg*5-3, H[1]+6, side); bxGlove(H[0]+sg*2-3, H[1]+11, side); } } }
+    // dizzy stars over anyone nearly out, and over a knocked-down fighter
+    for (const side of ['a','b']){ const P2=S[side]; const ko = S.phase==='over' && X.how==='ko' && X.win && X.win!==P2.n; if (P2.hp>25 && !ko) continue; const H=bxHead(r,side); if (!H) continue;
+      const yy = ko ? H[1]+16 : H[1]-4; for (let k=0;k<3;k++){ const a=t*4+k*2.1, XX=Math.round(H[0]+Math.cos(a)*9), Y=Math.round(yy+Math.sin(a)*3); g.fillStyle='#ffd23f'; g.fillRect(XX-1,Y,3,1); g.fillRect(XX,Y-1,1,3); } } } }
+// the comic call-outs (POW!, BLOCKED!, WHOOSH!...) and their stars. These are drawn on the top layer, AFTER the name tags, so a name never covers them.
+function drawBoxWords(t){ if (curRoom!=='gym') return; const now=performance.now();
+  for (let i=BXFX.bursts.length-1;i>=0;i--){ const b=BXFX.bursts[i], u=(now-b.t)/900; if (u>=1 || !BXR[b.r].s){ BXFX.bursts.splice(i,1); continue; } const H=bxHead(b.r,b.side); if (!H) continue;
     const img=bxWordImg(b.txt, b.kind||'hit', u<0.07), X=H[0]+b.ox, Y=H[1]-10+(b.oy||0)-Math.round(Math.min(u,0.7)*12);
-    if (b.star) for (let k=0;k<6;k++){ const a=k*1.047+u*2, r=6+u*14; g.fillStyle=k%2?'#fff6a0':'#ffd23f'; const px=Math.round(H[0]+Math.cos(a)*r), py=Math.round(H[1]+4+Math.sin(a)*r*0.6); g.fillRect(px-1,py,3,1); g.fillRect(px,py-1,1,3); }
-    if (u<0.78 || Math.floor(u*30)%2===0) g.drawImage(img, Math.round(X-img.width/2), Math.round(Y-img.height/2)); }
-  // dizzy stars over anyone nearly out, and over a knocked-down fighter
-  for (const side of ['a','b']){ const P2=S[side]; const ko = S.phase==='over' && BXS.how==='ko' && BXS.win && BXS.win!==P2.n; if (P2.hp>25 && !ko) continue; const H=bxHead(side); if (!H) continue;
-    const yy = ko ? H[1]+16 : H[1]-4; for (let k=0;k<3;k++){ const a=t*4+k*2.1, X=Math.round(H[0]+Math.cos(a)*9), Y=Math.round(yy+Math.sin(a)*3); g.fillStyle='#ffd23f'; g.fillRect(X-1,Y,3,1); g.fillRect(X,Y-1,1,3); } } }
+    if (b.star) for (let k=0;k<6;k++){ const a=k*1.047+u*2, rr=6+u*14; g.fillStyle=k%2?'#fff6a0':'#ffd23f'; const px=Math.round(H[0]+Math.cos(a)*rr), py=Math.round(H[1]+4+Math.sin(a)*rr*0.6); g.fillRect(px-1,py,3,1); g.fillRect(px,py-1,1,3); }
+    if (u<0.78 || Math.floor(u*30)%2===0) g.drawImage(img, Math.round(X-img.width/2), Math.round(Y-img.height/2)); } }
 // the HUD (everyone in the gym), the move pad (only the two fighters)
-function bxHudDraw(){ const S=BXS.s, hud=$id('boxhud'), pad=$id('boxpad'); const show = !!S && curRoom==='gym' && joined;
-  hud.style.display = show ? 'block' : 'none'; document.body.classList.toggle('padtop', show || (isHunt(curRoom) && joined)); document.body.classList.toggle('boxing', !!(show && bxMe() && S.phase!=='over'));
-  pad.style.display = (show && bxMe() && S.phase!=='over') ? 'flex' : 'none'; if (!show) return;
+function bxHudDraw(){ const r=bxShown(), X=r>=0?BXR[r]:null, S=X&&X.s, hud=$id('boxhud'), pad=$id('boxpad'); const show = !!S && curRoom==='gym' && joined, mine=bxMine(), fighting=!!(show && mine && mine.s.phase!=='over');
+  hud.style.display = show ? 'block' : 'none'; document.body.classList.toggle('padtop', show || (isHunt(curRoom) && joined)); document.body.classList.toggle('boxing', fighting);
+  pad.style.display = fighting ? 'flex' : 'none'; if (!show) return;
   const row=(P2,side)=>`<div class="bxf ${side}"><b>${esc(P2.n)}</b><div class="bxbar"><i style="width:${Math.max(0,P2.hp)}%"></i></div><div class="bxst"><i style="width:${Math.max(0,P2.st)}%"></i></div></div>`;
-  let mid; if (S.phase==='over') mid = BXS.win ? `${BXS.how==='ko'?'K.O.!':BXS.how==='forfeit'?'FORFEIT':'ON POINTS'}` : 'DRAW'; else if (S.phase==='start') mid='GET READY'; else if (S.phase==='rest') mid=`ROUND ${S.round} NEXT`; else mid=`ROUND ${S.round}/${S.rounds}`;
-  hud.querySelector('#bx_row').innerHTML = row(S.a,'a') + `<div class="bxmid"><b>${mid}</b><small>${S.phase==='fight' ? `BEAT ${Math.min(S.beats,S.beat+1)}/${S.beats}` : S.phase==='over' && BXS.win ? esc(BXS.win)+' WINS' : 'VS'}</small></div>` + row(S.b,'b');
+  let mid; if (S.phase==='over') mid = X.win ? `${X.how==='ko'?'K.O.!':X.how==='forfeit'?'FORFEIT':'ON POINTS'}` : 'DRAW'; else if (S.phase==='start') mid='GET READY'; else if (S.phase==='rest') mid=`ROUND ${S.round} NEXT`; else mid=`ROUND ${S.round}/${S.rounds}`;
+  hud.querySelector('#bx_row').innerHTML = row(S.a,'a') + `<div class="bxmid"><b>${mid}</b><small>${S.phase==='fight' ? `BEAT ${Math.min(S.beats,S.beat+1)}/${S.beats}` : S.phase==='over' && X.win ? esc(X.win)+' WINS' : 'RING '+(r+1)}</small></div>` + row(S.b,'b');
   for (const b of pad.querySelectorAll('[data-mv]')) b.classList.toggle('on', BXS.pick===b.dataset.mv); }
-function bxTimer(){ const S=BXS.s, el=$id('bx_beat'); if (!S || !el) return; const left=Math.max(0,(S.next||0)-(Date.now()+(typeof SRV_OFF==='number'?SRV_OFF:0))), tot = S.phase==='fight' ? S.ms : S.phase==='rest' ? 3500 : 3000; el.style.width = (S.phase==='over'?0:Math.max(0,Math.min(100,100*left/tot)))+'%'; }
-function bxPick(mv){ const side=bxMe(); if (!side || !BXS.s || BXS.s.phase!=='fight') return; BXS.pick=mv; bxHudDraw(); sfxTone(mv==='hook'?220:mv==='jab'?330:mv==='block'?180:440,0.04,'square',0.04); NET.act('box_move',{mv}); }
-function bxPlaceMe(side){ const [x,y] = side==='a' ? RING.A : RING.B; me.path=[]; me.moving=false; me.pending=null; me.gx=x; me.gy=y; me.x=x+0.5; me.y=y+0.5; me.d = side==='a' ? 'fr' : 'bl'; me.p='stand'; if (typeof sendPresence==='function') sendPresence(true); }
-function bxLeaveRing(side){ const [x,y] = side==='a' ? RING.outA : RING.outB; me.path=[]; me.moving=false; me.gx=x; me.gy=y; me.x=x+0.5; me.y=y+0.5; me.d='fl'; me.p='stand'; if (typeof sendPresence==='function') sendPresence(true); }
-NET.handlers.bx = m => { const prevMine = bxMe(); const S=m.s; BXS.s=S;
-  if (m.ev==='start'){ BXS.win=null; BXS.how=null; BXS.pays=null; BXS.out=null; BXS.pick=null; const side=bxMe(); if (side){ closeAll(); bxPlaceMe(side); localMsg('Fight! Pick a move every beat: JAB, HOOK, BLOCK or DODGE.'); } }
-  if (m.ev==='bell'){ BXFX.bellT=performance.now(); sfxTone(1320,0.25,'triangle',0.06); sfxTone(1320,0.25,'triangle',0.05,0.32); }
-  if (m.ev==='beat' && m.out){ BXS.out=m.out; BXS.outT=performance.now(); BXS.pick=null;
+function bxTimer(){ const r=bxShown(), S=r>=0?BXR[r].s:null, el=$id('bx_beat'); if (!S || !el) return; const left=Math.max(0,(S.next||0)-(Date.now()+(typeof SRV_OFF==='number'?SRV_OFF:0))), tot = S.phase==='fight' ? S.ms : S.phase==='rest' ? 3500 : 3000; el.style.width = (S.phase==='over'?0:Math.max(0,Math.min(100,100*left/tot)))+'%'; }
+function bxPick(mv){ const X=bxMine(); if (!X || X.s.phase!=='fight') return; BXS.pick=mv; bxHudDraw(); sfxTone(mv==='hook'?220:mv==='jab'?330:mv==='block'?180:440,0.04,'square',0.04); NET.act('box_move',{mv}); }
+function bxPlaceMe(side, r){ const [x,y] = side==='a' ? RINGS[r].A : RINGS[r].B; me.path=[]; me.moving=false; me.pending=null; me.gx=x; me.gy=y; me.x=x+0.5; me.y=y+0.5; me.d = side==='a' ? 'fr' : 'bl'; me.p='stand'; if (typeof sendPresence==='function') sendPresence(true); }
+function bxLeaveRing(side, r){ const [x,y] = side==='a' ? RINGS[r].outA : RINGS[r].outB; me.path=[]; me.moving=false; me.gx=x; me.gy=y; me.x=x+0.5; me.y=y+0.5; me.d='fl'; me.p='stand'; if (typeof sendPresence==='function') sendPresence(true); }
+NET.handlers.bx = m => { const r = m.r===1 ? 1 : 0, X=BXR[r], prev=bxMe(); const S=m.s; X.s=S; const w=bxMe(), mineHere = !!(w && w.r===r), watching = mineHere || !bxMe();   /* sounds and chat lines: my own ring, or any ring while I'm just watching */
+  if (m.ev==='start'){ X.win=null; X.how=null; X.pays=null; X.out=null; if (mineHere){ BXS.pick=null; closeAll(); bxPlaceMe(w.side, r); localMsg('Fight! Pick a move every beat: JAB, HOOK, BLOCK or DODGE.'); } }
+  if (m.ev==='bell'){ X.bellT=performance.now(); if (watching){ sfxTone(1320,0.25,'triangle',0.06); sfxTone(1320,0.25,'triangle',0.05,0.32); } }
+  if (m.ev==='beat' && m.out && S){ X.out=m.out; X.outT=performance.now(); if (mineHere) BXS.pick=null;
     for (const [side,o] of [['a','b'],['b','a']]){ const R=m.out[side], Q=m.out[o]; if (!R) continue;
-      if (Q && Q.took){ const kind = R.mv==='dodge' ? 'counter' : R.mv; const W=BX_WORDS[kind]||BX_WORDS.jab; BXFX.bursts.push({side:o, txt:W[Math.floor(Math.random()*W.length)], kind: kind==='hook'||kind==='counter' ? 'big' : 'hit', t:performance.now(), ox:0, star: kind==='hook'||kind==='counter'});
-        const L = o==='b' && S.b.bot ? BOT_LL : (S[o].n===String(me.n||'').toUpperCase() ? me : [...others.values()].find(q=>String(q.n||'').toUpperCase()===S[o].n)); if (L) L.flinch=performance.now()+260; }
-      if (R.mv==='block' && Q && (Q.mv==='jab') && !R.took) BXFX.bursts.push({side, txt:'BLOCKED!', kind:'block', t:performance.now(), ox:0});
-      if (R.mv==='dodge' && Q && Q.mv==='hook') BXFX.bursts.push({side, txt:'WHOOSH!', kind:'whoosh', t:performance.now(), ox:side==='a'?-16:16, oy:16});
-      if (R.mv==='hook' && Q && Q.mv==='jab') BXFX.bursts.push({side, txt:'CUT OFF!', kind:'cut', t:performance.now(), ox:0, oy:-6}); }
-    if (m.out.a.took || m.out.b.took) sfxTone(110,0.08,'square',0.06); }
-  if (m.ev==='end'){ BXS.win=m.win; BXS.how=m.how; BXS.pays=m.pays; BXS.endT=performance.now(); BXFX.bellT=performance.now(); sfxTone(1320,0.3,'triangle',0.06); sfxTone(1320,0.3,'triangle',0.05,0.35); sfxTone(1320,0.3,'triangle',0.05,0.7);
+      if (Q && Q.took){ const kind = R.mv==='dodge' ? 'counter' : R.mv; const W=BX_WORDS[kind]||BX_WORDS.jab; BXFX.bursts.push({r, side:o, txt:W[Math.floor(Math.random()*W.length)], kind: kind==='hook'||kind==='counter' ? 'big' : 'hit', t:performance.now(), ox:0, star: kind==='hook'||kind==='counter'});
+        const L = o==='b' && S.b.bot ? BOTS[r] : (S[o].n===String(me.n||'').toUpperCase() ? me : [...others.values()].find(q=>String(q.n||'').toUpperCase()===S[o].n)); if (L) L.flinch=performance.now()+260; }
+      if (R.mv==='block' && Q && (Q.mv==='jab') && !R.took) BXFX.bursts.push({r, side, txt:'BLOCKED!', kind:'block', t:performance.now(), ox:0});
+      if (R.mv==='dodge' && Q && Q.mv==='hook') BXFX.bursts.push({r, side, txt:'WHOOSH!', kind:'whoosh', t:performance.now(), ox:side==='a'?-16:16, oy:16});
+      if (R.mv==='hook' && Q && Q.mv==='jab') BXFX.bursts.push({r, side, txt:'CUT OFF!', kind:'cut', t:performance.now(), ox:0, oy:-6}); }
+    if (watching && (m.out.a.took || m.out.b.took)) sfxTone(110,0.08,'square',0.06); }
+  if (m.ev==='end'){ X.win=m.win; X.how=m.how; X.pays=m.pays; X.endT=performance.now(); X.bellT=performance.now(); if (watching){ sfxTone(1320,0.3,'triangle',0.06); sfxTone(1320,0.3,'triangle',0.05,0.35); sfxTone(1320,0.3,'triangle',0.05,0.7); }
     localMsg(m.win ? `${m.win} wins ${m.how==='ko'?'by KNOCKOUT':m.how==='forfeit'?'(the other llama left)':'on points'}!` : 'It\'s a DRAW!'); }
-  if (m.ev==='clear' && prevMine) bxLeaveRing(prevMine);
-  if (S && S.b.bot){ BOT_LL.c = S.b.bot==='champ' ? 'duke' : 'rusty'; BOT_LL.n = S.b.n; BOT_LL.w = {}; }
+  if (m.ev==='clear' && prev && prev.r===r) bxLeaveRing(prev.side, r);
+  if (S && S.b.bot){ BOTS[r].c = S.b.bot==='champ' ? 'duke' : 'rusty'; BOTS[r].n = S.b.n; BOTS[r].w = {}; }
   bxHudDraw(); if ($id('boxbox').style.display==='block') boxDraw(); };
 NET.handlers.bxpay = m => { if (Number.isFinite(m.tk)) tkSet(m.tk); localMsg(m.practice ? 'Practice fight: no tokens this time.' : m.earned ? `+${m.earned} TOKENS from the fight!${m.capped?' (that\'s today\'s boxing max)':''}` : m.capped ? 'You hit today\'s boxing token max.' : 'Good fight! No tokens this time.'); };
 NET.handlers.bxinv = m => { const el=$id('bxinv'); $id('bxi_t').textContent=`${m.from} challenges you to a boxing match!`; el.style.display='flex'; el.dataset.from=m.from; clearTimeout(el._t); el._t=setTimeout(()=>{ el.style.display='none'; }, m.ms||15000); sfxTone(880,0.08,'square',0.05); sfxTone(1180,0.08,'square',0.05,0.1); };
@@ -7007,10 +7030,11 @@ $id('bxi_no').addEventListener('click', ()=>{ const el=$id('bxinv'); el.style.di
 for (const b of document.querySelectorAll('#boxpad [data-mv]')) b.addEventListener('click', ()=>bxPick(b.dataset.mv));
 $id('bx_quit').addEventListener('click', ()=>{ const q=$id('bx_quit'); if (!q.classList.contains('sure')){ q.classList.add('sure'); q.textContent='SURE?'; setTimeout(()=>{ q.classList.remove('sure'); q.textContent='QUIT'; }, 2500); return; } NET.act('box_quit'); });
 const BXUI = { info:null };
-function openBox(){ if (!joined) return; if (curRoom!=='gym'){ showSwap('gym'); return; } closeAll(); $id('boxbox').style.display='block'; boxDraw(); NET.act('box_info').then(r=>{ if (r && r.ok){ BXUI.info=r; if (r.s && !BXS.s) BXS.s=r.s; boxDraw(); } }); }
-function boxDraw(){ const el=$id('bx_body'), I=BXUI.info, S=BXS.s; let h='';
-  if (S && S.phase!=='over') h+=`<div class="bxnow"><b>${esc(S.a.n)} <span>VS</span> ${esc(S.b.n)}</b><small>Fight on! Watch from ringside, you can box after this one.</small></div>`;
-  else { h+=`<div class="bxh">SPAR WITH A BOT</div><div class="bxbots">
+function openBox(){ if (!joined) return; if (curRoom!=='gym'){ showSwap('gym'); return; } closeAll(); $id('boxbox').style.display='block'; boxDraw(); NET.act('box_info').then(r=>{ if (r && r.ok){ bxSetInfo(r); bxHudDraw(); boxDraw(); } }); }
+function boxDraw(){ const el=$id('bx_body'), I=BXUI.info; let h='';
+  const live=BXR.map((X,r)=>X.s && X.s.phase!=='over' ? r : -1).filter(r=>r>=0), full=live.length>=BXR.length, inFight=!!bxMine() && bxMine().s.phase!=='over';
+  for (const r of live){ const S=BXR[r].s; h+=`<div class="bxnow"><b>${esc(S.a.n)} <span>VS</span> ${esc(S.b.n)}</b><small>${inFight && bxMe().r===r ? 'Your fight is on in RING '+(r+1)+'!' : 'Fight on in RING '+(r+1)+'. '+(full ? 'Both rings are busy, you can box after one ends.' : 'The other ring is open!')}</small></div>`; }
+  if (!full && !inFight){ h+=`<div class="bxh">SPAR WITH A BOT</div><div class="bxbots">
       <button class="bxbot" data-bot="rookie"><canvas width="44" height="56" data-bxc="rusty"></canvas><b>ROOKIE RUSTY</b><small>EASY · WIN ${I?I.pay.rookie:3} 🪙</small></button>
       <button class="bxbot" data-bot="champ"><canvas width="44" height="56" data-bxc="duke"></canvas><b>CHAMP DUKE</b><small>HARD · READS YOUR MOVES · WIN ${I?I.pay.champ:8} 🪙</small></button></div>`;
     const near=[...others.values()].filter(o=>sameRoom(o) && !o.leaving && o.n); h+=`<div class="bxh">CHALLENGE A LLAMA</div>`;
@@ -7021,7 +7045,7 @@ function boxDraw(){ const el=$id('bx_body'), I=BXUI.info, S=BXS.s; let h='';
   for (const c of el.querySelectorAll('canvas[data-bxc]')){ const x=c.getContext('2d'); x.imageSmoothingEnabled=false; x.clearRect(0,0,44,56); const s=sprite(c.dataset.bxc,'fr',0,'stand',{hands:c.dataset.bxc==='duke'?'gloves_b':'gloves', legs:c.dataset.bxc==='duke'?'shorts':'shorts_r'}); x.drawImage(s,8,6); }
   for (const b of el.querySelectorAll('[data-bot]')) b.addEventListener('click', ()=>NET.act('box_bot',{bot:b.dataset.bot}).then(r=>{ if (r && !r.ok) localMsg(r.msg||'The ring is busy.'); }));
   for (const b of el.querySelectorAll('[data-chal]')) b.addEventListener('click', ()=>NET.act('box_invite',{n:b.dataset.chal}).then(r=>{ localMsg((r&&r.msg)||(r&&r.ok?'Challenge sent!':'That didn\'t work.')); if (r && r.ok) closeAll(); })); }
-setInterval(()=>{ if (BXS.s && curRoom==='gym') bxTimer(); }, 50);
+setInterval(()=>{ if (curRoom==='gym' && bxShown()>=0) bxTimer(); }, 50);
 
 // ======================= TREASURE COVE: detector and digging =======================
 const CVS = { heat:-1, last:0, on:true, digT:0, dig:null, digs:[], earned:0, cap:40 };
@@ -7052,10 +7076,10 @@ function drawCoveDigs(t){ const now=performance.now(), list=[]; if (CVS.dig) lis
 // taps in the gym: the ring or the bell opens the boxing panel, a heavy bag gets punched, fighters stay put
 function gymPointer(e){ const lx=e.clientX/S, ly=e.clientY/S;
   for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } break; } }
-  if (bxMe() && BXS.s && BXS.s.phase!=='over'){ localMsg('You\'re in a fight! Use the move buttons.'); return; }
+  if (bxMine() && bxMine().s.phase!=='over'){ localMsg('You\'re in a fight! Use the move buttons.'); return; }
   for (const f of FURN) if (f.t==='hbag'){ const [bx,by]=P(f.gx+0.5,f.gy+0.5); if (Math.abs(lx-bx)<=10 && ly>=by-62 && ly<=by+3){ f.hitT=performance.now(); sfxTone(90,0.09,'square',0.06); sfxTone(70,0.08,'triangle',0.05,0.04); if (Math.max(Math.abs(me.gx-f.gx),Math.abs(me.gy-f.gy))>1){ const sp=[[f.gx+1,f.gy],[f.gx,f.gy+1],[f.gx+1,f.gy+1]].find(([x,y])=>walkable(x,y)); if (sp) walkTo(sp[0],sp[1]); } return; } }
-  const [gx,gy]=toGrid(e.clientX, e.clientY), [rx,ry]=toGrid(e.clientX, e.clientY+RING.H*S);
-  if (inRing(rx,ry) || inRing(gx,gy) || (gx===10 && gy===8)){ openBox(); return; }
+  const [gx,gy]=toGrid(e.clientX, e.clientY), [rx,ry]=toGrid(e.clientX, e.clientY+RINGS[0].H*S);
+  if (inRing(rx,ry) || inRing(gx,gy) || RINGS.some(R=>R.bell[0]===gx && R.bell[1]===gy)){ openBox(); return; }
   if (gx<0||gy<0||gx>=N||gy>=NY) return;
   if (walkable(gx,gy)){ walkTo(gx,gy); return; }
   let best=null, bd=1e9; for (const s2 of SEATS){ const d=Math.abs(s2.gx-gx)+Math.abs(s2.gy-gy); if(d<=1 && d<bd){ bd=d; best=s2; } } if (best) walkTo(best.gx,best.gy); }
@@ -7300,6 +7324,7 @@ function loadHealth(){ NET.act('health').then(r=>{ if (!r || !r.ok || dsTab!=='e
   const hrs=new Map(); for (const x of r.rows){ const k=Math.floor(x.t/3600000); let o=hrs.get(k); if (!o) hrs.set(k, o={t:k*3600000, peak:0, acts:0, slow:0, errs:0, dropped:0}); o.peak=Math.max(o.peak,+x.peak||0); o.acts+=+x.acts||0; o.slow+=+x.slow||0; o.errs+=+x.errs||0; o.dropped+=+x.dropped||0; }
   const hr=[...hrs.values()].sort((a,b)=>b.t-a.t).slice(0,12);
   let h=`<h4>SERVER HEALTH</h4><div class="hsts">${tile(r.now.online,'ONLINE NOW')}${tile(peak,'PEAK, 24 HOURS')}${tile(sum('acts'),'ACTIONS, 24 HOURS')}${tile(sum('slow'),'SLOW ACTIONS',sum('slow')>0)}${tile(sum('errs'),'SERVER ERRORS',sum('errs')>0)}${tile(sum('dropped'),'BLOCKED FLOODS')}</div>`;
+  h+=`<div class="capset"><span>PLAYER LIMIT</span><input id="cap_n" type="number" min="1" max="5000" value="${r.cap|0}"><button class="gbbtn s" id="cap_go">SAVE</button><span>${r.queue ? r.queue+' WAITING IN LINE' : 'NOBODY WAITING'}</span></div><div class="dl">When this many llamas are playing, new visitors wait in line and go in as others leave. Staff skip the line.</div>`;
   if (rooms) h+=`<div class="dl">${rooms}</div>`;
   if (hr.length) h+=dgrid('auto 1fr 1fr 1fr 1fr', ['HOUR','PEAK','ACTIONS','SLOW','ERRORS'], hr.map(x=>`<span>${dgT(x.t)}</span><span class="dgnum">${x.peak}</span><span class="dgnum">${x.acts}</span><span class="dgnum">${x.slow?`<em class="dgbad">${x.slow}</em>`:0}</span><span class="dgnum">${x.errs?`<em class="dgbad">${x.errs}</em>`:0}</span>`));
   else h+='<div class="dl">A sample is saved every 5 minutes while llamas are online. Nothing saved yet.</div>';
@@ -7307,6 +7332,7 @@ function loadHealth(){ NET.act('health').then(r=>{ if (!r || !r.ok || dsTab!=='e
     +'<div class="srow"><button class="gbbtn s" id="hl_clear">CLEAR PROBLEMS</button></div>'; }
   h+='<h4>BROWSER ERRORS</h4>';
   const box=document.createElement('div'); box.id='ds_health'; box.innerHTML=h; dsBody.insertBefore(box, dsBody.firstChild);
+  const cg=$id('cap_go'); if (cg){ $id('cap_n').addEventListener('keydown', e=>e.stopPropagation()); cg.addEventListener('click', ()=>{ cg.disabled=true; NET.act('cap_set',{n:+$id('cap_n').value}).then(r2=>{ if (!r2.ok) localMsg(r2.msg||'That did not work.'); else localMsg('Player limit is now '+r2.cap+'.'); loadHealth(); }); }); }
   const c=$id('hl_clear'); if (c) c.addEventListener('click', ()=>{ c.disabled=true; NET.act('health_clear').then(loadHealth); }); }); }
 // dashboard lists as aligned grids: a header row, one row per entry, buttons in their own column (or on a full row under the entry)
 const dgD=t=>new Date(t).toLocaleDateString([], {month:'short',day:'numeric'}), dgT=t=>new Date(t).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
@@ -7350,7 +7376,7 @@ function loadDash(){
       return `<span>${dgD(gf.t)}</span><span>${dgT(gf.t)}</span><b class="dgn"><span>${esc(gf.by)}</span></b><b class="dgn"><span>${esc(gf.to)}</span></b><span class="dgnum dgtok">${gf.n} 🪙</span><span class="dga r">${gf.undo ? `<s>UNDONE</s>` : ((owner||mine) && gf.id ? `<button class="gbbtn s" data-undo="${gf.id}" data-to="${esc(gf.to)}" data-n="${gf.n}">UNDO</button>` : '')}</span>`; })); }
     if (!(r.gifts||[]).length) h+='<div class="dl">NO TOKEN GIFTS YET.</div>';
     h+='<h4>STAFF LOG</h4>';
-    const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:',pkreset:'cleared the passkeys of',give:'gave tokens to',undogift:'took back a gift from',roomreset:'reset the room name of', movefurn:'moved', turnfurn:'turned', wfwarn:'warned'};
+    const WORD={mute:'muted',unmute:'unmuted',kick:'kicked',ban:'banned',unban:'unbanned',mod:'made a mod:',unmod:'removed mod:',pkreset:'cleared the passkeys of',cap:'set the player limit to',give:'gave tokens to',undogift:'took back a gift from',roomreset:'reset the room name of', movefurn:'moved', turnfurn:'turned', wfwarn:'warned'};
     if (r.log.length) h+=dgrid('auto auto auto 1fr', ['DATE','TIME','STAFF','ACTION'], r.log.slice(0,20).map(e=>`<span>${dgD(e.t)}</span><span>${dgT(e.t)}</span><b class="dgn"><span>${esc(e.by)}</span></b><span class="dgw">${WORD[e.cmd]||esc(e.cmd)} <b>${esc(e.target)}</b></span>`));
     if (!r.log.length) h+='<div class="dl">NO STAFF ACTIONS YET.</div>';
     if (owner) h+='<h4>💾 BACKUPS</h4><div id="ds_bk" class="dl">LOADING...</div>';
@@ -7380,10 +7406,15 @@ document.getElementById('ds_refresh').addEventListener('click', loadDash);
 document.getElementById('ds_close').addEventListener('click', ()=>{ dashEl.style.display='none'; });
 NET.handlers.tg = m => tgServer(m);
 NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; renderBoard(); };
-NET.handlers.hello = m => { if (Number.isFinite(+m.now)) SRV_OFF=(+m.now)-Date.now(); PKASK.tries=0; setTimeout(pkAsk, 5000); setTimeout(()=>dailyLoad(true), 2500); setTimeout(blocksLoad, 300); setTimeout(()=>{ if (!joined || ($id('roomsbox').style.display==='block' && PRUI.view==='list')) prRefresh(); }, 0);   /* the ROOMS pop-up may have opened before the connection was ready */ if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; netBack(m.re);
+NET.handlers.hello = m => { queueDone(); if (Number.isFinite(+m.now)) SRV_OFF=(+m.now)-Date.now(); PKASK.tries=0; setTimeout(pkAsk, 5000); setTimeout(()=>dailyLoad(true), 2500); setTimeout(blocksLoad, 300); setTimeout(()=>{ if (!joined || ($id('roomsbox').style.display==='block' && PRUI.view==='list')) prRefresh(); }, 0);   /* the ROOMS pop-up may have opened before the connection was ready */ if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; netBack(m.re);
   // load friends, unread messages and the outfit every time we (re)connect
   setTimeout(()=>{ frLoad(); wdLoad(); dmLoad(); }, 150); };
 NET.handlers.kick = m => showKicked(m.msg);
+// THE WAITING LINE: the game is full, so the server holds this llama's place and says where it is in line. It gets in by itself.
+const nth = n => n+(n%100>=11 && n%100<=13 ? 'TH' : ['TH','ST','ND','RD','TH','TH','TH','TH','TH','TH'][n%10]);
+NET.handlers.queue = m => { const pos=Math.max(1, m.pos|0); if (!QUEUED.on || QUEUED.pos!==pos){ QUEUED.on=true; QUEUED.pos=pos;
+    bootShow('YOU ARE '+nth(pos)+' IN LINE', me.c, 'The lounge is full right now. Keep this open and you will go in by yourself when a spot frees up.'); bootEl.classList.add('hold'); } };
+function queueDone(){ if (!QUEUED.on) return; QUEUED.on=false; QUEUED.pos=0; bootEl.classList.remove('hold'); document.getElementById('boot_t').textContent='YOU ARE IN!'; document.getElementById('boot_s').textContent=''; bootHide(700); }
 // ---- dropped connection: a small banner while it's down, then straight back to the same room and spot ----
 const netEl=$id('netdown'); let netDownT=null, netWasDown=false;
 NET.handlers.down = () => { updateStatus(); clearTimeout(netDownT); netDownT=setTimeout(()=>{ if (!NET.ready && joined){ netWasDown=true; netEl.textContent='RECONNECTING...'; netEl.className='on'; } }, 1200); };

@@ -90,6 +90,18 @@ export async function runApi(BASE, { root, persist }) {
   { const r = await O.act("bug_list"); check("owner: sees the bug a player sent", r.ok === true && r.bugs.some((b) => b.text === "test bug " + tag)); }
   await sleep(2100);
 
+  console.log("Waiting line when the game is full");
+  { const r = await A.act("cap_set", { n: 1 }); check("a player cannot change the player limit", r.ok === false); }
+  { const r = await O.act("cap_set", { n: 4 }); check("the owner can set the player limit", r.ok === true && r.cap === 4, JSON.stringify(r)); }   // A, B, C and O are playing: full
+  /* D has never been in, and has no passkey, so no staff pass */ const E2 = new Client(names.d, cookies.d); let helloE = false; E2.connect().then(() => { helloE = true; }).catch(() => {}); await sleep(900);
+  check("a newcomer is put in line, not let in", !helloE && E2.msgs.some((m) => m.t === "queue" && m.pos === 1), JSON.stringify(E2.msgs.map((m) => m.t)));
+  B.mark(); E2.ws.send(JSON.stringify({ t: "p", p: { c: "twotone", x: 3.5, y: 3.5, d: "fr", p: "stand", rm: "lounge" } })); await sleep(300);
+  check("someone in line cannot appear in the game", B.seen(E2.peer).length === 0 && !E2.msgs.some((m) => m.t === "peers"));
+  B.close(); await sleep(900);
+  check("when a llama leaves, the next in line goes in", helloE === true, JSON.stringify(E2.msgs.map((m) => m.t)));
+  { const nb = new Client(names.b, cookies.b); const ok = await nb.connect().then(() => true).catch(() => false); check("a llama whose connection blipped gets straight back in", ok === true); B.ws = nb.ws; B.msgs = nb.msgs; B.wait = nb.wait; B.rid = nb.rid; B.peer = nb.peer; nb.ws.removeAllListeners("message"); nb.ws.on("message", (d) => { let m; try { m = JSON.parse(String(d)); } catch (e) { return; } B.msgs.push(m); if (m.t === "res" && B.wait.has(m.id)) { B.wait.get(m.id)(m); B.wait.delete(m.id); } }); B.pres({ rm: "lounge" }); }
+  await O.act("cap_set", { n: 200 }); E2.close(); await sleep(2100);
+
   console.log("Staff powers need a passkey");
   const D = await new Client(names.d, cookies.d).connect(); D.pres({ rm: "lounge" }); await sleep(300);
   { const r = await D.act("dash"); check("a mod without a passkey cannot open the dashboard", r.ok === false, JSON.stringify(r).slice(0, 100)); }
