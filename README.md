@@ -513,3 +513,6 @@ So on this test machine the old server kept up to about 50 llamas and the new on
 - **Camera.** While you walk somewhere far away the view leads toward where you are going.
 - **Tour.** Gus now mentions the gym, cove and jungle, quick chat, tapping machines to play and double treasure events.
 - Already in the game, unchanged: daily goals with a login streak (DAILY), and the GO button next to an online friend.
+
+### Fair prizes and the prize hay bale (Nov 21)
+To give the game its own identity, the "limited rares" are now FAIR PRIZES: keepsakes from the LLAMA ACRES HARVEST FAIR. The game no longer shows them as numbered editions ("#3 of 25"); cards say how many are left and how many you have. The golden throne is replaced by the PRIZE HAY BALE (same item id `throne`, same price and seat, so existing owners keep theirs): a bale of golden hay tied with red twine, with a blue first-prize rosette. Copies still have a number inside the trade and marketplace screens so two copies can be told apart.

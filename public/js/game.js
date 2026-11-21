@@ -704,10 +704,10 @@ const RACK_UNUSED=['cap','cowboy','beanie','party','tophat','flowers','tee_loung
 // furniture showroom: one piece from each category on display (tap one to shop for furniture)
 // the store is split in two: furniture on the left half (a living room, a bedroom and a dining set), clothing on the right half
 // [item, gx, gy, rot, notag] - notag hides the price tag on repeats (the dining chairs)
-// the LLAMA STORE sells clothes (and LIMITED RARES); furniture is bought from the SHOP pop-up anywhere.
-// left side of the store: a lounge corner to sit in, the LIMITED RARES showcase, and model llamas wearing outfits from the racks
+// the LLAMA STORE sells clothes (and FAIR PRIZES); furniture is bought from the SHOP pop-up anywhere.
+// left side of the store: a lounge corner to sit in, the FAIR PRIZES showcase, and model llamas wearing outfits from the racks
 const STORE_DECO=[['plant',0,0],['floorlamp',0,3]];   // [item, x, y, turn]
-const STORE_SHOW=[['rug_persian',1,1,0,1],['statue',1,1,0],['throne',3,1,0]];   // LIMITED RARES on a red carpet in the back corner: tap them to buy (store only)
+const STORE_SHOW=[['rug_persian',1,1,0,1],['statue',1,1,0],['throne',3,1,0]];   // FAIR PRIZES on a red carpet in the back corner: tap them to buy (store only)
 const STORE_SNACK=[4,0];   // snack machine, next to the drink machine
 const STORE_DISPLAY=[{t:'teetable',gx:1,gy:6,w:2,items:['tee_smile','tee_lounge','tee_acres','tee_arena','tee_woke','tee_cancel'],pick:'tee_smile'},{t:'hatstand',gx:3,gy:4,items:['cowboy','cap','beanie','tophat'],pick:'cap'},{t:'hatstand',gx:2,gy:9,items:['party','flowers','beanie','cowboy'],pick:'flowers'}];
 const STORE_MODELS=[{gx:4,gy:6,pick:'cowboy',w:{hat:'cowboy',neck:'bandana',shirt:'poncho'}},{gx:4,gy:8,pick:'tophat',w:{hat:'tophat',eyes:'shades',neck:'bowtie',shirt:'tee_lounge'}},{gx:1,gy:4,pick:'flowers',w:{hat:'flowers',eyes:'hearts',neck:'lei',shirt:'tee_smile'}}];
@@ -1675,8 +1675,9 @@ Object.assign(FURN_DEF, { tchest:{n:'PIRATE CHEST',p:25,cat:'treasure',mk:()=>({
   wheelbarrow:{n:'WHEELBARROW',p:14,cat:'farm',mk:()=>({t:'wheelbarrow'})}, trough:{n:'WATER TROUGH',p:12,cat:'farm',mk:()=>({t:'trough'})},
   beehive:{n:'BEEHIVE',p:18,cat:'farm',mk:()=>({t:'beehive'})}, appletree:{n:'APPLE TREE',p:25,cat:'farm',mk:()=>({t:'appletree'})},
   sunflowers:{n:'SUNFLOWERS',p:8,cat:'farm',mk:()=>({t:'sunflowers'})}, gfence:{n:'PICKET FENCE',p:6,cat:'farm',mk:rot=>({t:'gfence',rot})} });
-// LIMITED RARES: numbered runs from the store's LIMITED shelf, never sold again (the server keeps the numbers)
-Object.assign(FURN_DEF, { statue:{n:'CRYSTAL LLAMA STATUE',p:150,cat:'rares',rare:true,mk:()=>({t:'statue'})}, throne:{n:'GOLDEN LLAMA THRONE',p:250,seat:12,cat:'rares',rare:true,mk:rot=>({t:'throne',rot})} });
+// FAIR PRIZES: keepsakes from the LLAMA ACRES HARVEST FAIR. The fair brought a set number of each; when they're gone, trading is the only way to get one.
+// (The server still gives each copy a number so trades and the marketplace can tell copies apart, but the game doesn't show them off as numbered editions.)
+Object.assign(FURN_DEF, { statue:{n:'CRYSTAL LLAMA STATUE',p:150,cat:'rares',rare:true,mk:()=>({t:'statue'})}, throne:{n:'PRIZE HAY BALE',p:250,seat:12,cat:'rares',rare:true,mk:rot=>({t:'throne',rot})} });
 Object.assign(FURN_DEF, { rug_persian:{n:'PERSIAN RUG',p:25,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'persian',rot,dz:-60})}, rug_round:{n:'BRAIDED ROUND RUG',p:15,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'round',rot,dz:-60})},
   rug_stripe:{n:'STRIPED RUNNER',p:12,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'stripe',rot,dz:-60})}, rug_shag:{n:'SHAG RUG',p:18,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'shag',rot,dz:-60})},
   rug_mat_green:{n:'GREEN WELCOME MAT',p:6,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'mat_green',rot,dz:-60})}, rug_mat_red:{n:'RED WELCOME MAT',p:6,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'mat_red',rot,dz:-60})}, rug_mat_blue:{n:'BLUE WELCOME MAT',p:6,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'mat_blue',rot,dz:-60})}, rug_mat_coir:{n:'COCONUT WELCOME MAT',p:6,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'mat_coir',rot,dz:-60})}, rug_mat_pink:{n:'PINK WELCOME MAT',p:6,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'mat_pink',rot,dz:-60})}, rug_mat_purple:{n:'PURPLE WELCOME MAT',p:6,cat:'rugs',rug:true,mk:rot=>({t:'rug',k:'mat_purple',rot,dz:-60})} });
@@ -1691,7 +1692,7 @@ const FURN_VARIANTS=[['sofa_gray','sofa','GRAY',{col:COUCH_COL.gray}],['sofa_gre
 const furnBase = item => (FURN_DEF[item] && FURN_DEF[item].base) || item;
 for (const [k,base,cn,extra] of FURN_VARIANTS){ const B0=FURN_DEF[base]; FURN_DEF[k]={...B0, base, n:`${B0.n} (${cn})`, mk:rot=>({...B0.mk(rot), ...extra})}; }
 // what the store sells, by category (one of each for now; add more pieces to a category by giving them its cat)
-const FURN_CATS=[['rares','⭐ LIMITED RARES'],['staff','🛡️ STAFF ONLY'],['farm','🌾 FARM & GARDEN'],['seating','🪑 SEATING'],['sofas','🛋️ SOFAS & ARMCHAIRS'],['beds','🛏️ BEDS'],['tables','🍽️ TABLES'],['lighting','💡 LIGHTING'],['shelves','📚 SHELVES'],['electronics','📺 ELECTRONICS'],['plants','🪴 PLANTS'],['machines','🥤 VENDING MACHINES'],['rugs','🧶 RUGS']];
+const FURN_CATS=[['rares','🏆 FAIR PRIZES'],['staff','🛡️ STAFF ONLY'],['farm','🌾 FARM & GARDEN'],['seating','🪑 SEATING'],['sofas','🛋️ SOFAS & ARMCHAIRS'],['beds','🛏️ BEDS'],['tables','🍽️ TABLES'],['lighting','💡 LIGHTING'],['shelves','📚 SHELVES'],['electronics','📺 ELECTRONICS'],['plants','🪴 PLANTS'],['machines','🥤 VENDING MACHINES'],['rugs','🧶 RUGS']];
 const SEAT_DIRS=['fr','fl','br','bl'];
 const PR_WALL={ lavender:['#b8a0f0','#d0b8f8','#7860c8','#8870d8'], cream:['#f2e2c8','#f8ecd6','#9a6436','#a86e3e'], mint:['#a8e0c8','#c0eed8','#4a9a7a','#58aa88'],
   barn:['#b0443a','#c4584a','#6a2620','#7a2c24'], pink:['#f8b8d0','#fcd0e0','#c86890','#d87aa0'], night:['#2a2450','#342c60','#141030','#1a1438'], wood:['#a87444','#b8834e','#6a4220','#7a4c26'] };
@@ -3050,28 +3051,35 @@ function drawFurn(f,t){
       for (let k=0;k<4;k++){ const ph=(t*1.3+k*0.27)%1; if (ph>0.35) continue; const [qx,qy]=[[-7,-36],[6,-24],[-3,-14],[8,-40]][k], X=Math.round(sx)+qx, Y=Math.round(sy)+qy, on=ph<0.18;
         g.fillStyle='#ffffff'; g.fillRect(X,Y-(on?2:1),1,on?5:3); g.fillRect(X-(on?2:1),Y,on?5:3,1); }
       break; }
-    case 'throne': { // golden llama throne: gold frame, red velvet seat and back panel, rolled arms, a little crown on top
-      const r=f.rot||0, x=f.gx, y=f.gy, far=r<2, GD='#f6c945', GM='#d8a222', GS='#a8761a', VR='#c8263a', VD='#8e1426', VL='#ee5468';
-      const back = r===0 ? [x+0.12,y+0.14,0.12,0.72] : r===1 ? [x+0.14,y+0.12,0.72,0.12] : r===2 ? [x+0.76,y+0.14,0.12,0.72] : [x+0.14,y+0.76,0.72,0.12];
-      const arms = r%2===0 ? [[x+0.18,y+0.12,0.66,0.12],[x+0.18,y+0.76,0.66,0.12]] : [[x+0.12,y+0.18,0.12,0.66],[x+0.76,y+0.18,0.12,0.66]];
-      const drawBack=()=>{ box(...back,26,GD,GM,GS,0,10); const c=[back[0]+back[2]/2, back[1]+back[3]/2];
-        const pad = r%2===0 ? [back[0]+(r===0?back[2]:0)-0.005, back[1]+0.1] : [back[0]+0.1, back[1]+(r===1?back[3]:0)-0.005];
-        if (r%2===0) polyPx([P(pad[0],pad[1],14),P(pad[0],pad[1]+0.52,14),P(pad[0],pad[1]+0.52,32),P(pad[0],pad[1],32)], VR);
-        else polyPx([P(pad[0],pad[1],14),P(pad[0]+0.52,pad[1],14),P(pad[0]+0.52,pad[1],32),P(pad[0],pad[1],32)], VR);
-        { const [cx,cy]=P(c[0],c[1],37); const X=Math.round(cx), Y=Math.round(cy); g.fillStyle=INK; g.fillRect(X-5,Y-5,11,6); g.fillStyle=GD; g.fillRect(X-4,Y-4,9,4);   // crown
-          g.fillStyle=INK; for (const dx of [-4,0,4]) g.fillRect(X+dx,Y-8,1,3); g.fillStyle=GD; for (const dx of [-4,0,4]) g.fillRect(X+dx,Y-7,1,2); g.fillStyle='#e8304a'; g.fillRect(X,Y-3,1,1); g.fillStyle='#48a8f0'; g.fillRect(X-3,Y-3,1,1); g.fillRect(X+3,Y-3,1,1); g.fillStyle='#fff6c0'; g.fillRect(X-4,Y-4,1,1); } };
-      // open arm rests: a post at each end, a gold rail with a red velvet pad on top, and nothing in between so you can see through them
-      const drawArm=A=>{ const [ax,ay,aw,ad]=A, s2=0.12, ends = r%2===0 ? [[ax,ay],[ax+aw-s2,ay]] : [[ax,ay],[ax,ay+ad-s2]];
-        for (const [px,py] of ends) box(px,py,s2,s2,7,GD,GM,GS,0,10);
-        box(ax,ay,aw,ad,2,GD,GM,GS,0,17); box(ax+0.03,ay+0.03,aw-0.06,ad-0.06,1,VL,VR,VD,0,19);
-        { const [ex,ey] = r%2===0 ? [ax+(r===0?aw-0.06:0.06), ay+ad/2] : [ax+aw/2, ay+(r===1?ad-0.06:0.06)]; const [cx,cy]=P(ex,ey,19); const X=Math.round(cx), Y=Math.round(cy);   // rolled scroll at the front end
-          g.fillStyle=INK; g.fillRect(X-2,Y-2,5,5); g.fillStyle=GD; g.fillRect(X-1,Y-1,3,3); g.fillStyle='#fff6c0'; g.fillRect(X-1,Y-1,1,1); g.fillStyle=GS; g.fillRect(X,Y,1,1); } };
-      if (f.part==='front'){ if (!far) drawBack(); for (const A of arms){ const near = r%2===0 ? A[1]>y+0.5 : A[0]>x+0.5; if (near) drawArm(A); } break; }
-      for (const [u,v] of [[0.2,0.2],[0.8,0.2],[0.2,0.8],[0.8,0.8]]){ const [lx,ly]=P(x+u,y+v,0), [,ty]=P(x+u,y+v,10); g.fillStyle=INK; g.fillRect(Math.round(lx)-1,Math.round(ty),3,Math.round(ly-ty)+1); g.fillStyle=GM; g.fillRect(Math.round(lx),Math.round(ty),1,Math.round(ly-ty)); g.fillStyle=GD; g.fillRect(Math.round(lx)-1,Math.round(ly)-1,3,1); }
-      if (far) drawBack();
-      box(x+0.14,y+0.14,0.72,0.72,3,GD,GM,GS,0,7); box(x+0.2,y+0.2,0.6,0.6,3,VL,VR,VD,0,10);   // gold frame, plump velvet cushion
-      for (const A of arms) drawArm(A);
-      if (!far) drawBack();
+    case 'throne': { // PRIZE HAY BALE (the item id is still 'throne'): a fat bale of golden hay tied with red twine, a blue first-prize rosette on the front, loose straw and a sparkle
+      if (f.part==='front') break;
+      const r=f.rot||0, x=f.gx+0.1, y=f.gy+0.1, w=0.8, d=0.8, H=12, GD='#f6cf4e', GM='#dba82a', GS='#b07c1c', GH='#fff0a0', GK='#8e6414';
+      { const a=P(x-0.04,y+d+0.06), b=P(x+w+0.06,y+d+0.06), c=P(x+w+0.06,y-0.02), e=P(x+w,y), f2=P(x,y+d); polyPx([a,b,c,e,f2],'rgba(20,12,30,0.28)'); }   // soft shadow
+      for (const [u,v,fl] of [[0.02,0.98,0],[0.3,1.06,1],[0.92,1.02,0],[1.06,0.5,1],[1.03,0.12,0]]){ const q=P(x+u*w,y+v*d,0), X=Math.round(q[0]), Y=Math.round(q[1]); g.fillStyle=INK; g.fillRect(X-1,Y-1,fl?5:4,3); g.fillStyle=fl?GH:GD; g.fillRect(X,Y,fl?3:2,1); }   // loose straws on the floor
+      box(x,y,w,d,H,GD,GM,GS);
+      // straw: slanted strokes down both visible sides, and bright flecks across the top
+      for (let i=0;i<10;i++){ const u=(i+0.5)/10, h0=1+((i*5)%7);
+        { const a=P(x+u*w,y+d,h0), b=P(x+u*w+0.04,y+d,h0+3); linePx(a[0],a[1],b[0],b[1], i%3===0?GH:i%2?GS:'#c8921f'); }
+        { const a=P(x+w,y+d-u*d,h0), b=P(x+w,y+d-u*d-0.04,h0+3); linePx(a[0],a[1],b[0],b[1], i%3===0?GM:i%2?GK:GS); } }
+      for (let i=0;i<14;i++){ const q=P(x+0.07+dhash(i,3)*(w-0.14), y+0.07+dhash(i,11)*(d-0.14), H), X=Math.round(q[0]), Y=Math.round(q[1]); g.fillStyle=i%3===0?GM:GH; g.fillRect(X,Y,2,1); }
+      // pressed layers: broken darker lines along both sides, like the flakes of a real bale
+      for (const hh of [4,8]) for (let i=0;i<8;i++){ if ((i+hh)%3===0) continue; const u0=i/8+0.02, u1=(i+1)/8-0.03;
+        { const a=P(x+u0*w,y+d,hh), b=P(x+u1*w,y+d,hh); linePx(a[0],a[1],b[0],b[1],GS); } { const a=P(x+w,y+d-u0*d,hh), b=P(x+w,y+d-u1*d,hh); linePx(a[0],a[1],b[0],b[1],GK); } }
+      // straw poking out along the top edges and at the ends, so it reads as hay and not a box
+      for (let i=0;i<9;i++){ const u=(i+0.3+dhash(i,5)*0.4)/9, tall=1+(i%3===0?1:0);
+        for (const q of [P(x+u*w,y+0.01,H), P(x+0.01,y+u*d,H), P(x+u*w,y+d,H-1), P(x+w,y+u*d,H-1)].filter((_,k)=>(i+k)%2===0)){ const X=Math.round(q[0]), Y=Math.round(q[1]); g.fillStyle=INK; g.fillRect(X-1,Y-tall-1,3,tall+1); g.fillStyle=i%2?GH:GD; g.fillRect(X,Y-tall,1,tall+1); } }
+      // two bands of red twine: over the top and down the side they cross
+      for (const k of [0.28,0.72]){ const TW='#e03a48', TD='#9a1c2c';
+        if (r%2===0){ const a=P(x+k*w,y+0.01,H), b=P(x+k*w,y+d,H), c=P(x+k*w,y+d,1); linePx(a[0],a[1],b[0],b[1],TW); linePx(a[0],a[1]+1,b[0],b[1]+1,TD); linePx(b[0],b[1],c[0],c[1],TW); linePx(b[0]+1,b[1],c[0]+1,c[1],TD); }
+        else { const a=P(x+0.01,y+k*d,H), b=P(x+w,y+k*d,H), c=P(x+w,y+k*d,1); linePx(a[0],a[1],b[0],b[1],TW); linePx(a[0],a[1]+1,b[0],b[1]+1,TD); linePx(b[0],b[1],c[0],c[1],TW); linePx(b[0]-1,b[1],c[0]-1,c[1],TD); } }
+      // the first-prize rosette, pinned to the side without twine on it
+      { const q = r%2===0 ? P(x+w, y+d*0.5, 8) : P(x+w*0.5, y+d, 8), X=Math.round(q[0]), Y=Math.round(q[1]);
+        g.fillStyle=INK; g.fillRect(X-3,Y+3,3,7); g.fillRect(X+1,Y+3,3,7); g.fillStyle='#2c5ad8'; g.fillRect(X-2,Y+4,1,5); g.fillRect(X+2,Y+4,1,5); g.fillStyle='#8ab0ff'; g.fillRect(X-2,Y+4,1,2);   // ribbon tails
+        g.fillStyle=INK; g.fillRect(X-3,Y-5,7,11); g.fillRect(X-5,Y-3,11,7); g.fillRect(X-4,Y-4,9,9);
+        g.fillStyle='#3a6ae8'; g.fillRect(X-2,Y-4,5,9); g.fillRect(X-4,Y-2,9,5); g.fillRect(X-3,Y-3,7,7); g.fillStyle='#8ab0ff'; g.fillRect(X-2,Y-4,5,1); g.fillRect(X-4,Y-2,1,5); g.fillRect(X-3,Y-3,1,1);
+        g.fillStyle='#1f3a98'; g.fillRect(X-2,Y+4,5,1); g.fillRect(X+4,Y-2,1,5);
+        g.fillStyle=INK; g.fillRect(X-2,Y-2,5,5); g.fillStyle='#ffd23f'; g.fillRect(X-1,Y-1,3,3); g.fillStyle='#fff6a0'; g.fillRect(X-1,Y-1,1,1); g.fillStyle='#c88a10'; g.fillRect(X+1,Y+1,1,1); }
+      { const k=Math.floor(t*2.5+f.gx*2+f.gy)%5, sp=[[0.18,0.22],[0.74,0.3],[0.42,0.7],[0.85,0.8],null][k]; if (sp){ const q=P(x+sp[0]*w,y+sp[1]*d,H+2), X=Math.round(q[0]), Y=Math.round(q[1]); g.fillStyle='#ffffff'; g.fillRect(X-2,Y,5,1); g.fillRect(X,Y-2,1,5); } }   // a glint that hops around the top
       break; }
     case 'acctdesk': { // two-tile wooden desk with a computer showing a padlock, a little bell and a stack of forms
       box(f.gx+0.06,f.gy+0.1,1.88,0.8,16,'#a8743e','#8a5a2c','#6a4220');
@@ -4827,7 +4835,7 @@ function drawStoreSigns(t){
   { const sc=3, txt='LLAMA STORE', tw=pfW(txt,sc), W=tw+12, H=5*sc+9; if (storeTitleCv.width!==W){ storeTitleCv.width=W; storeTitleCv.height=H; }
     const m=storeTitleCv.getContext('2d'); m.clearRect(0,0,W,H); m.fillStyle=INK; m.fillRect(0,0,W,H); m.fillStyle='#f85888'; m.fillRect(1,1,W-2,H-2); m.fillStyle='#b83068'; m.fillRect(1,H-3,W-2,2);
     pfDraw(m,txt,7,5,'#7a1838',sc); pfDraw(m,txt,6,4,(Math.floor(t*2)%6===0)?'#ffffff':'#fff4d8',sc); wallPlate(storeTitleCv, 160, 66, 1); }   /* on the wall face, not sticking up over it */
-  { if (!storeFurnCv.dataset.ok){ storeFurnCv.dataset.ok=1; const txt='LIMITED RARES', W=pfW(txt,1)+10; storeFurnCv.width=W; storeFurnCv.height=11; const m=storeFurnCv.getContext('2d'); m.fillStyle=INK; m.fillRect(0,0,W,11); m.fillStyle='#e0a418'; m.fillRect(1,1,W-2,9); pfDraw(m,txt,5,3,'#ffffff',1); }
+  { if (!storeFurnCv.dataset.ok){ storeFurnCv.dataset.ok=1; const txt='FAIR PRIZES', W=pfW(txt,1)+10; storeFurnCv.width=W; storeFurnCv.height=11; const m=storeFurnCv.getContext('2d'); m.fillStyle=INK; m.fillRect(0,0,W,11); m.fillStyle='#e0a418'; m.fillRect(1,1,W-2,9); pfDraw(m,txt,5,3,'#ffffff',1); }
     wallPlate(storeFurnCv, 32, 53, 1); }   /* just above the rares, under the big sign */
   { if (!storeClothCv.dataset.ok){ storeClothCv.dataset.ok=1; const txt='CLOTHING', W=pfW(txt,1)+10; storeClothCv.width=W; storeClothCv.height=11; const m=storeClothCv.getContext('2d'); m.fillStyle=INK; m.fillRect(0,0,W,11); m.fillStyle='#f85888'; m.fillRect(1,1,W-2,9); pfDraw(m,txt,5,3,'#ffffff',1); }
     wallPlate(storeClothCv, 231, 48, 1); }
@@ -6395,14 +6403,14 @@ function wdDraw(){
   const shop=WD.tab==='shop';
   for (const b of $id('wd_tabs').children) b.classList.toggle('on', b.dataset.t===WD.tab);
   $id('wd_tabs').style.display = shop ? 'none' : ''; $id('wardbox').querySelector('.wdtop').style.display = (WD.tab==='storage' || (shop && WD.kind!=='clothes')) ? 'none' : '';
-  $id('wd_title').textContent = shop ? (WD.kind==='furn' ? '🛋️ FURNITURE SHOP' : WD.kind==='rares' ? '⭐ LIMITED RARES' : '🛍️ CLOTHES SHOP') : '🎒 INVENTORY';
+  $id('wd_title').textContent = shop ? (WD.kind==='furn' ? '🛋️ FURNITURE SHOP' : WD.kind==='rares' ? '🏆 FAIR PRIZES' : '🛍️ CLOTHES SHOP') : '🎒 INVENTORY';
   let h='';
-  if (shop && WD.kind==='rares'){ const RR=WD.rares; if (!RR || !RR.list) h+='<div class="fre">Loading...</div>'; else { h+='<div class="wdh">⭐ LIMITED RARES</div><div class="fre">Made in small numbered runs and never sold again. Each llama can buy '+(RR.list[0]?RR.list[0].each:2)+' of each. After that, the only way is trading!</div><div class="wdg">';
+  if (shop && WD.kind==='rares'){ const RR=WD.rares; if (!RR || !RR.list) h+='<div class="fre">Loading...</div>'; else { h+='<div class="wdh">🏆 FAIR PRIZES</div><div class="fre">Keepsakes from the LLAMA ACRES HARVEST FAIR. The fair only brought so many, and each llama can take home '+(RR.list[0]?RR.list[0].each:2)+' of each. When they are gone, trading is the only way to get one!</div><div class="wdg">';
       const skew=Date.now()-(RR.now||Date.now());
       for (const r of RR.list){ const left=r.max-r.sold, notYet=r.open>Date.now()-skew, mineN=(RR.mine||[]).filter(m=>m.item===r.k).map(m=>'#'+m.serial);
         const when=notYet ? new Date(r.open).toLocaleString([], {weekday:'short', hour:'numeric', minute:'2-digit'}) : '';
-        h+=`<div class="wi fi rare" data-f="${r.k}"><canvas width="80" height="80" data-fk="${r.k}"></canvas><b>${esc(r.n)}</b><small>${r.p} 🪙 · ${left>0?`<span class="rl">${left} OF ${r.max} LEFT</span>`:'<span class="rso">SOLD OUT</span>'}${mineN.length?` · <span class="own">YOURS: ${mineN.join(' ')}</span>`:''}</small>`+
-          (notYet ? `<button class="gbbtn" disabled>DROPS ${esc(when.toUpperCase())}</button>` : left<=0 ? '<button class="gbbtn" disabled>SOLD OUT</button>' : `<button class="gbbtn y" data-buyr="${r.k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button>`)+'</div>'; }
+        h+=`<div class="wi fi rare" data-f="${r.k}"><canvas width="80" height="80" data-fk="${r.k}"></canvas><b>${esc(r.n)}</b><small>${r.p} 🪙 · ${left>0?`<span class="rl">${left} LEFT</span>`:'<span class="rso">ALL GONE</span>'}${mineN.length?` · <span class="own">YOU HAVE ${mineN.length}</span>`:''}</small>`+
+          (notYet ? `<button class="gbbtn" disabled>ARRIVES ${esc(when.toUpperCase())}</button>` : left<=0 ? '<button class="gbbtn" disabled>ALL GONE</button>' : `<button class="gbbtn y" data-buyr="${r.k}" ${curRoom!=='store'?'disabled':''}>${curRoom==='store'?'BUY':'IN STORE'}</button>`)+'</div>'; }
       h+='</div>'; } }
   else if (shop && WD.kind==='furn'){ const own=k=>{ const r=WD.furn.find(x=>x.item===k); return r?r.n:0; }, dragIn=prInMine();
     { const SC=[['furn','🛋️ FURNITURE'],['farm','🌾 FARM'],['rugs','🧶 RUGS'],['kits','🎁 KITS'],['deco','🎨 WALLS & FLOORS']]; if (!SC.some(c=>c[0]===WD.cat)) WD.cat = SC.some(c=>c[0]===store.shopCat) ? store.shopCat : 'furn';
@@ -6543,7 +6551,7 @@ function mkDraw(){ const B=$id('mk_body'); for (const t of $id('mk_tabs').childr
       const low=it=>{ const c=(MK.list||[]).filter(l=>l.item===it&&!l.serial).map(l=>l.price); return c.length?Math.min(...c):null; };
       if (!rows.length && !rareItems.size) h+=emptyBox('NOTHING TO SELL', 'Buy furniture, wallpaper or floors in the SHOP, then sell what you don\'t need here.');
       for (const x of rows){ const lw=low(x.item); h+=`<div class="mkr"><canvas data-fk="${x.item}"></canvas><span class="mkn"><b>${esc(itemName(x.item))}</b><small>${x.n-(x.placed||0)} in your bag${lw?` · cheapest now ${lw}`:''}</small></span><input type="number" min="1" max="100000" inputmode="numeric" placeholder="PRICE" data-mp="${x.item}"><button class="gbbtn y" data-msell="${x.item}">SELL</button></div>`; }
-      for (const r of ((MK.rares&&MK.rares.mine)||[])){ h+=`<div class="mkr"><canvas data-fk="${r.item}"></canvas><span class="mkn"><b>${esc(mkName(r.item,r.serial))}</b><small>limited rare · pick it up from your room first if it's placed</small></span><input type="number" min="1" max="100000" inputmode="numeric" placeholder="PRICE" data-mpr="${r.id}"><button class="gbbtn y" data-msellr="${r.id}">SELL</button></div>`; } } }
+      for (const r of ((MK.rares&&MK.rares.mine)||[])){ h+=`<div class="mkr"><canvas data-fk="${r.item}"></canvas><span class="mkn"><b>${esc(mkName(r.item,r.serial))}</b><small>fair prize · pick it up from your room first if it's placed</small></span><input type="number" min="1" max="100000" inputmode="numeric" placeholder="PRICE" data-mpr="${r.id}"><button class="gbbtn y" data-msellr="${r.id}">SELL</button></div>`; } } }
   else { const mine=(MK.list||[]).filter(x=>x.mine); h+=`<div class="fre">${mine.length} of ${MK.max} spots used. Taking something back puts it straight back in your bag.</div>`;
     if (!MK.list) h+='<div class="fre">Loading...</div>'; else if (!mine.length) h+=emptyBox('NOTHING LISTED', 'Open SELL to put something up for sale.');
     for (const x of mine) h+=`<div class="mkr"><canvas data-fk="${x.item}"></canvas><span class="mkn"><b>${esc(mkName(x.item,x.serial))}</b><small>listed ${new Date(x.t).toLocaleDateString([], {month:'short',day:'numeric'})}</small></span><span class="mkp">${x.price} 🪙</span><button class="gbbtn" data-mback="${x.id}">TAKE BACK</button></div>`; }
@@ -6582,8 +6590,8 @@ const FURN_DESC={ vending:'Keeps the hay soda ice cold. Every good hangout needs
   beanbag:'Flop down and sink in. Getting back up is the hard part.', barstool:'Tall, spinny and great for posing.', coffeetable:'Holds snacks, drinks and the remote you can never find.',
   roundtable:'Gather round for games, gossip and snacks.', floorlamp:'Tall lamp, warm light, instant cozy.', lavalamp:'Groovy blobs that float up and down forever.',
   cubeshelf:'Cubbies for all your stuff. Neat freaks love it.', dresser:'Drawers for hats, shades and bandanas.', cactus:'Low care, high style. Please do not hug.',
-  flowers:'A pot of bright flowers to cheer up any corner.', boombox:'Old school beats. Turn it up!', statue:'A sparkling crystal llama. Only 50 were ever made.',
-  throne:'A solid gold seat fit for llama royalty. Only 25 were ever made.', rug_persian:'A fancy patterned rug that ties the whole room together.',
+  flowers:'A pot of bright flowers to cheer up any corner.', boombox:'Old school beats. Turn it up!', statue:'A sparkling crystal llama, best in show at the HARVEST FAIR.',
+  throne:'A bale of golden hay with a first-prize rosette: top prize at the HARVEST FAIR, and the comfiest seat on the farm.', rug_persian:'A fancy patterned rug that ties the whole room together.',
   rug_round:'A braided round rug, soft under your hooves.', rug_stripe:'A long striped runner for halls and walkways.', rug_shag:'Super fluffy. Your hooves will thank you.', rug_mat_green:'A bristly welcome mat. Wipe your hooves!', rug_mat_red:'A bristly welcome mat. Wipe your hooves!', rug_mat_blue:'A bristly welcome mat. Wipe your hooves!', rug_mat_coir:'A bristly welcome mat. Wipe your hooves!', rug_mat_pink:'A bristly welcome mat. Wipe your hooves!', rug_mat_purple:'A bristly welcome mat. Wipe your hooves!' };
 const WEAR_DESC={ cap:'A bright pink cap for sunny days and bad hair days.', cowboy:'Yeehaw! For llamas who ride the range.', beanie:'Warm, cozy and a little bit artsy.',
   party:'Every day is a party when you wear this.', tophat:'Very fancy. Monocle not included.', flowers:'A crown of fresh flowers. Instant spring.',
@@ -6611,7 +6619,7 @@ function itDraw(){ const k=ITD.k, D=FURN_DEF[k], base=furnBase(k); if (!D) retur
   if (D.rug) feat+=`<div class="itf">${pix('yarn')}<span>Lies flat, so you can put things on top</span></div>`;
   if (D.staff) feat+=`<div class="itf">${pix('shield')}<span>Only staff can buy this</span></div>`;
   let rare=''; const RR=WD.rares; if (D.rare && RR && RR.list){ const r=RR.list.find(x=>x.k===k); if (r){ const left=r.max-r.sold, ser=(RR.mine||[]).filter(m=>m.item===k).map(m=>'#'+m.serial);
-    rare=`<div class="itrare">${pix('star')}<div><b>LIMITED RARE · ${r.max} EVER MADE</b><small>${left>0?`${left} left in the store`:'Sold out. Trade with other llamas to get one.'}${ser.length?` · Yours: ${ser.join(' ')}`:''}</small></div></div>`; } }
+    rare=`<div class="itrare">${pix('star')}<div><b>HARVEST FAIR PRIZE</b><small>${left>0?`${left} left at the fair stall`:'All gone. Trade with other llamas to get one.'}${ser.length?` · You have ${ser.length}`:''}</small></div></div>`; } }
   const stat=(v,l)=>`<div><b>${v}</b><small>${l}</small></div>`;
   let h=`<div class="itv"><canvas id="it_cv"></canvas>${canTurn(k)?`<button type="button" class="gbbtn itrot" id="it_rot" aria-label="Turn it">${pix('arrowr')} TURN</button>`:''}</div>
     <div class="itd">${esc(FURN_DESC[base]||FURN_DESC[k]||'A fine piece for any llama pad.')}</div>${rare}
@@ -6647,7 +6655,7 @@ function pmCard(o){ const P=PM.p&&PM.p.n===o.n.toUpperCase() ? PM.p : null;
   if (!P){ $id('pm_info').innerHTML=''; return; }
   const sc=(ic,v,l)=>`<div>${pix(ic)}<b>${v}</b><small>${l}</small></div>`;
   let h=ageBadges(P.since)+`<div class="pmsc">${sc('joystick',P.hay,'HAY CATCH')}${sc('fire',P.dash,'LLAMA DASH')}${sc('splash',P.arena,'SPIT ARENA')}${sc('bowl',P.bowl,'BOWLING')}</div>`;
-  if (P.rares && P.rares.length) h+=`<div class="pmr">${pix('star')}<span>${P.rares.map(r=>`${esc((FURN_DEF[r.item]||{n:r.item}).n)} #${r.serial}`).join(', ')}</span></div>`;
+  if (P.rares && P.rares.length) h+=`<div class="pmr">${pix('star')}<span>${P.rares.map(r=>esc((FURN_DEF[r.item]||{n:r.item}).n)).join(', ')}</span></div>`;
   if (P.room) h+=`<div class="pmroom">${pix('house')}<span><b>${esc(P.room.name)}</b><small>${P.room.priv?`${pix('lock')} PRIVATE`:'OPEN TO ALL'}${P.room.likes?` · ♥ ${P.room.likes}`:''}</small></span><button class="gbbtn y" id="pm_visit">${P.room.priv?'KNOCK':'VISIT'}</button></div>`;
   $id('pm_info').innerHTML=h;
   { const b=$id('pm_visit'); if (b) b.onclick=()=>{ const R2=P.room; closeAll(); if (!R2.priv) prGo(R2.id); else { localMsg('KNOCKING...'); NET.act('pr_knock',{rid:R2.id}).then(r=>{ if (r.open) prGo(R2.id); else if (r.msg) localMsg(r.msg); }); } }; }

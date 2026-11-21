@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-28a";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-28b";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -186,13 +186,13 @@ const HUNTS = {
 };
 const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
 
-// ---------- limited rares ----------
-// Numbered furniture made in small runs and never sold again. Each copy has its own number (#1, #2, ...) and owner.
+// ---------- fair prizes (the code still calls them rares) ----------
+// Keepsakes from the LLAMA ACRES HARVEST FAIR: a set number of each, then trading only. Each copy has its own number and owner so trades can tell copies apart.
 // They go in STORAGE like other furniture (finv) and can be placed; the rares table tracks which numbered copies you own.
 // open = when the drop starts (ms); each llama can buy up to RARE_EACH of each from the store (more only by trading).
 const RARES = {
   statue: { n: "CRYSTAL LLAMA STATUE", p: 150, max: 50, open: 0 },
-  throne: { n: "GOLDEN LLAMA THRONE", p: 250, max: 25, open: Date.parse("2026-11-21T01:00:00Z") },   // Friday 8:00 pm Eastern
+  throne: { n: "PRIZE HAY BALE", p: 250, max: 25, open: Date.parse("2026-11-21T01:00:00Z") },   // Friday 8:00 pm Eastern
 };
 const RARE_EACH = 2;
 for (const [k, R] of Object.entries(RARES)) FURN_ITEMS[k] = R.p;
@@ -1566,18 +1566,18 @@ export class Lounge extends DurableObject {
   }
   async rareBuy(a, m) {
     await this.rareTables();
-    const k = String(m.item || ""), R = Object.hasOwn(RARES, k) ? RARES[k] : null; if (!R) return { ok: false, msg: "That isn't a rare." };
-    if (!a.pres || a.pres.rm !== "store") return { ok: false, msg: "Visit the LLAMA STORE to buy rares." };
-    const now = Date.now(); if (now < R.open) return { ok: false, msg: `The ${R.n} drop hasn't started yet.` };
+    const k = String(m.item || ""), R = Object.hasOwn(RARES, k) ? RARES[k] : null; if (!R) return { ok: false, msg: "That isn't a fair prize." };
+    if (!a.pres || a.pres.rm !== "store") return { ok: false, msg: "Visit the LLAMA STORE to get a fair prize." };
+    const now = Date.now(); if (now < R.open) return { ok: false, msg: `The ${R.n} hasn't arrived from the fair yet.` };
     const bought = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM ledger WHERE uid = ? AND reason = ?").bind(a.uid, "rare " + k).first();
-    if (bought.n >= RARE_EACH) return { ok: false, msg: `You can buy up to ${RARE_EACH} of each rare. Trade for more!` };
-    const left = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM rares WHERE item = ?").bind(k).first(); if (left.n >= R.max) return { ok: false, msg: "SOLD OUT! The only way to get one now is to trade for it." };
+    if (bought.n >= RARE_EACH) return { ok: false, msg: `You can take home ${RARE_EACH} of each fair prize. Trade for more!` };
+    const left = await this.env.DB.prepare("SELECT COUNT(*) AS n FROM rares WHERE item = ?").bind(k).first(); if (left.n >= R.max) return { ok: false, msg: "ALL GONE! The only way to get one now is to trade for it." };
     const tk = await this.debit(a.uid, R.p, "rare " + k); if (tk === null) return { ok: false, msg: `That costs ${R.p} TOKENS. Play some games to earn more!` };
     // take the next number, but never past the limit (UNIQUE item+serial stops two buyers getting the same number)
     let r = null; try { r = await this.env.DB.prepare("INSERT INTO rares (item, serial, owner, t) SELECT ?, COUNT(*) + 1, ?, ? FROM rares WHERE item = ? HAVING COUNT(*) < ? RETURNING id, serial").bind(k, a.uid, now, k, R.max).first(); } catch (e) { r = null; }
     if (!r) { const tk2 = await this.credit(a.uid, R.p, "rare refund " + k); return { ok: false, tk: tk2, msg: "Someone grabbed the last one first! Your tokens are back." }; }
     await this.env.DB.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, k).run();
-    return { ok: true, tk, serial: r.serial, msg: `You got ${R.n} #${r.serial} of ${R.max}!`, rares: await this.rareInfo(a.uid), furn: await this.furnStorage(a.uid) };
+    return { ok: true, tk, serial: r.serial, msg: `The ${R.n} is yours!`, rares: await this.rareInfo(a.uid), furn: await this.furnStorage(a.uid) };
   }
 
   // ---------- trading ----------
