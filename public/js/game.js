@@ -5441,17 +5441,22 @@ function showRoomPick(first){
 }
 // first room after launching joins the game; after that it's a normal room switch
 function goRoom(r){ roomPickEl.style.display='none'; $id('roomsbox').style.display='none';
+  // the first room: cover the screen while the room is built and drawn, then reveal it finished
+  if (!joined && !goRoom.booted){ if (goRoom.pending) return; goRoom.pending=true; bootShow('ENTERING '+String(ROOM_NAMES[r]||'THE LOUNGE').toUpperCase()+'...', me.c);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ goRoom.booted=true; goRoom.pending=false; try { goRoom(r); } finally { bootHide(700); } })); return; }
   if (!joined){ if (tourWanted()) setTimeout(()=>{ if (joined && !TOUR.on) tourStart(); }, 1600);   /* brand-new llamas get the tour first; the daily reward waits until it's done */
     else if (dailyLater){ dailyLater=false; setTimeout(()=>{ if (!uiOpen() && $id('roomsbox').style.display!=='block') dailyPop(); }, 1800); } ensureAudio(); restartSong(); setRoom(r); joined=true; updateRoombar(); flash(); sysMsg(`${me.n} entered ${ROOM_NAMES[r]}!`); if (wallet.get()) localMsg(`You have ${wallet.get()} TOKENS.`); setTimeout(()=>walkTo(...spawnSpot(r)), 500); sendPresence(true); }
   else switchRoom(r); }
 for (const b of document.querySelectorAll('#roompick [data-r]')) b.addEventListener('click', ()=>goRoom(b.dataset.r));
 document.getElementById('rp_close').addEventListener('click', ()=>{ roomPickEl.style.display='none'; });
 
+// load what the server knows about the room you're standing in (treasure holes, the boxing ring). Runs on entering and again after a reconnect.
+function roomSync(){ if (typeof bxHudDraw!=='function') return; bxHudDraw(); coveHud(); if (curRoom==='cove' || curRoom==='jungle') enterCove(); if (curRoom==='gym') NET.act('box_info').then(r=>{ if (r && r.ok){ BXUI.info=r; BXS.s=r.s; bxHudDraw(); } }); }
 function setRoom(r){ if (typeof TOUR!=='undefined' && TOUR.on) setTimeout(()=>tourGuide(true), 0); if (me.fish) stopFish(true); if (typeof AR!=='undefined' && AR.on) arenaClose(true); if (typeof BW!=='undefined' && BW.on) bowlClose(true);
   curRoom = (ROOMS.includes(r) || (isP(r) && PRD[r])) ? r : 'lounge'; store.room = isP(curRoom) ? 'lounge' : curRoom; saveStore();
   if (typeof prEditStop==='function') prEditStop();
   buildWorld(); rebuildBG();
-  if (typeof bxHudDraw==='function'){ bxHudDraw(); coveHud(); if (curRoom==='cove' || curRoom==='jungle') enterCove(); if (curRoom==='gym') NET.act('box_info').then(r=>{ if (r && r.ok){ BXUI.info=r; BXS.s=r.s; bxHudDraw(); } }); }
+  roomSync();
   me.bar=false; me.path=[]; me.moving=false; me.p='stand'; me.pending=null; me.after=null; me.prog=0;
   const [sx,sy]=entryFor(curRoom).at; me.gx=sx; me.gy=sy; me.x=sx+0.5; me.y=sy+0.5; me.d='fr';
   tgState[0]=tgState[1]=null; tableFx[0]=tableFx[1]=null; camInit=false; camMan=false;
@@ -6122,11 +6127,19 @@ async function loadAccount(){ return !!acct; }
 function acctSave(){ clearTimeout(acctTimer); acctTimer=setTimeout(()=>{ NET.act('profile',{c:store.c||me.c, agreed:+store.agreed||0, bet:Number.isInteger(store.bet)?store.bet:2}); }, 400); }
 const acctHasLlama = () => !!(acct && CHAR_IDS.includes(acct.c));
 function autoEnter(){ try { setSel(me.c); pname.value=me.n; enter(); } catch(e){ console.error(e); if (!joined){ roomPickEl.style.display='none'; $id('roomsbox').style.display='none'; pick.style.display='flex'; } } }
+// ---- loading screen ----
+const bootEl=document.getElementById('boot'); let bootAt=performance.now();
+function bootLlama(c){ try { const h=document.getElementById('boot_l'); h.innerHTML=llamaPic(CHARS[c]?c:'twotone', null, 96); } catch(_){} }
+function bootShow(t, c){ bootAt=performance.now(); document.getElementById('boot_t').textContent=t||'LOADING...'; if (c) bootLlama(c); bootEl.classList.remove('out'); bootEl.style.display='none'; void bootEl.offsetWidth; bootEl.style.display='flex'; }
+// hide once the pixel fonts are in and a couple of frames have been drawn, and never sooner than `min` ms after it appeared (so it doesn't just flicker)
+function bootHide(min){ const go=()=>setTimeout(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{ bootEl.classList.add('out'); setTimeout(()=>{ if (bootEl.classList.contains('out')) bootEl.style.display='none'; }, 260); })), Math.max(0, (min||450)-(performance.now()-bootAt)));
+  let f=null; try { f=document.fonts && Promise.all([document.fonts.load("10px 'Press Start 2P'"), document.fonts.load("600 14px 'Pixelify Sans'")]); } catch(_){}
+  (f ? Promise.race([f, new Promise(r=>setTimeout(r, 1200))]) : Promise.resolve()).then(go, go); }
 async function startGate(){
-  if (await handleEmailLink()) return;   // a reset link shows the new-password form first
-  loadingEl.style.display='block';
+  bootLlama(CHAR_IDS.includes(store.c)?store.c:'twotone');
+  if (await handleEmailLink()){ bootHide(); return; }   // a reset link shows the new-password form first
   let r=null; try { r = await fetch('/api/me', {credentials:'same-origin'}); } catch(e){}
-  loadingEl.style.display='none';
+  bootHide();
   if (r && r.ok){ applyProfile(await r.json()); afterLogin(); }
   else if (r && r.status===403){ const j=await r.json().catch(()=>({})); showKicked(j.error||'This account is banned.'); }
   else showAuth('login', pendingNote, /confirmed/.test(pendingNote)), pendingNote='';
@@ -7367,10 +7380,21 @@ document.getElementById('ds_refresh').addEventListener('click', loadDash);
 document.getElementById('ds_close').addEventListener('click', ()=>{ dashEl.style.display='none'; });
 NET.handlers.tg = m => tgServer(m);
 NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; renderBoard(); };
-NET.handlers.hello = m => { if (Number.isFinite(+m.now)) SRV_OFF=(+m.now)-Date.now(); PKASK.tries=0; setTimeout(pkAsk, 5000); setTimeout(()=>dailyLoad(true), 2500); setTimeout(blocksLoad, 300); setTimeout(()=>{ if (!joined || ($id('roomsbox').style.display==='block' && PRUI.view==='list')) prRefresh(); }, 0);   /* the ROOMS pop-up may have opened before the connection was ready */ if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true);
+NET.handlers.hello = m => { if (Number.isFinite(+m.now)) SRV_OFF=(+m.now)-Date.now(); PKASK.tries=0; setTimeout(pkAsk, 5000); setTimeout(()=>dailyLoad(true), 2500); setTimeout(blocksLoad, 300); setTimeout(()=>{ if (!joined || ($id('roomsbox').style.display==='block' && PRUI.view==='list')) prRefresh(); }, 0);   /* the ROOMS pop-up may have opened before the connection was ready */ if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; netBack(m.re);
   // load friends, unread messages and the outfit every time we (re)connect
   setTimeout(()=>{ frLoad(); wdLoad(); dmLoad(); }, 150); };
 NET.handlers.kick = m => showKicked(m.msg);
+// ---- dropped connection: a small banner while it's down, then straight back to the same room and spot ----
+const netEl=$id('netdown'); let netDownT=null, netWasDown=false;
+NET.handlers.down = () => { updateStatus(); clearTimeout(netDownT); netDownT=setTimeout(()=>{ if (!NET.ready && joined){ netWasDown=true; netEl.textContent='RECONNECTING...'; netEl.className='on'; } }, 1200); };
+function netBack(re){ clearTimeout(netDownT); updateStatus();
+  const shown=netWasDown; netWasDown=false; if (shown){ netEl.textContent='BACK ONLINE'; netEl.className='on ok'; setTimeout(()=>{ if (NET.ready) netEl.className=''; }, 1600); } else netEl.className='';
+  if (!joined) return;
+  if (isP(curRoom)){   // player rooms: the server has to let you back in first
+    NET.act('pr_enter',{rid:+curRoom.slice(2)}).then(r=>{ if (r && r.ok){ sendPresence(true); return; }
+      if (!NET.ready) return; localMsg('That room needs to let you in again, so you are back in the lounge.'); setRoom('lounge'); sendPresence(true); });
+    return; }
+  sendPresence(true); if (re) roomSync(); }
 // ---- hunger and thirst: the server keeps the real numbers; the page counts them down smoothly in between ----
 const ND = { hu:100, th:100, at:performance.now(), rate:{hu:100/(75*60000), th:100/(60*60000)}, warned:{} };
 const ndNow = k => Math.max(0, ND[k] - (joined ? (performance.now()-ND.at)*ND.rate[k] : 0));

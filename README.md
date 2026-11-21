@@ -468,3 +468,9 @@ Emotes (heart, wow, huh, music, lol, zzz, wave, flex, facepalm) show as their ou
 
 ### Staff powers need a passkey
 A staff role (set only in the database) is switched on only while the account has a passkey: `staffRole` is the role a llama can use, `baseRole` is the role it holds. Without a passkey a mod or owner plays as a normal llama (no dashboard, no commands, no badge) but still counts as staff to others (cannot be blocked or moderated by mods). A reminder pop-up shows once each visit; YES opens ACCOUNT at the passkey form. Adding a passkey turns the tools on at once; turning passkeys off turns them off. Tests cover all of this.
+
+### Loading screen, home-screen app, reconnects, treasure odds (Nov 21)
+- **Loading screen.** `#boot` covers the page with a pixel loader (your llama, the title, a stepping bar) from page load until the login or welcome screen is ready, and again while the first room is built ("ENTERING LLAMA LOUNGE..."). It waits for the pixel fonts and two drawn frames, and removes itself after 15 seconds if anything goes wrong.
+- **Add to home screen.** `public/manifest.webmanifest` plus icons in `public/icons/` (192, 512, maskable, Apple touch, favicon). Saved to a phone's home screen, the game opens full screen with its own icon.
+- **Reconnects.** A dropped connection retries after 0.5 s, then 1, 2, 4 and 8 s; coming back to the tab or getting signal back retries at once. A quiet ping every 20 seconds (answered by the server without waking the room) spots a dead connection. After reconnecting you are in the same room and spot; player rooms let you back in first; treasure and gym state reload. A RECONNECTING banner shows if it takes over a second, then BACK ONLINE. The server now finishes the closing handshake so the page notices a close at once.
+- **Treasure odds.** The jungle now uses the cove's odds (coins 55%, gold 28%, gem 12%, rare 5%), so neither room pays better.

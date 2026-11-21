@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-26b";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-26c";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -182,7 +182,7 @@ const jungleDiggable = (x, y) => jungleFloor(x, y) && x >= 1 && !JUNGLE_SOLID.ha
 const coveDiggable = (x, y) => coveSand(x, y) && !COVE_SOLID.has(x + "," + y) && !(x <= 2 && y >= 7 && y <= 9);   // not the landing by the dock
 const HUNTS = {
   cove:   { table: "cove", dig: (x, y) => coveDiggable(x, y), rare: "tchest", rareFind: "chest", finds: COVE.finds },
-  jungle: { table: "jungle", dig: (x, y) => jungleDiggable(x, y), rare: "gidol", rareFind: "idol", finds: [["coins", 3, 0.5], ["gold", 6, 0.28], ["gem", 10, 0.15], ["idol", 4, 0.07]] },
+  jungle: { table: "jungle", dig: (x, y) => jungleDiggable(x, y), rare: "gidol", rareFind: "idol", finds: [["coins", 3, 0.55], ["gold", 6, 0.28], ["gem", 10, 0.12], ["idol", 4, 0.05]] },   // same odds as the cove, so neither room pays better
 };
 const halfIfEmpty = (a, n) => (a && a.nd && (a.nd.hu <= 0 || a.nd.th <= 0)) ? Math.floor(n / 2) : n;
 
@@ -890,6 +890,7 @@ export class Lounge extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
     this.tables = [null, null];   // live table games (lost if the room ever sleeps, which only happens when it's empty)
+    try { this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong")); } catch (e) {}   // keep-alive check from the page, answered without waking the room
     this.rmc = new WeakMap();     // socket -> room id, so movement can be sent per room without re-reading every attachment
     this.pend = new Map();        // peer -> socket with movement waiting for the next batch
     this.flushT = null;
@@ -952,6 +953,7 @@ export class Lounge extends DurableObject {
   broadcast(obj, except) { const s = JSON.stringify(obj); for (const w of this.sockets()) if (w !== except) { try { w.send(s); } catch (e) {} } }
 
   async webSocketMessage(ws, raw) {
+    if (raw === "ping") { try { ws.send("pong"); } catch (e) {} return; }
     const a = ws.deserializeAttachment(); if (!a) return;
     // simple flood control: 40 messages a second per connection
     const now = Date.now(); const H = this.hInit(); H.msgs++; if (now - a.rate[0] > 1000) a.rate = [now, 0]; a.rate[1]++; if (a.rate[1] > 40) { H.drop++; ws.serializeAttachment(a); return; }
@@ -1013,7 +1015,8 @@ export class Lounge extends DurableObject {
     }
   }
 
-  async webSocketClose(ws) { this.left(ws); try { const a = ws.deserializeAttachment(); if (a && a.nd) { this.needsDrain(a, Date.now()); await this.needsSave(a); } } catch (e) {} }
+  async webSocketClose(ws) { this.left(ws); try { ws.close(1000, "bye"); } catch (e) {}   // finish the closing handshake, so the page knows at once and can reconnect
+    try { const a = ws.deserializeAttachment(); if (a && a.nd) { this.needsDrain(a, Date.now()); await this.needsSave(a); } } catch (e) {} }
   async webSocketError(ws) { this.left(ws); }
   left(ws) { const a = ws.deserializeAttachment(); if (a) this.pend.delete(a.peer); this.rmc.set(ws, null); if (a && a.pres) this.broadcast({ t: "peers", left: [{ peer: a.peer }] }, ws); if (a) this.tradeDrop(a.uid, `${a.name} left, so the trade was cancelled.`); }
 
