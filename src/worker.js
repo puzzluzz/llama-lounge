@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-29c";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-30a";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -333,8 +333,18 @@ const isAdmin = (env, u) => !!u && u.role === "admin";
 // the role a llama HOLDS (set only in the database): used when someone else acts on them (staff can't be blocked, mods can't moderate mods, nobody moderates the owner)
 const baseRole = (env, u) => (isAdmin(env, u) ? "owner" : u && u.role === "mod" ? "mod" : "");
 // the role a llama can USE right now: STAFF POWERS NEED A PASSKEY on the account. Without one they play as a normal llama until they add it.
-const staffRole = (env, u) => (u && u.pk_on ? baseRole(env, u) : "");
-const profileOf = (env, u, timers = []) => ({ since: u.created || 0, email: u.email || "", emailOk: !!u.email_ok, mailOn: mailOn(env), name: u.name.toUpperCase(), c: u.c, agreed: u.agreed, bet: u.bet, tk: u.tk, bestHay: u.best_hay, bestDash: u.best_dash, admin: staffRole(env, u) === "owner", staff: staffRole(env, u), pkNeed: u.pk_on ? "" : baseRole(env, u), timers });
+// SECOND LOGIN STEP. Staff tools only switch on for an account that has one:
+//  - a passkey (anyone; the owner can ONLY use a passkey), or
+//  - EMAIL LOGIN CODES (mods only): a 6-digit code sent to the mod's confirmed email at every login.
+// Email codes are weaker than a passkey (whoever gets into the mailbox passes them), so a password reset by email or an
+// email change pauses them for EM2.holdMs (staff tools stay off meanwhile) and writes a line to the staff log.
+const EM2 = { codeMs: 10 * 60000, holdMs: 24 * 3600000, sends: 5 };
+const em2On = (env, u) => !!(u && u.em2 && u.email && u.email_ok && mailOn(env) && baseRole(env, u) === "mod" && !(u.em2_hold > Date.now()));
+const tfaOn = (env, u) => !!(u && (u.pk_on || em2On(env, u)));
+const staffRole = (env, u) => (tfaOn(env, u) ? baseRole(env, u) : "");
+const maskEmail = (e) => String(e || "").replace(/^(.)[^@]*(@.*)$/, "$1***$2");
+const staffLog = (env, by, cmd, target) => env.LOUNGE.get(env.LOUNGE.idFromName("main")).fetch(new Request("https://room/log", { method: "POST", body: JSON.stringify({ by, cmd, target }) })).catch(() => {});
+const profileOf = (env, u, timers = []) => ({ since: u.created || 0, email: u.email || "", emailOk: !!u.email_ok, mailOn: mailOn(env), name: u.name.toUpperCase(), c: u.c, agreed: u.agreed, bet: u.bet, tk: u.tk, bestHay: u.best_hay, bestDash: u.best_dash, admin: staffRole(env, u) === "owner", staff: staffRole(env, u), pkNeed: tfaOn(env, u) ? "" : baseRole(env, u), timers });
 
 // ---------- email ----------
 // Sending uses Cloudflare Email Service: a "send_email" binding named EMAIL plus a MAIL_FROM address on a domain
@@ -431,7 +441,7 @@ async function checkPassword(u, pw) { const h = await pbkdf2(pw, unb64(u.salt), 
 const PK = { chalMs: 5 * 60000, maxTries: 5, codes: 8 };
 const unb64u = (s) => unb64(String(s || "").replace(/-/g, "+").replace(/_/g, "/") + "===".slice((String(s || "").length + 3) % 4));
 async function pkSchema(env) {
-  for (const col of ["pk_on INTEGER NOT NULL DEFAULT 0", "pk_bk TEXT NOT NULL DEFAULT '[]'"]) { try { await env.DB.prepare("ALTER TABLE users ADD COLUMN " + col).run(); } catch (e) { if (!/duplicate column/i.test(String(e && e.message || e))) throw e; } }
+  for (const col of ["pk_on INTEGER NOT NULL DEFAULT 0", "pk_bk TEXT NOT NULL DEFAULT '[]'", "em2 INTEGER NOT NULL DEFAULT 0", "em2_hold INTEGER NOT NULL DEFAULT 0"]) { try { await env.DB.prepare("ALTER TABLE users ADD COLUMN " + col).run(); } catch (e) { if (!/duplicate column/i.test(String(e && e.message || e))) throw e; } }
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS passkeys (id TEXT PRIMARY KEY, uid INTEGER NOT NULL, spki TEXT NOT NULL, alg INTEGER NOT NULL, counter INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL)").run();
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS pk_chal (hash TEXT PRIMARY KEY, uid INTEGER NOT NULL, kind TEXT NOT NULL, chal TEXT NOT NULL, expires INTEGER NOT NULL, tries INTEGER NOT NULL DEFAULT 0)").run();
 }
@@ -442,6 +452,27 @@ async function pkChallenge(env, uid, kind) {
   await env.DB.prepare("DELETE FROM pk_chal WHERE expires < ?").bind(Date.now()).run();
   await env.DB.prepare("INSERT INTO pk_chal (hash, uid, kind, chal, expires) VALUES (?, ?, ?, ?, ?)").bind(await sha256hex(ticket), uid, kind, chal, Date.now() + PK.chalMs).run();
   return { chal, ticket };
+}
+// email a 6-digit code and return the ticket that goes with it. Only hashes are stored; a ticket allows PK.maxTries guesses.
+async function em2Send(env, u, kind) {
+  if (await blocked(env, "em2:" + u.id, EM2.sends)) return { error: "Too many codes sent. Wait 15 minutes and try again.", status: 429 };
+  await bump(env, "em2:" + u.id);
+  const n = new Uint32Array(1); crypto.getRandomValues(n); const code = String(n[0] % 1000000).padStart(6, "0");
+  const tk = new Uint8Array(24); crypto.getRandomValues(tk); const ticket = b64u(tk);
+  await env.DB.prepare("DELETE FROM pk_chal WHERE expires < ? OR (uid = ? AND kind = ?)").bind(Date.now(), u.id, kind).run();
+  await env.DB.prepare("INSERT INTO pk_chal (hash, uid, kind, chal, expires) VALUES (?, ?, ?, ?, ?)").bind(await sha256hex(ticket), u.id, kind, await sha256hex("em2:" + ticket + ":" + code), Date.now() + EM2.codeMs).run();
+  const sent = await sendMail(env, u.email, "Your Llama Lounge login code", [`Hi ${u.name.toUpperCase()}, your code is ${code}`, "It works once and expires in 10 minutes. Never share it. Staff will never ask you for it.", "Didn't ask for a code? Someone may have your password. Change it and tell the owner."]);
+  if (!sent) return { error: "The code email could not be sent. Try again in a minute.", status: 502 };
+  return { ticket };
+}
+async function em2Check(env, ticket, kind, code) {   // returns {row} when the code is right, otherwise {error, status}
+  const row = await pkTicket(env, ticket, kind); if (!row) return { error: "That code expired. Start again.", status: 400 };
+  if (row.tries >= PK.maxTries) return { error: "Too many tries. Start again.", status: 429 };
+  await env.DB.prepare("UPDATE pk_chal SET tries = tries + 1 WHERE hash = ?").bind(row.hash).run();
+  const c = String(code || "").replace(/\D/g, "");
+  if (c.length !== 6 || (await sha256hex("em2:" + String(ticket) + ":" + c)) !== row.chal) return { error: "That code didn't work.", status: 401, wrong: true };
+  await env.DB.prepare("DELETE FROM pk_chal WHERE hash = ?").bind(row.hash).run();
+  return { row };
 }
 async function pkTicket(env, ticket, kind) { const row = await env.DB.prepare("SELECT * FROM pk_chal WHERE hash = ? AND kind = ?").bind(await sha256hex(String(ticket || "")), kind).first(); return row && row.expires > Date.now() ? row : null; }
 // what the browser signed: the challenge, the action and the exact site
@@ -465,6 +496,7 @@ async function pkLoginStep(env, url, u) { const { chal, ticket } = await pkChall
   const keys = ((await env.DB.prepare("SELECT id FROM passkeys WHERE uid = ?").bind(u.id).all()).results || []).map((r) => ({ type: "public-key", id: r.id }));
   return json({ need2fa: "passkey", t: ticket, opts: { challenge: chal, rpId: rpIdOf(env, url), allowCredentials: keys, userVerification: "required", timeout: 60000 } }); }
 
+const SITE_HOST = "llamalounge.club";
 // same-origin check for anything that changes state
 function originOk(req, url) { const o = req.headers.get("origin"); return !o || o === url.origin; }
 
@@ -472,6 +504,8 @@ function originOk(req, url) { const o = req.headers.get("origin"); return !o || 
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
+    // one address: the old workers.dev address and www both forward to the game's own domain (passkeys are tied to the address)
+    if (url.hostname === "www." + SITE_HOST || (url.hostname.endsWith(".workers.dev") && url.hostname.startsWith("llama-lounge."))) { url.hostname = SITE_HOST; url.protocol = "https:"; url.port = ""; return Response.redirect(url.toString(), 301); }
     if (url.pathname === "/ws") {
       if (!originOk(req, url) || !req.headers.get("origin")) return new Response("bad origin", { status: 403 });
       if (req.headers.get("upgrade") !== "websocket") return new Response("expected websocket", { status: 426 });
@@ -554,6 +588,7 @@ async function api(req, env, url, ctx) {
     await env.DB.prepare("DELETE FROM login_attempts WHERE k = ?").bind(uk).run();
     await env.DB.prepare("DELETE FROM sessions WHERE expires < ?").bind(Date.now()).run();
     if (u.pk_on) return pkLoginStep(env, url, u);   // password was right; now the passkey
+    if (em2On(env, u)) { const s = await em2Send(env, u, "elogin"); if (s.error) return json({ error: s.error }, s.status); return json({ need2fa: "email", t: s.ticket, to: maskEmail(u.email) }); }   // or the emailed code
     const tok = await newSession(env, u.id);
     return json(profileOf(env, u), 200, { "set-cookie": sessCookie(tok, SESSION_DAYS * 86400) });
   }
@@ -561,6 +596,13 @@ async function api(req, env, url, ctx) {
   // second login step: a passkey signature, or one backup code
   if (path === "/api/login2") {
     if (await blocked(env, "l2:" + ip, IP_MAX_FAILS)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
+    if (body.ecode !== undefined) {   // the emailed code (mods)
+      const r = await em2Check(env, body.t, "elogin", body.ecode); if (r.error) { if (r.wrong) await bump(env, "l2:" + ip); return json({ error: r.error }, r.status); }
+      const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(r.row.uid).first(); if (!u || !em2On(env, u)) return json({ error: "Log in again." }, 400);
+      { const bm = await banMsg(env, u); if (bm) return json({ error: bm }, 403); }
+      const tok = await newSession(env, u.id);
+      return json(profileOf(env, u), 200, { "set-cookie": sessCookie(tok, SESSION_DAYS * 86400) });
+    }
     const row = await pkTicket(env, body.t, "login"); if (!row) return json({ error: "That took too long. Log in again." }, 400);
     if (row.tries >= PK.maxTries) return json({ error: "Too many tries. Log in again." }, 429);
     await env.DB.prepare("UPDATE pk_chal SET tries = tries + 1 WHERE hash = ?").bind(row.hash).run();
@@ -610,7 +652,40 @@ async function api(req, env, url, ctx) {
   if (path === "/api/pk/status") {
     const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
     const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM passkeys WHERE uid = ?").bind(u.id).first();
-    return json({ ok: true, on: !!u.pk_on, keys: n ? n.n : 0, codes: JSON.parse(u.pk_bk || "[]").length });
+    return json({ ok: true, on: !!u.pk_on, keys: n ? n.n : 0, codes: JSON.parse(u.pk_bk || "[]").length,
+      em2: !!u.em2, em2Can: baseRole(env, u) === "mod" && mailOn(env), em2Live: em2On(env, u), emailOk: !!u.email_ok, to: maskEmail(u.email), hold: Math.max(0, (u.em2_hold || 0) - Date.now()) });
+  }
+  // EMAIL LOGIN CODES for mods: turn on (password, then the code we email), turn off (password)
+  if (path === "/api/em2/start") {
+    const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
+    if (baseRole(env, u) !== "mod") return json({ error: "Email login codes are for mods. The owner uses a passkey." }, 403);
+    if (!mailOn(env)) return json({ error: "Emails aren't switched on yet." }, 400);
+    if (!u.email || !u.email_ok) return json({ error: "Confirm your email first (ACCOUNT > EMAIL > RESEND)." }, 400);
+    if (u.em2_hold > Date.now()) return json({ error: "Email login codes are paused for 24 hours after a password reset or an email change. Add a passkey instead, or try again later." }, 403);
+    if (await blocked(env, "pw:" + u.id, PW_CHECK_FAILS)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
+    if (!(await checkPassword(u, String(body.p || "")))) { await bump(env, "pw:" + u.id); return json({ error: "Password is wrong." }, 401); }
+    const s = await em2Send(env, u, "eon"); if (s.error) return json({ error: s.error }, s.status);
+    return json({ ok: true, t: s.ticket, to: maskEmail(u.email) });
+  }
+  if (path === "/api/em2/finish") {
+    const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
+    if (baseRole(env, u) !== "mod" || !u.email_ok || u.em2_hold > Date.now()) return json({ error: "Start again." }, 400);
+    const r = await em2Check(env, body.t, "eon", body.code); if (r.error) return json({ error: r.error }, r.status);
+    if (r.row.uid !== u.id) return json({ error: "Start again." }, 400);
+    await env.DB.prepare("UPDATE users SET em2 = 1 WHERE id = ?").bind(u.id).run();
+    await env.DB.prepare("DELETE FROM sessions WHERE uid = ? AND token_hash != ?").bind(u.id, await sha256hex(cookieToken(req) || "")).run();   // other devices have to log in with a code now
+    later(sendMail(env, u.email, "Email login codes are on for your Llama Lounge account", [`Hi ${u.name.toUpperCase()}, from now on every login also asks for a code sent to this email.`, "If this wasn't you, tell the owner right away."]));
+    later(staffLog(env, u.name.toUpperCase(), "emailcodes", "ON"));
+    return json({ ok: true });
+  }
+  if (path === "/api/em2/off") {
+    const u = await sessionUser(env, req); if (!u) return json({ error: "not logged in" }, 401);
+    if (await blocked(env, "pw:" + u.id, PW_CHECK_FAILS)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
+    if (!(await checkPassword(u, String(body.p || "")))) { await bump(env, "pw:" + u.id); return json({ error: "Password is wrong." }, 401); }
+    await env.DB.prepare("UPDATE users SET em2 = 0 WHERE id = ?").bind(u.id).run();
+    if (u.email) later(sendMail(env, u.email, "Email login codes are off for your Llama Lounge account", [`Hi ${u.name.toUpperCase()}, logins no longer ask for an emailed code.`, "If this wasn't you, tell the owner right away."]));
+    later(staffLog(env, u.name.toUpperCase(), "emailcodes", "OFF"));
+    return json({ ok: true });
   }
   if (path === "/api/pk/codes") {   // new backup codes (the old ones stop working); needs your password
     const u = await sessionUser(env, req); if (!u || !u.pk_on) return json({ error: "not logged in" }, 401);
@@ -665,9 +740,12 @@ async function api(req, env, url, ctx) {
     if (await blocked(env, "pw:" + u.id, PW_CHECK_FAILS)) return json({ error: "Too many tries. Wait 15 minutes and try again." }, 429);
     if (!(await checkPassword(u, pw))) { await bump(env, "pw:" + u.id); return json({ error: "Password is wrong." }, 401); }
     if (email === u.email) return json({ error: "That's already your email." }, 400);
-    try { await env.DB.prepare("UPDATE users SET email = ?, email_ok = 0 WHERE id = ?").bind(email, u.id).run(); }
+    const hadCodes = !!u.em2, isStaff = !!baseRole(env, u);
+    try { await env.DB.prepare("UPDATE users SET email = ?, email_ok = 0, em2 = 0, em2_hold = CASE WHEN ? THEN ? ELSE em2_hold END WHERE id = ?").bind(email, isStaff ? 1 : 0, Date.now() + EM2.holdMs, u.id).run(); }
     catch (e) { if (String(e).includes("UNIQUE")) return json({ error: "That email is on another account." }, 409); throw e; }
     await env.DB.prepare("DELETE FROM email_tokens WHERE uid = ? AND kind = 'reset'").bind(u.id).run();   // old reset links stop working
+    if (u.email) later(sendMail(env, u.email, "Your Llama Lounge email was changed", [`Hi ${u.name.toUpperCase()}, the email on your account was just changed to ${maskEmail(email)}.`, "If this wasn't you, tell the owner right away."]));
+    if (isStaff) later(staffLog(env, u.name.toUpperCase(), "emailchange", hadCodes ? "EMAIL CODES OFF, PAUSED 24H" : "EMAIL CODES PAUSED 24H"));
     later(sendVerify(env, url, u, email));
     if (u.email) later(sendMail(env, u.email, "Your Llama Lounge email was changed", [`Hi ${u.name.toUpperCase()}, the email on your account was changed to ${email}.`, "If this wasn't you, reply to a staff member in the game right away."]));
     const nu = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(u.id).first();
@@ -716,6 +794,9 @@ async function api(req, env, url, ctx) {
     await env.DB.prepare("DELETE FROM email_tokens WHERE uid = ? AND kind = 'reset'").bind(u.id).run();
     await env.DB.prepare("DELETE FROM login_attempts WHERE k = ?").bind("u:" + u.name.toLowerCase()).run();
     if (u.pk_on) { later(sendMail(env, u.email, "Your Llama Lounge password was reset", [`Hi ${u.name.toUpperCase()}, your password was just reset. You'll still need your passkey to log in.`])); return pkLoginStep(env, url, u); }
+    if (u.em2 && baseRole(env, u) === "mod") {   // the reset came through the same mailbox the codes go to, so the codes can't count as a second step for a while
+      await env.DB.prepare("UPDATE users SET em2_hold = ? WHERE id = ?").bind(Date.now() + EM2.holdMs, u.id).run();
+      later(staffLog(env, u.name.toUpperCase(), "emailcodes", "PAUSED 24H (PASSWORD RESET BY EMAIL)")); }
     later(sendMail(env, u.email, "Your Llama Lounge password was reset", [`Hi ${u.name.toUpperCase()}, your password was just reset and every other device was logged out.`, "If this wasn't you, reset it again right away and tell a staff member."]));
     const tok = await newSession(env, u.id);
     const nu = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(u.id).first();
@@ -936,6 +1017,7 @@ export class Lounge extends DurableObject {
   }
 
   async fetch(req) {
+    if (new URL(req.url).pathname === "/log") { const j = await req.json().catch(() => ({})); await this.logStaff(String(j.by || "").slice(0, 24), String(j.cmd || "").slice(0, 24), String(j.target || "").slice(0, 80)); return json({ ok: true }); }   // from the Worker only
     if (new URL(req.url).pathname === "/count") { const cap = await this.capNow(), live = this.allSockets().filter((w) => w.readyState === 1); const waiting = live.filter((w) => this.isQ(w)).length;
       return json({ online: live.length - waiting, cap, waiting }); }
     const uid = +req.headers.get("x-uid"), name = req.headers.get("x-name"), staff = ["owner", "mod"].includes(req.headers.get("x-staff")) ? req.headers.get("x-staff") : "";
@@ -2847,13 +2929,13 @@ export class Lounge extends DurableObject {
     const ownerOnly = ["unban", "mod", "unmod", "pkreset"];   // pkreset: clear a staff member's passkeys if they lose their device   // mods can mute, kick and ban players; only the owner can unban or change mods
     if (![...ownerOnly, "mute", "unmute", "kick", "ban"].includes(cmd) || !/^[A-Za-z0-9_]{3,12}$/.test(target)) return { ok: false, msg: a.staff === "owner" ? "Use /mute, /unmute, /kick, /ban, /unban, /mod or /unmod NAME" : "Use /mute, /unmute, /kick or /ban NAME" };
     if (ownerOnly.includes(cmd) && a.staff !== "owner") return { ok: false, msg: "Only the owner can do that." };
-    await ensurePk(this.env); const u = await this.env.DB.prepare("SELECT id, name, role, pk_on FROM users WHERE name = ?").bind(target).first();
+    await ensurePk(this.env); const u = await this.env.DB.prepare("SELECT id, name, role, pk_on, em2, em2_hold, email, email_ok FROM users WHERE name = ?").bind(target).first();
     if (!u) return { ok: false, msg: "No player named " + target.toUpperCase() };
     const theirs = baseRole(this.env, u);
     if (u.id === a.uid) return { ok: false, msg: "You can't do that to yourself." };
     if (theirs === "owner") return { ok: false, msg: "Nobody can moderate the owner." };
     if (theirs === "mod" && a.staff !== "owner") return { ok: false, msg: "Mods can't moderate other mods." };
-    if (cmd === "pkreset"){ await ensurePk(this.env); await this.env.DB.prepare("DELETE FROM passkeys WHERE uid = ?").bind(u.id).run(); await this.env.DB.prepare("UPDATE users SET pk_on = 0, pk_bk = '[]' WHERE id = ?").bind(u.id).run(); await this.logStaff(a.name, cmd, u.name.toUpperCase()); return { ok: true, msg: `${u.name.toUpperCase()}'s passkeys were cleared. They can log in with their password and add a new one.` }; }
+    if (cmd === "pkreset"){ await ensurePk(this.env); await this.env.DB.prepare("DELETE FROM passkeys WHERE uid = ?").bind(u.id).run(); await this.env.DB.prepare("UPDATE users SET pk_on = 0, pk_bk = '[]', em2 = 0 WHERE id = ?").bind(u.id).run(); await this.logStaff(a.name, cmd, u.name.toUpperCase()); return { ok: true, msg: `${u.name.toUpperCase()}'s passkeys were cleared. They can log in with their password and add a new one.` }; }
     if (cmd === "mute" || cmd === "unmute") await this.env.DB.prepare("UPDATE users SET muted = ? WHERE id = ?").bind(cmd === "mute" ? 1 : 0, u.id).run();
     // ban length: whole hours from 1 to 8760 (a year), or 0 / nothing for permanent
     const hrs = cmd === "ban" ? Math.floor(+m.hours || 0) : 0;
@@ -2865,8 +2947,8 @@ export class Lounge extends DurableObject {
     for (const w of this.sockets()) { const a2 = w.deserializeAttachment(); if (!a2 || a2.uid !== u.id) continue;
       if (cmd === "ban" || cmd === "kick") { this.send(w, { t: "kick", msg: cmd === "ban" ? (hrs > 0 ? `You have been banned from the lounge for ${hrs} ${hrs === 1 ? "hour" : "hours"}.` : "You have been banned from the lounge.") : "You were removed from the lounge." }); try { w.close(4003, cmd); } catch (e) {} }
       else { // their badge and mute show up straight away
-        a2.uc = null; const live = cmd === "mod" && u.pk_on ? "mod" : ""; if (cmd === "mod" || cmd === "unmod") a2.staff = live; w.serializeAttachment(a2);
-        if (cmd === "mod" || cmd === "unmod") this.send(w, { t: "staff", st: live, pk: cmd === "mod" && !u.pk_on ? "mod" : "", msg: cmd === "mod" ? (u.pk_on ? "You are now a MOD! Open MENU > DASHBOARD." : "You are now a MOD! Add a passkey to switch on your staff tools.") : "You are no longer a mod." }); } }
+        a2.uc = null; const has2 = tfaOn(this.env, { ...u, role: "mod" }), live = cmd === "mod" && has2 ? "mod" : ""; if (cmd === "mod" || cmd === "unmod") a2.staff = live; w.serializeAttachment(a2);
+        if (cmd === "mod" || cmd === "unmod") this.send(w, { t: "staff", st: live, pk: cmd === "mod" && !has2 ? "mod" : "", msg: cmd === "mod" ? (has2 ? "You are now a MOD! Open MENU > DASHBOARD." : "You are now a MOD! Add a passkey or turn on EMAIL LOGIN CODES in MENU > ACCOUNT to switch on your staff tools.") : "You are no longer a mod." }); } }
     await this.logStaff(a.name, cmd, u.name.toUpperCase() + (cmd === "ban" ? (hrs > 0 ? ` FOR ${len}` : " PERMANENTLY") : ""));
     const done = { mute: "muted", unmute: "unmuted", kick: "kicked", ban: hrs > 0 ? `banned for ${len.toLowerCase()}` : "banned permanently", unban: "unbanned", mod: "is now a MOD", unmod: "is no longer a mod" }[cmd];
     return { ok: true, msg: `${u.name.toUpperCase()} ${done}.` };

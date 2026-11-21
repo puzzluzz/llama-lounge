@@ -6330,7 +6330,8 @@ async function startGate(){
     // arriving from the home page: a passkey login that the home page started is finished here; #signup and #forgot open on that tab
     let pk=null; try { pk=JSON.parse(sessionStorage.getItem('ll_pk')||'null'); sessionStorage.removeItem('ll_pk'); } catch(_){}
     const hv=(/^#(signup|forgot)$/.exec(location.hash||'')||[])[1]; if (hv){ try { history.replaceState(null, '', location.pathname+location.search); } catch(_){} }
-    if (pk && pk.t && pk.opts && Date.now()-(+pk.at||0)<120000){ PKL.t=pk.t; PKL.opts=pk.opts; PKL.reset=false; showAuth('pk'); }
+    if (pk && pk.kind==='email' && pk.t && Date.now()-(+pk.at||0)<120000){ EML.t=pk.t; showAuth('em', 'Code sent to '+(pk.to||'your email')+'.', true); }
+    else if (pk && pk.t && pk.opts && Date.now()-(+pk.at||0)<120000){ PKL.t=pk.t; PKL.opts=pk.opts; PKL.reset=false; showAuth('pk'); }
     else showAuth(hv||'login', pendingNote, /confirmed/.test(pendingNote)), pendingNote='';
   }
 }
@@ -6358,6 +6359,7 @@ const AU_VIEWS = {
   signup: {sub:'Make your llama account. You start with 10 tokens!', u:'LLAMA NAME', ua:'username', um:12, e:true, p:'PASSWORD', pa:'new-password', go:'MAKE MY LLAMA', forgot:false, back:false, note:'Names: 3 to 12 letters, numbers or _. Passwords: 8+ characters, stored encrypted. Your email is only used for password resets and is never shown to other players.'},
   forgot: {sub:"Enter your account's email and we'll send you a link to pick a new password.", u:null, e:true, p:null, go:'SEND RESET LINK', forgot:false, back:true, note:'The link works once and expires in 30 minutes. Check your spam folder too.'},
   pk:     {sub:'This account has a passkey. Confirm it\'s you with Face ID, your fingerprint or your screen lock.', u:null, e:false, p:null, go:'USE MY PASSKEY', forgot:false, back:true, note:'No device with you? Use one of the backup codes you saved when you set up the passkey.'},
+  em:     {sub:'We emailed a 6-digit code to your account email. Enter it to finish logging in.', u:null, e:false, p:null, go:'CONFIRM CODE', forgot:false, back:true, note:'The code works once and expires in 10 minutes. Check your spam folder too.'},
   reset:  {sub:'Pick a new password for your llama. This logs you out everywhere else.', u:null, e:false, p:'NEW PASSWORD', pa:'new-password', go:'SAVE NEW PASSWORD', forgot:false, back:true, note:'8+ characters. Make it one you don\'t use anywhere else.'},
 };
 function authView(v, msg, good){
@@ -6368,13 +6370,14 @@ function authView(v, msg, good){
   $id('au_el').style.display=V.e?'':'none'; $id('au_tl').style.display = v==='signup' ? '' : 'none';
   $id('au_pl').style.display=V.p?'':'none'; if (V.p){ $id('au_pt').textContent=V.p; $id('au_p').autocomplete=V.pa; }
   $id('au_go').textContent=V.go; $id('au_forgot').style.display=V.forgot?'':'none'; $id('au_back').style.display=V.back?'':'none';
-  $id('au_note').textContent=V.note; auErr.textContent=msg||''; auErr.classList.toggle('good', !!good); $id('au_pkbk').style.display = v==='pk' ? 'block' : 'none'; $id('au_tabs').style.visibility = v==='pk' ? 'hidden' : '';
-  setTimeout(()=>{ const f = V.u ? $id('au_u') : V.e ? $id('au_e') : $id('au_p'); if (authEl.style.display==='block') f.focus(); }, 50);
+  $id('au_note').textContent=V.note; auErr.textContent=msg||''; auErr.classList.toggle('good', !!good); $id('au_pkbk').style.display = v==='pk' ? 'block' : 'none'; $id('au_eml').style.display = v==='em' ? '' : 'none'; $id('au_tabs').style.visibility = (v==='pk'||v==='em') ? 'hidden' : '';
+  setTimeout(()=>{ const f = v==='em' ? $id('au_ecode') : V.u ? $id('au_u') : V.e ? $id('au_e') : $id('au_p'); if (authEl.style.display==='block') f.focus(); }, 50);
 }
 function showAuth(v, msg, good){ closeAll(); authEl.style.display='block'; authView(v||'login', msg, good); }
 async function doAuth(){
   const v=auView, u=$id('au_u').value.trim(), e=$id('au_e').value.trim(), p=$id('au_p').value;
   if (v==='pk') return pkLogin(false);
+  if (v==='em') return emLogin();
   const busy={login:'LOGGING IN...', signup:'MAKING YOUR ACCOUNT...', forgot:'SENDING...', reset:'SAVING...'}[v];
   if ((v==='signup'||v==='forgot') && !/^\S+@\S+\.\S+$/.test(e)){ auErr.classList.remove('good'); auErr.textContent='Enter a real email.'; return; }
   if (v==='signup' && !$id('au_t').checked){ auErr.classList.remove('good'); auErr.textContent='Please tick the box to confirm you\'re 13 or older and agree to the Terms.'; return; }
@@ -6383,6 +6386,7 @@ async function doAuth(){
   const r = v==='login' ? await apiPost('/api/login',{u,p}) : v==='signup' ? await apiPost('/api/signup',{u,e,p,t:1}) : v==='forgot' ? await apiPost('/api/forgot',{e}) : await apiPost('/api/reset',{t:resetTok,p});
   for (const b of authEl.querySelectorAll('button')) b.disabled=false;
   if (r.need2fa==='passkey'){ PKL.t=r.t; PKL.opts=r.opts; PKL.reset = v==='reset'; $id('au_p').value=''; authView('pk'); return; }
+  if (r.need2fa==='email'){ EML.t=r.t; $id('au_p').value=''; $id('au_ecode').value=''; authView('em', 'Code sent to '+(r.to||'your email')+'.', true); return; }
   if (!r.ok){ auErr.textContent = r.error||'Something went wrong.'; return; }
   if (v==='forgot'){ authView('login', r.mailOn===false ? "Password reset emails aren't switched on yet. Ask a staff member in the game for help." : 'If that email has an account, a reset link is on its way. Check your inbox and spam folder.', r.mailOn!==false); $id('au_u').value=e; return; }
   if (v==='reset'){ resetTok=''; pendingNote='Your password was changed. Every other device was logged out.'; }
@@ -6391,7 +6395,17 @@ async function doAuth(){
 $id('au_form').addEventListener('submit', e=>{ e.preventDefault(); doAuth(); });
 for (const b of $id('au_tabs').children) b.addEventListener('click', ()=>authView(b.dataset.v));
 $id('au_forgot').addEventListener('click', ()=>{ const u=$id('au_u').value.trim(); if (u.includes('@')) $id('au_e').value=u; authView('forgot'); });
-$id('au_back').addEventListener('click', ()=>{ resetTok=''; PKL.t=null; authView('login'); });
+$id('au_back').addEventListener('click', ()=>{ resetTok=''; PKL.t=null; EML.t=null; authView('login'); });
+// ---- email login codes: the second login step for mods who use them ----
+const EML = { t:null };
+async function emLogin(){ auErr.classList.remove('good');
+  if (!EML.t){ authView('login', 'That took too long. Log in again.'); return; }
+  const c=$id('au_ecode').value.replace(/\D/g,''); if (c.length!==6){ auErr.textContent='The code is 6 digits.'; return; }
+  for (const b of authEl.querySelectorAll('button')) b.disabled=true;
+  const r=await apiPost('/api/login2', {t:EML.t, ecode:c});
+  for (const b of authEl.querySelectorAll('button')) b.disabled=false;
+  if (!r.ok){ auErr.textContent=r.error||'That didn\'t work.'; if (/again/i.test(r.error||'')) EML.t=null; return; }
+  EML.t=null; $id('au_ecode').value=''; authEl.style.display='none'; applyProfile(r); afterLogin(); }
 // ---- passkeys: the second login step for staff, and adding one from the ACCOUNT desk ----
 const PKL = { t:null, opts:null, reset:false };
 const pkEnc = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -6430,6 +6444,18 @@ function pkSection(){ const el=$id('ac_pk'); if (!el) return;
       $id('pk_p').value=''; const was=acct && acct.pkNeed; await staffRefresh(); acMsg(was ? 'Passkey added! Your staff tools are on now. Logins on this llama now need it.' : 'Passkey added! Logins on this llama now need it.', true); pkSection(); if (r2.codes) setTimeout(()=>showCodes(r2.codes), 300); };
     const c=$id('pk_codes'); if (c) c.onclick=async ()=>{ if (!pw()) return acMsg('Enter your password first.'); const r2=await apiPost('/api/pk/codes',{p:pw()}); if (!r2.ok) return acMsg(r2.error||'That did not work.'); $id('pk_p').value=''; acMsg('New backup codes made. The old ones stopped working.', true); showCodes(r2.codes); };
     const o=$id('pk_off'); if (o) o.onclick=async ()=>{ if (!pw()) return acMsg('Enter your password first.'); if (!o.classList.contains('sure')){ o.classList.add('sure'); o.textContent='REALLY TURN OFF?'; acMsg('Heads up: your staff tools switch off until you add a passkey again.'); return; } const r2=await apiPost('/api/pk/off',{p:pw()}); if (!r2.ok) return acMsg(r2.error||'That did not work.'); await staffRefresh(); acMsg('Passkeys removed. Logins only need your password now, and your staff tools are off.', true); pkSection(); };
+    // EMAIL LOGIN CODES (mods only): a weaker but simpler second step than a passkey
+    if (r.em2Can){ const box=document.createElement('div'); box.className='em2box'; const hrs=Math.ceil((r.hold||0)/3600000);
+      box.innerHTML = `<div class="ach">EMAIL LOGIN CODES (MODS)</div>` + (r.em2 ? `<div class="acst ok">ON${r.em2Live?'':' (PAUSED)'} · CODES GO TO ${esc(r.to||'')}</div>` : `<div class="acv">No passkey? Every login can ask for a 6-digit code sent to ${esc(r.to||'your email')} instead. A passkey is safer, so use one if your device can.</div>`)
+        + (hrs>0 ? `<div class="acv">Paused for about ${hrs} more hour${hrs===1?'':'s'} after a password reset or email change. Staff tools need a passkey until then.</div>` : '')
+        + (!r.emailOk ? '<div class="acv">Confirm your email first (EMAIL section above).</div>' : '')
+        + `<div class="srow pkbtns">${r.em2 ? '<button class="gbbtn" id="em2_off">TURN OFF</button>' : (r.emailOk && hrs<=0 ? '<button class="gbbtn y" id="em2_on">TURN ON</button>' : '')}</div><div id="em2_out"></div>`;
+      el.appendChild(box);
+      const on=$id('em2_on'); if (on) on.onclick=async ()=>{ if (!pw()) return acMsg('Enter your login password first (box above).'); acMsg('SENDING A CODE...'); const s=await apiPost('/api/em2/start',{p:pw()}); if (!s.ok) return acMsg(s.error||'That did not work.');
+        $id('pk_p').value=''; acMsg('Code sent to '+(s.to||'your email')+'. Enter it below.', true);
+        $id('em2_out').innerHTML='<input id="em2_code" inputmode="numeric" maxlength="7" autocomplete="one-time-code" placeholder="6-digit code"><div class="srow pkbtns"><button class="gbbtn y" id="em2_ok">CONFIRM CODE</button></div>'; acInputs(); $id('em2_code').focus();
+        $id('em2_ok').onclick=async ()=>{ const f=await apiPost('/api/em2/finish',{t:s.t, code:$id('em2_code').value}); if (!f.ok) return acMsg(f.error||'That did not work.'); await staffRefresh(); acMsg('Email login codes are on. Your staff tools are on now, and every login will ask for a code.', true); pkSection(); }; };
+      const off=$id('em2_off'); if (off) off.onclick=async ()=>{ if (!pw()) return acMsg('Enter your login password first (box above).'); const f=await apiPost('/api/em2/off',{p:pw()}); if (!f.ok) return acMsg(f.error||'That did not work.'); $id('pk_p').value=''; await staffRefresh(); acMsg('Email login codes are off.', true); pkSection(); }; }
     acInputs(); }); }
 for (const b of document.querySelectorAll('.eye')) b.addEventListener('click', ()=>{ const i=$id(b.dataset.for); const show=i.type==='password'; i.type=show?'text':'password'; b.textContent=show?'HIDE':'SHOW'; i.focus(); });
 for (const el of authEl.querySelectorAll('input')) el.addEventListener('keydown', e=>e.stopPropagation());

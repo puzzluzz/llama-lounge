@@ -44,6 +44,10 @@
       try { sessionStorage.setItem('ll_pk', JSON.stringify({ t: j.t, opts: j.opts, at: Date.now() })); } catch (_) { /* the game will ask for the password again */ }
       location.href = '/play'; return;
     }
+    if (r && r.ok && j.need2fa === 'email') {   // mods using email login codes: the code is entered in the game
+      try { sessionStorage.setItem('ll_pk', JSON.stringify({ kind: 'email', t: j.t, to: j.to, at: Date.now() })); } catch (_) { /* the game will ask for the password again */ }
+      location.href = '/play'; return;
+    }
     if (r && r.ok && j.name) { location.href = '/play'; return; }
     go.disabled = false; go.textContent = 'LOG IN AND PLAY';
     err.textContent = (j && j.error) || (r ? 'That did not work. Try again.' : 'Could not reach the game. Check your connection and try again.');

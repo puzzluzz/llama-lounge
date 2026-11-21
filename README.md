@@ -546,3 +546,16 @@ A panel opened from the MENU shows a back arrow in its header that returns to th
 - Email links go to `/play#reset=` and `/play#verify=`; old links to `/#...` are forwarded.
 - Voice: the tour and quick-chat lines use the La Llama P.I.C. satire voice. It jokes about everything in general and never targets a group of people; the player rules and the word filter are unchanged.
 - Chat filter: OFF by the owner's choice (`CHAT_FILTER = false` inside `WF` in both src/worker.js and public/js/game.js; set both to true to bring back starred swears and blocked slurs). Llama names and room names are still checked. Swears and slurs are still counted (`WF.flag`, `wfHit`): `WF_WARN_AT` (10) flagged messages within `WF_WINDOW_MS` (10 minutes) shows the sender a heads-up that the messages may offend some people and adds a line to the staff log; nothing is blocked. The login screen, the home page and the Terms all warn that chat can contain offensive language. `RULES_V` was raised to 2 so every player sees the updated rules once.
+
+## Second login step for staff
+
+Staff tools only switch on for an account with a second login step (`tfaOn` in src/worker.js):
+
+- **Passkey:** anyone can add one; the owner can only use a passkey.
+- **Email login codes (mods only):** MENU > ACCOUNT > EMAIL LOGIN CODES. Every login then asks for a 6-digit code sent to the mod's confirmed email (valid 10 minutes, 5 tries, 5 codes per 15 minutes; only hashes are stored). Endpoints: `/api/em2/start`, `/api/em2/finish`, `/api/em2/off`; the login step is `/api/login2` with `ecode`.
+- Email codes are weaker than a passkey because the mailbox is also how passwords are reset. So a password reset by email, or an email change, pauses the account's email codes for 24 hours (`EM2.holdMs`), keeps staff tools off meanwhile, and writes a line to the staff log.
+- The owner's `pkreset` command clears a player's passkeys and email codes.
+
+## One address
+
+`llamalounge.club` is the game's address (`SITE_HOST`). The old `llama-lounge.*.workers.dev` address and `www.` forward to it, because passkeys and logins are tied to the address.

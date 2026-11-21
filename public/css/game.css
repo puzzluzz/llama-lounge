@@ -1027,3 +1027,5 @@
 
   /* satire disclaimer under the login form */
   .audisc{margin-top:12px;padding:10px 12px;border:2px dashed #c9bfe2;border-radius:8px;background:#faf7ff;color:#4a3f6b;font:500 12px/1.5 var(--ui);text-align:left}
+
+  .em2box{margin-top:14px;padding-top:12px;border-top:2px dashed var(--line)} .em2box .ach{margin-bottom:6px}
