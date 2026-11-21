@@ -502,3 +502,14 @@ So on this test machine the old server kept up to about 50 llamas and the new on
 - **Boxing call-outs** sit above the fighter's name tag, so they never cover a name.
 - Slot odds are unchanged from the design: FRUIT FRENZY and LUCKY LINES pay back about 89%, the PRIZE WHEEL about 88%.
 - **One llama at a time.** The arcade, jukebox, PLINKO machine, both store vending machines, the changing booth and each slot machine are used from the tile right in front of them (`USE`, `useGo`). Tap one anywhere and your llama walks there and uses it. If someone is already on it, your llama walks up beside them and you are told who is using it; it never opens for two llamas at once. The gym bells also count a tap anywhere on them.
+
+### Play together batch (Nov 21)
+- **Idle llamas free a machine.** A llama standing at a machine without doing anything for a minute no longer holds it (`USE_IDLE_MS`). Someone actually playing the arcade always holds it.
+- **Boxing line.** When both rings are busy, picking a partner puts your fight in a NEXT UP line (up to 8, one entry per llama). Fights start by themselves as rings free up; walking out of the gym gives up your place; LEAVE THE LINE is in the boxing panel.
+- **Wins over heads.** When a slot pays, everyone in the casino sees "+N" float up over the player's head once the reels stop, with a BIG WIN! burst and a chat line for wins of 20 times the bet or more.
+- **Quick chat.** The smiley menu now has one-tap lines under the emotes: HI!, GG, LOL, NICE!, THANKS!, BRB, WANT TO BOX?, FOLLOW ME!, BYE!
+- **Double treasure events.** For the first 30 minutes of 9 am, 12 pm, 3 pm, 6 pm and 9 pm Eastern, one treasure room (they take turns) pays double. The extra is a bonus on top and does not use up the daily max. Everyone gets a notice when it starts, and the detector shows the minutes left.
+- **Sound.** Soft footsteps, a coin sound when tokens land, and a fanfare for big slot wins. All follow the sound volume setting.
+- **Camera.** While you walk somewhere far away the view leads toward where you are going.
+- **Tour.** Gus now mentions the gym, cove and jungle, quick chat, tapping machines to play and double treasure events.
+- Already in the game, unchanged: daily goals with a login streak (DAILY), and the GO button next to an online friend.

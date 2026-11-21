@@ -3504,7 +3504,7 @@ let walletRef=null, walletReady=false, walletDelta=0, walletBusy=false, walletDi
 function walletSave(){}
 async function walletFlush(){}
 async function initWallet(){}
-function tkSet(v, why){ if (!Number.isFinite(v)) return; const d=v-wallet.get(); store.tk=v; saveStore(); tokUI(d>0?1:d<0?-1:0); if (why) localMsg(why); if (typeof sheetHead==='function') for (const el of document.querySelectorAll('.gb.sheet')) if (el.style.display==='block') sheetHead(el); }   /* keep 'YOU HAVE N TOKENS' in open pop-ups current */
+function tkSet(v, why){ if (!Number.isFinite(v)) return; const d=v-wallet.get(); if (d>0 && joined){ sfxTone(1760,0.045,'square',0.03); sfxTone(2349,0.07,'square',0.028,0.06); }   /* coins landing */ store.tk=v; saveStore(); tokUI(d>0?1:d<0?-1:0); if (why) localMsg(why); if (typeof sheetHead==='function') for (const el of document.querySelectorAll('.gb.sheet')) if (el.style.display==='block') sheetHead(el); }   /* keep 'YOU HAVE N TOKENS' in open pop-ups current */
 function tokUI(dir){ const el=document.getElementById('tokn'), row=document.getElementById('tokrow'); if(!el) return; el.textContent=wallet.get();
   if (dir){ row.classList.remove('up','down'); void row.offsetWidth; row.classList.add(dir>0?'up':'down'); }
   if (typeof sendPresence==='function' && joined) sendPresence(); }
@@ -3578,7 +3578,7 @@ function updateMe(dt){
   if (me.bar && me.p==='bar'){ me.shift=(me.shift||0)+dt; if (me.shift>=TOKENS.BAR_EVERY){ me.shift=0; NET.act('bar_tick').then(r=>{ if (r.ok && Number.isFinite(r.tk)) tkSet(r.tk, '+1 TOKEN! Tips from working the bar!'); }); } }
   if (me.moving){
     me.anim+=dt; me.prog+=dt/(me.stepT||STEP);
-    if (me.prog>=1){
+    if (me.prog>=1){ me.stepN=(me.stepN||0)+1; sfxTone(me.stepN%2?150:128, 0.025, 'triangle', 0.018);   /* a soft footstep */
       const leftover=(me.prog-1)*(me.stepT||STEP);
       me.gx=me.to[0]; me.gy=me.to[1]; me.path.shift();
       if (!me.path.length && keys.size && !uiOpen()){ if(!keyStep()){ me.moving=false; } else me.prog=0; }
@@ -3710,7 +3710,8 @@ const USE = {
   svend:  { n:'SNACK MACHINE',    rm:'store',   at:()=>[[STORE_SNACK[0],STORE_SNACK[1]+1]] },
   booth:  { n:'CHANGING BOOTH',   rm:'account', at:()=>[[BOOTH[0],BOOTH[1]+1]] },
 };
-function useBusy(k){ const T=USE[k].at(); return [...others.values()].find(o=>!o.leaving && sameRoom(o) && ((k==='arcade' && o.a==='arcade') || (!o.walking && T.some(([x,y])=>Math.floor(o.x)===x && Math.floor(o.y)===y)))) || null; }
+const USE_IDLE_MS=60000;   // a llama just standing at a machine for a minute without doing anything no longer holds it
+function useBusy(k){ const T=USE[k].at(), now=performance.now(); return [...others.values()].find(o=>!o.leaving && sameRoom(o) && ((k==='arcade' && o.a==='arcade') || (!o.walking && now-(o.actT||0)<USE_IDLE_MS && T.some(([x,y])=>Math.floor(o.x)===x && Math.floor(o.y)===y)))) || null; }
 // true when you are standing at the machine and it is yours to use right now; otherwise it sends you walking (to the spot, or beside whoever is on it)
 function useGo(k){ const U=USE[k]; if (!U || curRoom!==U.rm) return true; const T=U.at(), here=!me.moving && me.p!=='sit' && T.some(([x,y])=>me.gx===x && me.gy===y), busy=useBusy(k);
   if (busy){ localMsg(`${String(busy.n||'Someone').toUpperCase()} is using the ${U.n}. You can use it when they are done.`);
@@ -4196,6 +4197,7 @@ function upsertPeer(peer){
   if (st.l && st.l.ts > lamp.ts){ lamp.on=st.l.on; lamp.ts=st.l.ts; }
   if (st.fs && st.fs.st==='got' && (!o.fs || o.fs.st!=='got' || o.fs.k!==st.fs.k)) o.fishShow={f:st.fs.f, until:performance.now()+2200};
   if (o.rm && st.rm && o.rm!==st.rm) sysMsg(`${st.n.toUpperCase()} went to ${roomName(st.rm)}.`);
+  { const sig=[st.x,st.y,st.p,st.s?st.s.k:0,st.e?st.e.k:0,st.sk,st.h,st.tk,st.c,st.j?st.j.ts:0].join('|'); if (sig!==o.sig){ o.sig=sig; o.actT=performance.now(); } }   /* when this llama last did anything */
   o.w=st.w; o.st=st.st; o.bj=st.bj; o.tk=st.tk; o.rm=st.rm; o.fs=st.fs; o.c=st.c; o.n=st.n; o.tx=st.x; o.ty=st.y; o.d=st.d; o.p=st.p; o.h=st.h; o.hl=st.hl; o.a=st.a;
   if (Math.hypot(o.tx-o.x,o.ty-o.y)>3){ o.x=o.tx; o.y=o.ty; }
 }
@@ -4388,7 +4390,7 @@ function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0)
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
 function closeAll(){ { const dp=document.getElementById('dailypop'); if (dp) dp.style.display='none'; const ib=document.getElementById('itembox'); if (ib) ib.style.display='none'; } if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; { const pk=document.getElementById('plkbox'); if (pk) pk.style.display='none'; } if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; { const wb=document.getElementById('wfbox'); if (wb) wb.style.display='none'; const bb=document.getElementById('bugbox'); if (bb) bb.style.display='none'; { const pb=document.getElementById('plotbox'); if (pb) pb.style.display='none'; const bxb=document.getElementById('boxbox'); if (bxb) bxb.style.display='none'; } { const bx=document.getElementById('banbox'); if (bx) bx.style.display='none'; } { const rb=document.getElementById('repbox'); if (rb) rb.style.display='none'; } const mk=document.getElementById('mktbox'); if (mk) mk.style.display='none'; } const dmb=document.getElementById('dmbox'); if (dmb) dmb.style.display='none'; const ctb=document.getElementById('catbox'); if (ctb) ctb.style.display='none'; const wdb=document.getElementById('wardbox'); if (wdb) wdb.style.display='none'; const prb=document.getElementById('roomsbox'); if (prb && joined) prb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
-  if (curMenu===emenu){ closeAll(); emote(el.dataset.e); return; }
+  if (curMenu===emenu){ closeAll(); if (el.dataset.q){ chatin.value=el.dataset.q; $id('chatrow').requestSubmit(); chatin.blur(); } else if (el.dataset.e) emote(el.dataset.e); return; }
   const a=el.dataset.a;
   if (a==='emote'){ showMenu(emenu); return; }
   closeAll();
@@ -5023,7 +5025,8 @@ const overlayItems = [];
 function render(t){
   g = ctx; ctx.imageSmoothingEnabled=false;
   if (!joined){ ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle='#0a0814'; ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height); return; }   // nothing behind the start screens until you pick a room
-  const [wx,wy] = proj(me.x,me.y);
+  let [wx,wy] = proj(me.x,me.y);
+  if (me.moving && me.path && me.path.length>2){ const d=me.path[me.path.length-1], [dx2,dy2]=proj(d[0]+0.5,d[1]+0.5); wx+=(dx2-wx)*0.6; wy+=(dy2-wy)*0.6; }   /* look ahead to the tile you're walking to */
   const viewH = LH-UIB-UIT, roomL=-NY*20-24, roomR=N*20+24, roomT=-114, roomB=(N+NY)*10+16;
   // dead-zone camera: holds still while you walk around the middle, glides when you near an edge
   const clampX = v => (LW >= roomR-roomL) ? 0 : Math.max(roomL+LW/2, Math.min(roomR-LW/2, v));
@@ -5073,7 +5076,7 @@ function render(t){
   }
   if (isP(curRoom)) prGhost(t);
   drawRags(t); drawSpits(t); drawDunk(t);
-  if (curRoom==='gym') drawBoxFx(t); else if (curRoom==='cove') drawCoveDigs(t); else if (curRoom==='jungle'){ drawCoveDigs(t); drawJungleAir(t); }
+  if (curRoom==='gym') drawBoxFx(t); else if (curRoom==='casino') drawWins(t); else if (curRoom==='cove') drawCoveDigs(t); else if (curRoom==='jungle'){ drawCoveDigs(t); drawJungleAir(t); }
   drawFishing(t);
   drawNight(t);
   arcadeText=null;   /* the arcade itself is drawn on the sharp overlay canvas (drawOverlay) so moving things glide instead of stepping */
@@ -5922,7 +5925,7 @@ function slotSpin(){
     slotAnimate(r.r, r.lines); me.slK=(me.slK||0)+1; me.lastSlot={k:me.slK, r:r.r}; sendPresence(true);
     const wait = r.kind==='gold' ? 2650 : 1350;
     setTimeout(()=>{ const nm = r.kind==='gold' ? (WHEEL_SLICES[r.r[0]]===100 ? 'JACKPOT' : WHEEL_SLICES[r.r[0]] ? 'X'+WHEEL_SLICES[r.r[0]] : 'BLANK') : r.kind==='classic' ? ((r.lines||[]).length ? (r.lines.length+' LINE'+(r.lines.length>1?'S':'')) : 'NO LINES') : r.r.map(v=>SLOT_SYMS[v].n).join(' · ');
-      if (r.pay){ store.tk = r.tk; slot.winUntil=performance.now()+1800; tokUI(1); slotMsg(`${nm}! YOU WIN ${r.pay} TOKENS!`); slotEl.classList.add('win'); if (r.pay>=50) action(`hit ${r.pay} TOKENS on ${myKind().name}!`); }
+      if (r.pay){ store.tk = r.tk; slot.winUntil=performance.now()+1800; tokUI(1); if (r.pay>=r.bet*20) sfxChime([784,988,1175,1568,1976,2349]); else { sfxTone(1760,0.045,'square',0.03); sfxTone(2349,0.07,'square',0.028,0.06); } slotMsg(`${nm}! YOU WIN ${r.pay} TOKENS!`); slotEl.classList.add('win'); if (r.pay>=50) action(`hit ${r.pay} TOKENS on ${myKind().name}!`); }
       else slotMsg(`${nm}. NO LUCK THIS TIME.`); slotTok(); }, wait);
   });
 }
@@ -6491,9 +6494,10 @@ $id('roomsbtn').addEventListener('click', ()=>{ ensureAudio(); if (joined) openR
 const TOUR_STEPS=[
   {t:'HI, I\'M GUS!', p:'Welcome to the Llama Lounge! I\'ll show you around. Tap anywhere on the floor and your llama walks there.', el:null},
   {t:'FOOD AND DRINKS', p:'Your llama gets hungry and thirsty. These bars show how full it is. Tap a cup on the bar to order a drink. Snacks are in LLAMA ACRES and the LLAMA STORE.', el:'#status'},
-  {t:'SAY HI', p:'Type here and press enter to talk. Everyone in the room sees it in a bubble over your llama. Tap the smiley button next to it to wave, flex, laugh and more.', el:'#chatrow'},
+  {t:'SAY HI', p:'Type here and press enter to talk. Everyone in the room sees it in a bubble over your llama. Tap the smiley button next to it to wave, flex, laugh, or send a quick line like HI! or GG with one tap.', el:'#chatrow'},
+  {t:'PLAY GAMES', p:'Tap any machine, table or ring and your llama walks over and plays. If another llama is using it, yours waits beside them for a turn. Box in the GYM, dig for treasure in the COVE and the JUNGLE, and watch for DOUBLE TREASURE events.', el:null},
   {t:'JOBS AND TOKENS', p:'TOKENS buy clothes, furniture and more. Earn them from jobs, games and your daily reward. JOBS shows what you can do in this room.', el:'#jobsbtn'},
-  {t:'ROOMS', p:'Tap ROOMS to go anywhere. The MAP tab takes you to the CASINO, SPIT ARENA, LANES, ACRES and the STORE. The PLAYER ROOMS tab is where you make your own room and visit other llamas.', el:'#roomsbtn'},
+  {t:'ROOMS', p:'Tap ROOMS to go anywhere. The MAP tab takes you to the CASINO, SPIT ARENA, LANES, ACRES, the STORE, the BOXING GYM, TREASURE COVE and the JUNGLE TEMPLE. The PLAYER ROOMS tab is where you make your own room and visit other llamas.', el:'#roomsbtn'},
   {t:'SHOP', p:'Furniture, wallpaper, floors and whole ROOM KITS. Everything you buy goes into your bag, ready for your room.', el:'#shopbtn'},
   {t:'YOUR BAG', p:'Your clothes, furniture, wallpaper and floors live here. Buy clothes at the LLAMA STORE, or trade with other llamas.', el:'#invbtn'},
   {t:'FRIENDS', p:'Tap another llama to see their card. You can add them as a friend or trade. If someone is being mean, BLOCK or REPORT them from there. Friends can send you messages.', el:'#frbtn'},
@@ -6972,7 +6976,7 @@ const bxMine = () => { const w=bxMe(); return w ? BXR[w.r] : null; };
 // the ring the top bar follows: mine if I'm fighting, otherwise the nearest ring with a fight on
 const bxShown = () => { const w=bxMe(); if (w) return w.r; let best=-1, bd=1e9; for (let r=0;r<BXR.length;r++){ if (!BXR[r].s) continue; const d=Math.abs(me.x-(RINGS[r].x0+RINGS[r].x1)/2)+(BXR[r].s.phase==='over'?100:0); if (d<bd){ bd=d; best=r; } } return best; };
 const BOTS = RINGS.map(R=>({ x:R.B[0]+0.5, y:R.B[1]+0.5, d:'bl', p:'stand', w:{}, n:'', c:'rusty', id:null, anim:0 }));
-function bxSetInfo(r){ BXUI.info=r; const L = Array.isArray(r.rings) ? r.rings : [r.s||null]; for (let i=0;i<BXR.length;i++){ BXR[i].s = L[i]||null; const S=BXR[i].s; if (S && S.b.bot){ BOTS[i].c = S.b.bot==='champ' ? 'duke' : 'rusty'; BOTS[i].n=S.b.n; } } }
+function bxSetInfo(r){ BXUI.info=r; BXUI.q=Array.isArray(r.queue)?r.queue:[]; const L = Array.isArray(r.rings) ? r.rings : [r.s||null]; for (let i=0;i<BXR.length;i++){ BXR[i].s = L[i]||null; const S=BXR[i].s; if (S && S.b.bot){ BOTS[i].c = S.b.bot==='champ' ? 'duke' : 'rusty'; BOTS[i].n=S.b.n; } } }
 // a fighter's look this frame: gloves and shorts in their corner's colour, lunges, ducks, the knockdown
 function boxLook(o, isMe){ if (curRoom!=='gym') return null; const bi=BOTS.indexOf(o);
   const w = bi>=0 ? (BXR[bi].s ? {r:bi, side:'b'} : null) : boxWhere(isMe ? me.n : o.n); if (!w) return null; const X=BXR[w.r], S=X.s, side=w.side;
@@ -7026,6 +7030,28 @@ function drawBoxWords(t){ if (curRoom!=='gym') return; const now=performance.now
     const X=H[0]+b.ox, Y = side ? H[1]-10+(b.oy||0)-Math.round(Math.min(u,0.7)*12) : tagTop-Math.ceil(img.height/2)-Math.round(Math.min(u,0.7)*8);
     if (b.star) for (let k=0;k<6;k++){ const a=k*1.047+u*2, rr=6+u*14; g.fillStyle=k%2?'#fff6a0':'#ffd23f'; const px=Math.round(H[0]+Math.cos(a)*rr), py=Math.round(H[1]+4+Math.sin(a)*rr*0.6); g.fillRect(px-1,py,3,1); g.fillRect(px,py-1,1,3); }
     if (u<0.78 || Math.floor(u*30)%2===0) g.drawImage(img, Math.round(X-img.width/2), Math.round(Y-img.height/2)); } }
+// ---- timed events (the server runs them; this just tells you and shows the countdown) ----
+let EVT=null;
+function evSet(ev){ const was=EVT && EVT.id; EVT = ev && ev.end>Date.now()+(typeof SRV_OFF==='number'?SRV_OFF:0) ? ev : null;
+  if (EVT && EVT.id!==was){ const msg=`DOUBLE TREASURE at ${ROOM_NAMES[EVT.rm]||'the hunt'} for the next ${evLeft()} minutes! Every find pays twice.`; logLine(msg,true); EVQ.push('🧰 '+msg); if (!evCur) evNext(); sfxChime([988,1319,1568]); }
+  else if (!EVT && was) logLine('The double treasure event is over. The next one is on its way!', true);
+  if (typeof coveHud==='function') coveHud(); }
+const evLeft = () => EVT ? Math.max(1, Math.ceil((EVT.end-(Date.now()+(typeof SRV_OFF==='number'?SRV_OFF:0)))/60000)) : 0;
+const evHere = () => !!(EVT && EVT.rm===curRoom && EVT.end>Date.now()+(typeof SRV_OFF==='number'?SRV_OFF:0));
+NET.handlers.ev = m => evSet(m.ev);
+setInterval(()=>{ if (EVT && !(EVT.end>Date.now()+(typeof SRV_OFF==='number'?SRV_OFF:0))) evSet(null); else if (EVT && isHunt(curRoom)) coveHud(); }, 20000);
+// ---- wins other llamas can see: "+12" floats up over a slot player's head (and a BIG WIN! burst for the large ones) ----
+const WINS=[];
+NET.handlers.win = m => { if (curRoom!=='casino' || !m || !m.n) return; WINS.push({n:String(m.n).toUpperCase(), pay:m.pay|0, big:!!m.big, t:performance.now()}); if (WINS.length>12) WINS.shift();
+  if (String(me.n||'').toUpperCase()!==String(m.n).toUpperCase()){ if (m.big){ sfxChime([784,988,1175,1568]); localMsg(`${String(m.n).toUpperCase()} hit a BIG WIN: ${m.pay|0} TOKENS!`); } else sfxTone(1568,0.05,'square',0.02); } };
+function pfOut(c, txt, x, y, col, sc){ for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]]) pfDraw(c,txt,x+dx,y+dy,INK,sc); pfDraw(c,txt,x,y,col,sc); }
+function drawWins(t){ const now=performance.now();
+  for (let i=WINS.length-1;i>=0;i--){ const w=WINS[i], u=(now-w.t)/2200; if (u>=1){ WINS.splice(i,1); continue; }
+    const L = w.n===String(me.n||'').toUpperCase() ? me : [...others.values()].find(q=>sameRoom(q) && !q.leaving && String(q.n||'').toUpperCase()===w.n); if (!L) continue;
+    const seat = L.p==='sit' ? seatAt(Math.floor(L.x),Math.floor(L.y)) : null, [sx,sy]=P(L.x,L.y,seat?seat.lift:0), X=Math.round(sx), top=Math.round(sy)-34-Math.ceil(31/S)-3, rise=Math.round(Math.min(u,0.6)*14);
+    const txt='+'+w.pay, tw=pfW(txt,2), ic=pixCanvas('coin'), W2=tw+ic.width+3; if (u>0.8 && Math.floor(u*40)%2) continue;
+    if (w.big){ const img=bxWordImg('BIG WIN!','big',false); g.drawImage(img, Math.round(X-img.width/2), top-14-img.height-rise); }
+    g.drawImage(ic, Math.round(X-W2/2), top-12-rise+Math.floor((10-ic.height)/2)); pfOut(g, txt, Math.round(X-W2/2)+ic.width+3, top-12-rise, '#ffd23f', 2); } }
 // the HUD (everyone in the gym), the move pad (only the two fighters)
 function bxHudDraw(){ const r=bxShown(), X=r>=0?BXR[r]:null, S=X&&X.s, hud=$id('boxhud'), pad=$id('boxpad'); const show = !!S && curRoom==='gym' && joined, mine=bxMine(), fighting=!!(show && mine && mine.s.phase!=='over');
   hud.style.display = show ? 'block' : 'none'; document.body.classList.toggle('padtop', show || (isHunt(curRoom) && joined)); document.body.classList.toggle('boxing', fighting);
@@ -7060,12 +7086,16 @@ $id('bxi_yes').addEventListener('click', ()=>{ const el=$id('bxinv'); el.style.d
 $id('bxi_no').addEventListener('click', ()=>{ const el=$id('bxinv'); el.style.display='none'; NET.act('box_answer',{yes:0}); });
 for (const b of document.querySelectorAll('#boxpad [data-mv]')) b.addEventListener('click', ()=>bxPick(b.dataset.mv));
 $id('bx_quit').addEventListener('click', ()=>{ const q=$id('bx_quit'); if (!q.classList.contains('sure')){ q.classList.add('sure'); q.textContent='SURE?'; setTimeout(()=>{ q.classList.remove('sure'); q.textContent='QUIT'; }, 2500); return; } NET.act('box_quit'); });
-const BXUI = { info:null };
+const BXUI = { info:null, q:[] };
+NET.handlers.bxq = m => { BXUI.q=Array.isArray(m.q)?m.q:[]; if ($id('boxbox').style.display==='block') boxDraw(); };
 function openBox(){ if (!joined) return; if (curRoom!=='gym'){ showSwap('gym'); return; } closeAll(); $id('boxbox').style.display='block'; boxDraw(); NET.act('box_info').then(r=>{ if (r && r.ok){ bxSetInfo(r); bxHudDraw(); boxDraw(); } }); }
 function boxDraw(){ const el=$id('bx_body'), I=BXUI.info; let h='';
   const live=BXR.map((X,r)=>X.s && X.s.phase!=='over' ? r : -1).filter(r=>r>=0), full=live.length>=BXR.length, inFight=!!bxMine() && bxMine().s.phase!=='over';
-  for (const r of live){ const S=BXR[r].s; h+=`<div class="bxnow"><b>${esc(S.a.n)} <span>VS</span> ${esc(S.b.n)}</b><small>${inFight && bxMe().r===r ? 'Your fight is on in RING '+(r+1)+'!' : 'Fight on in RING '+(r+1)+'. '+(full ? 'Both rings are busy, you can box after one ends.' : 'The other ring is open!')}</small></div>`; }
-  if (!full && !inFight){ h+=`<div class="bxh">SPAR WITH A BOT</div><div class="bxbots">
+  for (const r of live){ const S=BXR[r].s; h+=`<div class="bxnow"><b>${esc(S.a.n)} <span>VS</span> ${esc(S.b.n)}</b><small>${inFight && bxMe().r===r ? 'Your fight is on in RING '+(r+1)+'!' : 'Fight on in RING '+(r+1)+'. '+(full ? 'Both rings are busy. Pick a partner below to get in line.' : 'The other ring is open!')}</small></div>`; }
+  const Q=BXUI.q||[], myN=String(me.n||'').toUpperCase(), inLine=Q.findIndex(q=>q.a===myN || q.b===myN);
+  if (Q.length) h+=`<div class="bxh">NEXT UP</div><div class="bxq">${Q.map((q,i)=>`<div class="${i===inLine?'me':''}"><b>${i+1}</b><span>${esc(q.a)} <i>VS</i> ${esc(q.b)}</span></div>`).join('')}</div>`;
+  if (inLine>=0) h+=`<div class="bxnow"><b>YOU ARE ${nth(inLine+1)} IN LINE</b><small>Stay in the gym. Your fight starts by itself when a ring is free.</small></div><div class="srow"><button class="gbbtn" id="bx_leave">LEAVE THE LINE</button></div>`;
+  if (!inFight && inLine<0){ h+=`<div class="bxh">SPAR WITH A BOT</div><div class="bxbots">
       <button class="bxbot" data-bot="rookie"><canvas width="44" height="56" data-bxc="rusty"></canvas><b>ROOKIE RUSTY</b><small>EASY · WIN ${I?I.pay.rookie:3} 🪙</small></button>
       <button class="bxbot" data-bot="champ"><canvas width="44" height="56" data-bxc="duke"></canvas><b>CHAMP DUKE</b><small>HARD · READS YOUR MOVES · WIN ${I?I.pay.champ:8} 🪙</small></button></div>`;
     const near=[...others.values()].filter(o=>sameRoom(o) && !o.leaving && o.n); h+=`<div class="bxh">CHALLENGE A LLAMA</div>`;
@@ -7074,7 +7104,8 @@ function boxDraw(){ const el=$id('bx_body'), I=BXUI.info; let h='';
   if (I) h+=`<div class="bxrec">YOUR RECORD <b>${I.me.wins}W · ${I.me.losses}L · ${I.me.draws}D · ${I.me.kos} KO</b> · TODAY <b>${I.me.earned}/${I.me.cap}</b> 🪙</div>`;
   el.innerHTML=h; iconize(el);
   for (const c of el.querySelectorAll('canvas[data-bxc]')){ const x=c.getContext('2d'); x.imageSmoothingEnabled=false; x.clearRect(0,0,44,56); const s=sprite(c.dataset.bxc,'fr',0,'stand',{hands:c.dataset.bxc==='duke'?'gloves_b':'gloves', legs:c.dataset.bxc==='duke'?'shorts':'shorts_r'}); x.drawImage(s,8,6); }
-  for (const b of el.querySelectorAll('[data-bot]')) b.addEventListener('click', ()=>NET.act('box_bot',{bot:b.dataset.bot}).then(r=>{ if (r && !r.ok) localMsg(r.msg||'The ring is busy.'); }));
+  for (const b of el.querySelectorAll('[data-bot]')) b.addEventListener('click', ()=>NET.act('box_bot',{bot:b.dataset.bot}).then(r=>{ if (r && (!r.ok || r.queued)) localMsg(r.msg||'The ring is busy.'); }));
+  { const lv=$id('bx_leave'); if (lv) lv.addEventListener('click', ()=>{ lv.disabled=true; NET.act('box_leave').then(()=>localMsg('You left the line.')); }); }
   for (const b of el.querySelectorAll('[data-chal]')) b.addEventListener('click', ()=>NET.act('box_invite',{n:b.dataset.chal}).then(r=>{ localMsg((r&&r.msg)||(r&&r.ok?'Challenge sent!':'That didn\'t work.')); if (r && r.ok) closeAll(); })); }
 setInterval(()=>{ if (curRoom==='gym' && bxShown()>=0) bxTimer(); }, 50);
 
@@ -7083,7 +7114,7 @@ const CVS = { heat:-1, last:0, on:true, digT:0, dig:null, digs:[], earned:0, cap
 const HEAT_TXT = ['COLD','COOL','WARM','HOT!','RIGHT HERE!'], HEAT_COL=['#5ab0ff','#7ce0d8','#ffd23f','#ff8a48','#ff4a6a'];
 function coveHud(){ const el=$id('covepad'), show = isHunt(curRoom) && joined; el.style.display = show ? 'flex' : 'none'; document.body.classList.toggle('padtop', show || $id('boxhud').style.display==='block'); if (!show) return;
   const h=CVS.heat; $id('cv_heat').innerHTML = [0,1,2,3,4].map(i=>`<i style="background:${i<=h?HEAT_COL[Math.max(0,h)]:'#2a2440'}"></i>`).join(''); $id('cv_txt').textContent = h<0 ? (CVS.on?'SCANNING...':'DETECTOR OFF') : HEAT_TXT[h]; $id('cv_txt').style.color = h<0?'#fff':HEAT_COL[h];
-  $id('cv_tod').textContent=`TODAY ${CVS.earned}/${CVS.cap}`; $id('cv_det').classList.toggle('on', CVS.on); }
+  $id('cv_tod').textContent = evHere() ? `2X TREASURE · ${evLeft()} MIN LEFT` : `TODAY ${CVS.earned}/${CVS.cap}`; $id('cv_tod').classList.toggle('x2', evHere()); $id('cv_det').classList.toggle('on', CVS.on); }
 function coveTick(){ if (!isHunt(curRoom) || !joined || !CVS.on || CVS.dig) return; const now=performance.now(); if (now-CVS.last<1400) return; CVS.last=now;
   NET.act('cove_scan').then(r=>{ if (!r || !r.ok) return; CVS.heat=r.heat; coveHud(); if (r.heat>0) sfxTone([0,330,440,620,880][r.heat],0.05,'square',0.035+r.heat*0.004); if (r.heat>=3) sfxTone([0,330,440,620,880][r.heat],0.05,'square',0.035,0.09); }); }
 setInterval(coveTick, 250);
@@ -7093,7 +7124,7 @@ function coveDig(){ if (!isHunt(curRoom) || CVS.dig) return; if (me.moving){ loc
   NET.act('cove_dig',{x,y}).then(r=>{ setTimeout(()=>{ CVS.dig=null; if (!r || !r.ok){ localMsg((r&&r.msg)||'The sand\'s too hard here.'); return; }
     if (Number.isFinite(r.tk)) tkSet(r.tk); if (r.furn) WD.furn=r.furn;
     if (r.found){ CVS.earned+=r.pay||0; const nm={coins:'a pouch of coins',gold:'a pile of gold',gem:'a sparkling gem',chest:'a PIRATE CHEST',idol:'a GOLDEN IDOL'}[r.found]||'treasure';
-      localMsg(r.item ? `You dug up ${r.item==='gidol'?'a GOLDEN IDOL':'a PIRATE CHEST'}! It's in your INVENTORY > ITEMS.${r.pay?` (+${r.pay} TOKENS)`:''}` : `You dug up ${nm}! ${r.pay?`+${r.pay} TOKENS`:'(that\'s today\'s cove max)'}`); sfxTone(660,0.08,'square',0.05); sfxTone(880,0.08,'square',0.05,0.09); sfxTone(1320,0.14,'square',0.05,0.18); }
+      localMsg(r.item ? `You dug up ${r.item==='gidol'?'a GOLDEN IDOL':'a PIRATE CHEST'}! It's in your INVENTORY > ITEMS.${r.pay?` (+${r.pay} TOKENS)`:''}` : `You dug up ${nm}! ${r.pay?`+${r.pay} TOKENS${r.x2?' (DOUBLE!)':''}`:'(that\'s today\'s cove max)'}`); sfxTone(660,0.08,'square',0.05); sfxTone(880,0.08,'square',0.05,0.09); sfxTone(1320,0.14,'square',0.05,0.18); }
     else localMsg(r.junk ? `Just ${r.junk}. Keep looking!` : 'Nothing but sand. Keep looking!');
     CVS.heat=-1; CVS.last=0; coveHud(); }, 1100); }); }
 NET.handlers.cv = m => { COVEH.set(m.x+','+m.y, {t:Date.now(), f:m.f?1:0}); const mine = String(me.n||'').toUpperCase()===m.n; if (!mine) CVS.digs.push({n:m.n, x:m.x, y:m.y, t:performance.now(), f:m.f, find:m.find}); if (!mine && m.f) localMsg(`${m.n} dug up ${{coins:'some coins',gold:'a pile of gold',gem:'a gem',chest:'a PIRATE CHEST',idol:'a GOLDEN IDOL'}[m.find]||'treasure'}!`); };
@@ -7437,7 +7468,7 @@ document.getElementById('ds_refresh').addEventListener('click', loadDash);
 document.getElementById('ds_close').addEventListener('click', ()=>{ dashEl.style.display='none'; });
 NET.handlers.tg = m => tgServer(m);
 NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; renderBoard(); };
-NET.handlers.hello = m => { queueDone(); if (Number.isFinite(+m.now)) SRV_OFF=(+m.now)-Date.now(); PKASK.tries=0; setTimeout(pkAsk, 5000); setTimeout(()=>dailyLoad(true), 2500); setTimeout(blocksLoad, 300); setTimeout(()=>{ if (!joined || ($id('roomsbox').style.display==='block' && PRUI.view==='list')) prRefresh(); }, 0);   /* the ROOMS pop-up may have opened before the connection was ready */ if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; netBack(m.re);
+NET.handlers.hello = m => { queueDone(); evSet(m.ev); if (Number.isFinite(+m.now)) SRV_OFF=(+m.now)-Date.now(); PKASK.tries=0; setTimeout(pkAsk, 5000); setTimeout(()=>dailyLoad(true), 2500); setTimeout(blocksLoad, 300); setTimeout(()=>{ if (!joined || ($id('roomsbox').style.display==='block' && PRUI.view==='list')) prRefresh(); }, 0);   /* the ROOMS pop-up may have opened before the connection was ready */ if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; netBack(m.re);
   // load friends, unread messages and the outfit every time we (re)connect
   setTimeout(()=>{ frLoad(); wdLoad(); dmLoad(); }, 150); };
 NET.handlers.kick = m => showKicked(m.msg);

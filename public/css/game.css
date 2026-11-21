@@ -310,6 +310,10 @@
   @media (hover:hover){ .menu div:hover,.menu div.on{background:var(--soft)} }
   .menu div.mclose{color:var(--sub)}
   #emenu div{font-size:15px}
+  #emenu>.emh{grid-column:1/-1;background:none!important;box-shadow:none!important;border:0!important;min-height:0!important;height:auto!important;padding:8px 2px 0!important;font:400 11px var(--pxf)!important;letter-spacing:.08em;color:var(--sub);pointer-events:none}
+  #emenu div[data-q]{display:flex!important;align-items:center;justify-content:center;text-align:center;min-height:46px;height:auto!important;padding:8px 4px!important;background:var(--card2,#f3eedf);border:2px solid var(--ink);box-shadow:inset 0 -3px 0 rgba(29,21,48,.12);cursor:pointer} #emenu div[data-q] b{font:400 12px/1.3 var(--pxf);letter-spacing:.03em;color:var(--ink)} #emenu div[data-q].on{background:#ffd23f}
+  #bx_body .bxq{display:flex;flex-direction:column;gap:4px;margin:4px 0 10px} #bx_body .bxq div{display:flex;align-items:center;gap:10px;padding:7px 10px;border:2px solid var(--ink);background:#fffdf6;font:600 13px var(--ui)} #bx_body .bxq div.me{background:#ffe58a} #bx_body .bxq b{font:400 11px var(--pxf);min-width:16px} #bx_body .bxq i{font-style:normal;color:#c2283e;font:400 9px var(--pxf)}
+  #cv_tod.x2{color:#ffd23f}
   #emenu[style*="display: block"]{display:grid!important;grid-template-columns:repeat(3,1fr);gap:8px;width:min(calc(100% - 24px),360px)} #emenu>.shead,#emenu>.slt{grid-column:1/-1}   /* same tile grid on desktop as on phones */
   #emenu div[data-e]{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:8px;height:auto!important;min-height:84px;padding:10px 4px!important;background:var(--soft);border-radius:12px;white-space:normal;text-align:center} #emenu div[data-e] .pi{width:36px!important;height:36px!important} #emenu div[data-e] b{font:600 14px var(--pxf);letter-spacing:.04em}   /* big clear icon, name underneath */
   #logbox{top:calc(64px + var(--sat));font-size:14px;line-height:1.45;padding:16px 18px}

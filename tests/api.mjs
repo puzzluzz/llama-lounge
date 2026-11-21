@@ -114,6 +114,16 @@ export async function runApi(BASE, { root, persist }) {
   { const r = await D.act("dash"); check("once they have a passkey the dashboard opens", r.ok === true, JSON.stringify(r).slice(0, 100)); }
   D.close(); await sleep(2100);
 
+  console.log("Boxing: two rings and a line");
+  A.pres({ rm: "gym", x: 2.5, y: 9.5 }); B.pres({ rm: "gym", x: 3.5, y: 9.5 }); C.pres({ rm: "gym", x: 4.5, y: 9.5 }); await sleep(400);
+  { const r1 = await A.act("box_bot", { bot: "rookie" }), r2 = await B.act("box_bot", { bot: "champ" }); check("two fights can run at once", r1.ok === true && r2.ok === true && !r1.queued && !r2.queued, JSON.stringify([r1, r2]).slice(0, 160)); }
+  { const r = await A.act("box_bot", { bot: "champ" }); check("a llama cannot be in two fights", r.ok === false); }
+  { const r = await C.act("box_bot", { bot: "rookie" }); check("a third fight waits in line", r.ok === true && r.queued === 1, JSON.stringify(r)); }
+  { const r = await C.act("box_bot", { bot: "rookie" }); check("and cannot join the line twice", r.ok === false); }
+  { const r = await C.act("box_info"); check("the line is shown to the gym", r.ok === true && r.queue.length === 1 && r.rings.filter(Boolean).length === 2, JSON.stringify(r.queue)); }
+  { const r = await C.act("box_leave"); check("you can leave the line", r.ok === true && r.left === true); }
+  await A.act("box_quit"); await B.act("box_quit"); A.pres({ rm: "lounge" }); B.pres({ rm: "lounge" }); C.pres({ rm: "lounge" }); await sleep(2100);
+
   console.log("Tokens only change on the server");
   { const r = await A.act("furn_buy", { item: "plot" }); check("cannot buy what you cannot afford", r.ok === false, JSON.stringify(r)); }
   { const r = await A.act("furn_buy", { item: "plot", price: 0, tk: 99999 }); check("cannot name your own price", r.ok === false); }

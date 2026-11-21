@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-27d";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-28a";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -712,6 +712,11 @@ const ARENA = {
   colors: [["blue", 1], ["green", 2], ["pink", 4], ["gold", 6], ["rainbow", 8], ["fire", 10]],   // spit colours and the level that unlocks each
 };
 const arenaLevel = (xp) => Math.floor(Math.sqrt(Math.max(0, xp) / 100)) + 1;
+// TIMED EVENTS: for the first 30 minutes of these Eastern-time hours, one treasure room pays double (the rooms take turns).
+const EVENTS = { hours: [9, 12, 15, 18, 21], mins: 30, rooms: ["cove", "jungle"] };
+const etHM = (t) => { const p = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "numeric", hour12: false }).formatToParts(new Date(t)); const g = (k) => +(p.find((x) => x.type === k) || {}).value || 0; return [g("hour") % 24, g("minute")]; };
+function eventNow(now) { const [h, m] = etHM(now), i = EVENTS.hours.indexOf(h); if (i < 0 || m >= EVENTS.mins) return null;
+  const day = etDay(now), n = +day.slice(8) + i; return { id: day + ":" + h, kind: "x2", rm: EVENTS.rooms[n % EVENTS.rooms.length], end: now - m * 60000 - (now % 60000) + EVENTS.mins * 60000 }; }
 const etDay = (t) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(t));   // 2026-11-19, Eric's time zone
 function etWeek(t) { const d = new Date(etDay(t) + "T12:00:00Z"); const wd = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - wd); return d.toISOString().slice(0, 10); }   // Monday of the week
 const unlocked = (lvl) => ARENA.colors.filter(([, l]) => lvl >= l).map(([c]) => c);
@@ -934,7 +939,7 @@ export class Lounge extends DurableObject {
   // greet a llama that is in: everyone already here, the leaderboard and its meters
   async hello(server, a) {
     const peers = this.sockets().filter((w) => w !== server && w.readyState === 1).map((w) => w.deserializeAttachment()).filter((x) => x && x.pres && x.uid !== a.uid).map((x) => ({ peer: x.peer, presence: (prId(x.pres.rm) && (!this.prPriv || this.prPriv.get(prId(x.pres.rm)) !== false)) ? { ...x.pres, s: undefined, e: undefined } : x.pres }));   // never show what's said in a private room
-    this.send(server, { t: "hello", now: Date.now(), v: VERSION, peer: a.peer, peers, board: await this.board(), nd: a.nd ? { hu: a.nd.hu, th: a.nd.th, rate: { hu: 100 / NEEDS.hungerMs, th: 100 / NEEDS.thirstMs } } : undefined });
+    this.send(server, { t: "hello", now: Date.now(), v: VERSION, peer: a.peer, peers, ev: eventNow(Date.now()), board: await this.board(), nd: a.nd ? { hu: a.nd.hu, th: a.nd.th, rate: { hu: 100 / NEEDS.hungerMs, th: 100 / NEEDS.thirstMs } } : undefined });
   }
   // let waiting llamas in while there is room (longest wait first), then tell the rest their place
   async queuePump() {
@@ -978,6 +983,10 @@ export class Lounge extends DurableObject {
     for (const w of this.sockets()) { if (w === ws || w.readyState !== 1 || this.rmOf(w) !== rm) continue; const x = w.deserializeAttachment(); if (x && x.pres) L.push({ peer: x.peer, presence: x.pres }); }
     if (L.length) this.send(ws, { t: "peers", updated: L }); }
   send(ws, obj) { try { ws.send(JSON.stringify(obj)); } catch (e) {} }
+  // to everyone in one room
+  roomCast(rm, obj) { const str = JSON.stringify(obj); for (const w of this.sockets()) if (this.rmOf(w) === rm) { try { w.send(str); } catch (e) {} } }
+  // announce a timed event when it starts and when it ends (checked every few seconds while anyone is around)
+  eventTick(now) { const ev = eventNow(now), id = ev ? ev.id : ""; if (this.evId === undefined) { this.evId = id; if (!ev) return; } else if (id === this.evId) return; this.evId = id; this.broadcast({ t: "ev", ev }); }
   broadcast(obj, except) { const s = JSON.stringify(obj); for (const w of this.sockets()) if (w !== except) { try { w.send(s); } catch (e) {} } }
 
   async webSocketMessage(ws, raw) {
@@ -988,7 +997,8 @@ export class Lounge extends DurableObject {
     const now = Date.now(); const H = this.hInit(); H.msgs++; if (now - a.rate[0] > 1000) a.rate = [now, 0]; a.rate[1]++; if (a.rate[1] > 40) { H.drop++; ws.serializeAttachment(a); return; }
     let m; try { m = JSON.parse(typeof raw === "string" ? raw : new TextDecoder().decode(raw)); } catch (e) { return; }
     if (!m || typeof m !== "object") return;
-    if (now - H.t0 >= HEALTH.everyMs) { try { await this.healthTick(now); } catch (e) {} }   // a health sample every few minutes, whatever kind of message this is
+    if (now - H.t0 >= HEALTH.everyMs) { try { await this.healthTick(now); } catch (e) {} }
+    if (now - (this.evT || 0) > 10000) { this.evT = now; try { this.eventTick(now); } catch (e) {} }   // a health sample every few minutes, whatever kind of message this is
 
     if (a.nd) await this.needsTick(ws, a, now);
     if (m.t === "p") {
@@ -1873,7 +1883,7 @@ export class Lounge extends DurableObject {
         else if (kind === "classic") { const M = SLOTS.classic; r = Array.from({ length: 9 }, () => pickW(M.w));
           SLOT_LINES.forEach((L, i) => { if (r[L[0]] === r[L[1]] && r[L[1]] === r[L[2]]) { lines.push(i); pay += M.pay[r[L[0]]] * bet; } }); }
         else { const seg = pickW(WHEEL.slices.map((v) => WHEEL.weight[v])); r = [seg]; pay = WHEEL.slices[seg] * bet; }
-        if (pay) tk = await this.credit(uid, pay, "slot win");
+        if (pay) { tk = await this.credit(uid, pay, "slot win"); const nm = a.name; setTimeout(() => { try { this.roomCast("casino", { t: "win", n: nm, pay, big: pay >= bet * 20 }); } catch (e) {} }, kind === "gold" ? 4200 : 2000); }
         return { ok: true, kind, r, lines, pay, bet, tk };
       }
       case "plinko": {
@@ -2037,6 +2047,7 @@ export class Lounge extends DurableObject {
       case "box_invite": return this.boxInvite(ws, a, m, now);
       case "box_answer": return this.boxAnswer(ws, a, m, now);
       case "box_move": return this.boxMove(a, m);
+      case "box_leave": return this.boxLeave(a);
       case "box_quit": return this.boxQuit(a);
       case "cove_info": return this.coveInfo(a, now);
       case "cove_scan": return this.coveScan(a, now);
@@ -2313,7 +2324,21 @@ export class Lounge extends DurableObject {
     return { id: M.id, ring: M.ring, a: f(M.a), b: f(M.b), round: M.round, beat: M.beat, beats: BOX.beats, rounds: BOX.rounds, phase: M.phase, next: M.next, ms: BOX.beat }; }
   async boxInfo(a, now) { const r = await this.boxRow(a.uid), today = etDay(now);
     const rings = this.rings().map((M) => this.boxPublic(M));
-    return { ok: true, s: rings[0], rings, me: { wins: r.wins, losses: r.losses, draws: r.draws, kos: r.kos, earned: r.earn_day === today ? r.earned : 0, cap: BOX.dayCap }, bots: BOX_BOTS, pay: BOX.pay }; }
+    this.bxQ = this.bxQueue().filter((q) => this.inGym(q.uid) && (!q.vs || this.inGym(q.vs.uid)));
+    return { ok: true, s: rings[0], rings, queue: this.bxQPublic(), me: { wins: r.wins, losses: r.losses, draws: r.draws, kos: r.kos, earned: r.earn_day === today ? r.earned : 0, cap: BOX.dayCap }, bots: BOX_BOTS, pay: BOX.pay }; }
+  // NEXT UP: when both rings are busy, fights wait in line (one entry per llama) and start as rings free up
+  bxQueue() { return this.bxQ || (this.bxQ = []); }
+  bxQPublic() { return this.bxQueue().map((q) => ({ a: q.name, b: q.vs ? q.vs.name : BOX_BOTS[q.bot].n })); }
+  bxQHas(uid) { return this.bxQueue().some((q) => q.uid === uid || (q.vs && q.vs.uid === uid)); }
+  bxQDrop(uid) { const Q = this.bxQueue(), n = Q.length; this.bxQ = Q.filter((q) => q.uid !== uid && !(q.vs && q.vs.uid === uid)); return this.bxQ.length !== n; }
+  bxQCast() { this.gymBroadcast({ t: "bxq", q: this.bxQPublic() }); }
+  bxQAdd(q) { const Q = this.bxQueue(); if (Q.length >= 8) return 0; Q.push(q); this.bxQCast(); return Q.length; }
+  bxQPump(now) { const Q = this.bxQueue(); if (!Q.length) return; let ring;
+    this.bxQ = Q.filter((q) => this.inGym(q.uid) && (!q.vs || this.inGym(q.vs.uid)));   // anyone who walked out loses their place
+    while (this.bxQ.length && (ring = this.boxFree()) >= 0) { const q = this.bxQ.shift(); if (this.boxingOf(q.uid) || (q.vs && this.boxingOf(q.vs.uid))) continue;
+      this.boxStart({ uid: q.uid, name: q.name }, q.vs ? { uid: q.vs.uid, name: q.vs.name } : { bot: q.bot, name: BOX_BOTS[q.bot].n }, now, ring); }
+    this.bxQCast(); }
+  boxLeave(a) { const ch = this.bxQDrop(a.uid); if (ch) this.bxQCast(); return { ok: true, left: ch }; }
   // the first ring with nothing going on, or -1 when both are busy
   boxFree() { const R = this.rings(); for (let i = 0; i < R.length; i++) { if (R[i] && R[i].phase === "over" && Date.now() - R[i].ended > 3500) R[i] = null; if (!R[i]) return i; } return -1; }
   boxStart(A, B, now, ring) {
@@ -2326,7 +2351,8 @@ export class Lounge extends DurableObject {
     if (!a.pres || a.pres.rm !== "gym") return { ok: false, msg: "Head to the BOXING GYM to box." };
     const k = String(m.bot || ""); if (!BOX_BOTS[k]) return { ok: false, msg: "Pick a sparring partner." };
     if (this.boxingOf(a.uid)) return { ok: false, msg: "You're already in a fight." };
-    const ring = this.boxFree(); if (ring < 0) return { ok: false, msg: "Both rings are busy. Watch a fight, you're next!" };
+    if (this.bxQHas(a.uid)) return { ok: false, msg: "You're already in line. You'll be called when a ring is free." };
+    const ring = this.boxFree(); if (ring < 0) { const pos = this.bxQAdd({ uid: a.uid, name: a.name, bot: k }); return pos ? { ok: true, queued: pos, msg: `Both rings are busy. You're number ${pos} in line!` } : { ok: false, msg: "Both rings are busy and the line is full. Try again soon." }; }
     this.boxStart({ uid: a.uid, name: a.name }, { bot: k, name: BOX_BOTS[k].n }, now, ring); return { ok: true };
   }
   async boxInvite(ws, a, m, now) {
@@ -2337,7 +2363,7 @@ export class Lounge extends DurableObject {
     if (await this.blockedPair(a.uid, tx.uid)) return { ok: false, msg: `You can't challenge ${n}.` };
     if (this.boxingOf(a.uid)) return { ok: false, msg: "You're already in a fight." };
     if (this.boxingOf(tx.uid)) return { ok: false, msg: `${n} is in a fight right now.` };
-    if (this.boxFree() < 0) return { ok: false, msg: "Both rings are busy. Challenge them after a fight ends." };
+    if (this.bxQHas(a.uid) || this.bxQHas(tx.uid)) return { ok: false, msg: "One of you is already in line for a fight." };
     (this.bxInv = this.bxInv || new Map()).set(tx.uid, { from: a.uid, name: a.name, t: now });
     this.send(tw, { t: "bxinv", from: a.name, ms: BOX.inviteMs }); return { ok: true, msg: `Challenge sent to ${n}!` };
   }
@@ -2348,7 +2374,7 @@ export class Lounge extends DurableObject {
     if (!m.yes) { if (fw) this.send(fw, { t: "toast", msg: `${a.name} turned down your challenge.` }); return { ok: true }; }
     if (!a.pres || a.pres.rm !== "gym" || !this.inGym(inv.from)) return { ok: false, msg: "You both need to be in the gym." };
     if (this.boxingOf(a.uid) || this.boxingOf(inv.from)) return { ok: false, msg: "One of you is already in a fight." };
-    const ring = this.boxFree(); if (ring < 0) return { ok: false, msg: "Both rings got busy. Try again after a fight ends." };
+    const ring = this.boxFree(); if (ring < 0) { const pos = this.bxQAdd({ uid: inv.from, name: inv.name, vs: { uid: a.uid, name: a.name } }); const msg = pos ? `Both rings are busy. Your fight is number ${pos} in line!` : "Both rings are busy and the line is full. Try again soon."; if (fw) this.send(fw, { t: "toast", msg }); return { ok: !!pos, queued: pos, msg }; }
     this.boxStart({ uid: inv.from, name: inv.name }, { uid: a.uid, name: a.name }, now, ring); return { ok: true };
   }
   boxMove(a, m) { const M = this.boxingOf(a.uid); if (!M || M.phase !== "fight") return { ok: false };
@@ -2404,7 +2430,7 @@ export class Lounge extends DurableObject {
       const tk = earn ? await this.credit(P.uid, earn, "boxing") : null; pays[P.name] = earn; if (ws) this.send(ws, { t: "bxpay", earned: earn, tk, capped: so + earn >= BOX.dayCap, practice: !!pairNote || (pvp && !real) });
     }
     this.gymBroadcast({ t: "bx", r: M.ring, s: this.boxPublic(M), ev: "end", win: win ? win.name : null, how, pays });
-    setTimeout(() => { if (this.rings()[M.ring] === M) { this.rings()[M.ring] = null; this.gymBroadcast({ t: "bx", r: M.ring, s: null, ev: "clear" }); } }, 4000);
+    setTimeout(() => { if (this.rings()[M.ring] === M) { this.rings()[M.ring] = null; this.gymBroadcast({ t: "bx", r: M.ring, s: null, ev: "clear" }); } try { this.bxQPump(Date.now()); } catch (e) { console.error("bxq", e); } }, 4000);
   }
 
   // ---------- treasure cove ----------
@@ -2435,11 +2461,12 @@ export class Lounge extends DurableObject {
     const r = await this.dailyCove(a.uid, now, C.rm); let find = kind, pay = (H.finds.find((q) => q[0] === kind) || [0, 3])[1], item = null;
     if (find === H.rareFind) { if (r.chests >= COVE.chestPerDay) { find = "gold"; pay = 6; } else { item = H.rare; await this.prTables(); await this.env.DB.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, item).run(); } }
     pay = Math.max(0, Math.min(halfIfEmpty(a, pay), COVE.dayCap - r.earned));
+    const evx = eventNow(now), bonus = evx && evx.kind === "x2" && evx.rm === C.rm ? pay : 0;   // double-treasure event: the extra is a bonus on top and doesn't use up today's max
     await this.env.DB.prepare(`INSERT INTO ${H.table} (uid, day, earned, chests, finds) VALUES (?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET day = excluded.day, earned = excluded.earned, chests = excluded.chests, finds = excluded.finds`)
       .bind(a.uid, r.day, r.earned + pay, r.chests + (item ? 1 : 0), (r.finds || 0) + 1).run();
-    const tk = pay ? await this.credit(a.uid, pay, "treasure") : null;
+    let tk = pay ? await this.credit(a.uid, pay, "treasure") : null; if (bonus) tk = await this.credit(a.uid, bonus, "treasure event");
     ev.f = 1; ev.find = find; this.coveBroadcast(ev, C.rm);
-    return { ok: true, found: find, pay, item, tk, capped: r.earned + pay >= COVE.dayCap, furn: item ? await this.furnStorage(a.uid) : undefined };
+    return { ok: true, found: find, pay: pay + bonus, x2: bonus > 0, item, tk, capped: r.earned + pay >= COVE.dayCap, furn: item ? await this.furnStorage(a.uid) : undefined };
   }
   coveBroadcast(obj, rm = "cove") { const s = JSON.stringify(obj); for (const w of this.sockets()) { const x = w.deserializeAttachment(); if (x && x.pres && x.pres.rm === rm) { try { w.send(s); } catch (e) {} } } }
 
