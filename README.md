@@ -531,3 +531,8 @@ Floors are sold by the square (SHOP > WALLS & FLOORS) and laid one square at a t
 - Outdoor plots and farms take GRASS squares (meadow, mown lawn, clover, wild, golden). The server refuses each kind in the wrong place.
 - In your room tap EDIT, then FLOOR (GRASS outdoors), pick a square, then tap or drag. Lifting a square returns it to your bag.
 - Server: `tile_buy {k,n}`, `tile_put {rid,k,cells}` (table `ptile`); prices live in `TILES` in src/worker.js and must match `TILE_PRICE` in public/js/game.js.
+- Grass is drawn in screen pixels (`grassPx`, `gMotif` in public/js/game.js) so blades, clover and flowers stay crisp; the plot's front lip and overhanging blades take the colour of the grass laid at that edge.
+
+## Menu back buttons
+
+A panel opened from the MENU shows a back arrow in its header that returns to the menu (`menuBackOn/menuBackOff`, class `frommenu` on body). Panels opened any other way do not show it. Menu items act on a finished tap, so scrolling the menu on a phone never picks one.

@@ -1017,3 +1017,10 @@
   .gb.sheet.hasband{background-color:#f6f3fb!important;background-color:color-mix(in srgb, var(--hc,#6b4bd8) 9%, #fff)!important;background-image:var(--bpat)!important;background-size:var(--bpw) var(--bph)!important;background-repeat:repeat!important;background-attachment:local!important;--soft:#fff}
   .gb.sheet.hasband input:not([type=checkbox]):not([type=radio]),.gb.sheet.hasband textarea,.gb.sheet.hasband select{background-color:#fff}
   .gb.sheet #wd_body .wi.fi b{max-width:100%;overflow-wrap:anywhere;letter-spacing:.02em!important;font-size:clamp(10px,3.3vw,12px)!important} .gb.sheet #wd_body .wi.fi small.pr,.gb.sheet #wd_body .wi.fi small.own{white-space:nowrap;line-height:1.3} .gb.sheet #wd_body .wi.fi small.pr{font-size:14px!important} .gb.sheet #wd_body .wi.fi small.own{font-size:10px!important}
+
+  /* BACK arrow in a panel header, only when the panel was opened from the MENU */
+  .sheetback{display:none;flex:none;position:relative;z-index:1;width:40px;height:40px;margin-right:8px;padding:0;cursor:pointer;place-items:center;align-self:flex-start;background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius:6px;box-shadow:0 3px 0 rgba(29,21,48,.35)}
+  .sheetback svg{width:20px;height:20px;display:block}
+  .sheetback:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(29,21,48,.35)}
+  body.frommenu.joined .shead .sheetback{display:grid}
+  @media (max-width:640px){ #screen .menu>div.shead .sheetback{align-self:center;width:38px;height:38px} }

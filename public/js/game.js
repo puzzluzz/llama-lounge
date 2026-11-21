@@ -1752,24 +1752,62 @@ function woodGrain(c, along, across, board){   // streaks running along the plan
   let f = w>0.82 ? 0.9 : w<-0.9 ? 1.06 : 1;
   const kn=dhash(board,Math.floor(along/3.2)); if (kn<0.18){ const kx=(Math.floor(along/3.2)+0.5)*3.2, kd=Math.hypot((along-kx)*0.55, (across-0.5)*1.6); if (kd<0.16) f=0.78; else if (kd<0.26) f=0.9; }
   return f===1 ? c : dshade(c,f); }
+// GRASS is drawn in screen pixels, so blades, tufts, clover and flowers come out as crisp pixel art on the slanted ground.
+// P: base (three tones, dark to light), blade [light, mid], dark, den (how many tufts), tall (blade height), tip + tipDen (seed heads), seed
+const gscr=(gx,gy)=>[Math.round((gx-gy)*20), Math.round((gx+gy)*10)];
+const GC={}, ghex=h=>GC[h]||(GC[h]=dh(h));
+function grassPx(gx, gy, P){ const [sx,sy]=gscr(gx,gy), S=P.seed||0, cw=5, ch=4, tall=P.tall||2;
+  for (let j=0; j<=Math.ceil((tall+1)/ch); j++){ const cx=Math.floor(sx/cw), cy=Math.floor(sy/ch)+j, r=dhash(cx*7+S, cy*13+S+1); if (r>=P.den) continue;
+    const ox=cx*cw+Math.floor(dhash(cx+S,cy+31)*cw), oy=cy*ch+Math.floor(dhash(cy+S,cx+57)*ch), dx=sx-ox, dy=sy-oy, h=tall+(dhash(cx+S+3,cy)<0.4?1:0);
+    if (dx===0 && dy<=0 && dy>-h){ if (dy===-h+1) return ghex(P.tip && dhash(cx+S+5,cy+2)<P.tipDen ? P.tip : P.blade[0]); return ghex(P.blade[1]); }
+    if (h>=3 && dx===-1 && dy===-1) return ghex(P.blade[1]);
+    if (dx===1 && dy===0) return ghex(P.dark); }
+  const t=dhash(Math.floor(gx*5)+S, Math.floor(gy*5)+S*3); let c=ghex(P.base[t<0.22?0:t<0.8?1:2]);
+  if (dhash(sx+S, sy*3+S)<0.05) c=ghex(P.base[2]); return c; }
+// a small pixel motif scattered on a screen grid: returns the colour at this pixel, or null. shape(dx,dy,r) gives a colour or null
+function gMotif(gx, gy, cw, ch, den, seed, shape){ const [sx,sy]=gscr(gx,gy);
+  for (let j=-1;j<=1;j++) for (let i=-1;i<=1;i++){ const cx=Math.floor(sx/cw)+i, cy=Math.floor(sy/ch)+j, r=dhash(cx*5+seed, cy*11+seed+7); if (r>=den) continue;
+    const ox=cx*cw+Math.floor(dhash(cx+seed,cy+3)*cw), oy=cy*ch+Math.floor(dhash(cy+seed,cx+9)*ch), c=shape(sx-ox, sy-oy, r/den); if (c) return ghex(c); }
+  return null; }
+const G_MEADOW={base:['#4e9238','#62aa44','#72b850'],blade:['#a2dc78','#84c65e'],dark:'#3c7a2e',den:0.34,tall:2,seed:1,lip:['#62aa44','#4e9238','#84c65e']};
+const G_INLAWN={base:['#4a9038','#5ea646','#6cb24e'],blade:['#90d068','#7abe58'],dark:'#3e8030',den:0.2,tall:1,seed:2};
+const G_LAWN_A={base:['#5cb040','#68bc4a','#74c656'],blade:['#96dc72','#80ce5e'],dark:'#4c9c36',den:0.22,tall:1,seed:3,lip:['#62b444','#56a83c','#80ce5e']};
+const G_LAWN_B={base:['#489a32','#54a63c','#60b046'],blade:['#7cc45a','#6ab84e'],dark:'#3c882a',den:0.22,tall:1,seed:4};
+const G_CLOVER={base:['#2f7a3a','#3a8a44','#44964c'],blade:['#6cc070','#52a85a'],dark:'#266a30',den:0.1,tall:1,seed:5,lip:['#3a8a44','#2f7a3a','#6cc070']};
+const G_WILD={base:['#2c6c28','#347a2c','#3c8632'],blade:['#74c056','#4e9e40'],dark:'#225a20',den:0.6,tall:4,tip:'#ece4a4',tipDen:0.3,seed:6,lip:['#347a2c','#2c6c28','#74c056']};
+const G_GOLD={base:['#b88a2c','#c89c38','#d6ae46'],blade:['#f6dc80','#e4c05a'],dark:'#96701e',den:0.55,tall:3,tip:'#fff4bc',tipDen:0.4,seed:7,lip:['#c89c38','#b88a2c','#f6dc80']};
+const flowerAt=(gx,gy)=>gMotif(gx,gy,17,11,0.3,41,(dx,dy,r)=>{ const pc=r<0.3?'#ffffff':r<0.55?'#f890b8':r<0.8?'#fff4b0':'#c8a8f8';
+  if (dx===0&&dy===0) return r<0.8&&r>=0.55?'#f0a020':'#f8d040'; if ((Math.abs(dx)===1&&dy===0)||(dx===0&&Math.abs(dy)===1)) return pc; if (dx===0&&dy===2) return '#3c7a2e'; return null; });
+// plank detail sized for the game's pixels: the odd darker grain streak down the middle of a board, and a rare knot
+const plankGrain=(c,board,along,v)=>{ if (dhash(board,Math.floor(along/2)+50)<0.12 && Math.abs(fr(along/2)-0.5)<0.07 && Math.abs(v-0.55)<0.2) return dshade(c,0.78);
+  return (dhash(board*3+1,Math.floor(along*2.5))<0.3 && Math.abs(v-0.55)<0.13) ? dshade(c,0.93) : c; };
 const DECO_FLOOR={
-  wood:{n:'OAK PLANKS',p:0, px:(gx,gy)=>{ const row=Math.floor(gy*3), u=(gx+(row*0.73)%2)%2; if ((gy*3)%1<0.07 || u<0.035) return dh('#a87440'); return dh(['#d8a468','#cf9a5e','#d8a468'][row%3]); }},
-  checker:{n:'CHECKERBOARD',p:20, px:(gx,gy)=>{ const k=(Math.floor(gx)+Math.floor(gy))%2, c=dh(k?'#3a3458':'#f4f0f8'); return (fr(gx)<0.03||fr(gy)<0.03)?dh('#d8d0e8'):c; }},
-  carpet:{n:'BLUE CARPET',p:20, px:(gx,gy)=>{ const c=((Math.floor(gx*4)+Math.floor(gy*4))%2)?dh('#4a64c8'):dh('#3a54b0'); return dhash(Math.floor(gx*40),Math.floor(gy*40))<0.15?dmul(c,1.12):c; }},
-  marble:{n:'MARBLE TILE',p:25, px:(gx,gy)=>{ const k=(Math.floor(gx)+Math.floor(gy))%2; if (fr(gx)<0.04||fr(gy)<0.04) return dh('#b8b0c8'); const c=dh(k?'#d8d2e2':'#ece8f0'), v=Math.sin(gx*9+Math.sin(gy*7)*2.2+k*3); return Math.abs(v)<0.07?dh('#a8a0bc'):c; }},
-  meadow:{n:'MEADOW',p:0, px:(gx,gy)=>{ const cx=Math.floor(gx*8), cy=Math.floor(gy*8), r=dhash(cx,cy+900); if (r<0.012) return dh('#fff4b0'); if (r<0.022) return dh('#ffffff'); if (r<0.03) return dh('#f890b8');
-    const h2=Math.floor(dhash(Math.floor(gx*6),Math.floor(gy*6))*8); return dh(h2===0?'#82c45c':h2===1?'#58a03e':h2===2?'#4e9238':'#68b048'); }},
-  grass:{n:'INDOOR LAWN',p:20, px:(gx,gy)=>{ const h2=Math.floor(dhash(Math.floor(gx*7),Math.floor(gy*7))*9); return dh(h2===0?'#88c860':h2===1?'#5aa040':h2===2?'#4a9038':'#6ab04a'); }},
+  wood:{n:'OAK PLANKS',p:0, px:(gx,gy)=>{ const row=Math.floor(gy*3), v=fr(gy*3), a=gx+(row*0.73)%2, u=a%2, board=row*17+Math.floor(a/2);   // staggered boards, each its own tone, with grain and knots
+      if (v<0.1 || u<0.045) return dh('#a06c3a'); const c=dh(['#d8a468','#cf9a5e','#dcaa70','#c8925a'][Math.floor(dhash(board,5)*4)]); if (v<0.22) return dshade(c,1.06);
+      return plankGrain(c, board, a, v); }},
+  checker:{n:'CHECKERBOARD',p:20, px:(gx,gy)=>{ const k=(Math.floor(gx)+Math.floor(gy))%2, u=fr(gx), v=fr(gy), c=dh(k?'#3a3458':'#f4f0f8');   // bevelled tiles with a soft shine
+      if (u<0.04||v<0.04) return dh(k?'#221e38':'#c8c0d8'); if (u<0.09||v<0.09) return dshade(c,k?1.3:1.04); if (u>0.94||v>0.94) return dshade(c,k?0.8:0.9);
+      const d=u-v; if (Math.abs(d+0.18)<0.035 && u>0.2 && u<0.62) return dshade(c,k?1.22:0.95); if (Math.abs(d+0.3)<0.02 && u>0.25 && u<0.5) return dshade(c,k?1.14:0.97);
+      return dhash(Math.floor(gx*20),Math.floor(gy*20)+3)<0.03 ? dshade(c,k?1.12:0.96) : c; }},
+  carpet:{n:'BLUE CARPET',p:20, px:(gx,gy)=>{ const u=fr(gx), v=fr(gy), d=Math.max(Math.abs(u-0.5),Math.abs(v-0.5))*1.6, [sx,sy]=gscr(gx,gy); let c=dh('#3e58b6');   // woven pile with a diamond medallion on every square
+      if (d<0.07) c=dh('#f0c860'); else if (d<0.14) c=dh('#2a3f8c'); else if (Math.abs(d-0.3)<0.035) c=dh('#6a86e0'); else if (Math.abs(d-0.42)<0.02) c=dh('#2f469a');
+      return ((sx+sy)&1) ? c : dshade(c,0.94); }},
+  marble:{n:'MARBLE TILE',p:25, px:(gx,gy)=>{ const k=(Math.floor(gx)+Math.floor(gy))%2, u=fr(gx), v=fr(gy); if (u<0.04||v<0.04) return dh('#a8a0bc');   // polished slabs: two layers of veining, a bevel and fine flecks
+      let c=dh(k?'#d8d2e2':'#ece8f0'); if (u<0.09||v<0.09) return dshade(c,1.05); if (u>0.95||v>0.95) return dshade(c,0.92);
+      const v1=Math.sin(gx*9+Math.sin(gy*7)*2.2+k*3), v2=Math.sin(gx*4.3-gy*6.1+Math.sin(gx*11)*1.3+k);
+      if (Math.abs(v1)<0.07) return dh('#a8a0bc'); if (Math.abs(v2)<0.04) return dshade(c,0.93); return c; }},
+  meadow:{n:'MEADOW',p:0, px:(gx,gy)=>flowerAt(gx,gy)||grassPx(gx,gy,G_MEADOW)},
+  grass:{n:'INDOOR LAWN',p:20, px:(gx,gy)=>grassPx(gx,gy,G_INLAWN)},
   parquet:{n:'PARQUET',p:30, px:(gx,gy)=>{ const cx=Math.floor(gx*2), cy=Math.floor(gy*2), ux=fr(gx*2), uy=fr(gy*2), vert=(cx+cy)%2;
       if (ux<0.05||uy<0.05) return dh('#6a4220'); const a=vert?ux:uy, b=vert?uy:ux, i=Math.floor(a*3); if (fr(a*3)<0.09) return dh('#7a4c26');
-      const c=dh(['#c88a50','#b87a42','#d89a5e'][(i+cx+cy)%3]); return (Math.floor(b*12)%5===2 && dhash(cx*3+i,cy)<0.5)?dmul(c,0.9):c; }},
+      const bd=cx*31+cy*7+i, c=dh(['#c88a50','#b87a42','#d89a5e'][(i+cx+cy)%3]); if (fr(a*3)<0.24) return dshade(c,1.07); return plankGrain(c, bd, b*3, fr(a*3)); }},
   tiles:{n:'PAINTED TILES',p:30, px:(gx,gy)=>{ const u=fr(gx), v=fr(gy); if (u<0.04||v<0.04) return dh('#ddd2bc');
       const du=Math.abs(u-0.53), dv=Math.abs(v-0.53), d=du+dv, cr=Math.min(Math.hypot(u-0.06,v-0.06),Math.hypot(u-1,v-0.06),Math.hypot(u-0.06,v-1),Math.hypot(u-1,v-1));
       if (d<0.12) return dh('#f0c040'); if (d<0.2) return dh('#2a5aa8'); if (d<0.25) return dh('#f8f4ea'); if (Math.abs(d-0.32)<0.03) return dh('#2a5aa8');
       if (cr<0.16) return dh('#3a6ac8'); if (cr<0.2) return dh('#f0c040'); return dh('#f8f4ea'); }},
   cobble:{n:'COBBLESTONE',p:25, px:(gx,gy)=>{ const S2=3, x=gx*S2, y=gy*S2, ix=Math.floor(x), iy=Math.floor(y); let d1=9,d2=9,id=0;
       for (let j=-1;j<=1;j++) for (let i=-1;i<=1;i++){ const cx=ix+i, cy=iy+j, px2=cx+0.2+dhash(cx,cy)*0.6, py2=cy+0.2+dhash(cy,cx+9)*0.6, d=Math.hypot(x-px2,(y-py2)*1); if (d<d1){ d2=d1; d1=d; id=cx*131+cy; } else if (d<d2) d2=d; }
-      if (d2-d1<0.08) return dh('#4a4850'); const c=dh(['#9a98a0','#8a8890','#aaa8b0','#7e7c86'][Math.floor(dhash(id,3)*4)]); return d1<0.18?dmul(c,1.12):(d2-d1<0.14?dmul(c,0.86):c); }},
+      if (d2-d1<0.08) return dh(dhash(Math.floor(x*7),Math.floor(y*7)+2)<0.16?'#5a8a4a':'#4a4850'); const c=dh(['#9a98a0','#8a8890','#aaa8b0','#7e7c86'][Math.floor(dhash(id,3)*4)]); if (d1<0.18) return dmul(c,1.12); if (d2-d1<0.14) return dmul(c,0.86); return dhash(Math.floor(x*7)+1,Math.floor(y*7))<0.08?dmul(c,0.92):c; }},
   plaid:{n:'TARTAN CARPET',p:25, px:(gx,gy)=>{ const a=fr(gx*2), b=fr(gy*2), ba=a>0.35&&a<0.65, bb=b>0.35&&b<0.65; let c=dh('#b83a3a');
       if (ba&&bb) c=dh('#1e4630'); else if (ba||bb) c=dh('#2a5a3a'); if (Math.abs(a-0.5)<0.025||Math.abs(b-0.5)<0.025) c=dh('#e8c040'); if (Math.abs(a-0.1)<0.02||Math.abs(b-0.1)<0.02) c=dh('#f0e8d8');
       return ((Math.floor(gx*40)+Math.floor(gy*40))%2)?c:dmul(c,0.94); }},
@@ -1783,21 +1821,23 @@ function decoIcon(item, CS){ const d=decoOf(item), R2=Math.max(1,Math.min(3,Math
   m.fillStyle='rgba(255,255,255,.35)'; m.fillRect(pad,pad,w,Math.max(1,R2)); return c; }
 // FLOOR SQUARES (indoor rooms) and GRASS SQUARES (outdoor plots and farms): laid one square at a time. Neither kind goes in the other.
 const TILE_EXTRA={
-  deck:{n:'DECK BOARDS', px:(gx,gy)=>{ const row=Math.floor(gy*4), v=fr(gy*4), u=(gx+row*0.37)%1.5; if (v<0.1) return dh('#6a4a2c'); if (u<0.035) return dh('#7a5632'); const c=dh(['#b88a5c','#a87c50','#c2966a','#b08256'][row%4]);
-      if (u>0.07 && u<0.11 && v>0.45 && v<0.62) return dh('#5a3e24'); return (Math.floor(gx*14+row*3)%6===0 && v>0.3 && v<0.75) ? dmul(c,0.93) : c; }},
-  slate:{n:'SLATE', px:(gx,gy)=>{ const row=Math.floor(gy*1.5), x=gx*1.5+(row%2)*0.5, cx=Math.floor(x), u=fr(x), v=fr(gy*1.5); if (u<0.06||v<0.07) return dh('#3a3f4a');
-      const c=dh(['#6e7888','#7c8696','#646e7e','#8590a0'][Math.floor(dhash(cx*3+1,row*5+2)*4)]); if (u<0.1||v<0.12) return dmul(c,1.14); return dhash(Math.floor(gx*22),Math.floor(gy*22))<0.07 ? dmul(c,0.9) : c; }},
+  deck:{n:'DECK BOARDS', px:(gx,gy)=>{ const row=Math.floor(gx*3), v=fr(gx*3), a=gy+row*0.37, u=a%1.5, board=row*13+Math.floor(a/1.5)+900;   // weathered boards running the other way, with gaps, grain and screw heads
+      if (v<0.12) return dh('#5a3e24'); if (u<0.04) return dh('#6e4c2c'); const c=dh(['#b88a5c','#a87c50','#be9264','#b08256'][Math.floor(dhash(board,2)*4)]); if (v<0.26) return dshade(c,1.08);
+      if ((u>0.08&&u<0.14 || u>1.38&&u<1.44) && Math.abs(v-0.6)<0.12) return dh('#4e3620');
+      return plankGrain(c, board, a, v); }},
+  slate:{n:'SLATE', px:(gx,gy)=>{ const row=Math.floor(gy*1.5), x=gx*1.5+(row%2)*0.5, cx=Math.floor(x), u=fr(x), v=fr(gy*1.5); if (u<0.05||v<0.06) return dh('#33384a');   // split stone slabs: chiselled edges, cleft lines and chips
+      const c=dh(['#6e7888','#7a8494','#667080','#828c9c'][Math.floor(dhash(cx*3+1,row*5+2)*4)]); if (u<0.11||v<0.13) return dmul(c,1.16); if (u>0.94||v>0.93) return dmul(c,0.84);
+      const cl=Math.sin(u*7+v*3+dhash(cx,row)*6)+Math.sin(v*11+cx); if (Math.abs(cl)<0.06) return dmul(c,0.88); if (Math.abs(cl-0.14)<0.05) return dmul(c,1.07);
+      return dhash(Math.floor(gx*20),Math.floor(gy*20)+8)<0.05 ? dmul(c,0.9) : c; }},
   // ---- grass (outdoors). MEADOW GRASS is the flowery field every plot and farm starts with (DECO_FLOOR.meadow). ----
-  lawn:{n:'MOWN LAWN', px:(gx,gy)=>{ const stripe=Math.floor((gx+gy)*1.5)%2, h2=dhash(Math.floor(gx*8),Math.floor(gy*8)+40);   // neat mowing stripes, short even blades
-      const c=stripe ? ['#6cc04c','#62b444','#76c856'] : ['#58a83c','#4e9c34','#62b244']; return dh(h2<0.18?c[1]:h2>0.86?c[2]:c[0]); }},
-  clover:{n:'CLOVER', px:(gx,gy)=>{ const cx=Math.floor(gx*7), cy=Math.floor(gy*7), r=dhash(cx,cy+70), u=fr(gx*7), v=fr(gy*7);   // deep green clover with little white flower heads
-      if (r<0.045 && Math.abs(u-0.5)<0.3 && Math.abs(v-0.5)<0.3) return dh(Math.abs(u-0.5)<0.14&&Math.abs(v-0.5)<0.14?'#ffffff':'#e8f0d8');
-      const h2=dhash(Math.floor(gx*7),Math.floor(gy*7)+11); return dh(h2<0.15?'#35823e':h2<0.8?'#3f9048':'#4a9c52'); }},
-  wild:{n:'WILD GRASS', px:(gx,gy)=>{ const bx=Math.floor(gx*8), r=dhash(bx,Math.floor(gy*3)+5), v=fr(gy*3+r*0.9);   // long, uneven blades in darker greens with pale seed tips
-      if (r>0.82 && v<0.12) return dh('#e8e0a0'); const c=['#3e8a34','#38802e','#44923a','#347a2c'][Math.floor(dhash(bx,Math.floor(gy*3+r*0.9))*4)]; return dh(v>0.8?'#2e6e28':c); }},
-  golden:{n:'GOLDEN GRASS', px:(gx,gy)=>{ const bx=Math.floor(gx*8), r=dhash(bx+3,Math.floor(gy*4)+9), v=fr(gy*4+r*0.8);   // dry late-summer grass
-      if (r>0.9 && v<0.14) return dh('#fff0b0'); const c=['#d8b048','#d0a640','#dfb850','#c89c38'][Math.floor(dhash(bx+7,Math.floor(gy*4+r*0.8))*4)]; return dh(v>0.82?'#b88a2c':c); }},
+  lawn:{n:'MOWN LAWN', lip:G_LAWN_A.lip, px:(gx,gy)=>grassPx(gx,gy,(Math.floor(gx)&1)?G_LAWN_A:G_LAWN_B)},   // mowing stripes one square wide, short even blades
+  clover:{n:'CLOVER', lip:G_CLOVER.lip, px:(gx,gy)=>gMotif(gx,gy,19,12,0.3,61,(dx,dy)=>((dx===0||dx===1)&&dy===0)?'#ffffff':((dx===0||dx===1)&&dy===1)?'#f0d0e4':(dx===0&&dy===2)?'#266a30':null)   // white flower heads
+      || gMotif(gx,gy,7,5,0.62,71,(dx,dy)=>(dx===0&&dy===0)||(dx===-1&&dy===1)||(dx===1&&dy===1)?'#62b868':(dx===0&&dy===1)?'#266a30':null)                     // three-leaf clovers
+      || grassPx(gx,gy,G_CLOVER)},
+  wild:{n:'WILD GRASS', lip:G_WILD.lip, px:(gx,gy)=>grassPx(gx,gy,G_WILD)},       // long uneven blades with pale seed heads
+  golden:{n:'GOLDEN GRASS', lip:G_GOLD.lip, px:(gx,gy)=>grassPx(gx,gy,G_GOLD)},   // dry late-summer grass
 };
+DECO_FLOOR.meadow.lip=G_MEADOW.lip;
 const TILE_FLOORS=['wood','parquet','deck','checker','marble','tiles','slate','cobble','carpet','plaid','grass'], TILE_GRASS=['meadow','lawn','clover','wild','golden'], TILE_KINDS=[...TILE_FLOORS,...TILE_GRASS];
 const TILE_PRICE={wood:1,checker:1,carpet:1,marble:2,grass:1,parquet:2,tiles:2,cobble:1,plaid:1,deck:1,slate:2,meadow:1,lawn:1,clover:1,wild:1,golden:1};   // must match TILES in src/worker.js
 const tileName = k => k==='meadow' ? 'MEADOW GRASS' : (tileDef(k)||{n:k}).n;
@@ -1823,20 +1863,23 @@ function buildFarmBG(){
   // (the sky and the rolling hills are painted across the whole screen each frame, behind this layer: see drawFarmSky)
   // earth slab under the field: front-left and front-right faces, with a grassy lip
   const D=14, dirt=['#8a5a32','#7a4c28','#6a4020'];
+  // the grass at an edge square (a laid grass square, else the room's own field), as [lip, shade, highlight] colours
+  const edgeLip=(tx,ty)=>{ const k=(R.tiles||{})[Math.max(0,Math.min(N-1,tx))+','+Math.max(0,Math.min(NY-1,ty))], F=(k&&tileDef(k))||DECO_FLOOR[R.floor]||DECO_FLOOR.meadow; return (F.lip||G_MEADOW.lip).map(ghex); };
+  const rgb=c=>'rgb('+c[0]+','+c[1]+','+c[2]+')';
   { const a=Q(0,NY), b=Q(N,NY), c=Q(N,0); 
     polyPx([[a[0],a[1]],[b[0],b[1]],[b[0],b[1]+D],[a[0],a[1]+D]], dirt[0]); polyPx([[b[0],b[1]],[c[0],c[1]],[c[0],c[1]+D],[b[0],b[1]+D]], dirt[1]);
     for (const [p,q,col] of [[a,b,'#5a3618'],[b,c,'#4e2e14']]) for (const dy of [5,10]) linePx(p[0],p[1]+dy,q[0],q[1]+dy,col);
     const rr=rnd(3); g.fillStyle='#a8784a'; for (let i=0;i<40;i++){ const u=rr(), left=rr()<0.5, p=left?a:b, q=left?b:c, dy=2+Math.floor(rr()*(D-4)); g.fillRect(Math.round(p[0]+(q[0]-p[0])*u), Math.round(p[1]+(q[1]-p[1])*u)+dy, 2, 1); }
     linePx(a[0],a[1]+D,b[0],b[1]+D,INK); linePx(b[0],b[1]+D,c[0],c[1]+D,INK); linePx(a[0],a[1],a[0],a[1]+D,INK); linePx(c[0],c[1],c[0],c[1]+D,INK); linePx(b[0],b[1],b[0],b[1]+D,INK);
     // grass hanging over the lip, a few stones and roots in the earth
-    const r2=rnd(11); for (const [p,q] of [[a,b],[b,c]]) for (let k=0;k<70;k++){ const u=r2(), X=Math.round(p[0]+(q[0]-p[0])*u), Y=Math.round(p[1]+(q[1]-p[1])*u), L=1+Math.floor(r2()*3); g.fillStyle=r2()<0.5?'#5aa040':'#4a9038'; g.fillRect(X,Y+1,1,L); if (r2()<0.25){ g.fillStyle='#78c058'; g.fillRect(X,Y+1,1,1); } }
+    const r2=rnd(11); for (const [p,q,e] of [[a,b,0],[b,c,1]]) for (let k=0;k<70;k++){ const u=r2(), X=Math.round(p[0]+(q[0]-p[0])*u), Y=Math.round(p[1]+(q[1]-p[1])*u), L=1+Math.floor(r2()*3), E=e?edgeLip(N-1,Math.floor((1-u)*NY)):edgeLip(Math.floor(u*N),NY-1); g.fillStyle=rgb(r2()<0.5?E[0]:E[1]); g.fillRect(X,Y+1,1,L); if (r2()<0.25){ g.fillStyle=rgb(E[2]); g.fillRect(X,Y+1,1,1); } }
     for (const [p,q] of [[a,b],[b,c]]) for (let k=0;k<7;k++){ const u=0.08+r2()*0.84, X=Math.round(p[0]+(q[0]-p[0])*u), Y=Math.round(p[1]+(q[1]-p[1])*u)+5+Math.floor(r2()*5); g.fillStyle=INK; g.fillRect(X-1,Y-1,5,4); g.fillStyle='#9a9aa8'; g.fillRect(X,Y,3,2); g.fillStyle='#c0c0cc'; g.fillRect(X,Y,1,1); }
     for (const [p,q] of [[a,b],[b,c]]) for (let k=0;k<5;k++){ const u=0.1+r2()*0.8, X=Math.round(p[0]+(q[0]-p[0])*u), Y=Math.round(p[1]+(q[1]-p[1])*u)+2; g.fillStyle='#4a2c14'; g.fillRect(X,Y,1,3); g.fillRect(X+1,Y+3,1,2); g.fillRect(X-1,Y+4,1,1); } }
   // the field itself (floor art), with the edge tiles fading into a grassy lip
-  { const x0=ox-NY*20, x1=ox+N*20, y0=oy, y1=oy+(N+NY)*10; const img=g.getImageData(x0,y0,x1-x0,y1-y0), Dd=img.data, W=x1-x0, lip=[94,168,70];
+  { const x0=ox-NY*20, x1=ox+N*20, y0=oy, y1=oy+(N+NY)*10; const img=g.getImageData(x0,y0,x1-x0,y1-y0), Dd=img.data, W=x1-x0;
     for (let py=0; py<y1-y0; py++) for (let px=0; px<W; px++){ const wx=px+x0-ox, wy=py+y0-oy; const gx=(wx/20+wy/10)/2, gy=(wy/10-wx/20)/2;
       if (gx<0||gy<0||gx>=N||gy>=NY) continue; let c=floorPxAt(R, gx, gy, DECO_FLOOR[R.floor]||DECO_FLOOR.meadow);
-      if (gx>N-0.05 || gy>NY-0.05) c=lip;
+      if (gx>N-0.05 || gy>NY-0.05) c=edgeLip(Math.floor(gx),Math.floor(gy))[0];
       const i=(py*W+px)*4; Dd[i]=c[0]; Dd[i+1]=c[1]; Dd[i+2]=c[2]; Dd[i+3]=255; }
     g.putImageData(img,x0,y0); }
   // the farm's name on a wooden signboard, standing outside the field behind the back-right fence on its own two posts,
@@ -4449,16 +4492,20 @@ document.getElementById('shopclose').addEventListener('click', ()=>closeAll());
 const menu=document.getElementById('menu'), emenu=document.getElementById('emenu'), logbox=document.getElementById('logbox'), pick=document.getElementById('pick');
 let curMenu=null, menuIdx=0;
 function uiOpen(){ return ($id('boxbox') && $id('boxbox').style.display==='block') || (typeof rulesEl!=='undefined' && rulesEl.style.display==='flex') || (typeof roomPickEl!=='undefined' && roomPickEl.style.display==='flex') || (typeof swapEl!=='undefined' && swapEl.style.display==='block') || (typeof slotEl!=='undefined' && slotEl.style.display==='block') || (document.getElementById('plkbox')||{style:{}}).style.display==='block' || (typeof fwEl!=='undefined' && fwEl.style.display==='block') || (typeof tblEl!=='undefined' && tblEl.style.display==='block') || (typeof dashEl!=='undefined' && dashEl.style.display==='block') || (typeof sndEl!=='undefined' && sndEl.style.display==='block') || (typeof dkEl!=='undefined' && dkEl.style.display==='block') || (typeof jobsEl!=='undefined' && jobsEl.style.display==='block') || pmenuEl.style.display==='block' || tmenuEl.style.display==='block' || lboard.style.display==='block' || shopEl.style.display==='block' || !!curMenu || logbox.style.display==='block' || pick.style.display==='flex'; }
-function items(m){ return [...m.children].filter(c=>!c.classList.contains('sheetx') && !c.classList.contains('shead')); }
+function items(m){ return [...m.children].filter(c=>!c.classList.contains('sheetx') && !c.classList.contains('sheetback') && !c.classList.contains('shead')); }
 function setMenu(i){ const it=items(curMenu); menuIdx=(i+it.length)%it.length; it.forEach((m,k)=>m.classList.toggle('on',k===menuIdx)); }
 function showMenu(m){ closeAll(); curMenu=m; m.style.display='block'; setMenu(0); }
 function openMenu(){ if(pick.style.display==='flex'||!joined||arcade.on) return; if(curMenu) closeAll(); else showMenu(menu); }
-function closeAll(){ { const dp=document.getElementById('dailypop'); if (dp) dp.style.display='none'; const ib=document.getElementById('itembox'); if (ib) ib.style.display='none'; } if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; { const pk=document.getElementById('plkbox'); if (pk) pk.style.display='none'; } if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; { const wb=document.getElementById('wfbox'); if (wb) wb.style.display='none'; const bb=document.getElementById('bugbox'); if (bb) bb.style.display='none'; { const pb=document.getElementById('plotbox'); if (pb) pb.style.display='none'; const bxb=document.getElementById('boxbox'); if (bxb) bxb.style.display='none'; } { const bx=document.getElementById('banbox'); if (bx) bx.style.display='none'; } { const rb=document.getElementById('repbox'); if (rb) rb.style.display='none'; } const mk=document.getElementById('mktbox'); if (mk) mk.style.display='none'; } const dmb=document.getElementById('dmbox'); if (dmb) dmb.style.display='none'; const ctb=document.getElementById('catbox'); if (ctb) ctb.style.display='none'; const wdb=document.getElementById('wardbox'); if (wdb) wdb.style.display='none'; const prb=document.getElementById('roomsbox'); if (prb && joined) prb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
+// BACK buttons: a panel opened from the MENU shows a back arrow in its header that returns to the menu
+let MENU_BACK_T=0; const MENU_PANELS=new Set(['emote','llama','room','dash','account','market','bug','friends','wardrobe','rules','scores']);
+function menuBackOff(){ MENU_BACK_T=0; document.body.classList.remove('frommenu'); }
+function menuBackOn(){ MENU_BACK_T=performance.now(); document.body.classList.add('frommenu'); }
+function closeAll(){ if (MENU_BACK_T && performance.now()-MENU_BACK_T>1500) menuBackOff(); { const dp=document.getElementById('dailypop'); if (dp) dp.style.display='none'; const ib=document.getElementById('itembox'); if (ib) ib.style.display='none'; } if (joined && typeof roomPickEl!=='undefined') roomPickEl.style.display='none'; if (typeof swapEl!=='undefined') swapEl.style.display='none'; if (typeof slotEl!=='undefined') slotEl.style.display='none'; { const pk=document.getElementById('plkbox'); if (pk) pk.style.display='none'; } if (typeof fwEl!=='undefined') fwEl.style.display='none'; if (typeof tblEl!=='undefined') tblEl.style.display='none'; if (typeof dashEl!=='undefined') dashEl.style.display='none'; if (typeof sndEl!=='undefined') sndEl.style.display='none'; if (typeof dkEl!=='undefined') dkEl.style.display='none'; if (typeof jobsEl!=='undefined') jobsEl.style.display='none'; const acb=document.getElementById('acctbox'); if (acb) acb.style.display='none'; { const wb=document.getElementById('wfbox'); if (wb) wb.style.display='none'; const bb=document.getElementById('bugbox'); if (bb) bb.style.display='none'; { const pb=document.getElementById('plotbox'); if (pb) pb.style.display='none'; const bxb=document.getElementById('boxbox'); if (bxb) bxb.style.display='none'; } { const bx=document.getElementById('banbox'); if (bx) bx.style.display='none'; } { const rb=document.getElementById('repbox'); if (rb) rb.style.display='none'; } const mk=document.getElementById('mktbox'); if (mk) mk.style.display='none'; } const dmb=document.getElementById('dmbox'); if (dmb) dmb.style.display='none'; const ctb=document.getElementById('catbox'); if (ctb) ctb.style.display='none'; const wdb=document.getElementById('wardbox'); if (wdb) wdb.style.display='none'; const prb=document.getElementById('roomsbox'); if (prb && joined) prb.style.display='none'; const frb=document.getElementById('frbox'); if (frb) frb.style.display='none'; pmenuEl.style.display='none'; tmenuEl.style.display='none'; lboard.style.display='none'; shopEl.style.display='none'; menu.style.display='none'; emenu.style.display='none'; logbox.style.display='none'; curMenu=null; }
 function menuAct(el){
   if (curMenu===emenu){ closeAll(); if (el.dataset.q){ chatin.value=el.dataset.q; $id('chatrow').requestSubmit(); chatin.blur(); } else if (el.dataset.e) emote(el.dataset.e); return; }
   const a=el.dataset.a;
-  if (a==='emote'){ showMenu(emenu); return; }
-  closeAll();
+  if (a==='emote'){ showMenu(emenu); menuBackOn(); return; }
+  menuBackOff(); closeAll(); if (MENU_PANELS.has(a)) menuBackOn();
   if (a==='llama' && !acctHasLlama()) openPicker();   // your llama is picked once, at sign-up
   else if (a==='room') showRoomPick(false);
   else if (a==='dash') openDash();
@@ -8450,7 +8497,7 @@ document.getElementById('jobsbtn').addEventListener('click', ()=>{ ensureAudio()
 document.getElementById('jobs_close').addEventListener('click', ()=>{ jobsEl.style.display='none'; });
 
 // ======================= POP-UP HEADER: ✕ CLOSE + DRAG TO MOVE =======================
-function closeSheet(el){ ensureAudio();
+function closeSheet(el){ ensureAudio(); menuBackOff();
   if (el.id==='itembox'){ el.style.display='none'; return; }
   if (el===arBox) arenaClose(); else if (el===bwBox) bowlClose();
   else if (el===rulesEl){ if (joined) rulesEl.style.display='none'; }
@@ -8533,7 +8580,7 @@ for (const el of document.querySelectorAll('.gb.sheet')){
   const tt0=el.querySelector('.slt, .lbt, .dpt, #rp_title, #tm_title');
   if (tt0 || SHEET_TITLE[el.id]){
     h.classList.add('band'); el.classList.add('hasband');
-    h.innerHTML='<span class="sgrip"></span><span class="sico"></span><div class="stx"></div><button class="sheetx" type="button" aria-label="Close"><span class="pi pi-x" aria-hidden="true"></span></button>';
+    h.innerHTML='<span class="sgrip"></span><span class="sico"></span><div class="stx"></div><button class="sheetback" type="button" aria-label="Back to the menu" title="Back to the menu"><svg viewBox="0 0 9 9" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="M4 1h1v1H4zM3 2h2v1H3zM2 3h6v1H2zM1 4h7v1H1zM2 5h6v1H2zM3 6h2v1H3zM4 7h1v1H4z"/></svg></button><button class="sheetx" type="button" aria-label="Close"><span class="pi pi-x" aria-hidden="true"></span></button>';
     const stx=h.querySelector('.stx'), ico=h.querySelector('.sico');
     let tt=tt0; if (!tt){ tt=document.createElement('div'); tt.className='slt'; tt.textContent=SHEET_TITLE[el.id]; iconize(tt); }
     stx.appendChild(tt.parentNode && tt.parentNode.classList && tt.parentNode.classList.contains('dmhead') ? tt.parentNode : tt);
@@ -8541,7 +8588,8 @@ for (const el of document.querySelectorAll('.gb.sheet')){
     /* the title's own leading icon moves into the big tile, even when the title text changes later */
     const grab=()=>{ const f=tt.firstElementChild; if (f && f.classList.contains('pi')) ico.replaceChildren(f); else if (!ico.firstChild) ico.innerHTML=pix(SHEET_ICON[el.id]||'star'); };
     new MutationObserver(grab).observe(tt, {childList:true, subtree:true, characterData:true}); grab();
-  } else h.innerHTML='<span class="sgrip"></span><button class="sheetx" type="button" aria-label="Close"><span class="pi pi-x" aria-hidden="true"></span></button>';
+  } else h.innerHTML='<span class="sgrip"></span><button class="sheetback" type="button" aria-label="Back to the menu" title="Back to the menu"><svg viewBox="0 0 9 9" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="M4 1h1v1H4zM3 2h2v1H3zM2 3h6v1H2zM1 4h7v1H1zM2 5h6v1H2zM3 6h2v1H3zM4 7h1v1H4z"/></svg></button><button class="sheetx" type="button" aria-label="Close"><span class="pi pi-x" aria-hidden="true"></span></button>';
+  { const bk=h.querySelector('.sheetback'); bk.addEventListener('pointerdown', e=>e.stopPropagation()); bk.addEventListener('click', e=>{ e.stopPropagation(); ensureAudio(); menuBackOff(); closeAll(); showMenu(menu); }); }
   const x=h.querySelector('.sheetx'); x.addEventListener('pointerdown', e=>e.stopPropagation()); x.addEventListener('click', e=>{ e.stopPropagation(); closeSheet(el); });
   el.insertBefore(h, el.firstChild); makeDraggable(el, h);
   new MutationObserver(()=>{ const vis=!!el.style.display && el.style.display!=='none'; if (vis && !el._vis){ el.scrollTop=0; requestAnimationFrame(()=>{ el.scrollTop=0; }); sheetHead(el); if (el._head) popSnd(); } el._vis=vis; }).observe(el, {attributes:true, attributeFilter:['style']}); }
