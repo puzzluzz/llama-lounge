@@ -465,3 +465,6 @@ Emotes (heart, wow, huh, music, lol, zzz, wave, flex, facepalm) show as their ou
 **Content policy.** `public/_headers` now only lets the game's own script files run (`script-src 'self'`), so injected or inline scripts are blocked by the browser.
 
 **Cleanup.** The lint found and removed dead duplicate drawing code (an old scarecrow, palm and plant), a duplicate icon and label, and unreachable drink code. Crash reports now include the room. The REPORTS and ERRORS count badges on the dashboard tabs now show (a style rule was hiding them).
+
+### Staff powers need a passkey
+A staff role (set only in the database) is switched on only while the account has a passkey: `staffRole` is the role a llama can use, `baseRole` is the role it holds. Without a passkey a mod or owner plays as a normal llama (no dashboard, no commands, no badge) but still counts as staff to others (cannot be blocked or moderated by mods). A reminder pop-up shows once each visit; YES opens ACCOUNT at the passkey form. Adding a passkey turns the tools on at once; turning passkeys off turns them off. Tests cover all of this.

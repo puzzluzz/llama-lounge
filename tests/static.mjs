@@ -29,6 +29,7 @@ export function runStatic() {
     check("security: that change can never touch an admin row", sets.every((s) => /role != 'admin'/.test(s)));
     check("security: nothing writes role 'admin'", !/SET role = 'admin'|role\s*=\s*\?[^;]*bind\(\s*"admin"/.test(worker) && !/"admin"\s*:\s*"player"/.test(worker));
     check("security: role changes are owner-only", /const ownerOnly = \[[^\]]*"mod", "unmod"[^\]]*\]/.test(worker) && /ownerOnly\.includes\(cmd\) && a\.staff !== "owner"/.test(worker));
+    check("security: staff powers need a passkey", /const staffRole = \(env, u\) => \(u && u\.pk_on \? baseRole\(env, u\) : ""\);/.test(worker));
     check("security: the server stamps name, tokens and staff badge on presence", /o\.n = name; o\.tk = tk; if \(staff\) o\.st = staff; else delete o\.st;/.test(worker));
     check("security: owner checks on health, bug reports and backups", ["health(a)", "healthClear(a)", "bugList(a)"].every((fn) => new RegExp("async " + fn.replace(/[()]/g, "\\$&") + "[^\\n]*\\n?[^\\n]*!== \"owner\"").test(worker))); }
   // 5. SECURITY: page hardening

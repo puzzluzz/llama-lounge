@@ -23,16 +23,17 @@ export async function runApi(BASE, { root, persist }) {
     close() { try { this.ws.close(); } catch (e) {} }
   }
   const tag = Date.now().toString(36).slice(-5);
-  const names = { a: "ta_" + tag, b: "tb_" + tag, c: "tc_" + tag, o: "to_" + tag };
+  const names = { a: "ta_" + tag, b: "tb_" + tag, c: "tc_" + tag, o: "to_" + tag, d: "td_" + tag };
 
   console.log("Accounts");
   check("signup refuses a bad name", (await post("/api/signup", { u: "x", p: "longenough1", e: "x@example.com", t: 1 })).status === 400);
   check("signup refuses a short password", (await post("/api/signup", { u: "okname", p: "short", e: "y@example.com", t: 1 })).status === 400);
   check("signup refuses without agreeing to the terms", (await post("/api/signup", { u: "okname", p: "longenough1", e: "y@example.com" })).status === 400);
   const cookies = {};
-  for (const k of Object.keys(names)) { const r = await post("/api/signup", { u: names[k], p: "testpass123", e: names[k] + "@example.com", t: 1 }); cookies[k] = r.cookie; if (r.status !== 200) check("signup " + names[k], false, JSON.stringify(r.j)); }
+  for (const k of Object.keys(names)) { const r = await post("/api/signup", { u: names[k], p: "testpass123", e: names[k] + "@example.com", t: 1 }); cookies[k] = r.cookie; if (r.status !== 200) check("signup " + names[k], false, JSON.stringify(r.j));
+    if (k === "a") check("signup refuses a name that is taken", (await post("/api/signup", { u: names.a, p: "testpass123", e: "other" + tag + "@example.com", t: 1 })).status === 409); }
   check("signup makes accounts with a session", Object.values(cookies).every(Boolean));
-  check("signup refuses a name that is taken", (await post("/api/signup", { u: names.a, p: "testpass123", e: "other" + tag + "@example.com", t: 1 })).status === 409);
+  check("too many new accounts from one place are refused", (await post("/api/signup", { u: "tx_" + tag, p: "testpass123", e: "tx" + tag + "@example.com", t: 1 })).status === 429);
   check("login refuses a wrong password", (await post("/api/login", { u: names.a, p: "wrongpass999" })).status === 401);
   { const r = await post("/api/login", { u: names.a, p: "testpass123" }); check("login works with the right password", r.status === 200 && !!r.cookie); }
 
@@ -41,7 +42,8 @@ export async function runApi(BASE, { root, persist }) {
   { let err = ""; try { await new Promise((res, rej) => { const ws = new WebSocket(BASE.replace("http", "ws") + "/ws", { headers: { cookie: cookies.a, origin: "https://evil.example" } }); ws.on("open", () => { ws.close(); res(); }); ws.on("unexpected-response", (q, s) => rej(new Error("HTTP " + s.statusCode))); ws.on("error", rej); }); } catch (e) { err = e.message; }
     check("the room refuses a connection from another website", err === "HTTP 403", err); }
   // staff roles come only from the database
-  sql(`UPDATE users SET role='admin' WHERE name='${names.o}'; UPDATE users SET role='mod' WHERE name='${names.c}';`);
+  // staff powers also need a passkey on the account: C and O have one, D is a mod without one
+  sql(`UPDATE users SET role='admin', pk_on=1 WHERE name='${names.o}'; UPDATE users SET role='mod', pk_on=1 WHERE name='${names.c}'; UPDATE users SET role='mod' WHERE name='${names.d}';`);
   const A = await new Client(names.a, cookies.a).connect(), B = await new Client(names.b, cookies.b).connect(), C = await new Client(names.c, cookies.c).connect(), O = await new Client(names.o, cookies.o).connect();
   check("four llamas connect", [A, B, C, O].every((x) => x.peer));
 
@@ -87,6 +89,18 @@ export async function runApi(BASE, { root, persist }) {
   await A.act("bug_report", { text: "test bug " + tag, room: "lounge", ver: "t", ua: "t", scr: "1x1" });
   { const r = await O.act("bug_list"); check("owner: sees the bug a player sent", r.ok === true && r.bugs.some((b) => b.text === "test bug " + tag)); }
   await sleep(2100);
+
+  console.log("Staff powers need a passkey");
+  const D = await new Client(names.d, cookies.d).connect(); D.pres({ rm: "lounge" }); await sleep(300);
+  { const r = await D.act("dash"); check("a mod without a passkey cannot open the dashboard", r.ok === false, JSON.stringify(r).slice(0, 100)); }
+  { const r = await D.act("admin", { cmd: "mute", target: names.b }); check("a mod without a passkey cannot mute", r.ok === false); }
+  { B.mark(); D.pres({ s: { k: 1, t: "hi" } }); await sleep(300); check("a mod without a passkey shows no staff badge", !(B.seen(D.peer).pop() || {}).st); }
+  { const r = await fetch(BASE + "/api/me", { headers: { cookie: cookies.d, origin: BASE } }); const j = await r.json(); check("their profile says a passkey is needed", j.pkNeed === "mod" && !j.staff, JSON.stringify({ pkNeed: j.pkNeed, staff: j.staff })); }
+  { const r = await fetch(BASE + "/api/me", { headers: { cookie: cookies.c, origin: BASE } }); const j = await r.json(); check("a mod with a passkey has their tools", j.staff === "mod" && !j.pkNeed); }
+  { const r = await C.act("admin", { cmd: "mute", target: names.d }); check("they still count as staff to others (a mod cannot moderate them)", r.ok === false, r.msg); }
+  sql(`UPDATE users SET pk_on=1 WHERE name='${names.d}'`); await sleep(200);
+  { const r = await D.act("dash"); check("once they have a passkey the dashboard opens", r.ok === true, JSON.stringify(r).slice(0, 100)); }
+  D.close(); await sleep(2100);
 
   console.log("Tokens only change on the server");
   { const r = await A.act("furn_buy", { item: "plot" }); check("cannot buy what you cannot afford", r.ok === false, JSON.stringify(r)); }

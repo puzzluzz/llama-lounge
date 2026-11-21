@@ -358,6 +358,7 @@
   #cat_body .ci img{width:100%;max-width:150px;aspect-ratio:1;object-fit:contain;border-radius:12px;image-rendering:auto}
   #cat_body .ci b{font:800 13px/1.25 var(--ui);color:var(--ink)} #cat_body .ci small{font:700 13px var(--ui);color:#1f8a4c}
   #cat_body .ci a{font:800 12px var(--ui);color:#2a1d00;background:var(--yel);padding:7px 12px;border-radius:999px;text-decoration:none}
+  #pkask .pkaskb{display:flex;gap:8px;flex-wrap:wrap;justify-content:center} #pkask .afkc{border:3px solid var(--ink);border-radius:0;box-shadow:0 6px 0 rgba(8,4,20,.45)} #pkask .afkc b{font:400 13px/1.5 var(--pxf);letter-spacing:.04em} #ac_pk.pkflash{animation:pkfl 1.2s ease-out 2} @keyframes pkfl{0%{box-shadow:0 0 0 0 #ffd23f}40%{box-shadow:0 0 0 6px #ffd23f}100%{box-shadow:0 0 0 0 rgba(255,210,63,0)}}
   .afk{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(16,12,28,.7);z-index:20;padding:20px}
   .afkc{background:var(--card);border-radius:22px;padding:24px 22px;max-width:340px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;box-shadow:0 24px 60px rgba(8,4,20,.5)}
   .afki{font-size:40px} .afkc b{font:800 18px var(--ui);color:var(--ink)} .afkc small{font:500 14px/1.45 var(--ui);color:var(--sub)} .afkc .gbbtn{margin-top:6px;min-height:48px;padding:0 22px;font-size:15px}
@@ -533,7 +534,7 @@
   #menubtn.frdot{position:relative} #menubtn.frdot::after{content:'';position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;background:var(--pink);box-shadow:0 0 0 2px var(--yel)}
   #acctbox .acsec{background:var(--soft,#f6f4fb);border-radius:14px;padding:12px 14px;margin:10px 0;text-align:left}
   #acctbox .ach{font:800 12px var(--ui);letter-spacing:.06em;color:var(--sub);margin-bottom:6px}
-  #acctbox .acv{font:600 15px var(--ui);word-break:break-all}
+  #acctbox .acv{font:600 15px var(--ui);overflow-wrap:anywhere;word-break:normal;line-height:1.4}
   #acctbox .acst{font:700 12px var(--ui);margin-top:4px} #acctbox .acst.ok{color:#1f8a4c} #acctbox .acst.no{color:#b06a00}
   #acctbox p{font:500 14px/1.45 var(--ui);margin:6px 0 4px;color:var(--ink)}
   #acctbox input{display:block;width:100%;box-sizing:border-box;margin-top:8px;font:16px var(--ui);padding:11px 13px;border:2px solid var(--line);border-radius:12px;background:#fff;outline:none}

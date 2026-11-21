@@ -6224,9 +6224,9 @@ function pkSection(){ const el=$id('ac_pk'); if (!el) return;
       + `<div class="acv pkhint">First type the password you log in with, to prove it's you. You don't make up a passkey: your device creates it when you tap the button.</div><input id="pk_p" type="password" autocomplete="current-password" placeholder="Your login password" maxlength="72"><div class="srow pkbtns"><button class="gbbtn y" id="pk_add">${r.on?'ADD ANOTHER DEVICE':'ADD A PASSKEY'}</button>${r.on?'<button class="gbbtn" id="pk_codes">NEW BACKUP CODES</button><button class="gbbtn" id="pk_off">TURN OFF</button>':''}</div><div id="pk_out"></div>`;
     const pw=()=>$id('pk_p').value, out=$id('pk_out'), showCodes=codes=>{ out.innerHTML=pkCodesHtml(codes); $id('pk_copy').onclick=()=>{ try{ navigator.clipboard.writeText(codes.join('\n')); acMsg('Copied! Paste them somewhere safe.', true); }catch(_){ acMsg('Copy didn\'t work. Write them down instead.'); } }; };
     $id('pk_add').onclick=async ()=>{ if (!pw()) return acMsg('Enter your login password first.'); acMsg('FOLLOW THE STEPS ON YOUR DEVICE...'); const r2=await pkAdd(pw()); if (!r2.ok) return acMsg(r2.error||'That did not work.');
-      $id('pk_p').value=''; acMsg('Passkey added! Logins on this llama now need it.', true); pkSection(); if (r2.codes) setTimeout(()=>showCodes(r2.codes), 300); };
+      $id('pk_p').value=''; const was=acct && acct.pkNeed; await staffRefresh(); acMsg(was ? 'Passkey added! Your staff tools are on now. Logins on this llama now need it.' : 'Passkey added! Logins on this llama now need it.', true); pkSection(); if (r2.codes) setTimeout(()=>showCodes(r2.codes), 300); };
     const c=$id('pk_codes'); if (c) c.onclick=async ()=>{ if (!pw()) return acMsg('Enter your password first.'); const r2=await apiPost('/api/pk/codes',{p:pw()}); if (!r2.ok) return acMsg(r2.error||'That did not work.'); $id('pk_p').value=''; acMsg('New backup codes made. The old ones stopped working.', true); showCodes(r2.codes); };
-    const o=$id('pk_off'); if (o) o.onclick=async ()=>{ if (!pw()) return acMsg('Enter your password first.'); if (!o.classList.contains('sure')){ o.classList.add('sure'); o.textContent='REALLY TURN OFF?'; return; } const r2=await apiPost('/api/pk/off',{p:pw()}); if (!r2.ok) return acMsg(r2.error||'That did not work.'); acMsg('Passkeys removed. Logins only need your password now.', true); pkSection(); };
+    const o=$id('pk_off'); if (o) o.onclick=async ()=>{ if (!pw()) return acMsg('Enter your password first.'); if (!o.classList.contains('sure')){ o.classList.add('sure'); o.textContent='REALLY TURN OFF?'; acMsg('Heads up: your staff tools switch off until you add a passkey again.'); return; } const r2=await apiPost('/api/pk/off',{p:pw()}); if (!r2.ok) return acMsg(r2.error||'That did not work.'); await staffRefresh(); acMsg('Passkeys removed. Logins only need your password now, and your staff tools are off.', true); pkSection(); };
     acInputs(); }); }
 for (const b of document.querySelectorAll('.eye')) b.addEventListener('click', ()=>{ const i=$id(b.dataset.for); const show=i.type==='password'; i.type=show?'text':'password'; b.textContent=show?'HIDE':'SHOW'; i.focus(); });
 for (const el of authEl.querySelectorAll('input')) el.addEventListener('keydown', e=>e.stopPropagation());
@@ -7133,13 +7133,13 @@ function openAccount(ask){
         <input id="ac_op" type="password" autocomplete="current-password" placeholder="Current password" maxlength="72">
         <input id="ac_np" type="password" autocomplete="new-password" placeholder="New password (8+ characters)" maxlength="72">
         <div class="srow"><button class="gbbtn" id="ac_pw">CHANGE PASSWORD</button></div></div>
-      ${me.st ? '<div class="acsec"><div class="ach">🔑 PASSKEY (STAFF LOGIN)</div><div id="ac_pk"><div class="acv">LOADING...</div></div></div>' : ''}
+      ${(me.st || (acct && acct.pkNeed)) ? '<div class="acsec"><div class="ach">🔑 PASSKEY (STAFF LOGIN)</div><div id="ac_pk"><div class="acv">LOADING...</div></div></div>' : ''}
       <div class="acsec"><div class="ach">BLOCKED LLAMAS</div><div id="ac_blocks"><div class="acv">LOADING...</div></div></div>
       <div class="acmsg"></div><div class="srow"><button class="gbbtn" id="ac_close">DONE</button></div>`;
     const drawBlocks=()=>{ const el=$id('ac_blocks'); if (!el) return; const list=[...BLOCKS].sort();
       el.innerHTML = list.length ? list.map(n=>`<div class="acblk"><span>${esc(n)}</span><button class="gbbtn s" data-unb="${esc(n)}">UNBLOCK</button></div>`).join('') : '<div class="acv">Nobody. To block someone, tap their llama and press BLOCK.</div>';
       for (const b of el.querySelectorAll('[data-unb]')) b.addEventListener('click', ()=>{ b.disabled=true; blockDo(b.dataset.unb, false).then(drawBlocks); }); };
-    NET.act('block_list').then(r=>{ if (r && r.ok) blocksSet(r.blocks); drawBlocks(); }); if (me.st) pkSection();
+    NET.act('block_list').then(r=>{ if (r && r.ok) blocksSet(r.blocks); drawBlocks(); }); if (me.st || (acct && acct.pkNeed)) pkSection();
     $id('ac_close').onclick=()=>{ acctEl.style.display='none'; };
     $id('ac_pw').onclick=async ()=>{ const o=$id('ac_op').value, n=$id('ac_np').value; if (n.length<8) return acMsg('New passwords need 8+ characters.');
       acMsg('SAVING...'); const r=await apiPost('/api/password',{old:o,p:n}); if (!r.ok) return acMsg(r.error||'That did not work.');
@@ -7367,7 +7367,7 @@ document.getElementById('ds_refresh').addEventListener('click', loadDash);
 document.getElementById('ds_close').addEventListener('click', ()=>{ dashEl.style.display='none'; });
 NET.handlers.tg = m => tgServer(m);
 NET.handlers.board = m => { board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; renderBoard(); };
-NET.handlers.hello = m => { if (Number.isFinite(+m.now)) SRV_OFF=(+m.now)-Date.now(); setTimeout(()=>dailyLoad(true), 2500); setTimeout(blocksLoad, 300); setTimeout(()=>{ if (!joined || ($id('roomsbox').style.display==='block' && PRUI.view==='list')) prRefresh(); }, 0);   /* the ROOMS pop-up may have opened before the connection was ready */ if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true);
+NET.handlers.hello = m => { if (Number.isFinite(+m.now)) SRV_OFF=(+m.now)-Date.now(); PKASK.tries=0; setTimeout(pkAsk, 5000); setTimeout(()=>dailyLoad(true), 2500); setTimeout(blocksLoad, 300); setTimeout(()=>{ if (!joined || ($id('roomsbox').style.display==='block' && PRUI.view==='list')) prRefresh(); }, 0);   /* the ROOMS pop-up may have opened before the connection was ready */ if (m.nd){ if (m.nd.rate) ND.rate=m.nd.rate; ndSet(m.nd); } if (m.v && m.v!==GAME_VERSION) setTimeout(()=>localMsg('The game was just updated. Refresh the page to get the newest version.'), 1500); board={hay:lbClean(m.board.hay), dash:lbClean(m.board.dash)}; if (joined) sendPresence(true);
   // load friends, unread messages and the outfit every time we (re)connect
   setTimeout(()=>{ frLoad(); wdLoad(); dmLoad(); }, 150); };
 NET.handlers.kick = m => showKicked(m.msg);
@@ -7383,7 +7383,16 @@ function ndUI(){ for (const k of ['hu','th']){ const v=ndNow(k), el=document.get
     if (joined && v<=0 && !W.empty){ W.empty=1; localMsg(`Your llama is ${k==='hu'?'starving':'parched'}! It walks slower and games pay half until it ${k==='hu'?'eats':'drinks'}. ${fix}`); } } }
 NET.handlers.nd = m => ndSet(m);
 setInterval(ndUI, 2000);
-NET.handlers.staff = m => { me.st = ['owner','mod'].includes(m.st) ? m.st : ''; dashMenu(); if (m.msg) localMsg(m.msg); };
+NET.handlers.staff = m => { me.st = ['owner','mod'].includes(m.st) ? m.st : ''; if (acct) acct.pkNeed = ['owner','mod'].includes(m.pk) ? m.pk : ''; dashMenu(); if (m.msg) localMsg(m.msg); if (acct && acct.pkNeed){ PKASK.shown=false; pkAsk(); } };
+// STAFF WITHOUT A PASSKEY: their tools are off (the server decides that). Remind them once each visit; YES goes straight to the passkey form.
+const PKASK={shown:false, tries:0};
+function pkGo(){ openAccount(); let n=0; const find=()=>{ const el=$id('ac_pk'), box=$id('pk_p'); if (el && box){ el.scrollIntoView({block:'center', behavior:'smooth'}); el.classList.remove('pkflash'); void el.offsetWidth; el.classList.add('pkflash'); try { box.focus({preventScroll:true}); } catch(_){} return; } if (++n<40) setTimeout(find, 150); }; find(); }
+function pkAsk(){ if (PKASK.shown || !acct || !acct.pkNeed) return; if (!joined || uiOpen() || !pkSupported()){ if (++PKASK.tries<60) setTimeout(pkAsk, 3000); return; }
+  PKASK.shown=true; $id('pkask').style.display='flex'; }
+$id('pka_yes').addEventListener('click', ()=>{ $id('pkask').style.display='none'; pkGo(); });
+$id('pka_no').addEventListener('click', ()=>{ $id('pkask').style.display='none'; localMsg('No problem. You can turn it on any time in MENU > ACCOUNT. Your staff tools stay off until then.'); });
+iconize($id('pkask'));
+async function staffRefresh(){ try { const r=await fetch('/api/me', {credentials:'same-origin'}); const p=await r.json(); if (p && p.name){ acct=Object.assign(acct||{}, {pkNeed:p.pkNeed||'', staff:p.staff, admin:p.admin}); isAdminUser=!!p.admin; me.st=['owner','mod'].includes(p.staff)?p.staff:''; dashMenu(); sendPresence(true); } } catch(_){} }
 // BOWL-PHYSICS-START (generated from tools/bowl_physics.js by tools/sync_bowl.py; edit that file, not this copy)
 // ---- BOWLING PHYSICS (shared: the server runs this exact code to decide which pins fall) ----
 // Units are inches and seconds. Only + - * / and Math.sqrt are used, so every browser and the server get the same answer.
