@@ -9,6 +9,10 @@
   "workers_dev": true,
   "routes": [ { "pattern": "llamalounge.club", "custom_domain": true }, { "pattern": "www.llamalounge.club", "custom_domain": true } ],
   "assets": { "directory": "./public", "not_found_handling": "single-page-application" },
+  // email (confirm your email, password resets) is sent with Cloudflare Email Service from the game's own domain. No keys or passwords involved.
+  // APP_URL is left unset on purpose: links use whichever address the player is on, and staff passkeys made on the old address keep working.
+  "send_email": [ { "name": "EMAIL" } ],
+  "vars": { "MAIL_FROM": "noreply@llamalounge.club" },
   "durable_objects": { "bindings": [ { "name": "LOUNGE", "class_name": "Lounge" } ] },
   "migrations": [ { "tag": "v1", "new_sqlite_classes": ["Lounge"] } ],
   "d1_databases": [
