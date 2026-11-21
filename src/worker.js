@@ -964,7 +964,7 @@ export class Lounge extends DurableObject {
     if (a.nd) await this.needsTick(ws, a, now);
     if (m.t === "p") {
       // balance / mute / ban are cached for a few seconds so moving around doesn't hit the database every step
-      if (!a.uc || now - a.uc.t > 5000){ const u = await this.user(a.uid); if (!u || u.banned) { ws.close(4003, "banned"); return; } a.uc = { t: now, tk: u.tk, muted: u.muted, c: u.c || null }; a.staff = staffRole(this.env, u); }
+      if (!a.uc || now - a.uc.t > 15000){ const u = await this.user(a.uid); if (!u || u.banned) { ws.close(4003, "banned"); return; } a.uc = { t: now, tk: u.tk, muted: u.muted, c: u.c || null }; a.staff = staffRole(this.env, u); }
       const first = !a.pres;
       if (m.p && prId(m.p.rm) && prId(m.p.rm) !== a.proom) return;   // you have to be let in (pr_enter) before you can be in a player room
       // anything a person does (walking, changing rooms, chatting) counts as being here
@@ -2172,9 +2172,9 @@ export class Lounge extends DurableObject {
   needsOut(a) { return { hu: Math.round(a.nd.hu * 10) / 10, th: Math.round(a.nd.th * 10) / 10 }; }
   async needsTick(ws, a, now) {
     const was = a.nd.hu > 0 && a.nd.th > 0; this.needsDrain(a, now);
-    if (now - a.nd.saved > NEEDS.saveMs) await this.needsSave(a);
-    if (now - a.nd.sent > 30000 || was !== (a.nd.hu > 0 && a.nd.th > 0)) { a.nd.sent = now; this.send(ws, { t: "nd", ...this.needsOut(a) }); }
-    ws.serializeAttachment(a);
+    const saved = now - a.nd.saved > NEEDS.saveMs; if (saved) await this.needsSave(a);
+    const told = now - a.nd.sent > 30000 || was !== (a.nd.hu > 0 && a.nd.th > 0); if (told) { a.nd.sent = now; this.send(ws, { t: "nd", ...this.needsOut(a) }); }
+    if (saved || told) ws.serializeAttachment(a);   // otherwise the caller stores it (movement does on every step); draining again from the old time gives the same numbers
   }
   async needsEat(ws, a, f, now) { if (!a.nd) return; this.needsDrain(a, now);
     a.nd.hu = Math.max(0, Math.min(100, a.nd.hu + (f.hu || 0))); a.nd.th = Math.max(0, Math.min(100, a.nd.th + (f.th || 0)));

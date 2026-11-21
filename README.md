@@ -474,3 +474,19 @@ A staff role (set only in the database) is switched on only while the account ha
 - **Add to home screen.** `public/manifest.webmanifest` plus icons in `public/icons/` (192, 512, maskable, Apple touch, favicon). Saved to a phone's home screen, the game opens full screen with its own icon.
 - **Reconnects.** A dropped connection retries after 0.5 s, then 1, 2, 4 and 8 s; coming back to the tab or getting signal back retries at once. A quiet ping every 20 seconds (answered by the server without waking the room) spots a dead connection. After reconnecting you are in the same room and spot; player rooms let you back in first; treasure and gym state reload. A RECONNECTING banner shows if it takes over a second, then BACK ONLINE. The server now finishes the closing handshake so the page notices a close at once.
 - **Treasure odds.** The jungle now uses the cove's odds (coins 55%, gold 28%, gem 12%, rare 5%), so neither room pays better.
+
+### Load test (Nov 21)
+`npm run load -- 50 100 200` starts a throwaway local server, logs in that many bot llamas (a third of them in the lounge, the rest spread over the other rooms) and has them walk a third of the time, chat and do actions for 20 seconds per size. It reports messages each player receives, chat delay and action reply time. It never touches the live game.
+
+Same machine, same bots, before and after the per-room change:
+
+| players | before: chat delay | after: chat delay |
+|---|---|---|
+| 40 | 37 ms | about 19 ms (at 50) |
+| 60 | 251 ms, worst 2 s | fine |
+| 80 | 5.9 s, actions unanswered | fine |
+| 200 | could not connect | 57 ms, worst 142 ms |
+| 300 | could not connect | 110 to 125 ms, worst 0.4 s |
+| 400 | could not connect | falls behind (seconds of delay) |
+
+So on this test machine the old server kept up to about 50 llamas and the new one to about 300. Cloudflare's machines differ, so treat the numbers as a ratio (roughly 5 times more), not a promise. Two small trims came out of it: the hunger and thirst meters no longer rewrite the connection's saved state on every step, and the account check (ban, mute, tokens) is cached for 15 seconds instead of 5 (mutes and bans still apply at once).

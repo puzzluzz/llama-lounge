@@ -5,7 +5,8 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "test": "node tests/run.mjs",
-    "check": "node tests/run.mjs --static"
+    "check": "node tests/run.mjs --static",
+    "load": "node tests/load.mjs"
   },
   "devDependencies": {
     "eslint": "^9.39.5",
