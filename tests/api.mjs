@@ -143,7 +143,10 @@ export async function runApi(BASE, { root, persist }) {
     await B.act("tile_buy", { k: "wood", n: 1 }); const pf = await B.act("tile_put", { rid: r.created, k: "wood", cells: [[7, 7]] }); check("indoor floors cannot be laid outdoors", pf.ok === false, JSON.stringify(pf).slice(0, 120));
     const p3 = await A.act("tile_put", { rid: r.created, k: "lawn", cells: [[5, 5]] }); check("only the owner can floor a room", p3.ok === false);
     const p4 = await B.act("tile_put", { rid: r.created, k: "", cells: [[0, 0], [1, 0]] }); check("lifting squares puts them back in your bag", p4.ok === true && Object.keys(p4.tiles).length === 1 && p4.stock.lawn === 5, JSON.stringify(p4).slice(0, 140));
-    const e2 = await B.act("pr_enter", { rid: r.created }); check("visitors get the laid squares", e2.ok === true && e2.tiles["2,0"] === "lawn"); }
+    const e2 = await B.act("pr_enter", { rid: r.created }); check("visitors get the laid squares", e2.ok === true && e2.tiles["2,0"] === "lawn");
+    // the same lift sent twice at once must give the square back once, not twice (no copying items by racing two requests)
+    const [d1, d2] = await Promise.all([B.act("tile_put", { rid: r.created, k: "", cells: [[2, 0]] }), B.act("tile_put", { rid: r.created, k: "", cells: [[2, 0]] })]);
+    const after = await B.act("tile_put", { rid: r.created, k: "", cells: [] }); check("two overlapping lifts cannot copy a square", d1.ok && d2.ok && after.stock.lawn === 6, JSON.stringify(after.stock)); }
   await sleep(2100);
 
   console.log("Tokens only change on the server");

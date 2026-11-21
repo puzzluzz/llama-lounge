@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-12-01a";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-12-01b";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -542,8 +542,8 @@ function originOk(req, url) { const o = req.headers.get("origin"); return !o || 
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
-    // one address: the old workers.dev address and www both forward to the game's own domain (passkeys are tied to the address)
-    if (url.hostname === "www." + SITE_HOST || (url.hostname.endsWith(".workers.dev") && url.hostname.startsWith("llama-lounge."))) { url.hostname = SITE_HOST; url.protocol = "https:"; url.port = ""; return Response.redirect(url.toString(), 301); }
+    // one address: anything else (the old workers.dev address, www, preview addresses) forwards to the game's own domain (passkeys and logins are tied to the address)
+    if (url.hostname !== SITE_HOST && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") { url.hostname = SITE_HOST; url.protocol = "https:"; url.port = ""; return Response.redirect(url.toString(), 301); }
     if (url.pathname === "/ws") {
       if (!originOk(req, url) || !req.headers.get("origin")) return new Response("bad origin", { status: 403 });
       if (req.headers.get("upgrade") !== "websocket") return new Response("expected websocket", { status: 426 });
@@ -1198,7 +1198,7 @@ export class Lounge extends DurableObject {
       if (ar[1] > ACT_LIMIT.burst || ar[3] > ACT_LIMIT.perMin) { H.drop++; ws.serializeAttachment(a); this.send(ws, { t: "res", id: m.id, ok: false, msg: "Slow down a little and try again." }); return; }
       ws.serializeAttachment(a);
       let res; const t0 = Date.now(), an = String(m.a || "").slice(0, 40); H.acts++;
-      try { res = await this.act(ws, a, String(m.a || ""), m); } catch (e) { console.error(e); H.errs++; res = { ok: false, msg: "Server hiccup, try again." }; try { await this.healthNote("error", an, Date.now() - t0, String((e && e.stack) || e).slice(0, 700)); } catch (e2) {} }
+      try { res = await this.serial(a.uid, () => this.act(ws, a, String(m.a || ""), m)); } catch (e) { console.error(e); H.errs++; res = { ok: false, msg: "Server hiccup, try again." }; try { await this.healthNote("error", an, Date.now() - t0, String((e && e.stack) || e).slice(0, 700)); } catch (e2) {} }
       { const ms = Date.now() - t0; if (ms > HEALTH.slowMs) { H.slow++; try { await this.healthNote("slow", an, ms, ""); } catch (e2) {} } }
       try { await this.healthTick(Date.now()); } catch (e2) {}
       if (res && res.ok) { const qk = questKeyFor(String(m.a || ""), res); if (qk) { try { await this.questTick(ws, a.uid, qk); } catch (e) { console.error("quest", e); } } }
@@ -2043,6 +2043,14 @@ export class Lounge extends DurableObject {
   near(a, rm, fn) { const p = a.pres; return !!(p && p.rm === rm && Number.isFinite(p.x) && Number.isFinite(p.y) && fn(p.x - 0.5, p.y - 0.5, p)); }
 
   // ---------- every token-changing action goes through here ----------
+  // ONE ACTION AT A TIME PER ACCOUNT. A second action from the same account waits until the first has finished, so two requests fired
+  // together can never both read the same "before" state (which is how items or tokens get copied in other games).
+  async serial(uid, fn) {
+    this.chain = this.chain || new Map(); const prev = this.chain.get(uid) || Promise.resolve();
+    let release; const gate = new Promise((r) => (release = r)), mine = prev.then(() => gate); this.chain.set(uid, mine);
+    try { await Promise.race([prev, new Promise((r) => setTimeout(r, 8000))]); return await fn(); }   // never wait more than 8 seconds for a stuck action
+    finally { release(); if (this.chain.get(uid) === mine) this.chain.delete(uid); }
+  }
   async act(ws, a, kind, m) {
     const uid = a.uid, now = Date.now();
     switch (kind) {
