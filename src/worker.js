@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-28c";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-28d";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -105,6 +105,15 @@ const DECO_FLOOR = { wood: 0, checker: 20, carpet: 20, marble: 25, grass: 20, pa
 // wallpaper and floors are items too: wp_<id> and fl_<id> sit in finv like furniture, so they can be kept and traded.
 // Putting one up moves it from your bag onto your room; the one it replaces goes back into your bag. The free lavender and wood aren't items.
 const DECO_ITEMS = Object.fromEntries([...Object.entries(DECO_WALL).filter(([, p]) => p > 0).map(([k, p]) => ["wp_" + k, p]), ...Object.entries(DECO_FLOOR).filter(([, p]) => p > 0).map(([k, p]) => ["fl_" + k, p])]);
+// FLOOR SQUARES: floors are bought one square at a time and laid tile by tile, so a room can mix patterns (a path, a patio, a rug of marble).
+// A square you own is the item ft_<kind> in finv. Laid squares are in ptile; the room's old whole floor (prooms.floor) shows wherever no square is laid.
+// INDOOR ROOMS take floor squares; OUTDOOR plots and farms take grass squares. Neither kind can be laid in the other.
+const TILES = { wood: 1, checker: 1, carpet: 1, marble: 2, grass: 1, parquet: 2, tiles: 2, cobble: 1, plaid: 1, deck: 1, slate: 2,   // floors (indoors)
+  meadow: 1, lawn: 1, clover: 1, wild: 1, golden: 1 };                                                                                 // grass (outdoors)
+const TILE_GRASS = new Set(["meadow", "lawn", "clover", "wild", "golden"]);
+const TILE_NAMES = { wood: "OAK PLANKS", checker: "CHECKERBOARD", carpet: "BLUE CARPET", marble: "MARBLE", grass: "INDOOR LAWN", parquet: "PARQUET", tiles: "PAINTED TILES", cobble: "COBBLESTONE", plaid: "PLAID", deck: "DECK BOARDS", slate: "SLATE",
+  meadow: "MEADOW GRASS", lawn: "MOWN LAWN", clover: "CLOVER", wild: "WILD GRASS", golden: "GOLDEN GRASS" };
+const TILE_MAX_BUY = 200, TILE_MAX_PUT = 60;
 const decoItem = (kind, id) => (kind === "w" ? "wp_" : "fl_") + id;
 DECO_WALL.barn = 0; DECO_FLOOR.meadow = 0;   // free barn-plank wall and meadow floor (farms start with them)
 const PR_WALLS = Object.keys(DECO_WALL), PR_FLOORS = Object.keys(DECO_FLOOR);
@@ -1177,6 +1186,8 @@ export class Lounge extends DurableObject {
     const n = ((await this.env.DB.prepare("SELECT COUNT(*) AS n FROM pfurn WHERE room = ?").bind(r.id).first()) || {}).n || 0;
     const db = this.env.DB, st = [];
     for (const [kind, key, T] of [["w", r.wall, DECO_WALL], ["f", r.floor, DECO_FLOOR]]) if (T[key]) st.push(db.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, 1) ON CONFLICT(uid, item) DO UPDATE SET n = n + 1").bind(a.uid, decoItem(kind, key)));
+    await this.tileTable(); { const laid = {}; for (const kk of Object.values(await this.roomTiles(r.id))) laid[kk] = (laid[kk] || 0) + 1;   // laid floor squares go back in the bag
+      for (const [kk, n2] of Object.entries(laid)) st.push(db.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, ?) ON CONFLICT(uid, item) DO UPDATE SET n = n + excluded.n").bind(a.uid, "ft_" + kk, n2)); st.push(db.prepare("DELETE FROM ptile WHERE room = ?").bind(r.id)); }
     st.push(db.prepare("DELETE FROM pplot WHERE room = ?").bind(r.id), db.prepare("DELETE FROM pfurn WHERE room = ?").bind(r.id), db.prepare("DELETE FROM pinv WHERE room = ?").bind(r.id),
       db.prepare("DELETE FROM plike WHERE room = ?").bind(r.id), db.prepare("DELETE FROM prooms WHERE id = ? AND owner = ?").bind(r.id, a.uid));
     await db.batch(st);
@@ -1218,7 +1229,7 @@ export class Lounge extends DurableObject {
       else return { ok: false, locked: true, pw: !!r.pwh, msg: r.pwh ? `${r.name} is private. Enter the password, or knock and the owner can let you in.` : `${r.name} is private. Knock and the owner can let you in.` };
     }
     a.proom = r.id; ws.serializeAttachment(a);
-    return { ok: true, room: { ...this.prOut(r), ...(await this.prLikes(r.id, a.uid)) }, mine: r.owner === a.uid, furn: await this.prFurn(r.id) };
+    return { ok: true, room: { ...this.prOut(r), ...(await this.prLikes(r.id, a.uid)) }, mine: r.owner === a.uid, furn: await this.prFurn(r.id), tiles: await this.roomTiles(r.id) };
   }
   async prKnock(a, m, now) {
     const r = await this.prRoom(Math.floor(+m.rid || 0)); if (!r) return { ok: false, msg: "That room doesn't exist anymore." };
@@ -1264,6 +1275,37 @@ export class Lounge extends DurableObject {
   }
   // "w:<id>" / "f:<id>" for every wallpaper and floor in the bag (the settings swatches unlock from this)
   async decoOwned(uid) { await this.prTables(); return ((await this.env.DB.prepare("SELECT item FROM finv WHERE uid = ? AND n > 0 AND substr(item, 1, 3) IN ('wp_', 'fl_')").bind(uid).all()).results || []).filter((r) => DECO_ITEMS[r.item]).map((r) => (r.item.startsWith("wp_") ? "w:" : "f:") + r.item.slice(3)); }
+  // ---------- floor squares ----------
+  async tileTable() { if (this.tileReady) return; await this.prTables(); await this.rareTables();
+    await this.env.DB.prepare("CREATE TABLE IF NOT EXISTS ptile (room INTEGER NOT NULL, gx INTEGER NOT NULL, gy INTEGER NOT NULL, k TEXT NOT NULL, PRIMARY KEY (room, gx, gy))").run(); this.tileReady = true; }
+  async tileStock(uid) { await this.tileTable(); const o = {}; for (const r of ((await this.env.DB.prepare("SELECT item, n FROM finv WHERE uid = ? AND n > 0 AND substr(item, 1, 3) = 'ft_'").bind(uid).all()).results || [])) { const k = r.item.slice(3); if (Object.hasOwn(TILES, k)) o[k] = r.n; } return o; }
+  async roomTiles(rid) { await this.tileTable(); const o = {}; for (const r of ((await this.env.DB.prepare("SELECT gx, gy, k FROM ptile WHERE room = ?").bind(rid).all()).results || [])) if (Object.hasOwn(TILES, r.k)) o[r.gx + "," + r.gy] = r.k; return o; }
+  async tileBuy(a, m) { await this.tileTable(); const k = String(m.k || ""), n = Math.floor(+m.n || 0);
+    if (!Object.hasOwn(TILES, k)) return { ok: false, msg: "The shop doesn't sell that floor." }; if (!(n >= 1 && n <= TILE_MAX_BUY)) return { ok: false, msg: `Buy 1 to ${TILE_MAX_BUY} squares at a time.` };
+    const cost = TILES[k] * n, tk = await this.debit(a.uid, cost, "floor squares " + k); if (tk === null) return { ok: false, msg: `That costs ${cost} TOKENS.` };
+    await this.env.DB.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, ?) ON CONFLICT(uid, item) DO UPDATE SET n = n + excluded.n").bind(a.uid, "ft_" + k, n).run();
+    return { ok: true, tk, bought: n, k, stock: await this.tileStock(a.uid) }; }
+  // lay squares of one kind on the cells given (k = "" lifts whatever is there). Squares that get covered or lifted go back in your bag.
+  async tilePut(a, m) { await this.tileTable(); const r = await this.prMine(a, { rid: m.rid }); if (!r) return { ok: false, msg: "You can only floor your own room." };
+    const k = m.k ? String(m.k) : ""; if (k && !Object.hasOwn(TILES, k)) return { ok: false, msg: "That isn't a floor." };
+    if (k && TILE_GRASS.has(k) !== prOpen(r)) return { ok: false, msg: prOpen(r) ? "Floors are for indoor rooms. Out here you lay GRASS." : "Grass is for outdoor plots and farms. In a room you lay FLOOR squares." };
+    const D = prDim(r), seen = new Set(), cells = [];
+    for (const c of Array.isArray(m.cells) ? m.cells.slice(0, TILE_MAX_PUT) : []) { const x = Math.floor(+(c && c[0])), y = Math.floor(+(c && c[1])); if (!(x >= 0 && y >= 0 && x < D.w && y < D.h) || seen.has(x + "," + y)) continue; seen.add(x + "," + y); cells.push([x, y]); }
+    const cur = await this.roomTiles(r.id), change = cells.filter(([x, y]) => (cur[x + "," + y] || "") !== k), stock = await this.tileStock(a.uid);
+    if (!change.length) return { ok: true, tiles: cur, stock };
+    if (k && (stock[k] || 0) < change.length) return { ok: false, tiles: cur, stock, msg: `You need ${change.length} ${TILE_NAMES[k]} square${change.length > 1 ? "s" : ""} and have ${stock[k] || 0}. Buy more in the SHOP under WALLS & FLOORS.` };
+    const db = this.env.DB, st = [], back = {};
+    for (const [x, y] of change) { const was = cur[x + "," + y]; if (was) back[was] = (back[was] || 0) + 1; }
+    if (k) st.push(db.prepare("INSERT INTO trade_guard (ok) SELECT CASE WHEN COALESCE((SELECT n FROM finv WHERE uid = ? AND item = ?), 0) >= ? THEN 1 ELSE 0 END").bind(a.uid, "ft_" + k, change.length),
+      db.prepare("UPDATE finv SET n = n - ? WHERE uid = ? AND item = ?").bind(change.length, a.uid, "ft_" + k));
+    for (const [was, n] of Object.entries(back)) st.push(db.prepare("INSERT INTO finv (uid, item, n) VALUES (?, ?, ?) ON CONFLICT(uid, item) DO UPDATE SET n = n + excluded.n").bind(a.uid, "ft_" + was, n));
+    for (let i = 0; i < change.length; i += 20) { const part = change.slice(i, i + 20);
+      if (k) st.push(db.prepare("INSERT OR REPLACE INTO ptile (room, gx, gy, k) VALUES " + part.map(() => "(?, ?, ?, ?)").join(", ")).bind(...part.flatMap(([x, y]) => [r.id, x, y, k])));
+      else st.push(db.prepare("DELETE FROM ptile WHERE room = ? AND (gx * 1000 + gy) IN (" + part.map(() => "?").join(", ") + ")").bind(r.id, ...part.map(([x, y]) => x * 1000 + y))); }
+    st.push(db.prepare("DELETE FROM finv WHERE uid = ? AND n <= 0").bind(a.uid), db.prepare("DELETE FROM trade_guard"));
+    try { await db.batch(st); } catch (e) { return { ok: false, msg: "That didn't work. Try again.", tiles: cur, stock }; }
+    const tiles = await this.roomTiles(r.id); this.toRoom("p:" + r.id, { t: "prt", room: r.id, tiles });
+    return { ok: true, tiles, stock: await this.tileStock(a.uid) }; }
   async decoBuy(a, m) {   // k is "w:<wallpaper>" or "f:<floor>"
     await this.prTables();
     const k = String(m.k || ""), [kind, id] = k.split(":"), table = kind === "w" ? DECO_WALL : kind === "f" ? DECO_FLOOR : null;
@@ -2094,7 +2136,9 @@ export class Lounge extends DurableObject {
       case "pr_rot": return this.prEditPiece(a, m, "rot");
       case "pr_pick": return this.prEditPiece(a, m, "pick");
       case "pr_staff": return this.prStaff(a, m);
-      case "furn_info": return { ok: true, furn: await this.furnStorage(uid), deco: await this.decoOwned(uid), rares: await this.rareInfo(uid) };
+      case "furn_info": return { ok: true, furn: await this.furnStorage(uid), deco: await this.decoOwned(uid), rares: await this.rareInfo(uid), tiles: await this.tileStock(uid) };
+      case "tile_buy": return this.tileBuy(a, m);
+      case "tile_put": return this.tilePut(a, m);
       case "rare_buy": return this.rareBuy(a, m);
       case "trade_req": return this.tradeReq(ws, a, m);
       case "trade_answer": return this.tradeAnswer(a, m);

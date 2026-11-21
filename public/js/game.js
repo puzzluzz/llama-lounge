@@ -1781,6 +1781,34 @@ const itemName = item => { const d=decoOf(item); if (d) return d.kind==='w' ? (/
 function decoIcon(item, CS){ const d=decoOf(item), R2=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1))), S2=CS*R2, c=document.createElement('canvas'); c.width=c.height=S2; const m=c.getContext('2d'); m.imageSmoothingEnabled=false;
   const pad=Math.round(S2*0.1), w=S2-pad*2, sw=decoSwatch(d.kind,d.id,40,40); m.fillStyle=INK; m.fillRect(pad-R2,pad-R2,w+R2*2,w+R2*2); m.drawImage(sw,pad,pad,w,w);
   m.fillStyle='rgba(255,255,255,.35)'; m.fillRect(pad,pad,w,Math.max(1,R2)); return c; }
+// FLOOR SQUARES (indoor rooms) and GRASS SQUARES (outdoor plots and farms): laid one square at a time. Neither kind goes in the other.
+const TILE_EXTRA={
+  deck:{n:'DECK BOARDS', px:(gx,gy)=>{ const row=Math.floor(gy*4), v=fr(gy*4), u=(gx+row*0.37)%1.5; if (v<0.1) return dh('#6a4a2c'); if (u<0.035) return dh('#7a5632'); const c=dh(['#b88a5c','#a87c50','#c2966a','#b08256'][row%4]);
+      if (u>0.07 && u<0.11 && v>0.45 && v<0.62) return dh('#5a3e24'); return (Math.floor(gx*14+row*3)%6===0 && v>0.3 && v<0.75) ? dmul(c,0.93) : c; }},
+  slate:{n:'SLATE', px:(gx,gy)=>{ const row=Math.floor(gy*1.5), x=gx*1.5+(row%2)*0.5, cx=Math.floor(x), u=fr(x), v=fr(gy*1.5); if (u<0.06||v<0.07) return dh('#3a3f4a');
+      const c=dh(['#6e7888','#7c8696','#646e7e','#8590a0'][Math.floor(dhash(cx*3+1,row*5+2)*4)]); if (u<0.1||v<0.12) return dmul(c,1.14); return dhash(Math.floor(gx*22),Math.floor(gy*22))<0.07 ? dmul(c,0.9) : c; }},
+  // ---- grass (outdoors). MEADOW GRASS is the flowery field every plot and farm starts with (DECO_FLOOR.meadow). ----
+  lawn:{n:'MOWN LAWN', px:(gx,gy)=>{ const stripe=Math.floor((gx+gy)*1.5)%2, h2=dhash(Math.floor(gx*8),Math.floor(gy*8)+40);   // neat mowing stripes, short even blades
+      const c=stripe ? ['#6cc04c','#62b444','#76c856'] : ['#58a83c','#4e9c34','#62b244']; return dh(h2<0.18?c[1]:h2>0.86?c[2]:c[0]); }},
+  clover:{n:'CLOVER', px:(gx,gy)=>{ const cx=Math.floor(gx*7), cy=Math.floor(gy*7), r=dhash(cx,cy+70), u=fr(gx*7), v=fr(gy*7);   // deep green clover with little white flower heads
+      if (r<0.045 && Math.abs(u-0.5)<0.3 && Math.abs(v-0.5)<0.3) return dh(Math.abs(u-0.5)<0.14&&Math.abs(v-0.5)<0.14?'#ffffff':'#e8f0d8');
+      const h2=dhash(Math.floor(gx*7),Math.floor(gy*7)+11); return dh(h2<0.15?'#35823e':h2<0.8?'#3f9048':'#4a9c52'); }},
+  wild:{n:'WILD GRASS', px:(gx,gy)=>{ const bx=Math.floor(gx*8), r=dhash(bx,Math.floor(gy*3)+5), v=fr(gy*3+r*0.9);   // long, uneven blades in darker greens with pale seed tips
+      if (r>0.82 && v<0.12) return dh('#e8e0a0'); const c=['#3e8a34','#38802e','#44923a','#347a2c'][Math.floor(dhash(bx,Math.floor(gy*3+r*0.9))*4)]; return dh(v>0.8?'#2e6e28':c); }},
+  golden:{n:'GOLDEN GRASS', px:(gx,gy)=>{ const bx=Math.floor(gx*8), r=dhash(bx+3,Math.floor(gy*4)+9), v=fr(gy*4+r*0.8);   // dry late-summer grass
+      if (r>0.9 && v<0.14) return dh('#fff0b0'); const c=['#d8b048','#d0a640','#dfb850','#c89c38'][Math.floor(dhash(bx+7,Math.floor(gy*4+r*0.8))*4)]; return dh(v>0.82?'#b88a2c':c); }},
+};
+const TILE_FLOORS=['wood','parquet','deck','checker','marble','tiles','slate','cobble','carpet','plaid','grass'], TILE_GRASS=['meadow','lawn','clover','wild','golden'], TILE_KINDS=[...TILE_FLOORS,...TILE_GRASS];
+const TILE_PRICE={wood:1,checker:1,carpet:1,marble:2,grass:1,parquet:2,tiles:2,cobble:1,plaid:1,deck:1,slate:2,meadow:1,lawn:1,clover:1,wild:1,golden:1};   // must match TILES in src/worker.js
+const tileName = k => k==='meadow' ? 'MEADOW GRASS' : (tileDef(k)||{n:k}).n;
+const tilesFor = R => (R && R.open) ? TILE_GRASS : TILE_FLOORS;   // what can be laid in this kind of room
+const tileDef = k => DECO_FLOOR[k] || TILE_EXTRA[k] || null;
+let TILE_STOCK={};
+// the floor colour at a point: the square laid there if there is one, otherwise the room's own floor; a thin dark seam where two different floors meet
+function floorPxAt(R, gx, gy, base){ const T=R.tiles; if (!T) return base.px(gx,gy); const tx=Math.floor(gx), ty=Math.floor(gy), k=T[tx+','+ty]||'', F=(k && tileDef(k)) || base; const c=F.px(gx,gy);
+  const u=gx-tx, v=gy-ty; if ((u<0.045 && tx>0 && (T[(tx-1)+','+ty]||'')!==k) || (v<0.045 && ty>0 && (T[tx+','+(ty-1)]||'')!==k)) return dmul(c,0.7); return c; }
+function tileSwatch(k, W=40, H=40){ const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const m=cv.getContext('2d'), img=m.createImageData(W,H), D2=img.data, F=tileDef(k)||DECO_FLOOR.wood;
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++){ const c=F.px(x/20+0.02,y/20+0.02), i=(y*W+x)*4; D2[i]=c[0]; D2[i+1]=c[1]; D2[i+2]=c[2]; D2[i+3]=255; } m.putImageData(img,0,0); return cv; }
 function decoSwatch(kind, id, W=44, H=34){ const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const m=cv.getContext('2d'), img=m.createImageData(W,H), D2=img.data;
   for (let y=0;y<H;y++) for (let x=0;x<W;x++){ let c;
     if (kind==='w'){ const T=DECO_WALL[id]||DECO_WALL.lavender, h=H-1-y+8; c = h<26 ? T.low(x+3,h,false) : (h<29 ? dh(T.rail||'#f8f8f8') : T.field(x+3,h,false)); }
@@ -1807,7 +1835,7 @@ function buildFarmBG(){
   // the field itself (floor art), with the edge tiles fading into a grassy lip
   { const x0=ox-NY*20, x1=ox+N*20, y0=oy, y1=oy+(N+NY)*10; const img=g.getImageData(x0,y0,x1-x0,y1-y0), Dd=img.data, W=x1-x0, lip=[94,168,70];
     for (let py=0; py<y1-y0; py++) for (let px=0; px<W; px++){ const wx=px+x0-ox, wy=py+y0-oy; const gx=(wx/20+wy/10)/2, gy=(wy/10-wx/20)/2;
-      if (gx<0||gy<0||gx>=N||gy>=NY) continue; let c=(DECO_FLOOR[R.floor]||DECO_FLOOR.meadow).px(gx,gy);
+      if (gx<0||gy<0||gx>=N||gy>=NY) continue; let c=floorPxAt(R, gx, gy, DECO_FLOOR[R.floor]||DECO_FLOOR.meadow);
       if (gx>N-0.05 || gy>NY-0.05) c=lip;
       const i=(py*W+px)*4; Dd[i]=c[0]; Dd[i+1]=c[1]; Dd[i+2]=c[2]; Dd[i+3]=255; }
     g.putImageData(img,x0,y0); }
@@ -1948,7 +1976,7 @@ function buildPlayerBG(){
     const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)], F=Fc.map(hex), mat=hex('#3f8a5a'), mat2=hex('#2f6e46');
     for (let py=0; py<y1-y0; py++) for (let px=0; px<W; px++){ const wx=px+x0-ox, wy=py+y0-oy; const gx=(wx/20+wy/10)/2, gy=(wy/10-wx/20)/2;
       if (gx<0||gy<0||gx>=N||gy>=NY) continue; let c;
-      c=(DECO_FLOOR[R.floor]||DECO_FLOOR.wood).px(gx,gy);
+      c=floorPxAt(R, gx, gy, DECO_FLOOR[R.floor]||DECO_FLOOR.wood);
       const i=(py*W+px)*4; D[i]=c[0]; D[i+1]=c[1]; D[i+2]=c[2]; D[i+3]=255; }
     g.putImageData(img,x0,y0); }
   // the room's name on a plaque on the right wall
@@ -4549,7 +4577,7 @@ const dropTouch=e=>{ touches.delete(e.pointerId); if (touches.size<2) pinchD0=0;
 // listen on the whole window: a finger can lift over a popup, and a missed lift would look like a stuck second finger
 addEventListener('pointerup', dropTouch); addEventListener('pointercancel', dropTouch); addEventListener('blur', ()=>{ touches.clear(); pinchD0=0; });
 window.__llRoom=()=>curRoom;   // lets the crash reporter (outside this closure) name the room
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__pt=(gx,gy,h)=>{ const [x,y]=P(gx,gy,h||0); return [x*S, y*S]; }; window.__peers=()=>[...others.values()].filter(o=>!o.leaving).map(o=>({n:o.n, rm:o.rm, x:+o.tx.toFixed(2), y:+o.ty.toFixed(2)})); window.__ward=(t,k)=>openWardrobe(t,null,k); window.__arc=()=>startArcade(); window.__fsky=()=>({key:FSKY.key, n:FSKY.clouds.length, w:FSKY.clouds.map(c=>c.width), OX, OY, LW, LH, X0:FSKY.X0}); window.__scr=(gx,gy,h)=>{ const [x,y]=P(gx,gy,h||0); return [x*S,y*S]; }; window.__pred=()=>({on:PRED.on, piece:PRED.piece&&PRED.piece.item, box:document.getElementById('plotbox').style.display}); window.__fi=(k,cs)=>furnIcon(k,cs); window.__go=r=>goRoom(r); window.__arena=()=>openArena(); window.__bowl=()=>openBowl(); window.__close=()=>closeAll(); window.__dash=()=>openDash(); window.__mkt=()=>openMarket(); window.__tour=()=>tourStart(); window.__period=v=>{ period=v; rebuildBG(); }; window.__juke=v=>{ juke.s=v; }; window.__tnext=()=>$id('tour_next').click(); window.__msg=t=>localMsg(t); window.__give=k=>{ me.h=k; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; }; window.__prgo=id=>prGo(id); window.__plk=()=>plkGo(); window.__bxw=(t,k,sm)=>bxWordImg(t,k,sm).toDataURL(); window.__pkAdd=p=>pkAdd(p); window.__api=(u,b)=>apiPost(u,b); window.__auView=()=>auView; window.__acct=()=>!!(acct && acct.name); window.__cvs=()=>({earned:CVS.earned, heat:CVS.heat, holes:[...COVEH.keys()].length, dig:!!CVS.dig, tk:wallet.get()}); window.__fb=(k,r,bg)=>{ const D=FURN_DEF[k], c=document.createElement('canvas'); c.width=90; c.height=90; const sg=g, sOX=OX, sOY=OY; try{ g=c.getContext('2d'); g.fillStyle=bg||'#5aa83c'; g.fillRect(0,0,90,90); OX=45; OY=50; drawFurn({...D.mk(), rot:r, gx:0, gy:0}, 0); } finally { g=sg; OX=sOX; OY=sOY; } return c.toDataURL(); }; window.__plots=()=>FURN.filter(f=>f.item==='plot').map(f=>[f.fid,f.gx,f.gy,!!plotState(f)]); window.__plotR=()=>{ me.plotF=null; plotCur=null; }; window.__plotF=()=>[me.plotF||null, plotCur, $id('plotbox').style.display]; window.__act=(n,a)=>NET.act(n,a); window.__doorPt=()=>{ const d=DOORWAY[curRoom]; if (curRoom==='barn'){ const [x,y]=P(14.5,0); return [x*S,(y-24)*S]; } if (d[0]===0){ const [x,y]=P(0,d[1]+0.5); return [x*S,(y-22)*S]; } if (d[1]===0){ const [x,y]=P(d[0]+0.5,0); return [x*S,(y-22)*S]; } const [x,y]=P(d[0]+0.5,d[1]+0.5); return [x*S,y*S]; }; window.__room=()=>curRoom; window.__walk=(x,y)=>walkTo(x,y); window.__path=()=>me.path.map(p=>p.join(',')).join(' '); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ window.__edit=()=>prEditStart(); window.__pt=(gx,gy,h)=>{ const [x,y]=P(gx,gy,h||0); return [x*S, y*S]; }; window.__peers=()=>[...others.values()].filter(o=>!o.leaving).map(o=>({n:o.n, rm:o.rm, x:+o.tx.toFixed(2), y:+o.ty.toFixed(2)})); window.__ward=(t,k)=>openWardrobe(t,null,k); window.__arc=()=>startArcade(); window.__fsky=()=>({key:FSKY.key, n:FSKY.clouds.length, w:FSKY.clouds.map(c=>c.width), OX, OY, LW, LH, X0:FSKY.X0}); window.__scr=(gx,gy,h)=>{ const [x,y]=P(gx,gy,h||0); return [x*S,y*S]; }; window.__pred=()=>({on:PRED.on, piece:PRED.piece&&PRED.piece.item, box:document.getElementById('plotbox').style.display}); window.__fi=(k,cs)=>furnIcon(k,cs); window.__go=r=>goRoom(r); window.__arena=()=>openArena(); window.__bowl=()=>openBowl(); window.__close=()=>closeAll(); window.__dash=()=>openDash(); window.__mkt=()=>openMarket(); window.__tour=()=>tourStart(); window.__period=v=>{ period=v; rebuildBG(); }; window.__juke=v=>{ juke.s=v; }; window.__tnext=()=>$id('tour_next').click(); window.__msg=t=>localMsg(t); window.__give=k=>{ me.h=k; me.hl=SIPS; me.autoEat=true; me.sipStart=performance.now()-SIP_T+600; }; window.__prgo=id=>prGo(id); window.__plk=()=>plkGo(); window.__bxw=(t,k,sm)=>bxWordImg(t,k,sm).toDataURL(); window.__pkAdd=p=>pkAdd(p); window.__api=(u,b)=>apiPost(u,b); window.__auView=()=>auView; window.__acct=()=>!!(acct && acct.name); window.__cvs=()=>({earned:CVS.earned, heat:CVS.heat, holes:[...COVEH.keys()].length, dig:!!CVS.dig, tk:wallet.get()}); window.__fb=(k,r,bg)=>{ const D=FURN_DEF[k], c=document.createElement('canvas'); c.width=90; c.height=90; const sg=g, sOX=OX, sOY=OY; try{ g=c.getContext('2d'); g.fillStyle=bg||'#5aa83c'; g.fillRect(0,0,90,90); OX=45; OY=50; drawFurn({...D.mk(), rot:r, gx:0, gy:0}, 0); } finally { g=sg; OX=sOX; OY=sOY; } return c.toDataURL(); }; window.__plots=()=>FURN.filter(f=>f.item==='plot').map(f=>[f.fid,f.gx,f.gy,!!plotState(f)]); window.__plotR=()=>{ me.plotF=null; plotCur=null; }; window.__plotF=()=>[me.plotF||null, plotCur, $id('plotbox').style.display]; window.__act=(n,a)=>NET.act(n,a); window.__doorPt=()=>{ const d=DOORWAY[curRoom]; if (curRoom==='barn'){ const [x,y]=P(14.5,0); return [x*S,(y-24)*S]; } if (d[0]===0){ const [x,y]=P(0,d[1]+0.5); return [x*S,(y-22)*S]; } if (d[1]===0){ const [x,y]=P(d[0]+0.5,0); return [x*S,(y-22)*S]; } const [x,y]=P(d[0]+0.5,d[1]+0.5); return [x*S,y*S]; }; window.__room=()=>curRoom; window.__walk=(x,y)=>walkTo(x,y); window.__path=()=>me.path.map(p=>p.join(',')).join(' '); window.__hl=()=>[me.h,me.hl]; window.__pm=n=>{ for (const [id,o] of others) if (o.n && o.n.toUpperCase()===n.toUpperCase()) return openPlayerMenu(id, innerWidth/2, innerHeight*0.6); }; } window.__blocks=()=>{ let o=''; for (let y=0;y<NY;y++){ for (let x=0;x<N;x++) o+= SEATS.some(q=>q.gx===x&&q.gy===y)?'s':BLOCK[y*N+x]?'#':'.'; o+='\n'; } return o; }; window.__sheet=(ids,pose,w)=>{ const dirs=['fr','fl','br','bl'], c=document.createElement('canvas'); c.width=ids.length*dirs.length*30; c.height=48; const x=c.getContext('2d'); ids.forEach((id,i)=>dirs.forEach((d,j)=>x.drawImage(buildSprite(id,d,0,pose||'stand',w||{}),(i*4+j)*30,1))); return c.toDataURL(); }; window.__fishShow=f=>{ me.fishShow={f, until:performance.now()+2200}; }; window.__fbox=()=>Object.keys(FURN_DEF).map(k=>{ const b=furnBox(k); return b?k+':'+b.w+'x'+b.h:k; }).join(' ');
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tile=(x,y)=>{ const [a,b]=P(x,y,0); return [a*S,b*S]; }; window.__me=()=>[me.p,me.gx,me.gy,me.d,me.h||null]; window.__wear=(sl,id)=>wdWear(sl,id); window.__face=d=>{ me.d=d; }; window.__dbg=()=>({me:[me.x,me.y,me.p], furn:FURN.filter(f=>f.fid).map(f=>[f.t,f.gx,f.gy,f.dz||0,f.rot])});   // local test helper only
 function toGrid(clientX, clientY){
   const wx = clientX/S - OX, wy = clientY/S - OY;
@@ -6413,7 +6441,7 @@ const KITS = { living: { n: "COZY LIVING ROOM", items: { sofa: 1, coffeetable: 1
   farm: { n: "FARM STARTER", items: { plot: 2, scarecrow: 1, sunflowers: 1, trough: 1, gfence: 2 } } };
 const kitFull = k => Object.entries(KITS[k].items).reduce((t,[it,n])=>t+((FURN_DEF[it]||{}).p||0)*n, 0), kitPrice = k => Math.round(kitFull(k)*0.8);
 let DECO_OWN=[];
-function wdFurnLoad(){ return NET.act('furn_info').then(r=>{ if (r.ok){ WD.furn=r.furn; WD.rares=r.rares||WD.rares; DECO_OWN=r.deco||DECO_OWN; if ($id('wardbox').style.display==='block') wdDraw(); } }); } const WD_DIRS=['fr','fl','bl','br'];
+function wdFurnLoad(){ return NET.act('furn_info').then(r=>{ if (r.ok){ WD.furn=r.furn; WD.rares=r.rares||WD.rares; DECO_OWN=r.deco||DECO_OWN; if (r.tiles) TILE_STOCK=r.tiles; if ($id('wardbox').style.display==='block') wdDraw(); } }); } const WD_DIRS=['fr','fl','bl','br'];
 function wdLoad(){ return NET.act('inv_info').then(r=>{ if (r.ok){ INV.owned=r.owned||[]; me.w=cleanWear(r.w); if ($id('wardbox').style.display==='block') wdDraw(); } }); }
 function wdMsg(t,good){ const el=$id('wd_msg'); el.textContent=t||''; el.classList.toggle('good',!!good); }
 function wdPreview(){ const c=$id('wd_prev'), x=c.getContext('2d'); x.clearRect(0,0,SW,SH); const w={...me.w}; if (WD.pick) w[ITEMS[WD.pick].s]=WD.pick; x.drawImage(sprite(me.c, WD_DIRS[WD.dir], 0, 'stand', w), 0, 0); }
@@ -6452,8 +6480,10 @@ function wdDraw(){
     for (const [cat,label] of FURN_CATS){ if ((cat==='staff' && !me.st) || cat==='rares' || !catOk(cat)) continue; const ORD=Object.keys(FURN_DEF), ks=ORD.filter(k=>FURN_DEF[k].cat===cat).sort((p,q)=>ORD.indexOf(furnBase(p))-ORD.indexOf(furnBase(q))); if (!ks.length) continue;   /* colours sit right after their base piece */ h+=`<div class="wdh">${label}</div><div class="wdg">`;
     h+=ks.map(k=>`<div class="wi fi${dragIn?' drag':''}" data-f="${k}"><canvas width="80" height="80" data-fk="${k}"></canvas><b>${esc(FURN_DEF[k].n)}</b><small class="pr">${FURN_DEF[k].p} 🪙</small>${own(k)?`<small class="own">YOU HAVE ${own(k)}</small>`:''}<button class="gbbtn y" data-buyf="${k}">BUY</button></div>`).join('')+'</div>'; }
     const dcard=(kind,k,T)=>{ if (!T.p) return ''; const n=own((kind==='w'?'wp_':'fl_')+k); return `<div class="wi fi"><canvas width="88" height="88" data-dsw="${kind}:${k}"></canvas><b>${esc(T.n)}</b><small class="pr">${T.p} 🪙</small>${n?`<small class="own">YOU HAVE ${n}</small>`:''}<button class="gbbtn y" data-buyd="${kind}:${k}">BUY</button></div>`; };
-    if (C==='deco'){ h+='<div class="wdh">🎨 WALLPAPER</div><div class="fre">Wallpaper and floors go into 🎒 INVENTORY > ITEMS. Put one up from there (or 🏠 ROOMS > SETTINGS); the one it replaces goes back in your bag, so you can keep it or trade it.</div><div class="wdg">'+Object.entries(DECO_WALL).map(([k,T])=>dcard('w',k,T)).join('')+'</div>';
-    h+='<div class="wdh">🎨 FLOORS</div><div class="wdg">'+Object.entries(DECO_FLOOR).map(([k,T])=>dcard('f',k,T)).join('')+'</div>'; } }
+    if (C==='deco'){ h+='<div class="wdh">🎨 WALLPAPER</div><div class="fre">Wallpaper goes into 🎒 INVENTORY > ITEMS. Put one up from there (or 🏠 ROOMS > SETTINGS); the one it replaces goes back in your bag, so you can keep it or trade it.</div><div class="wdg">'+Object.entries(DECO_WALL).map(([k,T])=>dcard('w',k,T)).join('')+'</div>';
+    const tcard=k=>`<div class="wi fi tl"><canvas width="88" height="88" data-tsw="${k}"></canvas><b>${esc(tileName(k))}</b><small class="pr">${TILE_PRICE[k]} 🪙 A SQUARE</small>${TILE_STOCK[k]?`<small class="own">YOU HAVE ${TILE_STOCK[k]}</small>`:''}<div class="tlb"><button class="gbbtn y" data-buyt="${k}:10">BUY 10</button><button class="gbbtn" data-buyt="${k}:1">+1</button><button class="gbbtn" data-buyt="${k}:50">+50</button></div></div>`;
+    h+='<div class="wdh">🎨 FLOOR SQUARES (FOR ROOMS)</div><div class="fre">Floors are sold by the square, so you can mix them: a checkered corner, a marble hallway, a wood nook. In your room, tap EDIT, then FLOOR, pick a square and tap or drag across the floor. Lifting a square puts it back in your bag.</div><div class="wdg">'+TILE_FLOORS.map(tcard).join('')+'</div>';
+    h+='<div class="wdh">🌴 GRASS (FOR PLOTS AND FARMS)</div><div class="fre">Out in the open you lay grass by the square the same way: tap EDIT, then GRASS. Mix a mown lawn with wild corners, clover patches or golden fields.</div><div class="wdg">'+TILE_GRASS.map(tcard).join('')+'</div>'; } }
   else if (WD.tab==='shop'){ for (const s2 of WEAR_SLOTS){ h+=`<div class="wdh">${SLOT_NAMES[s2]}</div><div class="wdg">`+Object.keys(ITEMS).filter(k=>ITEMS[k].s===s2 && !ITEMS[k].hide).map(wdCard).join('')+'</div>'; }
     if (curRoom!=='store') h='<div class="fre">Browse and try things on here. To buy clothes, visit the 🛍️ LLAMA STORE.</div>'+h;
     h+='<div class="srow"><button class="gbbtn" id="wd_toinv">🎒 MY INVENTORY</button></div>'; }
@@ -6478,6 +6508,7 @@ function wdDraw(){
   for (const cv of body.querySelectorAll('canvas[data-kit]')){ const R2=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1))), its=Object.keys(KITS[cv.dataset.kit].items).slice(0,4), IC=40, GAP=10, W=its.length*IC+(its.length-1)*GAP;   // each piece in its own spot, evenly spaced
     cv.width=W*R2; cv.height=IC*R2; cv.style.width=W+'px'; cv.style.height=IC+'px'; const m=cv.getContext('2d');
     its.forEach((it,i)=>{ const ic=furnIcon(it,IC); m.drawImage(ic, 0,0,ic.width,ic.height, i*(IC+GAP)*R2, 0, IC*R2, IC*R2); }); }
+  for (const cv of body.querySelectorAll('canvas[data-tsw]')){ const m=cv.getContext('2d'); m.imageSmoothingEnabled=false; m.drawImage(tileSwatch(cv.dataset.tsw,40,40),4,4,80,80); m.strokeStyle=INK; m.lineWidth=2; m.strokeRect(4,4,80,80); }
   for (const cv of body.querySelectorAll('canvas[data-dsw]')){ const [kind,id]=cv.dataset.dsw.split(':'), m=cv.getContext('2d'); m.imageSmoothingEnabled=false; m.drawImage(decoSwatch(kind,id,40,40),4,4,80,80); m.strokeStyle=INK; m.lineWidth=2; m.strokeRect(5,5,78,78); }
   { const kk=$id('wd_kind'); if (kk) for (const b of kk.children) b.onclick=()=>{ WD.kind=b.dataset.k; WD.pick=null; wdMsg(''); wdDraw(); }; }
   { const mk=$id('wd_market'); if (mk) mk.onclick=()=>openMarket(); }
@@ -6492,6 +6523,7 @@ $id('wd_body').addEventListener('click', e=>{
   const sc=e.target.closest('[data-scat]'); if (sc){ WD.cat=sc.dataset.scat; store.shopCat=WD.cat; saveStore(); wdDraw(); $id('wd_body').scrollTop=0; return; }   // shop category tabs (remembered)
   const bk=e.target.closest('[data-buykit]'); if (bk){ const k=bk.dataset.buykit; if (!confirm(`Buy the ${KITS[k].n} kit for ${kitPrice(k)} TOKENS?`)) return; bk.disabled=true; wdMsg('BUYING...');
     NET.act('kit_buy',{kit:k}).then(r=>{ bk.disabled=false; if (Number.isFinite(r.tk)) tkSet(r.tk); if (!r.ok) return wdMsg(r.msg||'That did not work.'); WD.furn=r.furn||WD.furn; localMsg(`🎁 ${r.msg} It's all in your 🎒 ITEMS.`); wdMsg(`${r.msg} It's all in your 🎒 ITEMS.`, true); wdDraw(); }); return; }
+  const bt=e.target.closest('[data-buyt]'); if (bt){ const [k,n]=bt.dataset.buyt.split(':'); wdMsg('BUYING...'); NET.act('tile_buy',{k, n:+n}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); tkSet(r.tk); TILE_STOCK=r.stock||TILE_STOCK; wdMsg(`Bought ${r.bought} ${tileName(k)} square${r.bought>1?'s':''}. Lay them from EDIT > ${TILE_GRASS.includes(k)?'GRASS on your plot or farm':'FLOOR in your room'}.`); wdDraw(); if (PRED.on) prEditBar(); }); return; }
   const bd=e.target.closest('[data-buyd]'); if (bd){ const k=bd.dataset.buyd, [kind,id]=k.split(':'), T=(kind==='w'?DECO_WALL:DECO_FLOOR)[id]; wdMsg('BUYING...'); NET.act('deco_buy',{k}).then(r=>{ if (!r.ok) return wdMsg(r.msg||'That did not work.'); DECO_OWN=r.deco||DECO_OWN; if (r.furn) WD.furn=r.furn; tkSet(r.tk, `You bought ${T.n}! It's in your 🎒 ITEMS.`); wdMsg(`Bought ${T.n}! Put it up from 🎒 ITEMS.`, true); wdDraw(); }); return; }
   const br=e.target.closest('[data-buyr]'); if (br){ const k=br.dataset.buyr; br.disabled=true; wdMsg('BUYING...'); NET.act('rare_buy',{item:k}).then(r=>{ if (Number.isFinite(r.tk)) tkSet(r.tk); if (!r.ok){ wdMsg(r.msg||'That did not work.'); br.disabled=false; return; }
     WD.rares=r.rares; WD.furn=r.furn; localMsg(`⭐ ${r.msg} It's in your 🎒 ITEMS.`); wdMsg(r.msg); wdDraw(); }); return; }
@@ -6819,21 +6851,29 @@ function prGo(id, pw){ const fresh=!joined;   /* picked from the launch screen: 
   NET.act('pr_enter',{rid:id, pw:pw||undefined}).then(r=>{
   if (!r.ok){ if (r.locked){ if ($id('roomsbox').style.display!=='block') openRooms(); if (r.pw){ PRUI.pwFor=id; if (PRUI.view!=='list'){ PRUI.view='list'; } prDraw(); } prMsg(r.msg); } else localMsg(r.msg||'That room is closed.'); PRED.pending=false; return; }
   PRUI.pwFor=null;
-  const key='p:'+id; PRD[key]={...r.room, furn:r.furn, mine:r.mine}; PRN[key]=r.room.name; ROOM_NAMES[key]=r.room.name; { const W=r.room.open?12:11, H=r.room.open?9:7; ROOM_DIMS[key]=[W,H]; ENTRY[key]={any:{at:[1,H-1],to:[3,H-1]}}; DOORWAY[key]=[0,H-1]; }   /* farms are a bigger open field */   /* player rooms: 11 wide, 7 deep; the door is at the front of the short left wall */ ROOM_SHORT[key]=r.room.farm?'FARM':'ROOM';
+  const key='p:'+id; PRD[key]={...r.room, furn:r.furn, mine:r.mine, tiles:r.tiles||{}}; PRN[key]=r.room.name; ROOM_NAMES[key]=r.room.name; { const W=r.room.open?12:11, H=r.room.open?9:7; ROOM_DIMS[key]=[W,H]; ENTRY[key]={any:{at:[1,H-1],to:[3,H-1]}}; DOORWAY[key]=[0,H-1]; }   /* farms are a bigger open field */   /* player rooms: 11 wide, 7 deep; the door is at the front of the short left wall */ ROOM_SHORT[key]=r.room.farm?'FARM':'ROOM';
   if (fresh && !joined){ goRoom(key); if (PRED.pending){ PRED.pending=false; setTimeout(()=>{ if (curRoom===key) prEditStart(); }, 800); } return; }
   closeAll(); if (curRoom===key){ buildWorld(); if (PRED.pending){ PRED.pending=false; prEditStart(); } return; }
   if (arcade.on) exitArcade(); localMsg(`Heading to ${r.room.name}...`); goThroughDoor(key); }); }
 // ---- edit mode (owner only; the server checks every change) ----
 const PRED={on:false, item:null, piece:null, storage:[], pending:false};
-function prEditStart(){ const R=PRD[curRoom]; if (!R || !R.mine) return; PRED.on=true; PRED.item=null; PRED.piece=null; document.body.classList.add('editing'); prEditBar(); NET.act('furn_info').then(r=>{ if (r.ok){ PRED.storage=r.furn; prEditBar(); } }); localMsg('EDIT MODE: drag pieces to move them, or drag new ones up from the bar. Tap a piece to turn it or put it away.'); }
-function prEditStop(){ if (!PRED.on) return; PRED.on=false; PRED.item=null; PRED.piece=null; document.body.classList.remove('editing'); $id('editbar').classList.remove('piece'); }
-function prEditBar(){ const el=$id('eb_items'), bar=$id('editbar'); bar.classList.toggle('piece', !!PRED.piece);
+function prEditStart(){ const R=PRD[curRoom]; if (!R || !R.mine) return; PRED.on=true; PRED.item=null; PRED.piece=null; PRED.floor=false; PRED.tile=null; document.body.classList.add('editing'); prEditBar(); NET.act('furn_info').then(r=>{ if (r.ok){ PRED.storage=r.furn; if (r.tiles) TILE_STOCK=r.tiles; prEditBar(); } }); localMsg('EDIT MODE: drag pieces to move them, or drag new ones up from the bar. Tap a piece to turn it or put it away.'); }
+function prEditStop(){ if (!PRED.on) return; PRED.on=false; PRED.item=null; PRED.piece=null; PRED.floor=false; PRED.tile=null; $id('editbar').classList.remove('floor'); document.body.classList.remove('editing'); $id('editbar').classList.remove('piece'); }
+function prEditBar(){ const el=$id('eb_items'), bar=$id('editbar'); bar.classList.toggle('piece', !!PRED.piece); bar.classList.toggle('floor', !!PRED.floor); $id('eb_floor').classList.toggle('on', !!PRED.floor); const outside=!!(PRD[curRoom]||{}).open; $id('eb_floor').textContent = PRED.floor ? 'FURNITURE' : outside ? 'GRASS' : 'FLOOR';
+  if (PRED.floor && !PRED.piece){   // the floor brush: pick a square, then tap or drag across the floor to lay it. The eraser lifts squares back into your bag.
+    const have=tilesFor(PRD[curRoom]).filter(k=>TILE_STOCK[k]>0);
+    el.innerHTML=`<button class="ebi ebt${PRED.tile===''?' on':''}" data-tile="" title="Lift squares"><span class="ebx">ERASE</span></button>`+have.map(k=>`<button class="ebi ebt${PRED.tile===k?' on':''}" data-tile="${k}" title="${esc(tileName(k))}"><canvas width="40" height="40" data-ts="${k}"></canvas><i>×${TILE_STOCK[k]}</i></button>`).join('')+`<button class="ebi ebt" data-tilebuy="1" title="Buy floor squares"><span class="ebx">BUY</span></button>`;
+    for (const cv of el.querySelectorAll('canvas[data-ts]')) cv.getContext('2d').drawImage(tileSwatch(cv.dataset.ts,40,40),0,0);
+    return; }
   if (PRED.piece){ const D=FURN_DEF[PRED.piece.item]; $id('eb_piece').innerHTML=`<button class="gbbtn" id="eb_rot">↻ TURN</button><button class="gbbtn" id="eb_pick">📦 PUT AWAY</button><button class="gbbtn" id="eb_cancel">✕</button>`; return; }
   const list=PRED.storage.filter(x=>FURN_DEF[x.item]);
   if (!list.length){ el.innerHTML='<div class="fre">No items yet. Tap SHOP to buy furniture.</div>'; return; }
   el.innerHTML=list.map(x=>{ const left=x.n-x.placed; return `<button class="ebi${PRED.item===x.item?' on':''}" data-it="${x.item}" title="${esc(FURN_DEF[x.item].n)}" ${left<=0?'disabled':''}><canvas width="48" height="48" data-fi="${x.item}"></canvas><i>×${left}</i></button>`; }).join('');
   for (const cv of el.querySelectorAll('canvas[data-fi]')){ const ic=furnIcon(cv.dataset.fi,48); cv.width=ic.width; cv.height=ic.height; cv.getContext('2d').drawImage(ic,0,0); } }
-$id('editbar').addEventListener('pointerdown', e=>{ e.stopPropagation(); const b=e.target.closest('.ebi'); if (b && !b.disabled && b.dataset.it) prDragStart(e, {item:b.dataset.it, rot:0, ox:0, oy:0, fromBar:true}); });
+$id('editbar').addEventListener('pointerdown', e=>{ e.stopPropagation(); const b=e.target.closest('.ebi');
+  if (b && b.dataset.tilebuy){ WD.cat='deco'; openWardrobe('shop', null, 'furn'); return; }
+  if (b && b.dataset.tile!==undefined){ PRED.tile=b.dataset.tile; prEditBar(); localMsg(PRED.tile ? 'Tap or drag across the ground to lay '+tileName(PRED.tile)+'.' : 'Tap or drag across squares to lift them back into your bag.'); return; }
+  if (b && !b.disabled && b.dataset.it) prDragStart(e, {item:b.dataset.it, rot:0, ox:0, oy:0, fromBar:true}); });
 // ---- drag and drop: press a piece (or an item in the bar), drag it, let go to drop it; a see-through copy shows where it lands ----
 const PDR={on:false, armed:false};
 function prDragStart(e, o){ clearTimeout(PDR.lp); Object.assign(PDR, {on:false, armed:true, auto:false, staff:false, buy:false, fromBar:false, tapHit:null, longPress:false, id:e.pointerId, sx:e.clientX, sy:e.clientY, fid:null, gx:null, gy:null, ok:false, tapGx:null, tapGy:null}, o); PDR.hgx=null;
@@ -6894,6 +6934,7 @@ function prGhost(t){ if (!PRED.on) return; let item, gx, gy, rot, ok;
   if (D.wall && adminSignCv && PDR.px!=null){ const W=adminSignCv.width, H=adminSignCv.height; g.globalAlpha=ok?0.8:0.5; g.drawImage(adminSignCv, Math.round(PDR.px-W/2), Math.round(PDR.py-H/2)); g.globalAlpha=1; } }
 $id('editbar').addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; ensureAudio(); if (PDR.noClick && performance.now()-PDR.noClick<400) return;
   if (b.id==='eb_done'){ prEditStop(); localMsg('Room saved.'); return; }
+  if (b.id==='eb_floor'){ PRED.floor=!PRED.floor; PRED.tile=null; PRED.piece=null; prEditBar(); if (PRED.floor){ const out=!!(PRD[curRoom]||{}).open, any=tilesFor(PRD[curRoom]).some(k=>TILE_STOCK[k]>0); localMsg(any ? (out?'GRASS':'FLOOR')+': pick a square below, then tap or drag across the '+(out?'ground':'floor')+'.' : (out?'GRASS: you have no grass squares yet.':'FLOOR: you have no floor squares yet.')+' Tap BUY to get some.'); } return; }
   if (b.dataset.it){ PRED.item = PRED.item===b.dataset.it ? null : b.dataset.it; prEditBar(); return; }
   if (b.id==='eb_cancel'){ PRED.piece=null; prEditBar(); return; }
   if (b.id==='eb_pick'){ const pf=FURN.find(f=>f.fid===PRED.piece.fid), st=pf&&plotState(pf); if (st && !confirm(`Put this plot away? The ${(CROP_INFO[st.crop]||{n:'crop'}).n.toLowerCase()} growing in it will be lost.`)) return; }
@@ -6901,8 +6942,27 @@ $id('editbar').addEventListener('click', e=>{ const b=e.target.closest('button')
 function prFurnAt(gx,gy){ const wallPick = PRED.item && FURN_DEF[PRED.item] && FURN_DEF[PRED.item].wall;
   const on=f=>furnTiles(f.item,f.gx,f.gy,f.rot).some(([x,y])=>x===gx&&y===gy);
   return FURN.find(f=>f.fid && on(f) && !!(FURN_DEF[f.item]||{}).wall===!!wallPick) || (PRED.item ? null : FURN.find(f=>f.fid && on(f))); }
+// laying floor squares: every square the pointer crosses is painted right away on your screen, then sent to the server in one go when you let go
+const TPAINT={on:false, k:'', cells:[], seen:new Set(), before:null, left:0, raf:0, warned:false};
+function tilePaintAdd(e){ const [gx,gy]=toGrid(e.clientX, e.clientY); if (gx<0||gy<0||gx>=N||gy>=NY) return; const key=gx+','+gy; if (TPAINT.seen.has(key)) return; const R=PRD[curRoom]; if (!R) return;
+  const cur=R.tiles[key]||''; if (cur===TPAINT.k){ TPAINT.seen.add(key); return; }
+  if (TPAINT.k && TPAINT.left<=0){ if (!TPAINT.warned){ TPAINT.warned=true; localMsg('You are out of '+tileName(TPAINT.k)+' squares. Tap BUY for more.'); } return; }
+  if (TPAINT.cells.length>=180) return;
+  TPAINT.seen.add(key); TPAINT.cells.push([gx,gy]); if (TPAINT.k){ R.tiles[key]=TPAINT.k; TPAINT.left--; } else delete R.tiles[key];
+  if (!TPAINT.raf) TPAINT.raf=requestAnimationFrame(()=>{ TPAINT.raf=0; rebuildBG(); }); }
+function tilePaintStart(e){ const R=PRD[curRoom]; if (!R || !R.mine || PRED.tile===null) return; R.tiles=R.tiles||{};
+  Object.assign(TPAINT, {on:true, k:PRED.tile, cells:[], seen:new Set(), before:{...R.tiles}, left:PRED.tile?(TILE_STOCK[PRED.tile]||0):0, warned:false}); tilePaintAdd(e);
+  const mv=ev=>tilePaintAdd(ev), up=()=>{ removeEventListener('pointermove',mv); removeEventListener('pointerup',up); removeEventListener('pointercancel',up); tilePaintEnd(); };
+  addEventListener('pointermove',mv); addEventListener('pointerup',up); addEventListener('pointercancel',up); }
+async function tilePaintEnd(){ const R=PRD[curRoom], rid=+String(curRoom).slice(2), k=TPAINT.k, cells=TPAINT.cells.slice(); if (!cells.length || !R){ TPAINT.on=false; return; }
+  let last=null, bad='';
+  for (let i=0;i<cells.length;i+=60){ const r=await NET.act('tile_put',{rid, k, cells:cells.slice(i,i+60)}); if (r && r.tiles) last=r; if (!r || !r.ok){ bad=(r&&r.msg)||'That did not work.'; break; } }
+  TPAINT.on=false;
+  if (last){ R.tiles=last.tiles; if (last.stock) TILE_STOCK=last.stock; } else if (bad) R.tiles=TPAINT.before;
+  if (bad) localMsg(bad); rebuildBG(); if (PRED.on) prEditBar(); }
 function playerPointer(e){
   const lx=e.clientX/S, ly=e.clientY/S;
+  if (PRED.on && PRED.floor){ if (PRED.tile!==null && !TPAINT.on) tilePaintStart(e); return; }
   // the door (left wall, by tile 0,10): walk out, then pick where to go next
   { const dy=NY-1, cx=OX-(dy+0.5)*20, cy=OY+(dy+0.5)*10; if (!PRED.on && lx>=cx-12 && lx<=cx+12 && ly>=cy-55 && ly<=cy+6){ prLeave(); return; } }
   if (!PRED.on) for (let i=llamaHits.length-1;i>=0;i--){ const h=llamaHits[i]; if (lx>=h.x0&&lx<=h.x1&&ly>=h.y0&&ly<=h.y1){ if(h.id){ openPlayerMenu(h.id, e.clientX, e.clientY); return; } if (me.h){ doAction('sip'); return; } break; } }
@@ -6977,6 +7037,7 @@ function drawPlayerRoom(t){
 NET.handlers.prf = m => { const key='p:'+m.room; if (!PRD[key]) return; PRD[key].furn=m.furn; if (curRoom===key){ buildWorld(); if (PRED.piece && !m.furn.some(f=>f.id===PRED.piece.fid)) { PRED.piece=null; prEditBar(); } else if (PRED.piece){ const f=m.furn.find(f=>f.id===PRED.piece.fid); if (f){ PRED.piece.gx=f.gx; PRED.piece.gy=f.gy; } }
   if (!walkable(me.gx,me.gy) && !seatAt(me.gx,me.gy) && !me.moving){ const [x,y]=spawnSpot(key); me.gx=x; me.gy=y; me.x=x+0.5; me.y=y+0.5; sendPresence(true); } } };
 NET.handlers.prr = m => prApplyRoom(m.room);
+NET.handlers.prt = m => { const key='p:'+m.room; if (!PRD[key] || TPAINT.on) return; PRD[key].tiles=m.tiles||{}; if (curRoom===key) rebuildBG(); };
 // ♥ like button: shows inside other people's rooms; the server only counts it while you're in the room
 function likeUI(){ const R=isP(curRoom)&&PRD[curRoom]; document.body.classList.toggle('inp', !!(R && !R.mine)); if (!R) return; const b=$id('likebtn'); b.classList.toggle('on', !!R.liked); $id('like_n').textContent=R.likes||0; b.title = R.liked ? 'You like this room. Tap to unlike.' : 'Like this room'; }
 $id('likebtn').addEventListener('click', e=>{ e.stopPropagation(); ensureAudio(); const key=curRoom, R=PRD[key]; if (!R || R.mine) return;

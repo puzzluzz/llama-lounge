@@ -522,3 +522,12 @@ To give the game its own identity, the "limited rares" are now FAIR PRIZES: keep
 - **Badges.** Every room in the PLAYER ROOMS list shows a ROOM, PLOT or FARM badge. Creating a room now offers INDOOR ROOM or OUTDOOR PLOT.
 - **Outdoor furniture.** A new OUTDOOR shelf in the shop: PALM TREE, BOULDERS, TIKI TORCH, CAMPFIRE, FLOWER BUSH and STONE BRAZIER (the game's own scenery pieces), plus a new BEACH UMBRELLA and PICNIC TABLE.
 - Fixed on the way (found by the new tests): on a brand-new database the room table rebuild dropped the `kind` and password columns. The live database was never affected.
+
+## Floor squares and grass squares
+
+Floors are sold by the square (SHOP > WALLS & FLOORS) and laid one square at a time, so patterns can be mixed.
+
+- Indoor rooms take FLOOR squares (oak, parquet, deck, checker, marble, painted tiles, slate, cobble, carpet, plaid, indoor lawn).
+- Outdoor plots and farms take GRASS squares (meadow, mown lawn, clover, wild, golden). The server refuses each kind in the wrong place.
+- In your room tap EDIT, then FLOOR (GRASS outdoors), pick a square, then tap or drag. Lifting a square returns it to your bag.
+- Server: `tile_buy {k,n}`, `tile_put {rid,k,cells}` (table `ptile`); prices live in `TILES` in src/worker.js and must match `TILE_PRICE` in public/js/game.js.

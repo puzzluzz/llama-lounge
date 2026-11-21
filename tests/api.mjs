@@ -128,7 +128,17 @@ export async function runApi(BASE, { root, persist }) {
   { const r = await B.act("pr_create", { name: "TEST PLOT " + tag.toUpperCase().slice(0, 4), kind: "plot" }); const mine = ((r.mines || []).find((x) => x.id === r.created)) || {};
     check("a llama can make an outdoor plot", r.ok === true && mine.kind === "plot" && mine.open === true, JSON.stringify({ ok: r.ok, msg: r.msg, created: r.created, keys: Object.keys(r), mine }).slice(0, 260));
     const e = await B.act("pr_enter", { rid: r.created }); check("the plot opens as an open field", e.ok === true && e.room.open === true && e.room.kind === "plot" && e.room.farm === false, JSON.stringify(e.room || e).slice(0, 160));
-    const pl = await B.act("pr_place", { rid: r.created, item: "plot", gx: 5, gy: 4, rot: 0 }); check("garden plots still only go in a farm", pl.ok === false, JSON.stringify(pl).slice(0, 120)); }
+    const pl = await B.act("pr_place", { rid: r.created, item: "plot", gx: 5, gy: 4, rot: 0 }); check("garden plots still only go in a farm", pl.ok === false, JSON.stringify(pl).slice(0, 120));
+    console.log("Floor squares");
+    const b1 = await B.act("tile_buy", { k: "lawn", n: 6 }); check("buying squares costs tokens", b1.ok === true && b1.tk === 4 && b1.stock.lawn === 6, JSON.stringify(b1).slice(0, 140));
+    check("cannot buy more than you can afford", (await B.act("tile_buy", { k: "slate", n: 50 })).ok === false);
+    check("cannot buy a made-up floor", (await B.act("tile_buy", { k: "gold", n: 1 })).ok === false);
+    const p1 = await B.act("tile_put", { rid: r.created, k: "lawn", cells: [[0, 0], [1, 0], [2, 0], [2, 0], [99, 99]] }); check("laying squares uses them up", p1.ok === true && Object.keys(p1.tiles).length === 3 && p1.stock.lawn === 3, JSON.stringify(p1).slice(0, 160));
+    const p2 = await B.act("tile_put", { rid: r.created, k: "lawn", cells: [[3, 0], [4, 0], [5, 0], [6, 0]] }); check("cannot lay more squares than you own", p2.ok === false && Object.keys(p2.tiles).length === 3, JSON.stringify(p2).slice(0, 140));
+    await B.act("tile_buy", { k: "wood", n: 1 }); const pf = await B.act("tile_put", { rid: r.created, k: "wood", cells: [[7, 7]] }); check("indoor floors cannot be laid outdoors", pf.ok === false, JSON.stringify(pf).slice(0, 120));
+    const p3 = await A.act("tile_put", { rid: r.created, k: "lawn", cells: [[5, 5]] }); check("only the owner can floor a room", p3.ok === false);
+    const p4 = await B.act("tile_put", { rid: r.created, k: "", cells: [[0, 0], [1, 0]] }); check("lifting squares puts them back in your bag", p4.ok === true && Object.keys(p4.tiles).length === 1 && p4.stock.lawn === 5, JSON.stringify(p4).slice(0, 140));
+    const e2 = await B.act("pr_enter", { rid: r.created }); check("visitors get the laid squares", e2.ok === true && e2.tiles["2,0"] === "lawn"); }
   await sleep(2100);
 
   console.log("Tokens only change on the server");
