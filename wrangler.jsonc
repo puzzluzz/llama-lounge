@@ -5,6 +5,9 @@
   // tests run before every deploy; if one fails, the deploy stops and the live game keeps the last good version
   "build": { "command": "node tests/run.mjs --build", "watch_dir": "src" },
   "compatibility_date": "2025-11-01",
+  // the game's own domain (bought at Cloudflare). The old workers.dev address keeps working alongside it.
+  "workers_dev": true,
+  "routes": [ { "pattern": "llamalounge.club", "custom_domain": true }, { "pattern": "www.llamalounge.club", "custom_domain": true } ],
   "assets": { "directory": "./public", "not_found_handling": "single-page-application" },
   "durable_objects": { "bindings": [ { "name": "LOUNGE", "class_name": "Lounge" } ] },
   "migrations": [ { "tag": "v1", "new_sqlite_classes": ["Lounge"] } ],
