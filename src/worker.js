@@ -873,6 +873,10 @@ function cleanPresence(p, name, tk, muted, staff) {
   return o;
 }
 
+// the parts of a llama's presence that every room shows (chat log, who is where, outfit, tokens, scores, jukebox, lamp).
+// When none of these changed, the update is just movement and only goes to the llama's own room.
+const PRES_BATCH_MS = 100;
+const presSig = (p) => { const s = JSON.stringify([p.rm, p.c, p.n, p.st || "", p.w || 0, p.tk, p.s ? p.s.k : 0, p.g ? p.g.k : 0, p.j ? p.j.ts : 0, p.l ? p.l.ts : 0]); let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h; };   // a short hash, so it stays small in the socket attachment
 const fmtDur = (ms) => { const m = Math.ceil(ms / 60000); return m >= 120 ? `${Math.round(m / 6) / 10} hours`.replace(".0 ", " ") : m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
 // what a player can report someone for (the key is stored; staff see the label)
 const REPORT_REASONS = { rude: "Rude or bullying", hate: "Hate speech or slurs", spam: "Spam", scam: "Scam or trade trouble", name: "Bad name, room or outfit", other: "Something else" };
@@ -881,6 +885,9 @@ export class Lounge extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
     this.tables = [null, null];   // live table games (lost if the room ever sleeps, which only happens when it's empty)
+    this.rmc = new WeakMap();     // socket -> room id, so movement can be sent per room without re-reading every attachment
+    this.pend = new Map();        // peer -> socket with movement waiting for the next batch
+    this.flushT = null;
   }
 
   async fetch(req) {
@@ -888,6 +895,7 @@ export class Lounge extends DurableObject {
     // one llama per account: an older connection for this account (another tab, or one left over from a reload) is closed and removed for everyone
     for (const w of this.sockets()) { const old = w.deserializeAttachment(); if (!old || old.uid !== uid) continue;
       if (old.pres) this.broadcast({ t: "peers", left: [{ peer: old.peer }] }, w);
+      this.pend.delete(old.peer); this.rmc.set(w, null);
       try { w.serializeAttachment({ ...old, pres: null }); w.close(4001, "replaced"); } catch (e) {} }
     const pair = new WebSocketPair(); const [client, server] = Object.values(pair);
     const peer = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
@@ -910,6 +918,31 @@ export class Lounge extends DurableObject {
     const lite = JSON.stringify({ t: "peers", [kind]: [{ peer: a.peer, presence: { ...a.pres, s: undefined, e: undefined } }] });
     for (const w of this.sockets()) { if (w === ws) continue; const x = w.deserializeAttachment(); try { w.send(x && x.pres && x.pres.rm === a.pres.rm ? full : lite); } catch (e) {} }
   }
+  // which room a socket's llama is in (null before it has joined); cached, and rebuilt from the attachment after a sleep
+  rmOf(w) { let r = this.rmc.get(w); if (r === undefined) { const x = w.deserializeAttachment(); r = x && x.pres ? x.pres.rm : null; this.rmc.set(w, r); } return r; }
+  // MOVEMENT IS PER ROOM AND BATCHED. Steps, turns, sitting, emotes and the like only matter to llamas in the same room, so they wait
+  // up to PRES_BATCH_MS and go out as one bundle per room. Anything the whole world shows (chat, changing room, outfit, tokens, scores,
+  // the jukebox) still goes to everyone straight away through peersOut.
+  queueMove(ws, a) { this.pend.set(a.peer, ws); if (!this.flushT) this.flushT = setTimeout(() => { this.flushT = null; try { this.flushMoves(); } catch (e) { console.error("flush", e); } }, PRES_BATCH_MS); }
+  flushMoves() {
+    if (!this.pend.size) return;
+    const byRoom = new Map();
+    for (const [peer, w] of this.pend) { if (w.readyState !== 1) continue; const x = w.deserializeAttachment(); if (!x || !x.pres || x.peer !== peer) continue;
+      let L = byRoom.get(x.pres.rm); if (!L) byRoom.set(x.pres.rm, L = []); L.push({ peer, presence: x.pres, w }); }
+    this.pend.clear(); if (!byRoom.size) return;
+    const strip = (L) => JSON.stringify({ t: "peers", updated: L.map((e) => ({ peer: e.peer, presence: e.presence })) });
+    const whole = new Map(); for (const [rm, L] of byRoom) whole.set(rm, strip(L));
+    for (const w of this.sockets()) { if (w.readyState !== 1) continue; const rm = this.rmOf(w);
+      if (rm === null) { for (const sAll of whole.values()) { try { w.send(sAll); } catch (e) {} } continue; }   // not joined yet: still watching, so it sees every room
+      const L = byRoom.get(rm); if (!L) continue;
+      const mine = L.some((e) => e.w === w);
+      if (!mine) { try { w.send(whole.get(rm)); } catch (e) {} continue; }
+      if (L.length > 1) { try { w.send(strip(L.filter((e) => e.w !== w))); } catch (e) {} } }
+  }
+  // everyone already in a room, sent to a llama that just walked in (it stopped getting their steps while it was elsewhere)
+  roomSnapshot(ws, rm) { const L = [];
+    for (const w of this.sockets()) { if (w === ws || w.readyState !== 1 || this.rmOf(w) !== rm) continue; const x = w.deserializeAttachment(); if (x && x.pres) L.push({ peer: x.peer, presence: x.pres }); }
+    if (L.length) this.send(ws, { t: "peers", updated: L }); }
   send(ws, obj) { try { ws.send(JSON.stringify(obj)); } catch (e) {} }
   broadcast(obj, except) { const s = JSON.stringify(obj); for (const w of this.sockets()) if (w !== except) { try { w.send(s); } catch (e) {} } }
 
@@ -939,6 +972,7 @@ export class Lounge extends DurableObject {
       else if (first && rs && typeof rs === "object") a.ck = +rs.k;
       if (first && a.ck === undefined) a.ck = 0;
       if (a.pres && m.p && m.p.rm !== a.pres.rm) this.tradeDrop(a.uid, `${a.name} left the room, so the trade was cancelled.`);
+      const prevRm = a.pres ? a.pres.rm : null, prevSig = a.gs;
       const prevSit = a.pres && a.pres.p === "sit" ? a.pres.rm + ":" + Math.floor(a.pres.x) + "," + Math.floor(a.pres.y) : null;
       a.pres = cleanPresence(m.p, a.name, a.uc.tk, !!a.uc.muted, a.staff); if (a.uc.c) a.pres.c = a.uc.c;   // everyone sees the llama the account picked
       // one llama per seat: whoever sat down first keeps it
@@ -946,9 +980,12 @@ export class Lounge extends DurableObject {
         if (key !== prevSit) for (const w2 of this.sockets()) { if (w2 === ws) continue; const x = w2.deserializeAttachment(); const q = x && x.pres;
           if (q && q.p === "sit" && q.rm === a.pres.rm && Math.floor(q.x) === Math.floor(a.pres.x) && Math.floor(q.y) === Math.floor(a.pres.y)) { a.pres.p = "stand"; this.send(ws, { t: "seattaken" }); break; } } }
       if (a.wear && Object.keys(a.wear).length) a.pres.w = a.wear;   // and the clothes it owns and has on
-      ws.serializeAttachment(a);
+      a.gs = presSig(a.pres);
+      ws.serializeAttachment(a); this.rmc.set(ws, a.pres.rm);
       { const pid = prId(a.pres.rm); if (pid && !(this.prPriv && this.prPriv.has(pid))) await this.prRoom(pid); }   // know if it's private before sending anything
-      this.peersOut(ws, a, first ? "joined" : "updated");
+      if (first || a.gs !== prevSig) { this.pend.delete(a.peer); this.peersOut(ws, a, first ? "joined" : "updated"); }   // the whole world shows this change
+      else this.queueMove(ws, a);                                                                                       // only this room cares
+      if (first || prevRm !== a.pres.rm) this.roomSnapshot(ws, a.pres.rm);
       return;
     }
     if (m.t === "ar") { this.arenaRelay(ws, a, m, now); return; }
@@ -963,7 +1000,7 @@ export class Lounge extends DurableObject {
 
   async webSocketClose(ws) { this.left(ws); try { const a = ws.deserializeAttachment(); if (a && a.nd) { this.needsDrain(a, Date.now()); await this.needsSave(a); } } catch (e) {} }
   async webSocketError(ws) { this.left(ws); }
-  left(ws) { const a = ws.deserializeAttachment(); if (a && a.pres) this.broadcast({ t: "peers", left: [{ peer: a.peer }] }, ws); if (a) this.tradeDrop(a.uid, `${a.name} left, so the trade was cancelled.`); }
+  left(ws) { const a = ws.deserializeAttachment(); if (a) this.pend.delete(a.peer); this.rmc.set(ws, null); if (a && a.pres) this.broadcast({ t: "peers", left: [{ peer: a.peer }] }, ws); if (a) this.tradeDrop(a.uid, `${a.name} left, so the trade was cancelled.`); }
 
   // ---------- player rooms ----------
   async prTables() { if (this.prReady) return;
