@@ -5,7 +5,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 // ---------- tunables ----------
-const VERSION = "2026-11-30c";             // bump with every release; the page compares it with its own and asks to refresh
+const VERSION = "2026-11-30d";             // bump with every release; the page compares it with its own and asks to refresh
 const START_TOKENS = 10;
 const LLAMAS = ["twotone", "poophat", "tweed", "metal", "money", "gingham", "cancel"];   // llamas players can be
 const BOOTH = { rm: "account", x: 7, y: 0, price: 20 };   // the changing booth in the ACCOUNT room: switch to another llama for 20 tokens
@@ -368,9 +368,7 @@ function mailHtml(subject, lines, link, button) {
 <div style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(lines[1] || lines[0] || subject)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#120d22"><tr><td align="center" style="padding:28px 14px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
-    <tr><td style="padding:0 4px 16px"><table role="presentation" cellpadding="0" cellspacing="0"><tr>
-      <td style="background:#ffd23f;border:3px solid #1d1530;border-radius:8px;padding:0;line-height:0"><img src="https://${SITE_HOST}/icons/icon-192.png" width="40" height="40" alt="LL" style="display:block;border-radius:5px;${PX};font-size:13px;font-weight:bold;color:#1d1530;line-height:40px;text-align:center"></td>
-      <td style="padding-left:12px;${PX};font-size:20px;font-weight:bold;letter-spacing:2px;color:#ffffff">LLAMA LOUNGE</td></tr></table></td></tr>
+    <tr><td style="padding:0 4px 14px"><img src="https://${SITE_HOST}/site/email-logo.png" width="186" height="106" alt="LLAMA LOUNGE" style="display:block;border:0;${PX};font-size:20px;font-weight:bold;letter-spacing:2px;color:#ffd23f"></td></tr>
     <tr><td style="background:#fffdf6;border:3px solid #1d1530;border-radius:12px;padding:0">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr><td style="background:#6b4bd8;border-bottom:3px solid #1d1530;border-radius:8px 8px 0 0;padding:16px 22px;${PX};font-size:15px;font-weight:bold;letter-spacing:1px;line-height:1.4;color:#ffffff">${esc(subject.toUpperCase())}</td></tr>
